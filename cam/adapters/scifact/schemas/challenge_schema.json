@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["grounding_analysis", "scope_consensus", "inference_flags", "verdict_analysis", "overall_grounding_quality"],
+  "properties": {
+    "grounding_analysis": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["evaluator", "cited_relevant", "cited_irrelevant", "missing_key_sentences", "grounding_quality", "notes"],
+        "properties": {
+          "evaluator": {"type": "string"},
+          "cited_relevant": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "description": "Sentence indices that ARE relevant to the evaluator's verdict"
+          },
+          "cited_irrelevant": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "description": "Sentence indices cited but NOT relevant to the verdict"
+          },
+          "missing_key_sentences": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "description": "Sentence indices the evaluator SHOULD have cited but didn't"
+          },
+          "grounding_quality": {
+            "type": "string",
+            "enum": ["strong", "adequate", "weak", "ungrounded"]
+          },
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "scope_consensus": {
+      "type": "object",
+      "required": ["agree_on_scope", "scope_issues", "notes"],
+      "properties": {
+        "agree_on_scope": {"type": "boolean"},
+        "scope_issues": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "notes": {"type": "string"}
+      }
+    },
+    "inference_flags": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["evaluator", "inference_type", "description", "severity"],
+        "properties": {
+          "evaluator": {"type": "string"},
+          "inference_type": {
+            "type": "string",
+            "enum": ["external_knowledge", "correlation_causation", "overgeneralization", "unstated_assumption", "scope_leap", "other"]
+          },
+          "description": {"type": "string"},
+          "severity": {
+            "type": "string",
+            "enum": ["minor", "moderate", "critical"]
+          }
+        }
+      }
+    },
+    "verdict_analysis": {
+      "type": "object",
+      "required": ["unanimous", "disagreement_source", "notes"],
+      "properties": {
+        "unanimous": {"type": "boolean"},
+        "disagreement_source": {
+          "type": "string",
+          "enum": ["none", "scope_interpretation", "evidence_selection", "inference_difference", "precision_tolerance", "mixed"]
+        },
+        "notes": {"type": "string"}
+      }
+    },
+    "overall_grounding_quality": {
+      "type": "string",
+      "enum": ["strong", "adequate", "weak", "mixed"],
+      "description": "Overall assessment of how well the evaluators grounded their verdicts"
+    }
+  },
+  "additionalProperties": false
+}

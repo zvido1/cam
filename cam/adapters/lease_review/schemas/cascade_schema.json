@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lease Cascade Evaluation Output",
+  "type": "object",
+  "required": ["cascades"],
+  "properties": {
+    "cascades": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["provision_id", "changed_term", "verdict", "mechanism", "impact_summary"],
+        "properties": {
+          "provision_id": {"type": "string"},
+          "changed_term": {"type": "string"},
+          "verdict": {"type": "string", "enum": ["CASCADE_MATERIAL", "CASCADE_IMMATERIAL"]},
+          "mechanism": {"type": "string"},
+          "impact_summary": {"type": "string"}
+        }
+      }
+    }
+  }
+}

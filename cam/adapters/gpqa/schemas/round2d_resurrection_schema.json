@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Round 2d Resurrection Test Response",
+  "description": "Schema for Round 2d resurrection testing of kill shots",
+  "type": "object",
+  "required": ["resurrection_tests", "summary"],
+  "additionalProperties": true,
+  "properties": {
+    "resurrection_tests": {
+      "type": "array",
+      "description": "Individual test results for each kill shot",
+      "items": {
+        "type": "object",
+        "required": ["option", "original_kill_type", "verdict"],
+        "additionalProperties": true,
+        "properties": {
+          "option": {
+            "enum": ["A", "B", "C", "D"]
+          },
+          "original_kill_type": {
+            "type": "string"
+          },
+          "original_proof_summary": {
+            "type": "string"
+          },
+          "verdict": {
+            "enum": ["confirmed_kill", "downgraded_to_condition", "resurrection_failed"]
+          },
+          "reasoning": {
+            "type": "string",
+            "minLength": 20
+          },
+          "convention_dependent": {
+            "type": "boolean"
+          },
+          "alternative_interpretation": {
+            "type": ["string", "null"]
+          },
+          "confidence": {
+            "enum": ["high", "medium", "low"]
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["confirmed_kills", "downgraded_to_conditions"],
+      "additionalProperties": true,
+      "properties": {
+        "confirmed_kills": {
+          "type": "array",
+          "items": {"enum": ["A", "B", "C", "D"]},
+          "description": "Options whose kills were confirmed valid"
+        },
+        "downgraded_to_conditions": {
+          "type": "array",
+          "items": {"enum": ["A", "B", "C", "D"]},
+          "description": "Options resurrected - kills downgraded to conditions"
+        },
+        "resurrection_notes": {
+          "type": "string"
+        }
+      }
+    },
+    "round_executed": {
+      "type": "boolean"
+    },
+    "round_status": {
+      "enum": ["ok", "no_kills_to_test", "api_error", "json_parse_error", "schema_error", "exception"]
+    },
+    "_schema_validation_failed": {
+      "type": "boolean"
+    }
+  }
+}

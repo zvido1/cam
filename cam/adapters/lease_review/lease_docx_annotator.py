@@ -1,0 +1,377 @@
+"""
+CAM Lease Review — DOCX Annotator
+
+Inserts colored callout text blocks on deviating/unclear provisions in a
+tenant DOCX file.  Callout blocks are inserted immediately after the
+paragraph containing the flagged provision text.
+
+Note: Native Word comment insertion via XML manipulation was attempted but
+proved incompatible with python-docx 0.8.11's Part/OPC structure (corrupts
+the document on save).  Callout blocks are the reliable approach.
+"""
+
+from pathlib import Path
+from typing import List, Optional
+
+from docx import Document
+from docx.oxml.ns import qn
+from docx.oxml import OxmlElement
+
+
+def _format_comment_text(provision: dict) -> str:
+    """Format the comment text for a provision finding."""
+    pid = provision.get("provision_id", "?")
+    pname = provision.get("provision_name", "")
+    verdict = provision.get("final_verdict", "?")
+    severity = provision.get("severity", "")
+    pattern = provision.get("agreement_pattern", "")
+
+    lines = [f"[CAM \u2014 {pid} {pname}]"]
+    lines.append(f"Status: {verdict} ({severity})")
+    lines.append(f"Agreement: {pattern}")
+    lines.append("")
+
+    # Challenge details or cascade mechanism
+    cascade_src = provision.get("cascade_source")
+    if provision.get("cascade_verdict") == "CASCADE_MATERIAL":
+        if cascade_src and cascade_src.get("term"):
+            lines.append(f"Definition cascade from: \"{cascade_src['term']}\"")
+        lines.append(f"Definition cascade: {provision.get('cascade_mechanism', '')}")
+        lines.append(f"Impact: {provision.get('cascade_impact', '')}")
+    elif provision.get("challenge_details"):
+        lines.append(provision["challenge_details"])
+    elif provision.get("severity_reasoning"):
+        lines.append(provision["severity_reasoning"])
+
+    lines.append("")
+
+    # Fragility signals
+    frag = provision.get("fragility", {})
+    if frag.get("signals"):
+        lines.append(f"Fragility: {', '.join(frag['signals'])}")
+
+    # Recommended action
+    action = provision.get("recommended_action", "")
+    if action and action != "no_action":
+        action_labels = {
+            "note_for_awareness": "Note for awareness",
+            "attorney_review_recommended": "Attorney review recommended",
+            "attorney_review_required": "Attorney review required",
+        }
+        lines.append(f"\u2192 {action_labels.get(action, action)}")
+
+    return "\n".join(lines)
+
+
+def _add_callout_block(document, paragraph, comment_text, severity="MEDIUM"):
+    """Fallback: Insert a colored text block after the paragraph."""
+    # Determine color hex based on severity
+    color_hex_map = {
+        "CRITICAL": "CC0000",   # Red
+        "HIGH": "CC4400",       # Dark orange
+        "MEDIUM": "CC8800",     # Orange
+        "LOW": "888800",        # Dark yellow
+        "REVIEW": "0066CC",     # Blue
+        "CONFORMS": "CC8800",   # Default orange
+    }
+    color_hex = color_hex_map.get(severity, "CC8800")
+
+    # Find the paragraph's parent and position
+    parent = paragraph._element.getparent()
+    idx = list(parent).index(paragraph._element)
+
+    # Create a new paragraph for the callout
+    callout_para = OxmlElement("w:p")
+
+    # Add border/shading to make it look like a callout
+    ppr = OxmlElement("w:pPr")
+    # Add shading (light background)
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), "FFF3CD")  # Light yellow background
+    ppr.append(shd)
+    # Add borders
+    borders = OxmlElement("w:pBdr")
+    for side in ["top", "left", "bottom", "right"]:
+        border = OxmlElement(f"w:{side}")
+        border.set(qn("w:val"), "single")
+        border.set(qn("w:sz"), "4")
+        border.set(qn("w:space"), "1")
+        border.set(qn("w:color"), color_hex)
+        borders.append(border)
+    ppr.append(borders)
+    callout_para.append(ppr)
+
+    # Add the text
+    for line in comment_text.split("\n"):
+        if line:
+            run = OxmlElement("w:r")
+            rpr = OxmlElement("w:rPr")
+            sz = OxmlElement("w:sz")
+            sz.set(qn("w:val"), "18")  # 9pt font
+            rpr.append(sz)
+            clr = OxmlElement("w:color")
+            clr.set(qn("w:val"), color_hex)
+            rpr.append(clr)
+            run.append(rpr)
+            t = OxmlElement("w:t")
+            t.set(qn("xml:space"), "preserve")
+            t.text = line
+            run.append(t)
+            callout_para.append(run)
+
+            # Add line break
+            br_run = OxmlElement("w:r")
+            br = OxmlElement("w:br")
+            br_run.append(br)
+            callout_para.append(br_run)
+
+    # Insert after the target paragraph
+    parent.insert(idx + 1, callout_para)
+
+
+def _find_paragraph_by_text(document, search_text: str, min_match_chars: int = 40):
+    """Find a paragraph containing the search text (first ~N chars).
+
+    Returns the first matching paragraph or None.
+    """
+    if not search_text:
+        return None
+
+    # Use first N chars, cleaned up
+    needle = search_text[:min_match_chars].strip()
+    if len(needle) < 10:
+        needle = search_text.strip()
+    if not needle:
+        return None
+
+    needle_lower = needle.lower()
+
+    for para in document.paragraphs:
+        if needle_lower in para.text.lower():
+            return para
+
+    # Fallback: try with fewer characters
+    if len(needle) > 20:
+        short_needle = needle[:20].lower()
+        for para in document.paragraphs:
+            if short_needle in para.text.lower():
+                return para
+
+    return None
+
+
+def _insert_summary_section(doc, results):
+    """Insert a summary section at the top of the DOCX before annotations."""
+    from datetime import datetime
+    from docx.shared import Pt, RGBColor
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+    body = doc.element.body
+    insert_before = body[0] if len(body) > 0 else None
+
+    def _add_para(text, size=9, bold=False, color=None, space_after=2):
+        p = OxmlElement("w:p")
+        ppr = OxmlElement("w:pPr")
+        # Space after
+        spacing = OxmlElement("w:spacing")
+        spacing.set(qn("w:after"), str(space_after * 20))
+        ppr.append(spacing)
+        p.append(ppr)
+        run = OxmlElement("w:r")
+        rpr = OxmlElement("w:rPr")
+        sz = OxmlElement("w:sz")
+        sz.set(qn("w:val"), str(size * 2))
+        rpr.append(sz)
+        if bold:
+            b = OxmlElement("w:b")
+            rpr.append(b)
+        if color:
+            c = OxmlElement("w:color")
+            c.set(qn("w:val"), color)
+            rpr.append(c)
+        run.append(rpr)
+        t = OxmlElement("w:t")
+        t.set(qn("xml:space"), "preserve")
+        t.text = text
+        run.append(t)
+        p.append(run)
+        if insert_before is not None:
+            body.insert(list(body).index(insert_before), p)
+        else:
+            body.append(p)
+
+    # Header
+    _add_para("CAM Lease Analysis Report", size=16, bold=True, color="1A365D", space_after=4)
+    date_str = datetime.now().strftime("%B %d, %Y")
+    tenant_file = results.get("tenant_file", "")
+    _add_para(f"{date_str}  |  {tenant_file}", size=9, color="64748B", space_after=8)
+
+    # Contract metadata
+    meta = results.get("contract_metadata", {})
+    has_meta = False
+    for label, key in [("Landlord", "landlord"), ("Property", "property_description"),
+                       ("Term", "term_length"), ("Base Rent", "base_rent"),
+                       ("Tenant", "tenant"), ("Governing Law", "governing_law")]:
+        val = meta.get(key, "")
+        if val and len(str(val).replace("_", "").replace("TBD", "").strip()) >= 5:
+            if not has_meta:
+                _add_para("Contract Summary", size=12, bold=True, color="1A365D", space_after=2)
+                has_meta = True
+            _add_para(f"{label}: {val}", size=9)
+    if has_meta:
+        _add_para("", size=4, space_after=6)
+
+    # Provisions checklist (traffic light grouping by severity)
+    provisions = results.get("provisions", [])
+    if provisions:
+        _add_para("Provisions Analyzed", size=12, bold=True, color="1A365D", space_after=2)
+
+        sev_groups = {"CRITICAL": [], "HIGH": [], "MEDIUM": [], "LOW": [], "CONFORMS": []}
+        for p in provisions:
+            if p.get("final_verdict") == "DEVIATES":
+                sev = p.get("severity", "MEDIUM")
+                sev_groups.get(sev, sev_groups["MEDIUM"]).append(p)
+            else:
+                sev_groups["CONFORMS"].append(p)
+
+        sev_colors = {
+            "CRITICAL": "DC2626", "HIGH": "C2410C", "MEDIUM": "D97706",
+            "LOW": "64748B", "CONFORMS": "16A34A",
+        }
+        sev_markers = {
+            "CRITICAL": "[!] CRITICAL", "HIGH": "[!] HIGH",
+            "MEDIUM": "[*] MEDIUM", "LOW": "[-] LOW",
+            "CONFORMS": "[OK] CONFORMS",
+        }
+        for sev_key in ["CRITICAL", "HIGH", "MEDIUM", "LOW", "CONFORMS"]:
+            items = sev_groups[sev_key]
+            if not items:
+                continue
+            names = ", ".join(
+                f"{p.get('provision_id', '')} {(p.get('provision_name', '') or '').split(' ', 1)[-1]}"
+                for p in items
+            )
+            _add_para(f"  {sev_markers[sev_key]}: {names}", size=9, color=sev_colors[sev_key])
+
+        _add_para("", size=4, space_after=6)
+
+    # Findings
+    deviations = [p for p in provisions if p.get("final_verdict") == "DEVIATES"]
+    sev_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+    deviations.sort(key=lambda d: sev_order.get(d.get("severity", "LOW"), 99))
+
+    if deviations:
+        _add_para("Findings", size=12, bold=True, color="1A365D", space_after=4)
+        action_labels = {
+            "note_for_awareness": "Note for awareness",
+            "attorney_review_recommended": "Attorney review recommended",
+            "attorney_review_required": "Attorney review required",
+        }
+        for d in deviations:
+            pid = d.get("provision_id", "")
+            pname = d.get("provision_name", "")
+            sev = d.get("severity", "")
+            headline = d.get("risk_headline", "")
+            what_changed = d.get("challenge_details", d.get("what_changed", ""))
+            impact = d.get("severity_reasoning", "")
+            financial = d.get("financial_impact", "")
+            action = d.get("recommended_action", "")
+            cascade_src = d.get("cascade_source")
+            action_text = action_labels.get(action, action)
+            verdicts = d.get("evaluator_verdicts", {})
+            agreeing = sum(1 for v in verdicts.values() if v == "DEVIATES")
+            total = len(verdicts) or 3
+
+            sev_clr = "DC2626" if sev == "CRITICAL" else "C2410C" if sev == "HIGH" else "D97706" if sev == "MEDIUM" else "64748B"
+            _add_para(f"{pid} {pname}  [{sev}]  ({agreeing}/{total} evaluators agree)", size=10, bold=True, color=sev_clr)
+
+            # Cascade source (if present)
+            if cascade_src and cascade_src.get("term"):
+                cs_text = f"Definition cascade from: \"{cascade_src['term']}\""
+                if cascade_src.get("defined_in"):
+                    cs_text += f" -- {cascade_src['defined_in']}"
+                _add_para(cs_text, size=8, color="D97706")
+
+            if headline:
+                _add_para(headline, size=9, bold=True, color=sev_clr)
+            if what_changed:
+                _add_para(f"What Changed: {what_changed}", size=9)
+            if impact:
+                _add_para(f"Impact: {impact}", size=9)
+            if financial:
+                _add_para(f"Financial Impact: {financial}", size=9)
+            if action_text and action_text != "no_action":
+                _add_para(f"Recommended Action: {action_text}", size=9, color="1A365D")
+            _add_para("", size=4, space_after=6)
+
+    # Disclaimer + divider
+    _add_para("---", size=8, color="94A3B8", space_after=4)
+    _add_para(
+        "This analysis was generated by the CAM (Constrained Assertion Method) system using multiple "
+        "independent AI evaluators. It is intended as a review aid, not legal advice. All findings should "
+        "be verified by qualified legal counsel before any action is taken.",
+        size=7, color="94A3B8", space_after=10,
+    )
+    _add_para("--- End of CAM Summary ---", size=8, bold=True, color="94A3B8", space_after=12)
+
+
+def annotate_docx(
+    original_docx_path: str,
+    results: dict,
+    output_path: str,
+) -> str:
+    """Insert Word comments on deviating provisions in tenant DOCX.
+
+    Args:
+        original_docx_path: Path to the original tenant DOCX file.
+        results: Pipeline results dict (with "provisions" list).
+        output_path: Path for the annotated output DOCX.
+
+    Returns:
+        Path to the annotated DOCX file.
+    """
+    doc = Document(original_docx_path)
+
+    # Prepend summary section at top of document
+    try:
+        _insert_summary_section(doc, results)
+    except Exception as e:
+        print(f"[docx_annotator] Summary section insertion failed (non-fatal): {e}", flush=True)
+
+    annotations_added = 0
+    not_found = 0
+
+    for provision in results.get("provisions", []):
+        if provision.get("final_verdict") not in ("DEVIATES", "UNCLEAR"):
+            continue
+
+        comment_text = _format_comment_text(provision)
+        search_text = provision.get("tenant_text", "")
+
+        # Find the paragraph containing this provision
+        para = _find_paragraph_by_text(doc, search_text)
+
+        if para is None:
+            # Try searching by provision name in section refs
+            section_ref = provision.get("tenant_section_ref", "")
+            if section_ref:
+                para = _find_paragraph_by_text(doc, section_ref, min_match_chars=15)
+
+        if para is None:
+            pid = provision.get("provision_id", "?")
+            print(f"[docx_annotator] Could not locate text for {pid}", flush=True)
+            not_found += 1
+            continue
+
+        _add_callout_block(doc, para, comment_text, provision.get("severity", "MEDIUM"))
+        annotations_added += 1
+
+    # Save the annotated document
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    doc.save(output_path)
+
+    print(f"[docx_annotator] Saved {output_path} ({annotations_added} annotations, {not_found} not found)", flush=True)
+
+    return output_path

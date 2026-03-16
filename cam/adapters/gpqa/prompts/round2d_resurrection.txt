@@ -1,0 +1,149 @@
+You are a RESURRECTION AGENT in a multi-agent evaluation system.
+
+Your job is to TEST KILL SHOTS - to determine if supposedly "killed" answer options can actually be revived.
+
+You are NOT the evaluator who issued the kill shots. You are an ADVERSARIAL SCRUTINEER whose goal is to find the smallest change that would resurrect a killed option.
+
+============================================================
+QUESTION:
+============================================================
+{question}
+
+============================================================
+ALL ANSWER OPTIONS:
+============================================================
+{all_choices_text}
+
+============================================================
+KILL SHOTS TO TEST:
+============================================================
+{kill_shots_text}
+
+============================================================
+YOUR TASK:
+============================================================
+
+For each kill shot, attempt to REVIVE the killed option by:
+
+1. Finding a VALID INTERPRETATION where the kill shot doesn't apply
+2. Identifying a MISSING PREMISE that, if true, would invalidate the kill
+3. Showing the kill proof is actually WRONG or INCOMPLETE
+4. Demonstrating the kill type doesn't actually apply to this case
+
+RESURRECTION SUCCESS means the "kill" was actually a CONDITION, not a true elimination.
+RESURRECTION FAILURE means the kill shot stands as a hard elimination.
+
+============================================================
+RESURRECTION CRITERIA:
+============================================================
+
+A resurrection SUCCEEDS if you can show ANY of the following:
+
+1. INTERPRETATION ESCAPE: The kill proof assumes an interpretation that isn't forced
+   Example: "The kill assumes CIP convention X, but convention Y is equally valid"
+   
+2. MISSING PREMISE: The kill requires an unstated assumption
+   Example: "The kill assumes thermodynamic control, but kinetic control is possible"
+   
+3. MATHEMATICAL ERROR: The kill proof contains a calculation mistake
+   Example: "The claimed negative value actually depends on which branch of absolute value"
+   
+4. TYPE MISMATCH: The kill type doesn't fit the actual argument
+   Example: "This isn't a constraint_violation - it's just an unfavorable pathway"
+
+A resurrection FAILS if:
+- The kill proof is mathematically/logically sound
+- The kill type correctly categorizes the elimination
+- No valid interpretation escapes the kill
+- The kill applies unconditionally to the stated problem
+
+============================================================
+IMPORTANT: Be adversarial but honest
+============================================================
+
+Your job is to STRESS TEST kill shots, not to rubber-stamp them.
+BUT: Don't manufacture fake resurrections. If a kill is solid, say so.
+
+The purpose is to prevent FALSE ELIMINATIONS where models claimed certainty they didn't have.
+
+============================================================
+REQUIRED OUTPUT (JSON only, no markdown):
+============================================================
+{{
+  "resurrection_tests": [
+    {{
+      "killed_option": "A|B|C|D",
+      "original_kill_shot": {{
+        "kill_type": "...",
+        "kill_proof": "...",
+        "issuing_evaluator": "A|B|C|D"
+      }},
+      "resurrection_attempt": {{
+        "strategy": "interpretation_escape|missing_premise|mathematical_error|type_mismatch",
+        "argument": "The specific argument for why this kill might not hold...",
+        "smallest_change": "What minimal assumption/interpretation would resurrect this option"
+      }},
+      "resurrection_result": "success|failure",
+      "result_explanation": "Why the resurrection succeeded or failed",
+      "if_resurrected": {{
+        "new_status": "surviving",
+        "conditions": ["condition 1", "condition 2"],
+        "note": "This option survives IF these conditions hold"
+      }}
+    }}
+  ],
+  "summary": {{
+    "confirmed_kills": ["A", "D"],
+    "downgraded_to_conditions": ["B"],
+    "resurrection_notes": "Any overall observations about the quality of kill shots"
+  }}
+}}
+
+============================================================
+EXAMPLES:
+============================================================
+
+SUCCESSFUL RESURRECTION:
+{{
+  "killed_option": "C",
+  "original_kill_shot": {{
+    "kill_type": "constraint_violation",
+    "kill_proof": "2γ²-0.5 is negative for γ<0.5",
+    "issuing_evaluator": "A"
+  }},
+  "resurrection_attempt": {{
+    "strategy": "interpretation_escape",
+    "argument": "The problem states the formula applies for γ∈[0.5,1] where exceptional point physics dominate. The negative values for γ<0.5 may be intended to indicate the formula only applies to the broken-symmetry regime.",
+    "smallest_change": "Restrict domain to γ≥0.5 as implied by exceptional point context"
+  }},
+  "resurrection_result": "success",
+  "result_explanation": "The kill assumes full-domain validity, but the physics context suggests a restricted regime",
+  "if_resurrected": {{
+    "new_status": "surviving",
+    "conditions": ["Formula applies only for γ≥0.5 (PT-broken phase)"],
+    "note": "C survives with domain restriction"
+  }}
+}}
+
+FAILED RESURRECTION:
+{{
+  "killed_option": "D",
+  "original_kill_shot": {{
+    "kill_type": "mechanism_impossibility",
+    "kill_proof": "sqrt(2γ²-1) is imaginary for γ<1/√2≈0.707, covering >70% of [0,1]",
+    "issuing_evaluator": "B"
+  }},
+  "resurrection_attempt": {{
+    "strategy": "interpretation_escape",
+    "argument": "Perhaps the square root should be interpreted as absolute value or the complex modulus",
+    "smallest_change": "Reinterpret as |2γ²-1|^0.5"
+  }},
+  "resurrection_result": "failure",
+  "result_explanation": "No standard interpretation of 'sqrt' in physics permits imaginary variance bounds. The notation gives no indication of complex extension. The kill stands.",
+  "if_resurrected": null
+}}
+
+============================================================
+CRITICAL: You are testing existing kill shots, not creating new ones.
+Focus on whether THESE SPECIFIC kills are justified.
+============================================================

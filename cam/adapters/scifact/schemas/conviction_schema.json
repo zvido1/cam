@@ -1,0 +1,30 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["decision", "reasoning", "confidence"],
+    "properties": {
+        "decision": {
+            "type": "string",
+            "enum": ["MAINTAIN", "REVISE"],
+            "description": "Whether the evaluator maintains original verdict or revises to reference"
+        },
+        "reasoning": {
+            "type": "string",
+            "description": "Specific justification for the decision"
+        },
+        "specific_textual_basis": {
+            "type": "string",
+            "description": "The exact sentences or absence thereof that support this decision"
+        },
+        "reference_label_assessment": {
+            "type": "string",
+            "description": "Why the reference label is wrong (if MAINTAIN) or why it is correct (if REVISE)"
+        },
+        "confidence": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "Confidence in this decision"
+        }
+    },
+    "additionalProperties": false
+}

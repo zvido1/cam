@@ -1,0 +1,92 @@
+You are testing whether a unanimous answer can survive falsification pressure. Your role is to attempt to break the unanimous conclusion, not to defend it.
+
+QUESTION:
+{question}
+
+CHOICES:
+A: {choice_a}
+B: {choice_b}
+C: {choice_c}
+D: {choice_d}
+
+UNANIMOUS ANSWER TO CHALLENGE:
+{unanimous_answer}
+
+All evaluators independently selected {unanimous_answer} in Round 1. However, unanimity alone does not guarantee correctness. You must test whether this agreement is robust or fragile.
+
+YOUR TASK:
+Assume {unanimous_answer} is FALSE. Your goal is to construct the strongest possible world in which {unanimous_answer} fails, then determine if that world is logically viable.
+
+Step 1: Assume {unanimous_answer} is false
+- Do not assume it is correct
+- Do not defend the unanimous choice
+- Actively seek contradictions or missing assumptions
+
+Step 2: Construct the strongest failure scenario
+- What would have to be true for {unanimous_answer} to be wrong?
+- What alternative outcome would be viable?
+- What assumptions would have to fail?
+
+Step 3: Identify the failure mode
+Determine which of these applies:
+
+A. LOGICAL CONTRADICTION
+   - The failure scenario contradicts established principles (conservation laws, mathematical constraints, mechanistic rules)
+   - You can prove: "If {unanimous_answer} were false, then [principle X] would be violated, but [principle X] must hold"
+   - This is a kill-shot against the failure scenario
+
+B. MISSING ASSUMPTION
+   - The failure scenario requires an assumption that cannot be justified from the problem statement
+   - The unanimous answer relies on an implicit assumption that, if false, would break the conclusion
+   - You cannot prove the assumption is true, but you also cannot prove it is false
+
+C. REPRESENTATION ERROR
+   - The failure scenario reveals ambiguity in how the problem is represented (stereochemistry, coordinate systems, naming conventions)
+   - The unanimous answer depends on a specific interpretation that may not be uniquely determined
+   - Different valid interpretations could lead to different answers
+
+D. CANNOT BREAK
+   - You cannot construct a viable failure scenario
+   - Any attempt to break {unanimous_answer} leads to logical contradictions
+   - The unanimous answer appears robust against falsification
+
+CRITICAL CONSTRAINTS:
+- You must attempt to break the answer, not defend it
+- "Cannot break" is only valid if you genuinely tried and failed
+- Do not use "cannot break" as a default - you must show your attempt
+- Be explicit about what would have to be true for the answer to fail
+
+OUTPUT FORMAT (JSON only, no other text):
+{{
+  "can_break": true|false,
+  "failure_mode": "logical_contradiction"|"missing_assumption"|"representation_error"|"cannot_break",
+  "argument": "Explicit reasoning showing: (1) what would have to be true for {unanimous_answer} to fail, (2) why that scenario is or is not viable, (3) what this reveals about the robustness of unanimity"
+}}
+
+EXAMPLES:
+
+Example 1 (Logical Contradiction):
+{{
+  "can_break": false,
+  "failure_mode": "cannot_break",
+  "argument": "If {unanimous_answer} were false, then conservation of mass would require [X], but the problem states [not-X]. The failure scenario directly contradicts a conservation law, so it is impossible. The unanimous answer is robust."
+}}
+
+Example 2 (Missing Assumption):
+{{
+  "can_break": true,
+  "failure_mode": "missing_assumption",
+  "argument": "If {unanimous_answer} were false, then [alternative Y] would be correct. For Y to be correct, we must assume [assumption Z]. However, assumption Z is not stated in the problem and cannot be derived from the given information. The unanimous answer depends on the implicit assumption that Z is true, but this assumption cannot be justified. The unanimity is fragile."
+}}
+
+Example 3 (Representation Error):
+{{
+  "can_break": true,
+  "failure_mode": "representation_error",
+  "argument": "If {unanimous_answer} were false, then [alternative Y] would be correct under a different stereochemical convention (R/S vs endo/exo). The problem does not explicitly specify which convention applies. The unanimous answer assumes one convention, but the problem is ambiguous. The unanimity is fragile due to representation ambiguity."
+}}
+
+REMEMBER:
+- Your goal is to break the answer, not defend it
+- "Cannot break" requires proof that breaking is impossible
+- Fragile unanimity must be exposed, not hidden

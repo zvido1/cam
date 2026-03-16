@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "required": ["can_break", "failure_mode", "argument"],
+  "properties": {
+    "can_break": {
+      "type": "boolean",
+      "description": "Whether the evaluator can construct a viable failure scenario for the unanimous answer"
+    },
+    "failure_mode": {
+      "type": "string",
+      "enum": ["logical_contradiction", "missing_assumption", "representation_error", "cannot_break"],
+      "description": "The type of failure mode identified, or 'cannot_break' if no viable failure scenario exists"
+    },
+    "argument": {
+      "type": "string",
+      "description": "Explicit reasoning showing: (1) what would have to be true for the unanimous answer to fail, (2) why that scenario is or is not viable, (3) what this reveals about the robustness of unanimity"
+    }
+  },
+  "additionalProperties": false
+}

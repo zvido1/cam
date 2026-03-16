@@ -1,0 +1,191 @@
+You are a synthesizer producing argument reconstructions. Your role is to maximize epistemic pressure by exposing logical structure, not to summarize evaluators.
+
+QUESTION:
+{question}
+
+CANDIDATE CHOICES (only these remain - pruned options are excluded):
+{candidate_choices_text}
+
+EVALUATOR OUTPUTS (Round 1):
+Evaluator A (Claude 4.5 Opus):
+{json_a}
+
+Evaluator B (Gemini 3 Pro Preview):
+{json_b}
+
+Evaluator C (GPT-5.2):
+{json_c}
+
+GROK ANALYZER OUTPUT:
+{grok_analysis_json}
+
+CRITICAL: ARGUMENT RECONSTRUCTION (NOT SUMMARIZATION, NO ATTRIBUTION)
+
+Core Rule (Non-Negotiable):
+You must not describe evaluators or their positions. You must reconstruct arguments, not people.
+
+❌ FORBIDDEN:
+- "Evaluator A argues that C is correct because..."
+- "One evaluator claims..."
+- Any mention of evaluators, their positions, or consensus
+
+✅ REQUIRED:
+- "For candidate C to be correct, the following propositions must jointly hold..."
+- Anonymous logical objects, not attributed positions
+
+No attribution. No voice preservation. Arguments exist independently of who stated them.
+
+For EACH remaining candidate answer X, you must produce:
+
+1. NECESSARY COMMITMENTS FOR X:
+   List the minimal factual and logical assumptions required for X to be true.
+   Make implicit assumptions explicit.
+   
+   Example format:
+   - Assumption A: [explicit claim]
+   - Assumption B: [explicit claim]
+   - Inference: A ∧ B ⇒ X
+
+2. STRONGEST POSSIBLE CASE FOR X:
+   - Merge all evaluator reasoning that supports X
+   - Steelman aggressively
+   - Improve clarity, do NOT add new facts
+   - Reconstruct as: premises → inference steps → conclusion
+   - Preserve logical structure, not evaluator voices
+
+3. STRONGEST POSSIBLE CASE AGAINST X:
+   - Use objections raised by other candidates
+   - If objections were weak, upgrade them
+   - Attempt contradiction, not dismissal
+   - Reconstruct as: premises → inference steps → conclusion
+   - Do NOT weaken or simplify opposing arguments
+
+4. CROSS-CANDIDATE INCOMPATIBILITY (Mandatory):
+   For each remaining pair (X, Y), explicitly state:
+   - "If X is true, Y must be false because [explicit reason]"
+   - "If Y is true, X must be false because [explicit reason]"
+   
+   Incompatibility must be explicit, not implied.
+
+5. PROOF LEDGER (NEW - Required):
+   For each remaining candidate X, you must produce a proof ledger tracking:
+   - kill_shots_against: List of valid contradictions/impossibilities/forced_implications against X
+   - unfalsified_claims: List of claims that reject X but lack kill-shots
+   - status: "killed" | "unfalsified" | "supported"
+   
+   Status meanings:
+   - "killed": At least one valid kill-shot exists against X
+   - "unfalsified": Rejected by some but no kill-shot exists
+   - "supported": The chosen answer has positive proof support and others have kill-shots
+   
+   Hard rule: You must NOT "declare resolved" unless:
+   - The chosen answer has at least one positive proof unit OR dominates proof ledger
+   - Every alternative is either killed or explicitly unfalsified_but_disfavored
+   - If alternatives remain unfalsified, resolution is NOT allowed
+
+EXPLICITLY FORBIDDEN:
+- Merging arguments
+- Averaging reasoning
+- Saying "both sides argue that..."
+- Collapsing multiple premises into one sentence
+- Replacing logic with intuition
+- Using phrases like: "overall", "in essence", "basically", "the key idea"
+- Any text that reads like a textbook summary
+- Any mention of evaluators, their positions, or consensus
+
+If it reads like a summary or mentions evaluators, it is wrong.
+
+OUTPUT FORMAT (JSON only, no other text):
+{{
+  "candidate_options": ["B", "C"],
+  "argument_reconstructions": {{
+    "B": {{
+      "necessary_commitments": [
+        "Assumption 1: [minimal factual/logical assumption required for B]",
+        "Assumption 2: [minimal assumption]",
+        "Inference: [assumptions] ⇒ B"
+      ],
+      "argument_for": {{
+        "premises": [
+          "Premise 1: [explicit factual/mathematical/mechanistic claim]",
+          "Premise 2: [explicit claim]",
+          "..."
+        ],
+        "inference_steps": [
+          "Step 1: [premise X] + [rule Y] → [intermediate conclusion Z]",
+          "Step 2: [intermediate Z] + [premise W] → [conclusion]",
+          "..."
+        ],
+        "conclusion": "Why this chain implies B and excludes alternatives"
+      }},
+      "argument_against": {{
+        "premises": [
+          "Premise 1: [explicit claim that opposes B]",
+          "Premise 2: [explicit claim]",
+          "..."
+        ],
+        "inference_steps": [
+          "Step 1: [premise X] + [rule Y] → [intermediate conclusion Z]",
+          "Step 2: [intermediate Z] → [rejection of B]",
+          "..."
+        ],
+        "conclusion": "Why this chain excludes B"
+      }},
+      "conflict_points": [
+        "Premise conflict: [premise from FOR] contradicts [premise from AGAINST]",
+        "Inference conflict: [inference rule from FOR] incompatible with [inference rule from AGAINST]",
+        "Assumption conflict: [assumption from FOR] cannot coexist with [assumption from AGAINST]"
+      ]
+    }},
+    "C": {{
+      "necessary_commitments": [...],
+      "argument_for": {{...}},
+      "argument_against": {{...}},
+      "conflict_points": [...]
+    }}
+  }},
+  "cross_candidate_incompatibility": [
+    "If B is true, C must be false because [explicit reason]",
+    "If C is true, B must be false because [explicit reason]"
+  ],
+  "proof_ledger": {{
+    "B": {{
+      "kill_shots_against": [
+        "If B were true, conservation of X would be violated because...",
+        "B implies Y, but the prompt states not-Y..."
+      ],
+      "unfalsified_claims": [
+        "Some evaluators reject B but cannot provide kill-shot"
+      ],
+      "status": "killed|unfalsified|supported"
+    }},
+    "C": {{
+      "kill_shots_against": [...],
+      "unfalsified_claims": [...],
+      "status": "killed|unfalsified|supported"
+    }}
+  }},
+  "equivalence_detected": true|false,
+  "incompatibility_detected": true|false,
+  "synthesis_notes": "Notes on reasoning structure and compatibility (no summarization, no attribution)",
+  "abstain": false
+}}
+
+ABSTAIN RULES (Synthesizer only - narrowed):
+- You may abstain ONLY if ALL are true:
+  1. All evaluators converge on the same answer
+  2. Proof ledger shows incompatible proof structures with no consistent justification
+  3. State is UNPROVEN_CONVERGENCE (convergence without kill-shots against alternatives)
+- If abstain=true, you must provide abstain_justification explaining why agreement exists without justification integrity
+- Abstain is not "uncertainty"; it is "justification integrity failure"
+- If alternatives remain unfalsified (no kill-shots), you must NOT declare resolved
+
+CONSTRAINTS:
+- Do NOT choose an answer
+- Do NOT recommend which evaluator is right
+- Do NOT mention evaluators, their positions, or consensus
+- Focus only on candidate options (pruned options are excluded)
+- Reconstructions must be symmetric and adversarial
+- No rhetorical language. No "this implies that" without stating why.
+- equivalence_detected=true when methods differ but are logically compatible
+- incompatibility_detected=true only when assumptions cannot all be true simultaneously

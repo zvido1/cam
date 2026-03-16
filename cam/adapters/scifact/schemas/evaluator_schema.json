@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["verdict", "confidence", "cited_sentences", "reasoning", "scope_assessment", "assumptions", "evidence_sufficiency", "key_evidence"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["SUPPORT", "CONTRADICT", "NOT_ENOUGH_INFO"]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "cited_sentences": {
+      "type": "array",
+      "items": {"type": "integer"},
+      "description": "Sentence indices from the abstract that support the verdict"
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Explanation of how the cited evidence leads to the verdict"
+    },
+    "scope_assessment": {
+      "type": "object",
+      "required": ["claim_scope", "evidence_scope", "scope_match", "scope_notes"],
+      "properties": {
+        "claim_scope": {"type": "string"},
+        "evidence_scope": {"type": "string"},
+        "scope_match": {
+          "type": "string",
+          "enum": ["exact", "partial", "mismatch"]
+        },
+        "scope_notes": {"type": "string"}
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Any assumptions made in reaching the verdict"
+    },
+    "evidence_sufficiency": {
+      "type": "string",
+      "enum": ["sufficient", "partial", "insufficient"]
+    },
+    "key_evidence": {
+      "type": "string",
+      "description": "The single most important piece of evidence from the abstract"
+    }
+  },
+  "additionalProperties": false
+}

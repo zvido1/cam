@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lease Challenge Output",
+  "type": "object",
+  "required": ["challenges"],
+  "properties": {
+    "challenges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["provision_id", "challenge_verdict", "substantive_finding", "hidden_dependencies", "risk_description", "recommended_action", "risk_headline"],
+        "properties": {
+          "provision_id": {"type": "string"},
+          "challenge_verdict": {"type": "string", "enum": ["SUBSTANTIVE_DEVIATION", "COSMETIC_ONLY", "NEEDS_EXPERT"]},
+          "substantive_finding": {"type": "string"},
+          "hidden_dependencies": {"type": "array", "items": {"type": "string"}},
+          "risk_description": {"type": "string"},
+          "recommended_action": {"type": "string", "enum": ["no_action", "note_for_awareness", "attorney_review_recommended", "attorney_review_required"]},
+          "risk_headline": {"type": "string", "description": "One plain-language sentence (under 100 chars) summarizing the key change for a lawyer scanning quickly"}
+        }
+      }
+    }
+  }
+}

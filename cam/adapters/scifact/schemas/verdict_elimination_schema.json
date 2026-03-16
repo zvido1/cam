@@ -1,0 +1,81 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["verdict_cases", "eliminations", "survivors", "recommended_verdict"],
+  "properties": {
+    "verdict_cases": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["verdict", "best_case", "key_sentences", "strength"],
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": ["SUPPORT", "CONTRADICT", "NOT_ENOUGH_INFO"]
+          },
+          "best_case": {
+            "type": "string",
+            "description": "Strongest possible argument for this verdict based on the abstract"
+          },
+          "key_sentences": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "description": "Which abstract sentences this case relies on"
+          },
+          "strength": {
+            "type": "string",
+            "enum": ["strong", "moderate", "weak", "no_case"],
+            "description": "How strong is the best possible case for this verdict?"
+          }
+        }
+      }
+    },
+    "eliminations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["target_verdict", "elimination_type", "reasoning", "killed"],
+        "properties": {
+          "target_verdict": {
+            "type": "string",
+            "enum": ["SUPPORT", "CONTRADICT", "NOT_ENOUGH_INFO"]
+          },
+          "elimination_type": {
+            "type": "string",
+            "enum": ["scope_gap", "precision_mismatch", "insufficient_evidence", "logical_gap", "direct_contradiction", "none"],
+            "description": "Type of flaw found in this verdict's case"
+          },
+          "reasoning": {
+            "type": "string",
+            "description": "Why this verdict's case fails (or why it survives)"
+          },
+          "killed": {
+            "type": "boolean",
+            "description": "True if this verdict's case is fatally flawed"
+          }
+        }
+      }
+    },
+    "survivors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["SUPPORT", "CONTRADICT", "NOT_ENOUGH_INFO"]
+      },
+      "description": "Which verdicts survived elimination"
+    },
+    "recommended_verdict": {
+      "type": "string",
+      "enum": ["SUPPORT", "CONTRADICT", "NOT_ENOUGH_INFO"],
+      "description": "After elimination, which verdict is best supported?"
+    },
+    "confidence_after_elimination": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "Confidence in the recommended verdict after elimination analysis"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,38 @@
+You are an evaluator in a structured legal contract entailment pipeline. Your task is to determine whether a hypothesis about a contract obligation is ENTAILED by, CONTRADICTED by, or NOT MENTIONED in the contract text.
+
+CRITICAL CONSTRAINT: Base your verdict ONLY on what the contract text explicitly states. Do NOT use your prior legal knowledge to fill gaps. If the contract does not address the hypothesis, your verdict is NOT_MENTIONED -- even if you personally know what standard practice would be.
+
+HYPOTHESIS:
+{hypothesis_text}
+
+CONTRACT TEXT (with span markers [SPAN N] at the start of each text segment):
+{formatted_contract}
+
+YOUR TASK:
+1. Read the hypothesis carefully. Identify exactly what obligation or permission is being asserted.
+2. Read the contract text thoroughly. Identify which spans are relevant to the hypothesis.
+3. Determine your verdict:
+   - ENTAILMENT: The contract explicitly states or logically entails the hypothesis.
+   - CONTRADICTION: The contract explicitly contradicts the hypothesis.
+   - NOT_MENTIONED: The contract is silent on the topic of the hypothesis, or does not address it with sufficient specificity to determine entailment or contradiction.
+4. Cite the specific span indices (e.g., [SPAN 12], [SPAN 45]) that support your verdict.
+5. CRITICAL -- Check for exception clauses. Legal contracts often state a rule then carve out exceptions using "except," "notwithstanding," "provided however," "subject to," "unless," or "other than." If you cite a span containing a prohibition or obligation, check whether a nearby or distant span contains an exception that modifies it.
+6. Trace defined terms. If the contract defines terms (e.g., "Representatives" means...), and your reasoning depends on such a term, cite both the definition span and the usage span.
+7. State your confidence level and any assumptions.
+
+CONSTRAINTS:
+- You MUST commit to a verdict. Do not hedge or say "I cannot determine."
+- You MUST cite at least one span index from the contract.
+- You MUST check for exception clauses before finalizing your verdict. If an exception clause could modify the meaning, note it explicitly.
+- You MUST trace defined terms to their definitions if your verdict depends on a defined term.
+- Consider the ENTIRE contract, not just the first matching clause.
+- "NOT_MENTIONED" means the contract is genuinely silent -- it does not address the topic at all.
+- Pay attention to modal verbs: "shall" (obligation), "may" (permission), "will" (future intent), "must" (requirement) have different legal meanings.
+
+Respond with a single JSON object matching this example structure. Do NOT include any schema definitions, comments, or extra text -- just the JSON object. Keep all string fields concise (1-3 sentences max).
+
+Valid values:
+- verdict: "ENTAILMENT", "CONTRADICTION", or "NOT_MENTIONED"
+- confidence: "high", "medium", or "low"
+
+{example_json}

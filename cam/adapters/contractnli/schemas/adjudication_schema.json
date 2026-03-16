@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["adjudication", "own_verdict", "confidence", "reasoning", "key_spans"],
+  "properties": {
+    "adjudication": {
+      "type": "string",
+      "enum": ["SYSTEM_CORRECT", "GOLD_CORRECT", "GENUINELY_AMBIGUOUS"]
+    },
+    "own_verdict": {
+      "type": "string",
+      "enum": ["ENTAILMENT", "CONTRADICTION", "NOT_MENTIONED"]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "reasoning": {
+      "type": "string"
+    },
+    "key_spans": {
+      "type": "array",
+      "items": {"type": "integer"}
+    },
+    "ambiguity_source": {
+      "type": ["string", "null"],
+      "description": "Required if adjudication is GENUINELY_AMBIGUOUS"
+    },
+    "human_review_recommended": {
+      "type": "boolean"
+    }
+  }
+}

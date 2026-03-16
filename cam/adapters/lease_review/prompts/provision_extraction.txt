@@ -1,0 +1,122 @@
+You are a legal document analyst specializing in commercial lease agreements. Your task is to extract and align specific provisions across two lease documents: a standard template and a tenant's executed lease.
+
+STANDARD LEASE TEMPLATE:
+===BEGIN TEMPLATE===
+{template_text}
+===END TEMPLATE===
+
+TENANT LEASE:
+===BEGIN TENANT===
+{tenant_text}
+===END TENANT===
+
+PROVISIONS TO EXTRACT AND ALIGN:
+{provision_list}
+
+INSTRUCTIONS:
+
+For each provision listed above:
+1. Locate the provision in the STANDARD LEASE TEMPLATE. Extract the COMPLETE clause text, including all subsections and sub-paragraphs. Do not summarize — copy the full language.
+2. Locate the corresponding provision in the TENANT LEASE. Extract the COMPLETE clause text, including all subsections and sub-paragraphs. Do not summarize — copy the full language.
+3. Record the section references (e.g., "Article XI, Sections 11.1-11.4") for each document.
+4. Determine the alignment status:
+   - FOUND_BOTH: Provision found in both documents.
+   - TEMPLATE_ONLY: Provision exists in the template but is missing or intentionally omitted from the tenant lease.
+   - TENANT_ONLY: Provision exists in the tenant lease but not in the template (unexpected addition).
+   - AMBIGUOUS: Provision may be present but its location or applicability is uncertain.
+5. Write brief alignment notes describing any observable differences between the two versions, or confirm they appear identical.
+
+CRITICAL — DEFINITIONS SECTION:
+Pay particular attention to the Definitions section (typically Article I). If a defined term has been modified between the template and tenant lease, note this change even if the provision text that USES that term appears unchanged. Definition changes can fundamentally alter the scope and meaning of downstream provisions.
+
+CRITICAL — COMPLETE EXTRACTION:
+Extract the COMPLETE clause text for each provision, including ALL subsections. Do not summarize, paraphrase, or truncate. Downstream analysis stages require the actual contractual language.
+
+CRITICAL — OMISSION DETECTION:
+If a provision in the template has been replaced with "[Intentionally Omitted]" or similar language in the tenant lease, or if the entire section is missing, mark the status as TEMPLATE_ONLY and note the omission.
+
+CRITICAL — ADDITIONAL SUBSECTIONS IN TENANT LEASE:
+When extracting a provision from the TENANT LEASE, do NOT stop at the last subsection present in the STANDARD LEASE TEMPLATE. The tenant may have added subsections beyond the template's scope within the same article heading (e.g., the template defines Sections 15.1–15.4 under "Indemnification & Liability" but the tenant lease adds Section 15.5 under the same article). These additional subsections are material additions that alter the scope of the provision and MUST be included. Extract ALL subsections found under the same article heading in the tenant_text field, even if they have no counterpart in the template. A subsection that exists in the tenant lease but not the template is a deviation — it must be captured in the tenant_text so downstream stages can evaluate it.
+
+ADDITIONAL TASK — CONTRACT METADATA:
+Before extracting provisions, identify and extract the following contract-level metadata from the TENANT LEASE. Return this as a "contract_metadata" object alongside the provisions array.
+
+Required metadata fields:
+- "landlord": Full legal name of the landlord/lessor
+- "tenant": Full legal name of the tenant/lessee
+- "property_description": Property address or description (suite, building, address)
+- "effective_date": Lease effective or commencement date
+- "term_length": Duration of the lease term (e.g., "5 years")
+- "expiration_date": Lease expiration date (if stated)
+- "governing_law": Governing state/jurisdiction
+- "base_rent": Base rent amount and frequency (e.g., "$4,500/month")
+- "permitted_use": Brief description of permitted use
+
+If any field cannot be determined from the document, use an empty string.
+
+ADDITIONAL TASK — DEAL OVERVIEW:
+In addition to contract_metadata, provide a "deal_overview" object summarizing the key business terms of this lease. Extract party names, property address, and lease type from the preamble or recitals. Summarize rent, term, and key business terms in plain language.
+
+Required deal_overview fields:
+- "landlord_name": Full legal name of the landlord/lessor
+- "tenant_name": Full legal name of the tenant/lessee
+- "property_address": Full property address including suite/unit number
+- "property_type": Type of property (e.g., "Retail", "Office", "Industrial", "Mixed-Use")
+- "lease_term_years": Numeric lease term in years (e.g., 5)
+- "commencement_date": Lease start date
+- "expiration_date": Lease end date
+- "renewal_options": Summary of renewal options (e.g., "Two 5-year options") or empty string if none
+- "base_rent_monthly": Base rent amount and frequency (e.g., "$4,200/month")
+- "escalation": Rent escalation method (e.g., "3% annual increase") or empty string if none stated
+- "security_deposit": Security deposit amount or empty string
+- "cam_structure": CAM/operating expense structure (e.g., "Triple-net, tenant share pro rata, 5% annual cap")
+- "permitted_use": Brief description of permitted use
+- "key_terms_summary": Array of 3-6 bullet-point strings highlighting the most important business terms. Focus on: tenant improvement allowance, assignment/subletting rights, default cure periods, maintenance responsibilities, force majeure terms, exclusivity clauses, or any other notable business terms.
+
+If any field cannot be determined from the document, use an empty string (or empty array for key_terms_summary).
+
+ADDITIONAL TASK — DISCOVERED PROVISIONS:
+After extracting all listed provisions, scan the TENANT LEASE for any articles or sections
+that are NOT covered by any of the provisions listed above (LP-01 through LP-18).
+These are non-standard clauses that the tenant or their counsel added beyond the standard template.
+
+For each discovered non-standard article or section, record:
+- "article_label": The article or section label (e.g., "Article XXI", "Section 26")
+- "clause_name": A short descriptive name for the clause (e.g., "Technology Infrastructure Rights")
+- "clause_text": The full text of the non-standard clause — do not summarize or truncate
+- "tenant_section_ref": The section reference (e.g., "Article XXI, Sections 21.1–21.3")
+
+Return these in a "discovered_provisions" array alongside the other top-level keys.
+If no non-standard articles are found, return an empty array: "discovered_provisions": []
+
+Respond with a JSON object containing four top-level keys:
+1. "contract_metadata": the metadata object described above
+2. "deal_overview": the deal overview object described above
+3. "provisions": an array of provision extraction objects
+4. "discovered_provisions": an array of non-standard clause objects found in the tenant lease but not in any standard provision (LP-01 through LP-18). Empty array if none found.
+
+Each provision extraction object must have these exact fields:
+- "provision_id": The provision ID (e.g., "LP-01")
+- "provision_name": The provision name
+- "template_text": Full extracted clause text from the template (empty string if not found)
+- "tenant_text": Full extracted clause text from the tenant lease (empty string if not found)
+- "template_section_ref": Section reference in template (e.g., "Article III, Sections 3.1-3.4")
+- "tenant_section_ref": Section reference in tenant lease (empty string if not found)
+- "status": One of "FOUND_BOTH", "TEMPLATE_ONLY", "TENANT_ONLY", "AMBIGUOUS"
+- "alignment_notes": Brief notes on differences or confirmation of equivalence
+- "definition_changes": Any relevant definition changes that affect this provision (empty string if none)
+
+NOTE: Some provisions in the list may be marked as "tenant-added" (ADDED-XX).
+For these provisions, the template_text field will be empty or marked
+[NOT PRESENT IN TEMPLATE]. Extract only the tenant text and evaluate
+the provision on its own merits — does it grant the tenant unusual rights
+or impose unusual obligations on the landlord?
+
+NOTE: Some provisions (CUSTOM-XX) were identified by a pre-scan and may include
+search hints in their description or name. Use these hints to locate the exact
+clause in both documents. Extract the full clause context, not just the fragment
+that was flagged by the pre-scan.
+
+Respond ONLY with the JSON object containing four top-level keys:
+"contract_metadata", "deal_overview", "provisions", and "discovered_provisions".
+No additional text before or after.

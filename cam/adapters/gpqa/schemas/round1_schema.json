@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["final_choice", "final_choice_text", "confidence", "why_correct", "why_others_wrong", "proof_attempt", "assumptions", "jb", "weakest_link"],
+  "properties": {
+    "final_choice": {
+      "type": "string",
+      "enum": ["A", "B", "C", "D"]
+    },
+    "final_choice_text": {
+      "type": "string",
+      "description": "REQUIRED: The exact text of the chosen option from the question. Used to verify letter-to-referent consistency."
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "why_correct": {
+      "type": "string"
+    },
+    "why_others_wrong": {
+      "type": "object",
+      "required": ["A", "B", "C", "D"],
+      "properties": {
+        "A": {"type": "string"},
+        "B": {"type": "string"},
+        "C": {"type": "string"},
+        "D": {"type": "string"}
+      }
+    },
+    "proof_attempt": {
+      "type": "object",
+      "required": ["A", "B", "C", "D"],
+      "properties": {
+        "A": {
+          "type": "object",
+          "required": ["type", "text"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["contradiction", "impossibility", "forced_implication", "cannot_falsify", "unknown"]
+            },
+            "text": {
+              "type": "string",
+              "minLength": 0
+            }
+          }
+        },
+        "B": {
+          "type": "object",
+          "required": ["type", "text"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["contradiction", "impossibility", "forced_implication", "cannot_falsify", "unknown"]
+            },
+            "text": {
+              "type": "string",
+              "minLength": 0
+            }
+          }
+        },
+        "C": {
+          "type": "object",
+          "required": ["type", "text"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["contradiction", "impossibility", "forced_implication", "cannot_falsify", "unknown"]
+            },
+            "text": {
+              "type": "string",
+              "minLength": 0
+            }
+          }
+        },
+        "D": {
+          "type": "object",
+          "required": ["type", "text"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["contradiction", "impossibility", "forced_implication", "cannot_falsify", "unknown"]
+            },
+            "text": {
+              "type": "string",
+              "minLength": 0
+            }
+          }
+        }
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "minItems": 1
+    },
+    "jb": {
+      "type": "integer",
+      "enum": [0, 1, 2, 3]
+    },
+    "weakest_link": {
+      "type": "string"
+    }
+  }
+}

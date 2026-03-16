@@ -1,0 +1,80 @@
+You are validating argument reconstructions for epistemic integrity.
+
+QUESTION:
+{question}
+
+CHOICES:
+{choices_json}
+
+YOUR ROUND 1 ANSWER:
+{round1_json}
+
+RECONSTRUCTED ARGUMENTS (No Evaluator Attribution):
+{argument_reconstructions_json}
+
+CROSS-CANDIDATE INCOMPATIBILITY:
+{cross_candidate_incompatibility_json}
+
+INSTRUCTIONS:
+1. For EACH remaining candidate answer, you must validate the reconstructed argument.
+2. This is about argument integrity, NOT about your preference or agreement.
+3. You must answer three questions for each candidate:
+
+   a) REPRESENTATION ACCURACY:
+      - Does this reconstructed argument accurately represent a defensible version of the position?
+      - Allowed values: YES, NO-WEAKENED, NO-MISREPRESENTED
+      
+   b) CORRECTION (if NO):
+      - If representation_accuracy is NOT "YES", you MUST provide:
+        * The missing assumption, inference, or constraint
+        * OR the overstated claim that breaks the argument
+        * OR the logical structure that was distorted
+      - This is a correction to the argument object, NOT a restatement of your opinion
+      
+   c) STRENGTH ASSESSMENT (Independent of Preference):
+      - Rate the argument strength under best-faith interpretation:
+        * STRONG: The argument is logically sound and well-supported
+        * DEFENSIBLE: The argument has merit but has weaknesses
+        * FAILS: The argument has fatal flaws
+      - This applies even if you personally reject the answer
+
+4. CRITICAL CONSTRAINTS:
+   - Do NOT skip validation because you "seem aligned"
+   - Do NOT treat silence as agreement
+   - Do NOT revise your answer before validation
+   - This step is about representation, NOT decision
+   - Focus on whether arguments are recognizable, strong enough, and not strawmen
+
+OUTPUT FORMAT (JSON only, no other text):
+{{
+  "candidate_validations": {{
+    "A": {{
+      "representation_accuracy": "YES|NO-WEAKENED|NO-MISREPRESENTED",
+      "correction": "required if representation_accuracy != YES, empty string if YES",
+      "strength_assessment": "STRONG|DEFENSIBLE|FAILS"
+    }},
+    "B": {{
+      "representation_accuracy": "YES|NO-WEAKENED|NO-MISREPRESENTED",
+      "correction": "required if representation_accuracy != YES, empty string if YES",
+      "strength_assessment": "STRONG|DEFENSIBLE|FAILS"
+    }},
+    "C": {{
+      "representation_accuracy": "YES|NO-WEAKENED|NO-MISREPRESENTED",
+      "correction": "required if representation_accuracy != YES, empty string if YES",
+      "strength_assessment": "STRONG|DEFENSIBLE|FAILS"
+    }},
+    "D": {{
+      "representation_accuracy": "YES|NO-WEAKENED|NO-MISREPRESENTED",
+      "correction": "required if representation_accuracy != YES, empty string if YES",
+      "strength_assessment": "STRONG|DEFENSIBLE|FAILS"
+    }}
+  }}
+}}
+
+CONSTRAINTS:
+- Validate ALL remaining candidates (not just your chosen one)
+- representation_accuracy must be one of: YES, NO-WEAKENED, NO-MISREPRESENTED
+- correction is REQUIRED if representation_accuracy != YES
+- correction must be empty string if representation_accuracy == YES
+- strength_assessment must be one of: STRONG, DEFENSIBLE, FAILS
+- This is about argument integrity, not agreement or preference

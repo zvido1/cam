@@ -1,0 +1,205 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Round 2c v2 Elimination Audit Response",
+  "description": "Schema for Round 2c v2 with quarantine support for invalid/incomplete data",
+  "type": "object",
+  "required": ["elimination_audit", "elimination_summary", "best_current_case", "cross_examination", "honesty_check", "jb", "weakest_link"],
+  "additionalProperties": true,
+  "properties": {
+    "elimination_audit": {
+      "type": "object",
+      "description": "Audit of each option's elimination status",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "object",
+            "description": "Normal option audit",
+            "required": ["status"],
+            "additionalProperties": true,
+            "properties": {
+              "status": {
+                "enum": ["killed", "surviving"]
+              },
+              "kill_shot": {
+                "type": ["object", "null"],
+                "description": "Kill shot details (required if status=killed, null if surviving)",
+                "additionalProperties": true,
+                "properties": {
+                  "kill_type": {
+                    "enum": ["constraint_violation", "internal_contradiction", "mechanism_impossibility", "product_class_mismatch"]
+                  },
+                  "kill_proof": {
+                    "type": ["string", "null"],
+                    "minLength": 0
+                  },
+                  "kill_target": {
+                    "type": ["string", "null"],
+                    "minLength": 0
+                  }
+                }
+              },
+              "kill_shot_valid": {
+                "type": "boolean",
+                "description": "Whether the kill shot passed validation"
+              },
+              "kill_shot_invalid_reason": {
+                "type": ["string", "null"],
+                "description": "Reason kill shot was marked invalid"
+              },
+              "conditions": {
+                "type": "array",
+                "items": {"type": "string"}
+              },
+              "would_be_falsified_if": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            }
+          },
+          {
+            "type": "object",
+            "description": "Quarantined option audit (incomplete/invalid data)",
+            "required": ["_status_quarantined"],
+            "additionalProperties": true,
+            "properties": {
+              "status": {
+                "type": ["string", "null"],
+                "description": "May be null when quarantined"
+              },
+              "_status_quarantined": {
+                "type": "boolean",
+                "const": true
+              },
+              "_quarantine_reason": {
+                "type": "string"
+              },
+              "_original_status": {
+                "type": ["string", "null"]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "elimination_summary": {
+      "type": "object",
+      "required": ["killed_options", "surviving_options", "kill_confidence"],
+      "additionalProperties": true,
+      "properties": {
+        "killed_options": {
+          "type": "array",
+          "items": {"enum": ["A", "B", "C", "D"]}
+        },
+        "surviving_options": {
+          "type": "array",
+          "items": {"enum": ["A", "B", "C", "D"]}
+        },
+        "kill_confidence": {
+        "enum": ["high", "medium", "low", "none", "unknown"]
+        }
+      }
+    },
+    "best_current_case": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "leading_choice": {
+          "type": ["string", "null"],
+          "description": "May be null when quarantined"
+        },
+        "_leading_choice_quarantined": {
+          "type": "boolean"
+        },
+        "why_leading": {
+          "type": "string"
+        },
+        "_why_leading_quarantined": {
+          "type": "boolean"
+        },
+        "key_lemma": {
+          "type": "string"
+        },
+        "_key_lemma_quarantined": {
+          "type": "boolean"
+        }
+      }
+    },
+    "cross_examination": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "defense": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "attack_summary": {"type": "string"},
+            "rebuttal": {"type": "string"},
+            "defense_survives": {"type": ["boolean", "null"]}
+          }
+        },
+        "attack_rival": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "rival_strongest_point": {"type": "string"},
+            "counter": {"type": "string"},
+            "counter_type": {
+              "enum": ["kill_shot", "condition_challenge", "proof_gap"]
+            }
+          }
+        }
+      }
+    },
+    "honesty_check": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "did_view_change": {"type": ["boolean", "null"]},
+        "what_changed": {"type": ["string", "null"]},
+        "strongest_point_against_leading": {"type": "string"}
+      }
+    },
+    "jb": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Justification burden score (0-10, where 0 means no remaining burden)"
+    },
+    "_jb_quarantined": {
+      "type": "boolean"
+    },
+    "weakest_link": {
+      "type": "string"
+    },
+    "_weakest_link_quarantined": {
+      "type": "boolean"
+    },
+    "_quarantine_records": {
+      "type": "array",
+      "description": "Log of all quarantined fields",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {"type": "string"},
+          "issue": {"type": "string"},
+          "original": {},
+          "action": {"type": "string"}
+        }
+      }
+    },
+    "_schema_validation_failed": {
+      "type": "boolean",
+      "description": "Set to true if schema validation failed but data was preserved"
+    },
+    "_schema_error": {
+      "type": "string"
+    },
+    "round2c_status": {
+      "enum": ["ok", "failed", "skipped"]
+    },
+    "call_settings": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,183 @@
+You are an evaluator in a multi-agent system. This is Round 2c: ELIMINATION AUDIT.
+
+Your task is NOT just to defend your choice - it is to rigorously determine which answer choices can be KILLED (definitively eliminated) versus which remain SURVIVING candidates.
+
+============================================================
+QUESTION:
+============================================================
+{question}
+
+============================================================
+CANDIDATE OPTIONS (after Round 1 elimination):
+============================================================
+{candidate_choices_text}
+
+============================================================
+YOUR ROUND 1 CHOICE: {round1_choice}
+============================================================
+
+============================================================
+STEELMAN CASE FOR YOUR CHOICE:
+============================================================
+{reconstruction_for}
+
+============================================================
+STRONGEST ATTACK AGAINST YOUR CHOICE:
+============================================================
+{attack_on_yours}
+
+============================================================
+STRONGEST RIVAL: {rival_choice}
+============================================================
+STEELMAN CASE FOR RIVAL:
+{case_for_rival}
+
+============================================================
+INSTRUCTIONS - ELIMINATION AUDIT
+============================================================
+
+Your job is to determine what can be PROVEN FALSE vs what merely DEPENDS ON ASSUMPTIONS.
+
+KILL SHOT DEFINITION:
+A kill shot is a HARD ELIMINATION - an argument that definitively rules out an answer choice regardless of interpretation. Kill shots must be:
+- STRUCTURAL or MATHEMATICAL (not preference-based)
+- CHECKABLE (someone could verify the claim)
+- UNCONDITIONAL (doesn't depend on "usually" or "typically")
+
+VALID KILL SHOT TYPES (closed set - only these four count as hard kills):
+1. constraint_violation: Answer violates an explicit constraint in the problem
+   Example: "Variance bound gives negative value (-0.5) for γ<0.5, impossible for variance"
+   
+2. internal_contradiction: Answer's own logic contradicts itself or stated premises
+   Example: "Claims kinetic control but product requires thermodynamic equilibrium"
+   
+3. mechanism_impossibility: Answer requires a mechanism that cannot occur under stated conditions
+   Example: "Requires bond formation that violates electron count/orbital rules"
+   
+4. product_class_mismatch: Answer belongs to wrong category of outcomes
+   Example: "Diels-Alder must give cyclohexene (one double bond), not cyclohexadiene (two)"
+
+THINGS THAT ARE NOT KILL SHOTS (these become CONDITIONS instead):
+- "This is unlikely" → soft condition
+- "Conventionally interpreted as..." → soft condition  
+- "Most sources say..." → soft condition
+- "Typically observed..." → soft condition
+- "Energetically unfavorable" → soft condition (unless impossible)
+
+============================================================
+REQUIRED OUTPUT:
+============================================================
+
+For EACH candidate option still in play, you must determine:
+
+1. ELIMINATION STATUS: Can this option be KILLED or does it SURVIVE?
+
+2. IF KILLED: Provide the kill shot
+   - kill_type: One of the four valid types
+   - kill_proof: The specific checkable claim that eliminates this option
+   - kill_target: What exactly is being ruled out
+
+3. IF SURVIVING: Provide the conditions it depends on
+   - conditions: List of assumptions this answer requires
+   - would_be_falsified_if: What would make this answer wrong
+
+4. CROSS-EXAMINATION (still required):
+   - Defend your leading choice against the attack
+   - Attack the rival's strongest point
+
+============================================================
+KILL SHOT EXAMPLES:
+============================================================
+
+GOOD KILL SHOT:
+{{
+  "option": "C",
+  "status": "killed",
+  "kill_shot": {{
+    "kill_type": "constraint_violation",
+    "kill_proof": "Expression 2γ²-0.5 evaluates to -0.5 at γ=0, which is negative. Variance bounds must be non-negative by definition.",
+    "kill_target": "The claim that 2γ²-0.5 represents a valid variance bound over [0,1]"
+  }}
+}}
+
+BAD "KILL SHOT" (should be condition):
+{{
+  "option": "A",
+  "status": "killed",  // WRONG - this is not a kill
+  "kill_shot": {{
+    "kill_type": "mechanism_impossibility",
+    "kill_proof": "This pathway is energetically unfavorable"  // Not a kill - just unfavorable
+  }}
+}}
+
+CORRECT HANDLING (as surviving with conditions):
+{{
+  "option": "A",
+  "status": "surviving",
+  "conditions": ["Assumes kinetic control (fast quenching)", "Assumes no equilibration time"],
+  "would_be_falsified_if": ["Thermodynamic equilibrium is reached", "Reaction runs to completion"]
+}}
+
+============================================================
+REQUIRED OUTPUT (JSON only, no markdown):
+============================================================
+{{
+  "elimination_audit": {{
+    "A": {{
+      "status": "killed|surviving",
+      "kill_shot": {{
+        "kill_type": "constraint_violation|internal_contradiction|mechanism_impossibility|product_class_mismatch",
+        "kill_proof": "The specific checkable claim...",
+        "kill_target": "What is being eliminated"
+      }},
+      "conditions": ["condition 1", "condition 2"],
+      "would_be_falsified_if": ["falsifier 1", "falsifier 2"]
+    }},
+    "B": {{ ... }},
+    "C": {{ ... }},
+    "D": {{ ... }}
+  }},
+  "elimination_summary": {{
+    "killed_options": ["A", "D"],
+    "surviving_options": ["B", "C"],
+    "kill_confidence": "high|medium|low"
+  }},
+  "best_current_case": {{
+    "leading_choice": "A|B|C|D",
+    "why_leading": "...",
+    "key_lemma": "The key logical step..."
+  }},
+  "cross_examination": {{
+    "defense": {{
+      "attack_summary": "...",
+      "rebuttal": "...",
+      "defense_survives": true|false
+    }},
+    "attack_rival": {{
+      "rival_strongest_point": "...",
+      "counter": "...",
+      "counter_type": "kill_shot|condition_challenge|proof_gap"
+    }}
+  }},
+  "honesty_check": {{
+    "did_view_change": true|false,
+    "what_changed": "...",
+    "strongest_point_against_leading": "..."
+  }},
+  "jb": 0,
+  "weakest_link": "..."
+}}
+
+============================================================
+CRITICAL RULES:
+============================================================
+1. Only the four kill_type values are valid for hard kills
+2. If you can't justify a kill with one of the four types, it's a CONDITION not a kill
+3. Kill proofs must be CHECKABLE - specific enough that someone could verify
+4. Don't manufacture fake kills to force a deterministic answer
+5. It's okay to have multiple surviving options - that's honest
+6. Both cross_examination.defense AND cross_examination.attack_rival are REQUIRED
+
+============================================================
+NOTE: Only include candidates that are in the candidate set.
+============================================================

@@ -1,0 +1,46 @@
+You have completed the defense/attack phase. Your arguments have been tested. Now you must make your final commitment.
+
+QUESTION:
+{question}
+
+CANDIDATE OPTIONS:
+{candidate_choices_text}
+
+YOUR ROUND 1 CHOICE:
+{round1_choice}
+
+YOUR DEFENSE PHASE RESULTS:
+- Leading choice after defense: {leading_choice_after_defense}
+- Your defense rebuttal: {your_defense_rebuttal}
+- Defense type: {defense_rebuttal_type}
+- Your attack on rival ({attack_target}): {your_attack_counter}
+- Attack type: {attack_counter_type}
+- Acknowledged weakness: {acknowledged_weakness}
+
+THE ATTACK YOU HAD TO SURVIVE:
+{attack_on_yours}
+
+INSTRUCTIONS:
+You have now defended your position and attacked the strongest rival. Based on this confrontation:
+1. Make your FINAL choice - this is binding.
+2. State whether your choice changed after engaging with the defense phase.
+3. Explain why this choice survives the attack better than alternatives.
+4. Summarize how your defense held up.
+
+REQUIRED OUTPUT SCHEMA (JSON only):
+{{
+  "final_choice": "A|B|C|D",
+  "confidence": 0-100,
+  "choice_changed_after_defense": true | false,
+  "why_this_choice": "Specific reason why this answer is correct after surviving attack",
+  "why_not_the_other": "Why the strongest rival is definitively wrong",
+  "defense_summary": {{
+    "attack_survived": true | false,
+    "weakness_acknowledged": "The weakness you had to concede, if any"
+  }}
+}}
+
+CONSTRAINTS:
+- This is your FINAL commitment - no further changes allowed.
+- If your defense could not rebut the attack, your confidence should reflect this.
+- Be honest about whether the confrontation changed your view.

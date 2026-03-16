@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["verdict_assessments", "eliminated_verdicts", "surviving_verdicts", "recommended_verdict", "reasoning"],
+  "properties": {
+    "verdict_assessments": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["verdict", "survives", "strongest_objection", "confidence_if_selected"],
+        "properties": {
+          "verdict": {
+            "type": "string",
+            "enum": ["ENTAILMENT", "CONTRADICTION", "NOT_MENTIONED"]
+          },
+          "survives": {
+            "type": "boolean",
+            "description": "Does this verdict survive stress testing?"
+          },
+          "strongest_objection": {
+            "type": "string",
+            "description": "The strongest argument against this verdict"
+          },
+          "critical_weakness": {
+            "type": ["string", "null"],
+            "description": "A fatal flaw that kills this verdict, or null if it survives"
+          },
+          "confidence_if_selected": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "description": "How confident would we be if this verdict were selected?"
+          },
+          "kill_category": {
+            "type": ["string", "null"],
+            "enum": ["direct_textual_contradiction", "definitional_exclusion", "logical_impossibility", "complete_scope_absence", null],
+            "description": "Which fatal flaw category applies, or null if verdict survives"
+          }
+        }
+      }
+    },
+    "eliminated_verdicts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["ENTAILMENT", "CONTRADICTION", "NOT_MENTIONED"]
+      },
+      "description": "Verdicts that don't survive stress testing"
+    },
+    "surviving_verdicts": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["ENTAILMENT", "CONTRADICTION", "NOT_MENTIONED"]
+      },
+      "description": "Verdicts that survive stress testing"
+    },
+    "recommended_verdict": {
+      "type": "string",
+      "enum": ["ENTAILMENT", "CONTRADICTION", "NOT_MENTIONED"],
+      "description": "The strongest surviving verdict"
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Overall reasoning for the recommendation"
+    }
+  },
+  "additionalProperties": false
+}

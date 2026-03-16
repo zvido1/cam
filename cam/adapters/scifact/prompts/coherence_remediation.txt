@@ -1,0 +1,24 @@
+You previously evaluated the following scientific claim against an abstract.
+
+CLAIM: {claim_text}
+
+ABSTRACT:
+{formatted_abstract}
+
+YOUR CITED EVIDENCE: {cited_evidence}
+
+YOUR VERDICT: {evaluator_verdict}
+
+{contradiction_description}
+
+Do you:
+
+(A) REVISE your verdict -- explain what it should be and why
+
+(B) EXPLAIN why your reasoning is actually consistent despite the apparent contradiction
+
+Your response will be scored for accuracy. Choose carefully.
+
+Respond with a single valid JSON object:
+
+{{"decision": "REVISE or EXPLAIN", "revised_verdict": "SUPPORT/CONTRADICT/NOT_ENOUGH_INFO (if REVISE, otherwise null)", "reasoning": "Why (2-3 sentences)", "confidence": "high/medium/low"}}

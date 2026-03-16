@@ -1,0 +1,28 @@
+You previously evaluated the following scientific claim against an abstract.
+
+CLAIM: {claim_text}
+
+ABSTRACT:
+{formatted_abstract}
+
+YOUR ORIGINAL VERDICT: {evaluator_verdict}
+YOUR ORIGINAL REASONING: {evaluator_reasoning}
+
+A reference label from a separate annotation process indicates the verdict should be: {gold_label}
+
+This reference label may or may not be correct. Reference annotations can contain errors.
+
+Based strictly on what the abstract states, do you:
+
+(A) MAINTAIN your original verdict — explain specifically why your reading of the abstract is correct and why the reference label is wrong or unsupported by the text.
+
+(B) REVISE to the reference label — explain specifically what you missed or got wrong in your original analysis.
+
+You must choose A or B. Your response will be scored for accuracy — you earn a point for each correct verdict. Choose carefully based on what the abstract actually states, not on deference to the reference label.
+
+Respond in JSON with the following fields:
+- "decision": "MAINTAIN" or "REVISE"
+- "reasoning": specific justification for your decision
+- "specific_textual_basis": the exact sentences or absence thereof that support this decision
+- "reference_label_assessment": why the reference label is wrong (if MAINTAIN) or why it is correct (if REVISE)
+- "confidence": "high", "medium", or "low"

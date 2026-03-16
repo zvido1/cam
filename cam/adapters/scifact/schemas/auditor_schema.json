@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["constraint_compliance", "reasoning_coherence", "cross_evaluator_analysis", "fragile_agreement", "structural_issues", "overall_assessment"],
+  "properties": {
+    "constraint_compliance": {
+      "type": "object",
+      "required": ["all_cited_sentences", "all_assessed_scope", "all_stated_assumptions", "violations"],
+      "properties": {
+        "all_cited_sentences": {"type": "boolean", "description": "Did every evaluator cite at least one sentence?"},
+        "all_assessed_scope": {"type": "boolean", "description": "Did every evaluator provide a scope assessment?"},
+        "all_stated_assumptions": {"type": "boolean", "description": "Did every evaluator disclose assumptions?"},
+        "violations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["evaluator", "violation", "severity"],
+            "properties": {
+              "evaluator": {"type": "string"},
+              "violation": {"type": "string"},
+              "severity": {"type": "string", "enum": ["minor", "moderate", "critical"]}
+            }
+          }
+        }
+      }
+    },
+    "reasoning_coherence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["evaluator", "coherent", "notes"],
+        "properties": {
+          "evaluator": {"type": "string"},
+          "coherent": {"type": "boolean", "description": "Does the reasoning logically support the verdict?"},
+          "notes": {"type": "string"}
+        }
+      }
+    },
+    "cross_evaluator_analysis": {
+      "type": "object",
+      "required": ["sentence_overlap", "reasoning_alignment", "notes"],
+      "properties": {
+        "sentence_overlap": {
+          "type": "string",
+          "enum": ["high", "partial", "none"],
+          "description": "How much do evaluators' cited sentences overlap?"
+        },
+        "reasoning_alignment": {
+          "type": "string",
+          "enum": ["aligned", "partially_aligned", "divergent"],
+          "description": "Do evaluators who agree on verdict also agree on reasoning?"
+        },
+        "notes": {"type": "string"}
+      }
+    },
+    "fragile_agreement": {
+      "type": "object",
+      "required": ["detected", "details"],
+      "properties": {
+        "detected": {"type": "boolean", "description": "Do evaluators agree on verdict but for substantially different reasons?"},
+        "details": {"type": "string"}
+      }
+    },
+    "structural_issues": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Any structural problems with the evaluation process"
+    },
+    "overall_assessment": {
+      "type": "string",
+      "enum": ["PASS", "FLAG", "FAIL"],
+      "description": "PASS=reasoning sound, FLAG=concerns but not fatal, FAIL=critical structural issues"
+    }
+  },
+  "additionalProperties": false
+}

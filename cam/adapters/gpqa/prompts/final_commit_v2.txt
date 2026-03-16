@@ -1,0 +1,160 @@
+You are an evaluator making your FINAL COMMITMENT in a multi-agent system.
+
+This is the FINAL COMMIT phase. You have completed:
+- Round 2c: Elimination Audit (kill shots and conditions identified)
+- Round 2d: Resurrection Testing (kill shots validated or downgraded)
+
+Now you must commit to a final output using the LADDER OF COMMITMENT.
+
+============================================================
+QUESTION:
+============================================================
+{question}
+
+============================================================
+ANSWER OPTIONS (IMMUTABLE - use these exact letters):
+============================================================
+{choices}
+
+============================================================
+ELIMINATION RESULTS (after resurrection testing):
+============================================================
+{elimination_results}
+
+CONFIRMED KILLS (survived resurrection):
+{confirmed_kills}
+
+SURVIVING OPTIONS:
+{surviving_options}
+
+CONDITIONS ON SURVIVORS:
+{survivor_conditions}
+
+============================================================
+LADDER OF COMMITMENT
+============================================================
+
+Based on the elimination results, determine which commitment level applies:
+
+LEVEL 0 - FULL ASSERT
+- Requirements: Exactly 1 survivor, all others killed with confirmed kills, 
+  stress test passed, unanimous agreement
+- Output: "Answer = X"
+- Confidence: Very high
+
+LEVEL 1 - ASSERT BY ELIMINATION  
+- Requirements: Exactly 1 survivor, 2+ confirmed kills, 
+  survivor has explicit conditions but no fatal flaws found
+- Output: "Killed: A,B,D → Therefore C"
+- Plus: "C subject to assumptions: [list]"
+- Confidence: High (via elimination)
+
+LEVEL 2 - CONDITIONAL SET
+- Requirements: 2 survivors with DISTINCT conditions, 2+ confirmed kills
+- Output: "Killed: A,B | Remaining: C if X; D if Y | Underspecified: cannot resolve X vs Y"
+- Use when: The question is genuinely ambiguous between interpretations
+- Confidence: Medium (question is underspecified)
+
+LEVEL 3 - PARTIAL ELIMINATION
+- Requirements: 1+ confirmed kills but cannot separate remaining options
+- Output: "Killed: A | Remaining: B/C/D not separable"
+- Use when: Some eliminations are solid but can't narrow further
+- Confidence: Low (partial knowledge only)
+
+LEVEL 4 - INVALID QUESTION
+- Requirements: ALL options have confirmed fatal flaws
+- Output: "All options contain fatal flaws - no valid answer"
+- Use when: Even the "correct" answer has provable problems
+- Confidence: High (in the invalidity assessment)
+
+============================================================
+YOUR TASK:
+============================================================
+
+1. Count confirmed kills and survivors
+2. Determine which commitment level applies
+3. If Level 2, identify the distinct conditions that separate survivors
+4. Provide your final commitment with appropriate qualifications
+
+============================================================
+REQUIRED OUTPUT (JSON only, no markdown):
+============================================================
+{{
+  "elimination_count": {{
+    "confirmed_kills": 0,
+    "resurrected": 0,
+    "surviving": 0
+  }},
+  "ladder_determination": {{
+    "level": 0|1|2|3|4,
+    "level_name": "full_assert|assert_by_elimination|conditional_set|partial_elimination|invalid_question",
+    "level_justification": "Why this level applies..."
+  }},
+  "final_commitment": {{
+    "commitment_type": "assert|conditional|partial|invalid",
+    "primary_answer": "A|B|C|D|null",
+    "killed_options": ["A", "D"],
+    "conditional_answers": [
+      {{"option": "C", "condition": "If kinetic control..."}},
+      {{"option": "B", "condition": "If thermodynamic equilibrium..."}}
+    ],
+    "assertion_statement": "The formal commitment statement"
+  }},
+  "epistemic_status": {{
+    "confidence": "very_high|high|medium|low",
+    "remaining_uncertainty": "What is still unknown...",
+    "would_change_if": "What would change this commitment..."
+  }},
+  "final_choice": "A|B|C|D",
+  "final_choice_text": "<EXACT TEXT OF YOUR CHOSEN OPTION>",
+  "choice_changed_after_defense": true|false,
+  "why_this_choice": "Complete explanation...",
+  "why_not_the_other": "Why other options are rejected...",
+  "defense_summary": {{
+    "attack_survived": true|false,
+    "weakness_acknowledged": "The strongest remaining weakness..."
+  }}
+}}
+
+============================================================
+CRITICAL REQUIREMENTS:
+============================================================
+
+1. You MUST output BOTH the option letter (A/B/C/D) AND the exact option 
+   text you are selecting in "final_choice_text".
+
+2. Do NOT rename or renumber options. Use the exact letter-to-text 
+   mapping provided in the question.
+
+3. final_choice_text should be the actual text of the answer you chose
+   (e.g., "Mutant 2", "The reaction proceeds via SN2...", etc.)
+
+============================================================
+LADDER SELECTION RULES:
+============================================================
+
+DO NOT require "hard_kills=3" for Level 1. Instead:
+- survivors == 1 AND
+- no resurrected kills against survivor AND  
+- at least 2 confirmed kills on other options
+
+For Level 2 (Conditional Set):
+- survivors >= 2 AND
+- survivors have MUTUALLY EXCLUSIVE conditions AND
+- those conditions trace to genuine ambiguity in the question
+
+Level 3 (Partial) is for when you made progress but can't finish:
+- Some options definitely killed
+- Remaining options can't be separated with available information
+
+Level 4 (Invalid) is rare but important:
+- Use when ALL options fail critical tests
+- This is an epistemic signal, not a cop-out
+
+============================================================
+CRITICAL: Your final_choice must be consistent with your ladder level.
+- Level 0/1: final_choice = the single asserted answer
+- Level 2: final_choice = your best guess among conditional answers
+- Level 3: final_choice = your best guess among unseparated options
+- Level 4: final_choice = null (or the "least wrong" if forced)
+============================================================

@@ -1,0 +1,11172 @@
+/* ═══════════════════════════════════════════════════════════════
+   CAM Lease Analyzer — Frontend Application
+   Single-page app with 5 states: gate, select, upload, processing, results
+   ═══════════════════════════════════════════════════════════════ */
+
+(() => {
+"use strict";
+
+// ── Configuration ──
+const ANALYSIS_TYPES = [
+    {
+        id: "lease_review",
+        domain: "Legal",
+        name: "Lease Comparison",
+        description: "Compare tenant leases against a standard template to detect deviations, assess risk, and generate annotated reports.",
+        endpoint: "/api/jobs/lease",
+        provisions_endpoint: "/api/provisions"
+    }
+];
+
+const POLL_INTERVAL_MS = 5000;
+const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
+const SEVERITY_ICONS = {
+    CRITICAL: "\uD83D\uDD34",
+    HIGH: "\u26A0\uFE0F",
+    MEDIUM: "\u26A0",
+    LOW: "\u2139\uFE0F",
+    CONFORMS: "\u2705"
+};
+
+// ── Model Display Names (1A) ──
+const MODEL_DISPLAY_NAMES = {
+    // Anthropic
+    "claude-sonnet-4-20250514":   "Claude Sonnet 4",
+    "claude-opus-4-5-20250514":   "Claude Opus 4.5",
+    "claude-haiku-4-5":           "Claude Haiku 4.5",
+    // OpenAI
+    "gpt-5.2":                    "GPT-5.2",
+    "gpt-4o":                     "GPT-4o",
+    // xAI
+    "grok-3":                     "Grok 3",
+    "grok-2":                     "Grok 2",
+    // Google
+    "gemini-2.5-pro":             "Gemini 2.5 Pro",
+    "gemini-3.1-pro-preview":     "Gemini 3.1 Pro",
+    "gemini-2.0-flash":           "Gemini 2.0 Flash",
+    // Mistral (fallback)
+    "mistral-large-latest":       "Mistral Large",
+    "mistral-medium-latest":      "Mistral Medium",
+};
+
+// ── Evaluator Color Classes ──
+const EVALUATOR_COLORS = {
+    A: "eval-blue",
+    B: "eval-green",
+    C: "eval-red",
+};
+
+// ── Fragility Signal Translations (1D) ──
+const FRAGILITY_TRANSLATIONS = {
+    "exception_clause": "New exception language found in tenant version",
+    "definition_override": "Key term redefined differently from template",
+    "qualifier_shift": "Obligation strength changed (e.g., 'shall' to 'may')",
+    "quantitative_deviation": "Numerical values or thresholds differ",
+    "negation_pattern": "New limiting or negating language added",
+    "cross_reference_dependency": "Clause depends on other sections that may also differ",
+    "omission": "Template language removed or missing from tenant version",
+    "obligation_swap": "Party responsibilities shifted (landlord \u2194 tenant)",
+};
+
+const ALL_FRAGILITY_SIGNALS = [
+    "exception_clause", "definition_override", "qualifier_shift",
+    "quantitative_deviation", "negation_pattern", "cross_reference_dependency",
+    "omission", "obligation_swap",
+];
+
+// ── Pipeline Stage Descriptions (1C) ──
+const STAGE_DESCRIPTIONS = {
+    1: { name: "Extraction", desc: "Gemini 3.1 Pro (Google) extracted and aligned provision text" },
+    2: { name: "Independent Evaluation", desc: "Claude Sonnet 4 (Anthropic), GPT-5.2 (OpenAI), Grok 3 (xAI) each analyzed independently" },
+    3: { name: "Challenge", desc: "GPT-5.2 (OpenAI) probed the finding for accuracy" },
+    4: { name: "Rules Engine", desc: "8 automated detection rules checked for patterns" },
+    5: { name: "Severity Assessment", desc: "GPT-5.2 (OpenAI) evaluated impact and financial risk" },
+    6: { name: "Final Disposition", desc: "Rule-based verdict determined" },
+};
+
+// ── State ──
+let currentState = null;
+let currentJobId = null;
+let currentJobData = null;
+let currentResults = null;
+let pollTimer = null;
+let expiryTimer = null;
+let templateFile = null;
+let tenantFiles = [];
+let provisions = [];
+let customProvisions = [];
+let selectedAnalysisType = ANALYSIS_TYPES[0];
+let currentTenantIndex = 0;
+let activeResultsTab = "findings";
+let openDocviewProvision = null; // track which provision's analysis panel is open
+let docviewReturnTarget = null; // track which provision to scroll back to
+let docviewMode = "sidebyside"; // "full" or "sidebyside" — default to side-by-side
+let docviewSort = "contract";   // "contract" or "reference" — tenant-led or reference-led docview order
+let pollNotFoundCount = 0;
+let addMoreMode = null; // null or "addmore"
+let templateSummary = null;      // Step 138: {landlord, property, base_rent, lease_term, gate_passed}
+let identityChecks = {           // Step 138: which identity fields to verify (all off by default)
+    landlord: false,
+    property: false,
+    tenant: false,
+};
+let lockedProvisionIds = new Set();
+let chatHistory = [];
+let cancelRequested = false;
+let currentSecsPerLease = 240; // Step 195: per-lease time estimate, updated at submission
+let jobStartTime = null;           // Step 196: wall-clock start of current job
+let estimateCountdownTimer = null; // Step 196: per-second countdown ticker
+let estimateTotalSecs = 0;         // Step 196: total estimated seconds for this job
+let estimateProgressFraction = 0;  // Step 196: whole-job completion fraction
+let resolutionState = {};   // key: "{tenantIdx}:{pid}" → {status, notes, updated_at}
+let finalDraftDecisions = {};  // key: "{tenantIdx}:{pid}" → {choice: 'template'|'tenant'|'custom', text: '...'}
+let contractSummaryCollapseState = {};
+let isAddMoreRun = false;
+let activeTopTab = "overview";     // "overview" | "snapshot"
+let contractDetailOpen = false;
+let contractDetailIdx = -1;
+let snapshotActiveIndex = null;    // Step 120: remembers open contract in Run Snapshot
+let snapshotVisited = false;       // Step 122: true after first visit to Run Snapshot tab
+let snapshotSort = 'risk';         // Step 124: sort dropdown
+let snapshotSeverityFilter = 'all'; // Step 124: severity filter
+let snapshotStatusFilter = 'all';  // Step 124: status filter
+let snapshotSearch = '';           // Step 124: live search text
+let snapshotContractFilter = new Set(); // Step 130: empty = show all
+let contractClauseSeverityFilter = 'all';
+let contractClauseStatusFilter = 'all';
+let contractClauseReadFilter = 'all';
+let contractClauseNotesFilter = 'all';
+let contractPickerSeverityFilter = 'all';
+
+function getResultsViewStateKey() {
+    return currentJobId ? `cam:view-state:${currentJobId}` : "";
+}
+
+function persistResultsViewState() {
+    const key = getResultsViewStateKey();
+    if (!key) return;
+    try {
+        sessionStorage.setItem(key, JSON.stringify({
+            activeTopTab,
+            activeResultsTab,
+            contractDetailOpen,
+            currentTenantIndex,
+            snapshotActiveIndex
+        }));
+    } catch (e) { /* silent */ }
+}
+
+function restoreResultsViewState() {
+    const key = getResultsViewStateKey();
+    if (!key) return;
+    try {
+        const raw = sessionStorage.getItem(key);
+        if (!raw) return;
+        const state = JSON.parse(raw);
+        if (state && typeof state === "object") {
+            if (typeof state.activeTopTab === "string") activeTopTab = state.activeTopTab;
+            if (typeof state.activeResultsTab === "string") activeResultsTab = state.activeResultsTab;
+            if (typeof state.currentTenantIndex === "number") currentTenantIndex = state.currentTenantIndex;
+            if (typeof state.snapshotActiveIndex === "number" || state.snapshotActiveIndex === null) snapshotActiveIndex = state.snapshotActiveIndex;
+            contractDetailOpen = !!state.contractDetailOpen;
+        }
+    } catch (e) { /* silent */ }
+}
+
+// ── Filter State (043) ──
+let filterContracts = new Set();   // empty = All Contracts
+let filterSeverities = new Set();  // empty = All Severities
+let filterProvisions = new Set();  // empty = All Provisions
+let filterConfidence = new Set();  // empty = All (Step 184)
+
+// ── Chat Scope State (044) ──
+let chatScopeTenantIdx = "";    // "" = All Contracts
+let chatScopeProvisionId = "";  // "" = All Provisions
+let chatStarterMode = "analysis";
+
+// ── Help Chat State (086) ──
+let helpChatHistory = [];
+let helpChatInitialized = false;
+
+// ── Processing Chat State ──
+let processingChatHistory = [];
+let processingChatInitialized = false;
+let resultsTopBarLayoutBound = false;
+
+// (Prescan state removed in step 112 — discovery moved into pipeline)
+
+// ── DOM references ──
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+// ── Step 2 activation helpers (Step 139) ──
+function activateStep2() {
+    const phase2 = $("#phase2-content");
+    const contractsCol = $("#contracts-column");
+    const provSidebar = $("#provisions-sidebar");
+    [phase2, contractsCol, provSidebar].forEach(el => {
+        if (el) {
+            el.classList.remove("step2-inactive");
+            el.classList.remove("hidden");
+        }
+    });
+}
+
+function deactivateStep2() {
+    const phase2 = $("#phase2-content");
+    const contractsCol = $("#contracts-column");
+    const provSidebar = $("#provisions-sidebar");
+    [phase2, contractsCol, provSidebar].forEach(el => {
+        if (el) el.classList.add("step2-inactive");
+    });
+}
+
+// ══════════════════════════════════════════════════════
+// State Management
+// ══════════════════════════════════════════════════════
+
+function showState(name) {
+    currentState = name;
+    ["gate", "select", "upload", "processing", "results"].forEach(s => {
+        const el = $(`#state-${s}`);
+        if (el) el.classList.toggle("hidden", s !== name);
+    });
+    // Lock page scroll when results are showing — prevents sticky header jitter
+    document.body.classList.toggle('results-active', name === 'results');
+
+    const tagline = $("#header-tagline");
+    if (name === "gate") {
+        tagline.textContent = "AI-Powered Contract Analysis";
+        $("#app-header").style.display = "none";
+    } else {
+        tagline.textContent = selectedAnalysisType
+            ? selectedAnalysisType.name
+            : "AI-Powered Contract Analysis";
+        $("#app-header").style.display = "";
+    }
+
+    // Help chat is part of upload-layout grid — no toggling needed
+
+    // Step 139: Manage step2 active/inactive state (step2 always visible, just inactive until template processed)
+    if (name === "upload") {
+        if (templateSummary || addMoreMode === "addmore") {
+            activateStep2();
+        } else {
+            deactivateStep2();
+        }
+    }
+}
+
+function init() {
+    const path = window.location.pathname;
+    const resultsMatch = path.match(/^\/results\/(.+)$/);
+
+    if (resultsMatch) {
+        const jobId = resultsMatch[1];
+        loadJobDirect(jobId);
+        return;
+    }
+
+    // Also support /?job=<jobId> query param (e.g. after refresh or shared link)
+    const urlParams = new URLSearchParams(window.location.search);
+    const jobParam = urlParams.get("job");
+    if (jobParam) {
+        loadJobDirect(jobParam);
+        return;
+    }
+
+    if (sessionStorage.getItem("cam_access_code")) {
+        enterApp();
+    } else {
+        showState("gate");
+    }
+
+    setupEventListeners();
+}
+
+function enterApp() {
+    if (ANALYSIS_TYPES.length === 1) {
+        selectedAnalysisType = ANALYSIS_TYPES[0];
+        showState("upload");
+        loadProvisions();
+    } else {
+        showState("select");
+        renderAnalysisTypes();
+    }
+}
+
+// ══════════════════════════════════════════════════════
+// Event Listeners
+// ══════════════════════════════════════════════════════
+
+function setupEventListeners() {
+    // Gate
+    $("#gate-submit").addEventListener("click", handleGateSubmit);
+    $("#gate-code").addEventListener("keydown", e => {
+        if (e.key === "Enter") handleGateSubmit();
+    });
+
+    // Upload zones
+    setupDropZone("template-drop", "template-input", handleTemplateFiles);
+    setupDropZone("tenant-drop", "tenant-input", handleTenantFiles);
+
+    // Help chat
+    initHelpChat();
+
+    // Clear buttons
+    const templateClearBtn = $("#template-clear-btn");
+    if (templateClearBtn) templateClearBtn.addEventListener("click", clearTemplateFile);
+    const tenantClearBtn = $("#tenant-clear-btn");
+    if (tenantClearBtn) tenantClearBtn.addEventListener("click", clearAllTenantFiles);
+
+    // Demo tenant checkboxes — update Load button state
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('demo-tenant-check')) {
+            updateDemoLoadBtn();
+        }
+    });
+
+    // Provisions
+    $("#check-all-provisions").addEventListener("click", () => toggleAllProvisions(true));
+    $("#uncheck-all-provisions").addEventListener("click", () => toggleAllProvisions(false));
+    $("#add-custom-provision").addEventListener("click", addCustomProvision);
+    $("#custom-provision-input").addEventListener("keydown", e => {
+        if (e.key === "Enter") addCustomProvision();
+    });
+
+    // Email confirmation
+    const emailConfirm = $("#email-confirm-input");
+    if (emailConfirm) {
+        emailConfirm.addEventListener("paste", e => e.preventDefault());
+        emailConfirm.addEventListener("input", updateSubmitState);
+    }
+    const emailInput = $("#email-input");
+    if (emailInput) {
+        emailInput.addEventListener("input", updateSubmitState);
+    }
+
+    // Submit
+    $("#analyze-btn").addEventListener("click", handleSubmit);
+
+    // Cancel analysis
+    $("#cancel-btn").addEventListener("click", handleCancel);
+
+    // Copy link
+    $("#copy-link-btn").addEventListener("click", () => {
+        const input = $("#results-link-input");
+        input.select();
+        navigator.clipboard.writeText(input.value).catch(() => {
+            document.execCommand("copy");
+        });
+        $("#copy-link-btn").textContent = "Copied!";
+        setTimeout(() => { $("#copy-link-btn").textContent = "Copy Link"; }, 2000);
+    });
+
+    // Tenant selector (findings tab)
+    $("#tenant-select").addEventListener("change", e => {
+        currentTenantIndex = parseInt(e.target.value, 10);
+        renderTenantResults();
+        syncChatScopeToCurrentTenant(true);
+        // Sync docview tenant select
+        const dts = $("#docview-tenant-select");
+        if (dts) dts.value = currentTenantIndex;
+        // Sync nav sidebar active state
+        updateNavActive(currentTenantIndex);
+        // Re-render audit trail if active
+        if (activeResultsTab === "audittrail") renderAuditTrail();
+    });
+
+    // Tenant selector (document comparison tab)
+    const docviewTenantSelect = $("#docview-tenant-select");
+    if (docviewTenantSelect) {
+        docviewTenantSelect.addEventListener("change", e => {
+            currentTenantIndex = parseInt(e.target.value, 10);
+            renderDocumentView();
+            syncChatScopeToCurrentTenant(true);
+            // Sync findings tenant select
+            $("#tenant-select").value = currentTenantIndex;
+            // Sync nav sidebar active state
+            updateNavActive(currentTenantIndex);
+        });
+    }
+
+    // Contract sub-tabs wired in renderResults() via onclick (Step 170 fix)
+
+    // Document view search
+    initDocviewSearch();
+
+    // Docview mode toggle (Full Document / Side-by-Side)
+    document.querySelectorAll(".docview-mode-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const mode = btn.dataset.mode;
+            if (mode === docviewMode) return;
+            docviewMode = mode;
+            document.querySelectorAll(".docview-mode-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            clearDocSearch();
+            renderDocumentView();
+        });
+    });
+
+    document.querySelectorAll(".docview-sort-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const sort = btn.dataset.sort;
+            if (sort === docviewSort) return;
+            docviewSort = sort;
+            document.querySelectorAll(".docview-sort-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            clearDocSearch();
+            renderDocumentView();
+        });
+    });
+
+
+    // New Analysis button
+    const newAnalysisBtn = $("#new-analysis-btn");
+    if (newAnalysisBtn) {
+        newAnalysisBtn.addEventListener("click", () => {
+            // Clear job state
+            currentJobId = null;
+            currentJobData = null;
+            currentResults = null;
+            currentTenantIndex = 0;
+            addMoreMode = null;
+            activeTopTab = "overview"; snapshotActiveIndex = null; snapshotVisited = false; snapshotSort = 'risk'; snapshotSeverityFilter = 'all'; snapshotStatusFilter = 'all'; snapshotSearch = ''; snapshotContractFilter = new Set();  // Step 120/122/124/130: reset
+            // prescan removed (112)
+            cancelRequested = false;
+            chatHistory = [];
+            // Reset chat panel
+            const chatPanel = $("#chat-panel");
+            if (chatPanel) chatPanel.classList.remove("mobile-open");
+            const chatMessages = $("#chat-messages");
+            if (chatMessages) chatMessages.innerHTML = "";
+            // Reset multi-options panel and synthesis toggle
+            const multiOpts = $("#chat-multi-options");
+            if (multiOpts) multiOpts.classList.add("hidden");
+            const synthDefault = document.querySelector('input[name="synth-mode"][value="synthesized"]');
+            if (synthDefault) synthDefault.checked = true;
+            // Hide expiry notice in header
+            const expiryEl = $("#expiry-notice");
+            if (expiryEl) expiryEl.classList.add("hidden");
+            // Clear nav sidebar
+            const navContent = $("#nav-sidebar-content");
+            if (navContent) navContent.innerHTML = "";
+            if (expiryTimer) { clearInterval(expiryTimer); expiryTimer = null; }
+            stopPolling();
+            // Clear URL
+            history.replaceState(null, "", "/");
+            // Return to upload screen
+            enterApp();
+        });
+    }
+
+    // Add More button (unified: leases + provisions)
+    const addMoreBtn = $("#add-more-btn");
+    if (addMoreBtn) {
+        addMoreBtn.addEventListener("click", () => {
+            addMoreMode = "addmore";
+            tenantFiles = [];
+            showState("upload");
+            loadProvisions();
+            // Lock template display
+            const templateDrop = $("#template-drop");
+            const origTemplate = currentJobData && currentJobData.input_config
+                ? currentJobData.input_config.template_file : "Standard Template";
+            templateDrop.classList.add("has-files", "locked");
+            const templateList = $("#template-file-list");
+            templateList.classList.remove("hidden");
+            templateList.innerHTML = `<li><span class="file-name">\u2705 ${esc(origTemplate)} (locked)</span></li>`;
+            renderTenantFileList();
+            updateSubmitState();
+            // lockAnalyzedProvisions() is called at end of renderProvisions() when mode === "addmore"
+        });
+    }
+
+    // Conforming toggle
+    const conformingToggle = $("#conforming-toggle");
+    if (conformingToggle) {
+        conformingToggle.addEventListener("click", () => {
+            const list = $("#conforming-list");
+            const toggle = $("#conforming-toggle");
+            const isOpen = !list.classList.contains("hidden");
+            list.classList.toggle("hidden");
+            toggle.innerHTML = (isOpen ? "&#9654;" : "&#9660;") + " Conforming Provisions (no action needed)";
+        });
+    }
+
+    // Tech details toggle
+    const techToggle = $("#tech-details-toggle");
+    if (techToggle) {
+        techToggle.addEventListener("click", () => {
+            const content = $("#tech-details-content");
+            const isOpen = content.classList.contains("open");
+            content.classList.toggle("open");
+            techToggle.innerHTML = (isOpen ? "&#9654;" : "&#9660;") + " Technical Details";
+        });
+    }
+
+    // Downloads
+    const downloadBatchBtn = $("#download-batch-summary");
+    if (downloadBatchBtn) {
+        downloadBatchBtn.addEventListener("click", () => {
+            if (currentJobId) downloadFile(`/api/jobs/${currentJobId}/summary`);
+        });
+    }
+    const exportJsonBtn = $("#export-all-json");
+    if (exportJsonBtn) exportJsonBtn.addEventListener("click", exportAllJSON);
+
+    // Privacy modal
+    $("#privacy-toggle").addEventListener("click", () => {
+        $("#privacy-modal").classList.add("open");
+    });
+    $("#privacy-close").addEventListener("click", () => {
+        $("#privacy-modal").classList.remove("open");
+    });
+    $("#privacy-modal").addEventListener("click", e => {
+        if (e.target === $("#privacy-modal")) {
+            $("#privacy-modal").classList.remove("open");
+        }
+    });
+
+    // About CAM modal
+    const aboutToggle = $("#about-cam-toggle");
+    if (aboutToggle) {
+        aboutToggle.addEventListener("click", () => {
+            $("#about-cam-modal").classList.add("open");
+        });
+    }
+    const aboutClose = $("#about-cam-close");
+    if (aboutClose) {
+        aboutClose.addEventListener("click", () => {
+            $("#about-cam-modal").classList.remove("open");
+        });
+    }
+    const aboutModal = $("#about-cam-modal");
+    if (aboutModal) {
+        aboutModal.addEventListener("click", e => {
+            if (e.target === aboutModal) {
+                aboutModal.classList.remove("open");
+            }
+        });
+    }
+
+    // Chat panel (mobile FAB + close button)
+    const chatFabMobile = $("#chat-fab-mobile");
+    if (chatFabMobile) chatFabMobile.addEventListener("click", () => {
+        const panel = $("#chat-panel");
+        if (panel) { panel.classList.add("mobile-open"); chatFabMobile.classList.add("hidden"); }
+        initChat();
+        const chatInput = $("#chat-input");
+        if (chatInput) chatInput.focus();
+    });
+    const chatCloseBtn = $("#chat-close-btn");
+    if (chatCloseBtn) chatCloseBtn.addEventListener("click", () => {
+        const panel = $("#chat-panel");
+        if (panel) panel.classList.remove("mobile-open");
+        const mobileFab = $("#chat-fab-mobile");
+        if (mobileFab) mobileFab.classList.remove("hidden");
+    });
+
+    // Chat export button
+    const chatExportBtn = $("#chat-export-btn");
+    if (chatExportBtn) chatExportBtn.addEventListener("click", exportChat);
+
+    // Chat panel resize handle
+    initPanelResize();
+
+    // Delete Analysis button
+    const deleteBtn = $("#delete-job-btn");
+    if (deleteBtn) deleteBtn.addEventListener("click", deleteCurrentJob);
+}
+
+// ══════════════════════════════════════════════════════
+// STATE 1: Access Gate
+// ══════════════════════════════════════════════════════
+
+async function handleGateSubmit() {
+    const code = $("#gate-code").value.trim();
+    if (!code) return;
+
+    const errorEl = $("#gate-error");
+    errorEl.classList.add("hidden");
+
+    try {
+        const resp = await fetch("/api/auth/verify", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({access_code: code})
+        });
+
+        if (resp.ok) {
+            sessionStorage.setItem("cam_access_code", code);
+            enterApp();
+        } else {
+            errorEl.textContent = "Invalid access code. Please try again.";
+            errorEl.classList.remove("hidden");
+            $("#gate-code").value = "";
+            $("#gate-code").focus();
+        }
+    } catch (err) {
+        errorEl.textContent = "Connection error. Please check your network.";
+        errorEl.classList.remove("hidden");
+    }
+}
+
+// ══════════════════════════════════════════════════════
+// STATE 2: Analysis Type Selection
+// ══════════════════════════════════════════════════════
+
+function renderAnalysisTypes() {
+    const container = $("#analysis-types-container");
+    container.innerHTML = "";
+    ANALYSIS_TYPES.forEach(type => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.style.cursor = "pointer";
+        card.style.marginBottom = "1rem";
+        card.innerHTML = `
+            <div style="display:flex; align-items:center; justify-content:space-between;">
+                <div>
+                    <div style="font-weight:600; font-size:1rem;">${type.name}</div>
+                    <div style="font-size:0.875rem; color:var(--text-muted); margin-top:0.25rem;">${type.description}</div>
+                </div>
+                <span class="btn btn-primary btn-sm">Go &rarr;</span>
+            </div>
+        `;
+        card.addEventListener("click", () => {
+            selectedAnalysisType = type;
+            showState("upload");
+            loadProvisions();
+        });
+        container.appendChild(card);
+    });
+}
+
+// ══════════════════════════════════════════════════════
+// STATE 3: Upload & Configure
+// ══════════════════════════════════════════════════════
+
+function setupDropZone(dropId, inputId, handler) {
+    const drop = $(`#${dropId}`);
+    const input = $(`#${inputId}`);
+
+    drop.addEventListener("click", () => input.click());
+    drop.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") input.click();
+    });
+
+    input.addEventListener("change", () => {
+        handler(Array.from(input.files));
+        input.value = "";
+    });
+
+    drop.addEventListener("dragover", e => {
+        e.preventDefault();
+        drop.classList.add("dragover");
+    });
+    drop.addEventListener("dragleave", () => {
+        drop.classList.remove("dragover");
+    });
+    drop.addEventListener("drop", e => {
+        e.preventDefault();
+        drop.classList.remove("dragover");
+        handler(Array.from(e.dataTransfer.files));
+    });
+}
+
+function handleTemplateFiles(files) {
+    if (files.length === 0) return;
+    const file = files[0];
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (!["pdf", "docx", "txt"].includes(ext)) {
+        alert("Template must be PDF, DOCX, or TXT");
+        return;
+    }
+    templateFile = file;
+    renderTemplateFileList();
+    updateSubmitState();
+
+    // Step 138: Run gate check + summary extraction
+    processTemplateSummary(file);
+}
+
+async function processTemplateSummary(file) {
+    const loadingEl = $("#template-loading");
+    const gateErrorEl = $("#template-gate-error");
+    const summaryContainer = $("#template-summary-container");
+
+    // Reset — Step 139: use deactivateStep2 instead of hidden
+    if (gateErrorEl) gateErrorEl.classList.add("hidden");
+    if (summaryContainer) summaryContainer.innerHTML = "";
+    deactivateStep2();
+    templateSummary = null;
+
+    // Show loading
+    if (loadingEl) loadingEl.classList.remove("hidden");
+
+    try {
+        const formData = new FormData();
+        formData.append("template_file", file);
+        formData.append("access_code", sessionStorage.getItem("cam_access_code") || "");
+
+        const resp = await fetch("/api/template/summary", {
+            method: "POST",
+            body: formData,
+        });
+
+        if (!resp.ok) {
+            throw new Error("Server error (" + resp.status + ")");
+        }
+
+        const data = await resp.json();
+
+        if (!data.gate_passed) {
+            // Gate failed — show error, stay in phase 1
+            if (gateErrorEl) {
+                gateErrorEl.textContent = data.gate_message || "This document does not appear to be a commercial lease agreement.";
+                gateErrorEl.classList.remove("hidden");
+            }
+            // Clear the template file since it failed
+            templateFile = null;
+            renderTemplateFileList();
+            updateSubmitState();
+            return;
+        }
+
+        // Gate passed — store summary and reveal phase 2
+        templateSummary = data;
+        renderTemplateSummaryCard(data);
+        revealPhase2();
+
+    } catch (err) {
+        console.error("Template summary error:", err);
+        if (gateErrorEl) {
+            gateErrorEl.textContent = "Failed to read template: " + err.message;
+            gateErrorEl.classList.remove("hidden");
+        }
+    } finally {
+        if (loadingEl) loadingEl.classList.add("hidden");
+    }
+}
+
+function renderTemplateSummaryCard(data) {
+    const container = $("#template-summary-container");
+    if (!container) return;
+
+    const val = (v) => v ? esc(v) : "\u2014";
+    // Three-state render for deal terms: real value / placeholder / not found
+    const dealVal = (v) => {
+        if (!v) return "<span class=\"tscard-placeholder\">\u2014</span>";
+        if (v === "[blank]") return "<span class=\"tscard-placeholder\">Template placeholder</span>";
+        return `<strong>${esc(v)}</strong>`;
+    };
+
+    container.innerHTML = `
+        <div id="template-summary-card">
+            <div class="tscard-header">Reference Lease \u2014 Confirmed</div>
+            <div class="tscard-fields">
+                <div class="tscard-field">
+                    <span class="tscard-label">Landlord</span>
+                    <span class="tscard-value" id="tscard-landlord">${val(data.landlord)}</span>
+                </div>
+                <div class="tscard-field">
+                    <span class="tscard-label">Property</span>
+                    <span class="tscard-value" id="tscard-property">${val(data.property)}</span>
+                </div>
+                <div class="tscard-field">
+                    <span class="tscard-label">Base Rent</span>
+                    <span class="tscard-value" id="tscard-rent">${dealVal(data.base_rent)}</span>
+                </div>
+                <div class="tscard-field">
+                    <span class="tscard-label">Lease Term</span>
+                    <span class="tscard-value" id="tscard-term">${dealVal(data.lease_term)}</span>
+                </div>
+            </div>
+            <div class="tscard-identity-row">
+                <span class="tscard-identity-label">Also verify identity fields:</span>
+                <label class="tscard-check">
+                    <input type="checkbox" id="id-check-landlord"> Landlord entity
+                </label>
+                <label class="tscard-check">
+                    <input type="checkbox" id="id-check-property"> Property name/address
+                </label>
+                <label class="tscard-check">
+                    <input type="checkbox" id="id-check-tenant"> Tenant entity
+                </label>
+            </div>
+        </div>
+    `;
+
+    // Wire up identity checkboxes
+    const landlordCb = document.getElementById("id-check-landlord");
+    const propertyCb = document.getElementById("id-check-property");
+    const tenantCb = document.getElementById("id-check-tenant");
+
+    if (landlordCb) landlordCb.addEventListener("change", e => {
+        identityChecks.landlord = e.target.checked;
+        updateSubmitState();
+    });
+    if (propertyCb) propertyCb.addEventListener("change", e => {
+        identityChecks.property = e.target.checked;
+        updateSubmitState();
+    });
+    if (tenantCb) tenantCb.addEventListener("change", e => {
+        identityChecks.tenant = e.target.checked;
+        updateSubmitState();
+    });
+}
+
+function revealPhase2() {
+    activateStep2();
+    activateStep2();
+}
+
+function handleTenantFiles(files) {
+    const validExts = ["pdf", "docx", "txt", "zip"];
+    for (const file of files) {
+        const ext = file.name.split(".").pop().toLowerCase();
+        if (!validExts.includes(ext)) {
+            alert(`Unsupported file: ${file.name}. Use PDF, DOCX, TXT, or ZIP.`);
+            continue;
+        }
+        if (!tenantFiles.some(f => f.name === file.name && f.size === file.size)) {
+            tenantFiles.push(file);
+        }
+    }
+    renderTenantFileList();
+    updateSubmitState();
+}
+
+function clearTemplateFile() {
+    templateFile = null;
+    templateSummary = null;
+    identityChecks = { landlord: false, property: false, tenant: false };
+    renderTemplateFileList();
+
+    // Step 139: Reset to phase 1 (deactivate step 2)
+    const summaryContainer = $("#template-summary-container");
+    if (summaryContainer) summaryContainer.innerHTML = "";
+    deactivateStep2();
+    const gateErrorEl = $("#template-gate-error");
+    if (gateErrorEl) gateErrorEl.classList.add("hidden");
+    const stepLabel = $("#upload-step-label");
+    if (stepLabel) stepLabel.textContent = "Step 1: Upload your reference lease";
+    const subtitle = $("#upload-subtitle");
+    if (subtitle) subtitle.textContent = "Upload your reference lease (standard template or prior executed lease).";
+
+    updateSubmitState();
+}
+
+function clearAllTenantFiles() {
+    tenantFiles = [];
+    renderTenantFileList();
+    updateSubmitState();
+}
+
+function renderTemplateFileList() {
+    const drop = $("#template-drop");
+    const list = $("#template-file-list");
+    const clearBtn = $("#template-clear-btn");
+
+    if (templateFile) {
+        drop.classList.add("has-files");
+        list.classList.remove("hidden");
+        if (clearBtn) clearBtn.classList.remove("hidden");
+        list.innerHTML = `<li>
+            <span class="file-name">\u2705 ${esc(templateFile.name)}</span>
+            <button class="remove-file" title="Remove">&times;</button>
+        </li>`;
+        list.querySelector(".remove-file").addEventListener("click", e => {
+            e.stopPropagation();
+            clearTemplateFile();
+        });
+    } else {
+        drop.classList.remove("has-files");
+        list.classList.add("hidden");
+        if (clearBtn) clearBtn.classList.add("hidden");
+        list.innerHTML = "";
+    }
+
+    // Show/hide demo template section based on whether a template is loaded
+    const demoTemplateSection = $('#demo-template-section');
+    if (demoTemplateSection) {
+        demoTemplateSection.classList.toggle('hidden', !!templateFile);
+    }
+}
+
+function renderTenantFileList() {
+    const drop = $("#tenant-drop");
+    const list = $("#tenant-file-list");
+    const clearBtn = $("#tenant-clear-btn");
+
+    if (tenantFiles.length > 0) {
+        drop.classList.add("has-files");
+        list.classList.remove("hidden");
+        if (clearBtn) clearBtn.classList.remove("hidden");
+        list.innerHTML = tenantFiles.map((f, i) => `<li>
+            <span class="file-name">\u2705 ${esc(f.name)}</span>
+            <button class="remove-file" data-index="${i}" title="Remove">&times;</button>
+        </li>`).join("");
+
+        list.querySelectorAll(".remove-file").forEach(btn => {
+            btn.addEventListener("click", e => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.index, 10);
+                tenantFiles.splice(idx, 1);
+                renderTenantFileList();
+                updateSubmitState();
+            });
+        });
+    } else {
+        drop.classList.remove("has-files");
+        list.classList.add("hidden");
+        if (clearBtn) clearBtn.classList.add("hidden");
+        list.innerHTML = "";
+    }
+
+    // Show/hide demo tenant section based on whether any files are loaded
+    const demoSection = $('#demo-tenant-section');
+    if (demoSection) {
+        demoSection.classList.toggle('hidden', tenantFiles.length > 0);
+    }
+}
+
+// Step 194: Per-provision weighted time estimate
+// Calibrated from 108 runs:
+//   ~90s fixed base (Gemini extraction — one call, independent of provision count)
+//   Variable cost per provision = flag_rate × 29s (empirical: ~29s per flagged provision)
+//   +10s per identity check (LP-00 identity field overhead)
+//   CUSTOM/ADDED provisions always flag at ~100% — use 29s each
+//   LP-00 included in fixed base
+//
+// Flag rates from 108-run empirical analysis:
+const PROVISION_FLAG_RATES = {
+    "LP-01": 0.26, "LP-02": 0.11, "LP-03": 0.33, "LP-04": 0.09,
+    "LP-05": 0.41, "LP-06": 0.27, "LP-07": 0.31, "LP-08": 0.30,
+    "LP-09": 0.62, "LP-10": 0.38, "LP-11": 0.60, "LP-12": 0.46,
+    "LP-13": 0.60, "LP-14": 0.26, "LP-15": 0.14, "LP-16": 0.32,
+    "LP-17": 0.05, "LP-18": 0.22,
+};
+const VARIABLE_COST_PER_FLAGGED = 29; // seconds
+const EXTRACTION_BASE_SECS = 90;      // seconds
+
+function calcEstimate(provCount, idChecks, numLeases, selectedIds) {
+    const idCheckCount = idChecks
+        ? [idChecks.landlord, idChecks.property, idChecks.tenant].filter(Boolean).length
+        : 0;
+
+    let variableSecs = 0;
+    if (selectedIds && selectedIds.length > 0) {
+        // Weighted sum: each provision contributes flag_rate × 29s
+        selectedIds.forEach(pid => {
+            const rate = PROVISION_FLAG_RATES[pid] !== undefined
+                ? PROVISION_FLAG_RATES[pid]
+                : 0.85; // CUSTOM/ADDED provisions: assume high flag rate
+            variableSecs += rate * VARIABLE_COST_PER_FLAGGED;
+        });
+    } else {
+        // Fallback: no IDs known, use count × median flag rate (~0.35)
+        variableSecs = provCount * 0.35 * VARIABLE_COST_PER_FLAGGED;
+    }
+
+    // Gap repair buffer: when Gemini misses subsections, it runs sequential re-extraction
+    // calls (one per missed section, ~15s each). Complex leases commonly trigger 10-15 repairs.
+    // Add 120s buffer for full provision set, 60s for smaller selections.
+    const gapRepairBuffer = provCount >= 12 ? 120 : 60;
+    const secsPerLease = Math.max(60,
+        EXTRACTION_BASE_SECS + variableSecs + (idCheckCount * 10) + gapRepairBuffer
+    );
+    const minsPerLease = Math.ceil(secsPerLease / 60);
+    const totalMins = Math.max(1, numLeases * minsPerLease);
+
+    const provLabel = `${provCount} provision${provCount !== 1 ? "s" : ""}`;
+    const idLabel = idCheckCount > 0 ? ` + ${idCheckCount} identity check${idCheckCount !== 1 ? "s" : ""}` : "";
+    const leaseLabel = `${numLeases} lease${numLeases > 1 ? "s" : ""}`;
+    const detail = `${leaseLabel} \u00d7 ${provLabel}${idLabel}`;
+
+    return { mins: totalMins, detail, secsPerLease };
+}
+
+function formatDurationShort(totalSecs) {
+    const secs = Math.max(0, Math.round(totalSecs || 0));
+    const mins = Math.floor(secs / 60);
+    const remSecs = secs % 60;
+    return mins > 0 ? `${mins}m ${remSecs}s` : `${remSecs}s`;
+}
+
+function formatDurationApprox(totalSecs) {
+    const mins = Math.max(1, Math.round((totalSecs || 0) / 60));
+    return mins === 1 ? "~1 minute" : `~${mins} minutes`;
+}
+
+function updateEstimateDisplay() {
+    const estimateEl = $("#estimate-remaining");
+    if (!estimateEl) return;
+
+    const elapsedSecs = jobStartTime ? Math.max(0, (Date.now() - jobStartTime) / 1000) : 0;
+    const pct = Math.round(Math.max(0, Math.min(1, estimateProgressFraction || 0)) * 100);
+    const parts = [`${pct}% of workflow complete`];
+
+    if (estimateTotalSecs > 0) {
+        parts.push(`Initial estimate ${formatDurationApprox(estimateTotalSecs)}`);
+    }
+
+    parts.push(`Elapsed ${formatDurationShort(elapsedSecs)}`);
+
+    if (estimateTotalSecs > 0 && elapsedSecs > estimateTotalSecs) {
+        parts.push("Running longer than the initial estimate");
+    }
+
+    estimateEl.textContent = parts.join(" | ");
+}
+
+// Step 196: Stable whole-job progress timer for processing page
+function startEstimateCountdown(totalSecs, options = {}) {
+    stopEstimateCountdown();
+    const alreadyElapsedSecs = Math.max(0, options.alreadyElapsedSecs || 0);
+    const initialProgressFraction = Math.max(0, Math.min(1, options.initialProgressFraction || 0));
+    jobStartTime = Date.now() - (alreadyElapsedSecs * 1000);
+    estimateTotalSecs = totalSecs;
+    estimateProgressFraction = initialProgressFraction;
+
+    updateEstimateDisplay();
+
+    estimateCountdownTimer = setInterval(updateEstimateDisplay, 1000);
+}
+
+function stopEstimateCountdown() {
+    if (estimateCountdownTimer) {
+        clearInterval(estimateCountdownTimer);
+        estimateCountdownTimer = null;
+    }
+}
+
+function getTenantProgressFraction(tenant, jobStatus = "") {
+    const effectiveStatus = (tenant.status === "queued" && jobStatus === "processing")
+        ? "processing"
+        : tenant.status;
+
+    if (effectiveStatus === "completed" || effectiveStatus === "failed" || effectiveStatus === "cancelled") {
+        return 1;
+    }
+
+    if (effectiveStatus === "processing" && tenant.current_stage && tenant.total_stages) {
+        return Math.max(0, Math.min(1, tenant.current_stage / tenant.total_stages));
+    }
+
+    return 0;
+}
+
+function updateSubmitState() {
+    const btn = $("#analyze-btn");
+    const est = $("#estimate-text");
+
+    // addMore mode has different requirements
+    if (addMoreMode === "addmore") {
+        const checkedCount = document.querySelectorAll("#provision-list input[type=checkbox]:checked").length;
+        const newProvisionCount = checkedCount - lockedProvisionIds.size;
+        const hasNewTenants = tenantFiles.length > 0;
+        const hasNewProvisions = newProvisionCount > 0;
+
+        btn.disabled = !(hasNewTenants || hasNewProvisions);
+
+        if (hasNewTenants && hasNewProvisions) {
+            btn.textContent = `Add ${tenantFiles.length} Lease${tenantFiles.length !== 1 ? "s" : ""} + ${newProvisionCount} Provision${newProvisionCount !== 1 ? "s" : ""}`;
+            est.textContent = `Adding ${tenantFiles.length} new lease${tenantFiles.length !== 1 ? "s" : ""} and ${newProvisionCount} new provision${newProvisionCount !== 1 ? "s" : ""} to existing analysis`;
+        } else if (hasNewTenants) {
+            btn.textContent = `Add ${tenantFiles.length} Lease${tenantFiles.length !== 1 ? "s" : ""}`;
+            est.textContent = `Adding ${tenantFiles.length} new lease${tenantFiles.length !== 1 ? "s" : ""} to existing analysis`;
+        } else if (hasNewProvisions) {
+            btn.textContent = `Analyze ${newProvisionCount} New Provision${newProvisionCount !== 1 ? "s" : ""}`;
+            est.textContent = `Adding ${newProvisionCount} new provision${newProvisionCount !== 1 ? "s" : ""} to existing analysis`;
+        } else {
+            btn.textContent = "Add More";
+            est.textContent = "Upload new leases or select new provisions to analyze";
+        }
+        return;
+    }
+
+    const hasTemplate = templateFile !== null;
+    const hasTenants  = tenantFiles.length > 0;
+    const filesReady  = hasTemplate && hasTenants;
+
+    // Check email confirmation match
+    const emailVal = ($("#email-input") || {}).value || "";
+    const confirmVal = ($("#email-confirm-input") || {}).value || "";
+    const mismatchEl = $("#email-mismatch-error");
+    let emailOk = true;
+
+    if (emailVal && confirmVal && emailVal !== confirmVal) {
+        emailOk = false;
+        if (mismatchEl) mismatchEl.classList.remove("hidden");
+    } else {
+        if (mismatchEl) mismatchEl.classList.add("hidden");
+    }
+
+    const checkedCount = document.querySelectorAll("#provision-list input[type=checkbox]:checked").length;
+    const provisionsReady = checkedCount > 0;
+    const ready = filesReady && emailOk && provisionsReady;
+    btn.disabled = !ready;
+
+    btn.textContent = "Analyze Leases";
+
+    if (filesReady && !provisionsReady) {
+        est.textContent = "Select at least one provision to analyze";
+    } else if (filesReady) {
+        const { mins, detail } = calcEstimate(checkedCount, identityChecks, tenantFiles.length, getSelectedProvisionIds());
+        est.textContent = `Estimated time: ~${mins} minute${mins !== 1 ? "s" : ""} (${detail})`;
+    } else if (!templateFile && tenantFiles.length === 0) {
+        est.textContent = "";
+    } else if (!templateFile) {
+        est.textContent = "Upload a standard template to continue";
+    } else {
+        est.textContent = "Upload at least one tenant lease to continue";
+    }
+
+    // Show/hide add-more back link
+    const addmoreBackLink = $("#addmore-back-link");
+    if (addmoreBackLink) {
+        const inAddMore = addMoreMode === "addmore";
+        addmoreBackLink.classList.toggle("hidden", !inAddMore);
+    }
+}
+
+function lockAnalyzedProvisions() {
+    // Lock provisions that were already analyzed in the existing job
+    lockedProvisionIds = new Set();
+    if (!currentResults || !currentResults.tenants || !currentResults.tenants[0]) return;
+    const firstTenant = currentResults.tenants[0];
+    if (!firstTenant.results || !firstTenant.results.provisions) return;
+    firstTenant.results.provisions.forEach(p => {
+        if (p.provision_id) lockedProvisionIds.add(p.provision_id);
+    });
+
+    // Disable and check locked provisions in the UI
+    const checkboxes = document.querySelectorAll("#provision-list input[type=checkbox]");
+    checkboxes.forEach(cb => {
+        if (lockedProvisionIds.has(cb.value)) {
+            cb.checked = true;
+            cb.disabled = true;
+            cb.closest("li").classList.add("provision-locked");
+            cb.closest("li").title = "Already analyzed \u2014 will be included automatically";
+        }
+    });
+
+    // Insert section dividers: "Already analyzed" above locked items, "Add to analysis" above unlocked
+    const list = document.querySelector("#provision-list");
+    if (list && lockedProvisionIds.size > 0) {
+        // Remove any existing dividers
+        list.querySelectorAll(".provision-section-label").forEach(el => el.remove());
+
+        const items = Array.from(list.querySelectorAll("li:not(.provision-section-label)"));
+        let insertedLocked = false;
+        let insertedNew = false;
+
+        for (const li of items) {
+            const cb = li.querySelector("input[type=checkbox]");
+            if (!cb) continue;
+            const isLocked = lockedProvisionIds.has(cb.value);
+
+            if (isLocked && !insertedLocked) {
+                const label = document.createElement("li");
+                label.className = "provision-section-label provision-section-locked";
+                label.textContent = "\u2713 Already analyzed \u2014 included automatically";
+                list.insertBefore(label, li);
+                insertedLocked = true;
+            } else if (!isLocked && !insertedNew) {
+                const label = document.createElement("li");
+                label.className = "provision-section-label provision-section-new";
+                label.textContent = "+ Select provisions to add";
+                list.insertBefore(label, li);
+                insertedNew = true;
+            }
+        }
+    }
+
+    updateSubmitState();
+}
+
+async function loadProvisions() {
+    try {
+        const resp = await fetch(selectedAnalysisType.provisions_endpoint);
+        if (!resp.ok) throw new Error("Failed to load provisions");
+        provisions = await resp.json();
+        renderProvisions();
+    } catch (err) {
+        console.error("Failed to load provisions:", err);
+        provisions = [];
+    }
+}
+
+function renderProvisions() {
+    const list = $("#provision-list");
+    list.innerHTML = "";
+    const defaultChecked = addMoreMode === "addmore" ? "" : "checked";
+    provisions.forEach(p => {
+        // Skip LP-00 (always_on) — it runs automatically, not shown as checkbox
+        if (p.id === "LP-00" || p.always_on) return;
+        const li = document.createElement("li");
+        li.innerHTML = `<label title="${esc(p.description)}">
+            <input type="checkbox" value="${esc(p.id)}" ${defaultChecked}>
+            <span>${esc(p.id)} ${esc(p.name)}</span>
+        </label>`;
+        list.appendChild(li);
+    });
+    customProvisions.forEach((cp, i) => {
+        const li = document.createElement("li");
+        li.innerHTML = `<label>
+            <input type="checkbox" value="${esc(cp.id)}" ${defaultChecked}>
+            <span>${esc(cp.name)}</span>
+            <button class="remove-file" data-custom="${i}" title="Remove">&times;</button>
+        </label>`;
+        li.querySelector(".remove-file").addEventListener("click", e => {
+            e.stopPropagation();
+            customProvisions.splice(i, 1);
+            renderProvisions();
+            updateSubmitState();
+        });
+        list.appendChild(li);
+    });
+
+    // Hook checkbox changes to update estimate
+    list.querySelectorAll("input[type=checkbox]").forEach(cb => {
+        cb.addEventListener("change", updateSubmitState);
+    });
+
+    // If in add-more mode, lock already-analyzed provisions immediately after render
+    if (addMoreMode === "addmore") {
+        lockAnalyzedProvisions();
+    }
+}
+
+function toggleAllProvisions(checked) {
+    // Standard provisions
+    $$("#provision-list input[type=checkbox]").forEach(cb => {
+        if (!cb.disabled) cb.checked = checked;
+    });
+    // Non-standard provisions (from prescan)
+    $$(".nonstandard-cb").forEach(cb => {
+        if (!cb.disabled) cb.checked = checked;
+    });
+    updateSubmitState();
+}
+
+function addCustomProvision() {
+    const input = $("#custom-provision-input");
+    const name = input.value.trim();
+    if (!name) return;
+
+    const id = `CUSTOM-${String(customProvisions.length + 1).padStart(2, "0")}`;
+    customProvisions.push({id, name, description: name, search_hints: []});
+    input.value = "";
+    renderProvisions();
+    updateSubmitState();
+}
+
+function getSelectedProvisionIds() {
+    const checked = [];
+    $$("#provision-list input[type=checkbox]:checked").forEach(cb => {
+        checked.push(cb.value);
+    });
+    return checked;
+}
+
+
+// (showRunConfigModal removed in Step 138 — replaced by inline identity checkboxes)
+
+async function handleSubmit() {
+    const btn = $("#analyze-btn");
+    const errorEl = $("#submit-error");
+    errorEl.classList.add("hidden");
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Submitting...';
+
+    try {
+        // ── Add More mode ──
+        if (addMoreMode === "addmore" && currentJobId) {
+            const selectedIds = getSelectedProvisionIds();
+            const newIds = selectedIds.filter(id => !lockedProvisionIds.has(id));
+            const hasNewTenants = tenantFiles.length > 0;
+            const hasNewProvisions = newIds.length > 0;
+
+            if (!hasNewTenants && !hasNewProvisions) {
+                throw new Error("Upload new leases or select new provisions to continue.");
+            }
+
+            isAddMoreRun = true;
+            addMoreMode = null;
+            lockedProvisionIds = new Set();
+
+            // If new tenants: add them, optionally bundling new provisions in the same call
+            // to avoid the race condition where add-provisions sees status="processing"
+            if (hasNewTenants) {
+                const formData = new FormData();
+                tenantFiles.forEach(f => formData.append("tenant_files", f));
+                // Bundle new provisions into add-tenants so they're applied before
+                // incremental processing starts — avoids race condition
+                if (hasNewProvisions) {
+                    formData.append("add_provisions", JSON.stringify(newIds));
+                }
+                const resp = await fetch(`/api/jobs/${currentJobId}/add-tenants`, {
+                    method: "POST",
+                    body: formData,
+                });
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || `Server error (${resp.status})`);
+                }
+                // Provisions were bundled — skip separate add-provisions call
+                showState("processing");
+                const statusResp = await fetch(`/api/jobs/${currentJobId}`);
+                initProcessingView(await statusResp.json());
+                startPolling();
+                return;
+            }
+
+            // Provisions-only path (no new tenants): safe to call add-provisions directly
+            if (hasNewProvisions) {
+                const resp = await fetch(`/api/jobs/${currentJobId}/add-provisions`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ provisions: newIds }),
+                });
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.detail || `Server error (${resp.status})`);
+                }
+                showState("processing");
+                initProcessingView(await resp.json());
+                startPolling();
+                return;
+            }
+        }
+
+        // ── Normal submission ──
+        if (!templateFile || tenantFiles.length === 0) return;
+
+        // Step 138: Derive identity_check from inline checkboxes (replaces modal)
+        let identityCheck = "clauses_only";
+        if (identityChecks.landlord && identityChecks.tenant) {
+            identityCheck = "landlord_tenant";
+        } else if (identityChecks.landlord || identityChecks.property) {
+            identityCheck = "landlord_property";
+        }
+
+        const formData = new FormData();
+        formData.append("access_code", sessionStorage.getItem("cam_access_code") || "");
+        formData.append("email", $("#email-input").value.trim());
+        formData.append("template_file", templateFile);
+
+        tenantFiles.forEach(f => {
+            formData.append("tenant_files", f);
+        });
+
+        const selectedIds = getSelectedProvisionIds();
+        const standardIds = selectedIds.filter(id => id.startsWith("LP-"));
+        const customIds = selectedIds.filter(id => id.startsWith("CUSTOM-"));
+
+        if (standardIds.length > 0 && standardIds.length < provisions.length) {
+            formData.append("provisions", JSON.stringify(standardIds));
+        }
+
+        if (customIds.length > 0) {
+            const customList = customProvisions.filter(cp => customIds.includes(cp.id));
+            formData.append("custom_provisions", JSON.stringify(customList));
+        }
+
+        formData.append("strictness", "standard");
+        formData.append("template_type", "blank_template");
+        formData.append("identity_check", identityCheck);
+
+        const resp = await fetch(selectedAnalysisType.endpoint, {
+            method: "POST",
+            body: formData
+        });
+
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            const detail = Array.isArray(err.detail)
+                ? err.detail.map(e => e.msg || e.message || JSON.stringify(e)).join("; ")
+                : err.detail;
+            throw new Error(detail || `Server error (${resp.status})`);
+        }
+
+        const data = await resp.json();
+        currentJobId = data.job_id;
+
+        history.pushState(null, "", `/results/${currentJobId}`);
+
+        isAddMoreRun = false;
+        showState("processing");
+        initProcessingView(data);
+        startPolling();
+    } catch (err) {
+        if (err.message !== "_MODAL_CANCELLED_") {
+            errorEl.textContent = err.message;
+            errorEl.classList.remove("hidden");
+        }
+        btn.disabled = false;
+        btn.textContent = "Analyze Leases";
+    }
+}
+
+// ══════════════════════════════════════════════════════
+// STATE 4: Processing
+// ══════════════════════════════════════════════════════
+
+function initProcessingView(jobData) {
+    const email = $("#email-input").value.trim();
+    if (email) {
+        $("#email-notice").innerHTML = `&#128231; We'll email you at <strong>${esc(email)}</strong> when results are ready.`;
+    } else {
+        $("#email-notice").textContent = "Bookmark this link to return to your results.";
+    }
+
+    // Email capture card (shown only if no email was provided)
+    maybeShowEmailCapture(email);
+
+    // Start educational carousel
+    initCarousel();
+
+    // Initialize processing chat
+    initProcessingChat();
+
+    const resultsUrl = `${window.location.origin}/results/${currentJobId}`;
+    $("#results-link-input").value = resultsUrl;
+
+    // Reset cancel button state
+    const cancelBtn = $("#cancel-btn");
+    cancelBtn.classList.remove("hidden");
+    cancelBtn.disabled = false;
+    cancelBtn.textContent = "Cancel Analysis";
+
+    // Back-to-results link (add-more runs only)
+    const backLink = $("#processing-back-link");
+    if (backLink) {
+        backLink.classList.toggle("hidden", !isAddMoreRun);
+    }
+
+    // Show tenant names immediately with "Queued" status (don't wait for first poll)
+    const container = $("#tenant-progress-list");
+    const estimateEl = $("#estimate-remaining");
+    // Use local tenantFiles if available, else pull filenames from job data
+    let names = tenantFiles.map(f => f.name);
+    if (names.length === 0 && jobData && jobData.input_config && jobData.input_config.tenants) {
+        names = jobData.input_config.tenants.map(t => t.filename || "Lease");
+    }
+    if (names.length > 0) {
+        container.innerHTML = names.map(name => `<div class="tenant-progress">
+            <div class="tenant-name">
+                <span>${esc(name)}</span>
+                <span class="tenant-status-label">Queued</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width:0%"></div>
+            </div>
+        </div>`).join("");
+        // Step 196: start stable whole-job progress tracking from the initial estimate
+        const _provIds = (jobData && jobData.input_config && jobData.input_config.provisions) || [];
+        const _provCount = _provIds.length || document.querySelectorAll("#provision-list input[type=checkbox]:checked").length || 18;
+        const { secsPerLease, mins } = calcEstimate(_provCount, identityChecks, names.length, _provIds);
+        currentSecsPerLease = secsPerLease;
+        const estimateMinutesFromJob = Number(jobData && jobData.estimated_minutes);
+        const _totalSecs = Number.isFinite(estimateMinutesFromJob) && estimateMinutesFromJob > 0
+            ? estimateMinutesFromJob * 60
+            : mins * 60;
+        const startedAt = (jobData && (jobData.started_at || jobData.created_at)) || null;
+        const _alreadyElapsed = startedAt
+            ? Math.max(0, (Date.now() - new Date(startedAt).getTime()) / 1000)
+            : 0;
+        startEstimateCountdown(_totalSecs, { alreadyElapsedSecs: _alreadyElapsed, initialProgressFraction: 0 });
+    } else {
+        container.innerHTML = '<div style="text-align:center; padding:2rem;"><span class="spinner"></span> Starting analysis...</div>';
+        estimateEl.textContent = "";
+    }
+}
+
+async function handleCancel() {
+    if (!currentJobId) return;
+    if (!confirm("Cancel this analysis? Completed results will be kept.")) return;
+
+    const btn = $("#cancel-btn");
+    btn.disabled = true;
+    btn.textContent = "Cancelling...";
+
+    try {
+        const resp = await fetch(`/api/jobs/${currentJobId}/cancel`, { method: "POST" });
+        if (!resp.ok) {
+            const data = await resp.json().catch(() => ({}));
+            console.warn("[CAM] Cancel failed:", data.detail || resp.status);
+            cancelRequested = false;
+            btn.disabled = false;
+            btn.textContent = "Cancel Analysis";
+            return;
+        }
+        // Show cancelling state immediately
+        cancelRequested = true;
+        showCancellingState();
+        // Polling continues to detect when status flips to "cancelled"
+    } catch (err) {
+        console.error("Cancel error:", err);
+        cancelRequested = false;
+        btn.disabled = false;
+        btn.textContent = "Cancel Analysis";
+    }
+}
+
+function showCancellingState() {
+    const container = $("#tenant-progress-list");
+    const estimateEl = $("#estimate-remaining");
+    estimateEl.textContent = "";
+    container.innerHTML = `
+        <div class="cancelling-state">
+            <span class="spinner"></span>
+            <div class="cancelling-title">Cancelling analysis...</div>
+            <div class="cancelling-detail">Waiting for the current operation to finish. This may take up to a minute.</div>
+        </div>`;
+    // Hide cancel button and processing info while cancelling
+    const cancelBtn = $("#cancel-btn");
+    if (cancelBtn) cancelBtn.classList.add("hidden");
+}
+
+function renderProgress(job) {
+    const container = $("#tenant-progress-list");
+    const estimateEl = $("#estimate-remaining");
+
+    if (!job) {
+        container.innerHTML = '<div style="text-align:center; padding:2rem;"><span class="spinner"></span> Starting analysis...</div>';
+        estimateEl.textContent = "";
+        return;
+    }
+
+    const tenants = (job.input_config || {}).tenants || [];
+    const jobStatus = job.status || "";
+    let completedCount = 0;
+    let failedCount = 0;
+
+    let completedPre = 0;
+    let overallFraction = 0;
+    tenants.forEach(t => {
+        if (t.status === "completed") completedPre++;
+        overallFraction += getTenantProgressFraction(t, jobStatus);
+    });
+    const totalCount = tenants.length;
+    const pct = totalCount > 0 ? Math.round((overallFraction / totalCount) * 100) : 0;
+    estimateProgressFraction = totalCount > 0 ? (overallFraction / totalCount) : 0;
+    updateEstimateDisplay();
+    const overallBarHtml = totalCount > 0 ? `
+        <div class="job-progress-overall">
+            <div class="job-progress-label">${completedPre} of ${totalCount} contracts complete | ${pct}% overall progress</div>
+            <div class="job-progress-bar">
+                <div class="job-progress-fill" style="width:${pct}%"></div>
+            </div>
+        </div>` : '';
+
+    container.innerHTML = overallBarHtml + tenants.map((t, i) => {
+        let statusLabel = "Queued";
+        let stageDetail = "";
+        let fillClass = "";
+        let width = "0%";
+
+        // If job-level status is "processing" but tenant still shows "queued",
+        // treat it as processing (background thread may not have updated it yet)
+        const effectiveStatus = (t.status === "queued" && jobStatus === "processing")
+            ? "processing" : t.status;
+
+        if (effectiveStatus === "completed") {
+            statusLabel = "\u2705 Complete";
+            fillClass = "completed";
+            width = "100%";
+            completedCount++;
+        } else if (effectiveStatus === "processing") {
+            if (t.current_stage && t.total_stages) {
+                statusLabel = `Stage ${t.current_stage} of ${t.total_stages}`;
+                width = `${Math.round((t.current_stage / t.total_stages) * 100)}%`;
+                stageDetail = t.stage_detail || "";
+            } else {
+                statusLabel = t.stage || "Processing...";
+                width = "10%";
+            }
+            fillClass = "processing";
+        } else if (effectiveStatus === "cancelled") {
+            statusLabel = "Cancelled";
+            fillClass = "";
+            width = "0%";
+        } else if (effectiveStatus === "failed") {
+            statusLabel = "Failed";
+            fillClass = "failed";
+            width = "100%";
+            failedCount++;
+        }
+
+        return `<div class="tenant-progress">
+            <div class="tenant-name">
+                <span>${esc(t.filename)}</span>
+                <span class="tenant-status-label">${statusLabel}</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill ${fillClass}" style="width:${width}"></div>
+            </div>
+            ${stageDetail ? `<div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">${esc(stageDetail)}</div>` : ""}
+        </div>`;
+    }).join("");
+}
+
+function handleCancelledJob(job) {
+    cancelRequested = false;
+    isAddMoreRun = false;
+
+    // Hide cancel button
+    const cancelBtn = $("#cancel-btn");
+    if (cancelBtn) cancelBtn.classList.add("hidden");
+
+    const estimateEl = $("#estimate-remaining");
+    if (estimateEl) estimateEl.textContent = "";
+
+    // Check if any tenants completed
+    const tenants = (job.input_config || {}).tenants || [];
+    const completedTenants = tenants.filter(t => t.status === "completed");
+
+    const container = $("#tenant-progress-list");
+
+    if (completedTenants.length > 0) {
+        container.innerHTML = `
+            <div class="cancel-confirm">
+                <div class="cancel-confirm-icon">&#10003;</div>
+                <div class="cancel-confirm-title">Analysis cancelled</div>
+                <div class="cancel-confirm-detail">
+                    Your analysis was stopped. ${completedTenants.length} of ${tenants.length}
+                    lease${tenants.length > 1 ? "s" : ""} completed before cancellation.
+                    Results for completed leases have been preserved.
+                </div>
+                <div class="cancel-confirm-actions">
+                    <button class="btn btn-primary" id="cancel-new-analysis-btn">&#128196; Start New Analysis</button>
+                    <button class="btn btn-outline" id="cancel-view-partial-btn">&#128203; View Partial Results</button>
+                </div>
+            </div>`;
+        $("#cancel-new-analysis-btn").addEventListener("click", () => {
+            currentJobId = null; currentJobData = null; currentResults = null;
+            currentTenantIndex = 0; addMoreMode = null; activeTopTab = "overview"; snapshotActiveIndex = null; snapshotVisited = false; snapshotSort = 'risk'; snapshotSeverityFilter = 'all'; snapshotStatusFilter = 'all'; snapshotSearch = ''; snapshotContractFilter = new Set(); // prescan removed (112), Step 130
+            if (expiryTimer) { clearInterval(expiryTimer); expiryTimer = null; }
+            stopPolling(); history.replaceState(null, "", "/"); enterApp();
+        });
+        $("#cancel-view-partial-btn").addEventListener("click", () => {
+            window.CAM.viewCancelledResults();
+        });
+    } else {
+        container.innerHTML = `
+            <div class="cancel-confirm">
+                <div class="cancel-confirm-icon">&#10003;</div>
+                <div class="cancel-confirm-title">Analysis cancelled</div>
+                <div class="cancel-confirm-detail">
+                    Your analysis was stopped before any results were available.
+                </div>
+                <div class="cancel-confirm-actions">
+                    <button class="btn btn-primary" id="cancel-new-analysis-btn">&#128196; Start New Analysis</button>
+                </div>
+            </div>`;
+        $("#cancel-new-analysis-btn").addEventListener("click", () => {
+            currentJobId = null; currentJobData = null; currentResults = null;
+            currentTenantIndex = 0; addMoreMode = null; activeTopTab = "overview"; snapshotActiveIndex = null; snapshotVisited = false; snapshotSort = 'risk'; snapshotSeverityFilter = 'all'; snapshotStatusFilter = 'all'; snapshotSearch = ''; snapshotContractFilter = new Set(); // prescan removed (112), Step 130
+            if (expiryTimer) { clearInterval(expiryTimer); expiryTimer = null; }
+            stopPolling(); history.replaceState(null, "", "/"); enterApp();
+        });
+    }
+}
+
+function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(pollJobStatus, POLL_INTERVAL_MS);
+    pollJobStatus();
+}
+
+function stopPolling() {
+    stopEstimateCountdown(); // Step 196: always kill countdown when polling stops
+    if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+    }
+}
+
+function handleBackToResults() {
+    stopPolling();
+    loadResults().then(() => {
+        showState("results");
+    });
+}
+
+function cancelAddMore() {
+    addMoreMode = null;
+    lockedProvisionIds = new Set();
+    showState("results");
+}
+
+async function pollJobStatus() {
+    if (!currentJobId) return;
+    // Safety: stop polling if we've already left the processing state
+    if (currentState !== "processing") {
+        stopPolling();
+        return;
+    }
+
+    try {
+        const resp = await fetch(`/api/jobs/${currentJobId}`);
+
+        if (resp.status === 410) {
+            stopPolling();
+            showExpiredPage();
+            return;
+        }
+        if (resp.status === 404) {
+            pollNotFoundCount = (pollNotFoundCount || 0) + 1;
+            if (pollNotFoundCount >= 3) {
+                stopPolling();
+                showExpiredPage("This job is no longer available. It may have been cleaned up or the server was restarted.");
+            }
+            return;
+        }
+        pollNotFoundCount = 0;
+        if (!resp.ok) throw new Error("Failed to poll job status");
+
+        const job = await resp.json();
+        currentJobData = job;
+
+        if (currentState === "processing" && !cancelRequested) {
+            const tenants = (job.input_config || {}).tenants || [];
+            console.log(`[CAM Poll] job.status=${job.status}, tenants:`, tenants.map(t => ({
+                filename: t.filename, status: t.status, stage: t.stage,
+                current_stage: t.current_stage, total_stages: t.total_stages,
+                stage_detail: t.stage_detail
+            })));
+            renderProgress(job);
+        }
+
+        if (job.status === "completed") {
+            stopPolling();
+            stopCarousel();
+            resetProcessingChat();
+            await loadResults();
+            showState("results");
+            // Scroll to top so synopsis/summary bar is visible
+            if (isAddMoreRun) {
+                const resultsContent = $("#results-content");
+                if (resultsContent) resultsContent.scrollIntoView({ behavior: "smooth", block: "start" });
+                isAddMoreRun = false;
+            }
+        } else if (job.status === "cancelled") {
+            stopPolling();
+            stopCarousel();
+            resetProcessingChat();
+            handleCancelledJob(job);
+        } else if (job.status === "failed") {
+            stopPolling();
+            stopCarousel();
+            resetProcessingChat();
+            renderProgress(job);
+            const errorMsg = job.error || "Analysis failed. Please try again.";
+            const container = $("#tenant-progress-list");
+            container.innerHTML += `<div class="alert alert-error mt-2">${esc(errorMsg)}</div>`;
+        }
+    } catch (err) {
+        console.error("Poll error:", err);
+    }
+}
+
+// ══════════════════════════════════════════════════════
+// Expiry Handling
+// ══════════════════════════════════════════════════════
+
+function showExpiredPage(message) {
+    // Show expired/unavailable state
+    const msg = message || "Results are no longer available. For security, all analysis data is automatically deleted after the expiry window. Please run a new analysis if needed.";
+    const main = $(".app-main");
+    main.innerHTML = `
+        <div style="text-align:center; padding:4rem 2rem;">
+            <div style="font-size:3rem; margin-bottom:1rem;">\uD83D\uDD12</div>
+            <h2 style="margin-bottom:0.5rem;">Analysis Unavailable</h2>
+            <p style="color:var(--text-muted); max-width:480px; margin:0 auto 2rem;">
+                ${esc(msg)}
+            </p>
+            <a href="/" class="btn btn-primary">Start New Analysis</a>
+        </div>
+    `;
+}
+
+function startExpiryCountdown(expiresAt) {
+    if (expiryTimer) clearInterval(expiryTimer);
+
+    const noticeEl = $("#expiry-notice");
+    if (!noticeEl) return;
+
+    function updateCountdown() {
+        const now = Date.now();
+        const expiry = new Date(expiresAt).getTime();
+        const remainMs = expiry - now;
+
+        if (remainMs <= 0) {
+            noticeEl.textContent = "Results have expired.";
+            noticeEl.className = "expiry-notice urgent";
+            if (expiryTimer) clearInterval(expiryTimer);
+            return;
+        }
+
+        const remainingMin = Math.floor(remainMs / 60000);
+        const urgent = remainMs < 300000; // urgent under 5 minutes
+        const warning = remainMs < 3600000; // warning under 60 minutes
+
+        let timeStr;
+        if (remainingMin > 60) {
+            const hours = Math.floor(remainingMin / 60);
+            const mins = remainingMin % 60;
+            timeStr = `${hours}h ${mins}m`;
+        } else {
+            const secs = Math.floor((remainMs % 60000) / 1000);
+            timeStr = remainingMin > 0 ? `${remainingMin}m ${secs}s` : `${secs}s`;
+        }
+
+        noticeEl.classList.remove("hidden");
+        if (urgent) {
+            noticeEl.textContent = `⚠ ${timeStr} to deletion`;
+            noticeEl.className = "expiry-notice urgent";
+        } else if (warning) {
+            noticeEl.textContent = `🔒 ${timeStr} to deletion`;
+            noticeEl.className = "expiry-notice warning";
+        } else {
+            noticeEl.textContent = `🔒 ${timeStr} to deletion`;
+            noticeEl.className = "expiry-notice";
+        }
+    }
+
+    updateCountdown();
+    expiryTimer = setInterval(updateCountdown, 10000);
+}
+
+// ══════════════════════════════════════════════════════
+// STATE 5: Results
+// ══════════════════════════════════════════════════════
+
+async function loadResults() {
+    if (!currentJobId) return;
+
+    try {
+        window._conformingConcernsLoaded = false;
+        const resp = await fetch(`/api/jobs/${currentJobId}/results`);
+
+        if (resp.status === 410) {
+            showExpiredPage();
+            return;
+        }
+        if (!resp.ok) throw new Error("Failed to load results");
+        currentResults = await resp.json();
+        restoreResultsViewState();
+        renderResults();
+    } catch (err) {
+        console.error("Load results error:", err);
+    }
+}
+
+function renderResults() {
+    if (!currentResults || !currentResults.tenants) return;
+
+    // Load job data if we don't have it
+    if (!currentJobData) {
+        fetch(`/api/jobs/${currentJobId}`)
+            .then(r => r.json())
+            .then(job => {
+                currentJobData = job;
+                if (job.expires_at) startExpiryCountdown(job.expires_at);
+            })
+            .catch(() => {});
+    } else {
+        if (currentJobData.expires_at) startExpiryCountdown(currentJobData.expires_at);
+    }
+
+    // Initialize chat panel (always-on, no FAB on wide screens)
+    initChat();
+    // Show mobile FAB
+    const mobileFab = $("#chat-fab-mobile");
+    if (mobileFab) mobileFab.classList.remove("hidden");
+
+    renderNavSidebar();
+    syncResultsTopBarLayout();
+    renderDealBrief();
+    renderProvisionsScopeCard();
+    renderDealOverview();
+    renderAISummaryBar();
+    renderContractStatusPanel();
+    renderTechDetails();
+    renderTenantSelector();
+
+    // Step 122: Filter bar no longer shown on Analysis Overview — moved to Run Snapshot
+    // initFilterBar() still needed to initialize the dropdowns
+    const filterBar = $("#filter-bar");
+    if (filterBar) filterBar.classList.add("hidden");
+
+    // Populate docview tenant selector
+    const dts = $("#docview-tenant-select");
+    if (dts) {
+        dts.innerHTML = currentResults.tenants.map((t, i) =>
+            `<option value="${i}">${esc(t.filename)}</option>`
+        ).join("");
+        dts.value = currentTenantIndex;
+    }
+
+    // Initialize filter bar (043)
+    initFilterBar();
+
+    // Initialize chat scope selector (044)
+    initChatScope();
+
+    // ── Step 116: Top-level tabs + Run Snapshot ──
+    const topTabBar = $("#top-tab-bar");
+    if (topTabBar) {
+        topTabBar.querySelectorAll(".top-tab").forEach(btn => {
+            btn.onclick = () => switchTopTab(btn.dataset.topTab);
+        });
+    }
+
+    const backBtn = $("#contract-detail-back");
+    if (backBtn) backBtn.onclick = closeContractDetail;
+
+    // Wire detail sub-tab clicks (now in top nav)
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail").forEach(function(btn) {
+        btn.onclick = function() {
+            var _l = { findings: 'Contract Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
+            setSubheader(_l[btn.dataset.tab] || btn.dataset.tab);
+            if (!contractDetailOpen) {
+                showNoContractPlaceholder(btn.dataset.tab);
+            } else {
+                switchResultsTab(btn.dataset.tab);
+            }
+        };
+    });
+
+    renderRunSnapshot();
+    checkCompletionBanner();
+
+    if (
+        contractDetailOpen &&
+        Number.isInteger(currentTenantIndex) &&
+        currentTenantIndex >= 0 &&
+        currentTenantIndex < currentResults.tenants.length &&
+        (activeTopTab === "findings" || activeTopTab === "docview" || activeTopTab === "audittrail")
+    ) {
+        openContractDetail(currentTenantIndex);
+    } else {
+        switchTopTab(activeTopTab);
+    }
+}
+
+// ── Left Nav Sidebar (039x) ──
+
+function renderNavSidebar() {
+    const container = $("#nav-sidebar-content");
+    if (!container || !currentResults) return;
+    container.innerHTML = "";
+
+    const tenants = currentResults.tenants || [];
+    const header = document.querySelector(".nav-sidebar-header");
+    if (header) {
+        const totalIssues = tenants.reduce((sum, tenant, tenantIdx) => {
+            const provisions = (tenant.results && tenant.results.provisions) || [];
+            const unresolved = getDeviationWorkflowProvisions(provisions).filter((p) => {
+                const key = `${tenantIdx}:${p.provision_id}`;
+                const status = (resolutionState[key] || {}).status || "open";
+                return status !== "resolved" && status !== "not_a_deviation";
+            });
+            return sum + unresolved.length;
+        }, 0);
+        header.innerHTML =
+            '<div class="nav-sidebar-header-main">Open Issues</div>' +
+            '<div class="nav-sidebar-header-meta">' + esc(String(tenants.length)) + ' lease' + (tenants.length === 1 ? '' : 's') + ' • ' + esc(String(totalIssues)) + ' issue' + (totalIssues === 1 ? '' : 's') + '</div>';
+    }
+
+    // Severity sort order for open issues
+    const sevOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+
+    // LP/CUSTOM/ADDED sort key
+    const pidSortKey = function(pid) {
+        const m = (pid || "").match(/^(LP|CUSTOM|ADDED)-(\d+)/i);
+        if (!m) return [3, 999];
+        const prefix = m[1].toUpperCase();
+        const num = parseInt(m[2], 10);
+        if (prefix === "LP")     return [0, num];
+        if (prefix === "CUSTOM") return [1, num];
+        return [2, num];
+    };
+
+    tenants.forEach((tenant, i) => {
+        const tenantEl = document.createElement("div");
+        tenantEl.className = "nav-tenant";
+        tenantEl.setAttribute("data-tenant-index", String(i));
+
+        // Deduplicate provisions
+        const rawProvisions = (tenant.results && tenant.results.provisions) || [];
+        const seenNavPids = new Set();
+        const provisions = rawProvisions.filter(p => {
+            const pid = p.provision_id || p.id;
+            if (seenNavPids.has(pid)) return false;
+            seenNavPids.add(pid);
+            return true;
+        });
+
+        const tenantName = formatTenantName(tenant.filename) || ("Tenant " + (i + 1));
+        const s121 = tenant.results && tenant.results.summary ? tenant.results.summary : null;
+        const unresolvedDeviations = getDeviationWorkflowProvisions(provisions).filter(function(p) {
+            const key = `${i}:${p.provision_id}`;
+            const status = (resolutionState[key] || {}).status || "open";
+            return status !== "resolved" && status !== "not_a_deviation";
+        });
+        const outstandingCount = unresolvedDeviations.length;
+
+        // Resolution-aware status icon
+        const resolution = getContractResolution(i);
+        let statusIcon, statusCls;
+        if (resolution === "clean")    { statusIcon = "\u2713"; statusCls = "nav-status-clean"; }
+        else if (resolution === "resolved") { statusIcon = "\u2713"; statusCls = "nav-status-resolved"; }
+        else                           { statusIcon = "\u26A0"; statusCls = "nav-status-unreviewed"; }
+
+        // Overall status label
+        let navStatusLabel = '', navStatusClass = '';
+        if (s121) {
+            if (s121.critical > 0)      { navStatusLabel = 'Immediate Action'; navStatusClass = 'nav-status-critical'; }
+            else if (s121.high > 0)     { navStatusLabel = 'Review Recommended'; navStatusClass = 'nav-status-high'; }
+            else if (s121.deviates > 0) { navStatusLabel = 'Monitor'; navStatusClass = 'nav-status-medium'; }
+            else                        { navStatusLabel = 'Clear'; navStatusClass = 'nav-status-clear'; }
+        }
+
+        // Tenant label
+        const label = document.createElement("div");
+        label.className = "nav-tenant-label";
+        label.setAttribute("data-nav-tenant-index", String(i));
+
+        const titleWrap = document.createElement("span");
+        titleWrap.className = "nav-tenant-title-wrap";
+
+        const statusIconEl = document.createElement("span");
+        statusIconEl.className = "nav-tenant-status " + statusCls;
+        statusIconEl.textContent = statusIcon;
+        titleWrap.appendChild(statusIconEl);
+
+        const titleTextEl = document.createElement("span");
+        titleTextEl.className = "nav-tenant-title-text";
+        titleTextEl.textContent = outstandingCount > 0 ? (tenantName + " (" + outstandingCount + ")") : tenantName;
+        titleWrap.appendChild(titleTextEl);
+
+        label.appendChild(titleWrap);
+
+        if (navStatusLabel) {
+            const headerStatusEl = document.createElement("span");
+            headerStatusEl.className = "nav-tenant-header-status " + navStatusClass;
+            headerStatusEl.textContent = navStatusLabel;
+            label.appendChild(headerStatusEl);
+        }
+
+        label.onclick = function() { scrollToTenant(i); };
+        tenantEl.appendChild(label);
+
+        const sevMap = { 'nav-status-critical': 'sev-critical', 'nav-status-high': 'sev-high', 'nav-status-medium': 'sev-medium', 'nav-status-clear': 'sev-clear' };
+        if (sevMap[navStatusClass]) tenantEl.classList.add(sevMap[navStatusClass]);
+        if (navStatusLabel) {
+            const statusLabelEl = document.createElement('div');
+            statusLabelEl.className = 'nav-status-label ' + navStatusClass;
+            statusLabelEl.textContent = navStatusLabel;
+            tenantEl.appendChild(statusLabelEl);
+        }
+
+        if (s121) {
+            const countsRow = document.createElement('div');
+            countsRow.className = 'nav-tenant-counts';
+            const chips = [];
+            if ((s121.critical || 0) > 0) chips.push('<span class="nav-count-chip critical">' + esc(String(s121.critical)) + ' critical</span>');
+            if ((s121.high || 0) > 0) chips.push('<span class="nav-count-chip high">' + esc(String(s121.high)) + ' high</span>');
+            if ((s121.medium || 0) > 0) chips.push('<span class="nav-count-chip medium">' + esc(String(s121.medium)) + ' medium</span>');
+            if ((s121.low || 0) > 0) chips.push('<span class="nav-count-chip low">' + esc(String(s121.low)) + ' low</span>');
+            countsRow.innerHTML = chips.join('');
+            tenantEl.appendChild(countsRow);
+        }
+
+        // ── OPEN ISSUES section (deviations sorted by severity) ──────────────
+        const deviations = unresolvedDeviations
+            .sort((a, b) => {
+                const sa = sevOrder[a.severity] !== undefined ? sevOrder[a.severity] : 99;
+                const sb = sevOrder[b.severity] !== undefined ? sevOrder[b.severity] : 99;
+                return sa - sb;
+            });
+
+        if (deviations.length > 0) {
+            const issuesHeader = document.createElement("div");
+            issuesHeader.className = "nav-section-header";
+            issuesHeader.textContent = "Open Issues";
+            tenantEl.appendChild(issuesHeader);
+
+            const issuesList = document.createElement("div");
+            issuesList.className = "nav-issues-list";
+            deviations.forEach(p => {
+                const pid = p.provision_id || "";
+                const sev = (p.severity || "MEDIUM").toUpperCase();
+                const sevLow = sev.toLowerCase();
+                // Strip LP-XX prefix from provision name for display
+                const cleanName = (p.provision_name || pid).replace(/^LP-\d{2}\s+/, "").replace(/^CUSTOM-\d+\s+/, "");
+                const concern = getConformingConcernState(pid);
+
+                const item = document.createElement("div");
+                item.className = "nav-issue-item nav-issue-" + sevLow;
+                item.innerHTML =
+                    `<span class="nav-issue-sev nav-issue-sev-${sevLow}">${esc(sev)}</span>` +
+                    `<span class="nav-issue-name">${esc(cleanName)}</span>`;
+                item.title = pid + " — " + sev;
+                item.onclick = function() {
+                    scrollToTenant(i);
+                    setTimeout(function() { jumpToFinding(pid); }, 100);
+                };
+                issuesList.appendChild(item);
+            });
+            tenantEl.appendChild(issuesList);
+        }
+
+        // ── ALL PROVISIONS section (LP order) ────────────────────────────────
+        const allProvsCount = provisions.filter(p => p.provision_id !== "LP-00").length;
+        const allProvsDivider = document.createElement("div");
+        allProvsDivider.className = "nav-section-header nav-section-header--all nav-section-toggle";
+        allProvsDivider.innerHTML =
+            `<span>All Provisions <span class="nav-all-count">(${allProvsCount})</span></span>` +
+            `<span class="nav-toggle-chevron">&#9654;</span>`;
+        allProvsDivider.onclick = function() {
+            const isHidden = allProvsList.classList.contains("hidden");
+            allProvsList.classList.toggle("hidden", !isHidden);
+            allProvsDivider.querySelector(".nav-toggle-chevron").innerHTML = isHidden ? "&#9660;" : "&#9654;";
+        };
+        tenantEl.appendChild(allProvsDivider);
+
+        const allProvsList = document.createElement("div");
+        allProvsList.className = "nav-all-provisions hidden"; // collapsed by default
+
+        const sorted = provisions
+            .filter(p => p.provision_id !== "LP-00")
+            .slice()
+            .sort((a, b) => {
+                const ka = pidSortKey(a.provision_id || "");
+                const kb = pidSortKey(b.provision_id || "");
+                return ka[0] - kb[0] || ka[1] - kb[1];
+            });
+
+        sorted.forEach(p => {
+            const pid = p.provision_id || "";
+            const verdict = p.final_verdict || "";
+            const sev = (p.severity || "").toLowerCase();
+            const cleanName = (p.provision_name || pid).replace(/^LP-\d{2}\s+/, "").replace(/^CUSTOM-\d+\s+/, "");
+            const concern = getConformingConcernState(pid);
+            const resolution = (resolutionState[`${i}:${pid}`] || {}).status || "open";
+            const isResolved = resolution === "resolved";
+            const isNotDeviation = resolution === "not_a_deviation";
+            const isWorkflowDeviation = isDeviationWorkflowProvision(p);
+
+            const item = document.createElement("div");
+            item.className = "nav-all-item" + (isWorkflowDeviation ? " nav-all-deviates" : " nav-all-conforms") + ((isResolved || isNotDeviation) ? " nav-all-resolved" : "");
+
+            let iconHtml;
+            if (isResolved) {
+                iconHtml = `<span class="nav-all-icon nav-all-resolved-icon">&#10003;</span>`;
+            } else if (isNotDeviation) {
+                iconHtml = `<span class="nav-all-icon nav-all-resolved-icon">&#10003;</span>`;
+            } else if (isWorkflowDeviation) {
+                iconHtml = `<span class="nav-dot ${esc(sev)}"></span>`;
+            } else if (concern === "flag") {
+                iconHtml = `<span class="nav-all-icon" style="color:#dc2626">&#9888;</span>`;
+            } else if (concern === "concern") {
+                iconHtml = `<span class="nav-all-icon" style="color:#d97706">&#128203;</span>`;
+            } else {
+                iconHtml = `<span class="nav-all-icon nav-all-check">&#10003;</span>`;
+            }
+
+            item.innerHTML = iconHtml +
+                `<span class="nav-all-name">${esc(cleanName)}</span>` +
+                (isResolved ? `<span class="nav-all-resolved-label">Resolved</span>` : (isNotDeviation ? `<span class="nav-all-resolved-label">Not a Deviation</span>` : ""));
+            item.title = pid;
+            item.onclick = function() {
+                scrollToTenant(i);
+                setTimeout(function() {
+                    if (isWorkflowDeviation) jumpToFinding(pid);
+                    else jumpToProvision(pid);
+                }, 100);
+            };
+            allProvsList.appendChild(item);
+        });
+
+        tenantEl.appendChild(allProvsList);
+        container.appendChild(tenantEl);
+    });
+
+    updateNavActive(currentTenantIndex);
+}
+
+function getConformingConcernEntry(pid) {
+    ensureConformingConcernsLoaded();
+    return window._conformingConcerns[pid] || null;
+}
+
+function getConformingConcernStoreKey() {
+    return currentJobId ? `cam:conforming-concerns:${currentJobId}` : "";
+}
+
+function ensureConformingConcernsLoaded() {
+    if (window._conformingConcernsLoaded) return;
+    window._conformingConcerns = {};
+    const storeKey = getConformingConcernStoreKey();
+    if (!storeKey) {
+        window._conformingConcernsLoaded = true;
+        return;
+    }
+    try {
+        const raw = window.localStorage.getItem(storeKey);
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && typeof parsed === "object") {
+                window._conformingConcerns = parsed;
+            }
+        }
+    } catch (err) {
+        console.warn("Could not load conforming concern state", err);
+    }
+    window._conformingConcernsLoaded = true;
+}
+
+function persistConformingConcerns() {
+    const storeKey = getConformingConcernStoreKey();
+    if (!storeKey) return;
+    try {
+        window.localStorage.setItem(storeKey, JSON.stringify(window._conformingConcerns || {}));
+    } catch (err) {
+        console.warn("Could not persist conforming concern state", err);
+    }
+}
+
+function getConformingConcernState(pid) {
+    const entry = getConformingConcernEntry(pid);
+    if (!entry) return "none";
+    if (typeof entry === "string") return entry;
+    return entry.state || "none";
+}
+
+function getConformingConcernReason(pid) {
+    const entry = getConformingConcernEntry(pid);
+    if (!entry || typeof entry === "string") return "";
+    return (entry.reason || "").trim();
+}
+
+function setConformingConcernEntry(pid, state, reason) {
+    ensureConformingConcernsLoaded();
+    if (!state || state === "none") {
+        window._conformingConcerns[pid] = "none";
+        persistConformingConcerns();
+        return;
+    }
+    if (state === "concern") {
+        window._conformingConcerns[pid] = { state: "concern", reason: "" };
+        persistConformingConcerns();
+        return;
+    }
+    window._conformingConcerns[pid] = { state, reason: (reason || "").trim() };
+    persistConformingConcerns();
+}
+
+function isManualEscalatedProvision(p) {
+    if (!p || p.provision_id === "LP-00" || p.final_verdict !== "CONFORMS") return false;
+    return getConformingConcernState(p.provision_id) === "flag";
+}
+
+function isDeviationWorkflowProvision(p) {
+    if (!p || p.provision_id === "LP-00") return false;
+    return p.final_verdict === "DEVIATES" || p.final_verdict === "UNCLEAR" || isManualEscalatedProvision(p);
+}
+
+function buildManualEscalatedProvision(p) {
+    const pid = p.provision_id || "";
+    const reason = getConformingConcernReason(pid);
+    return {
+        ...p,
+        final_verdict: "DEVIATES",
+        severity: (p.severity || "MEDIUM").toUpperCase(),
+        risk_headline: reason || "Manually escalated from conforming provision",
+        challenge_details: reason || "Reviewer manually escalated this conforming clause into the deviation workflow.",
+        recommended_action: "Review this manually escalated clause using the same workflow tools as other deviations.",
+        manual_escalation: true,
+    };
+}
+
+function getDeviationWorkflowProvisions(provisions) {
+    const base = [];
+    (provisions || []).forEach((p) => {
+        if (!p || p.provision_id === "LP-00") return;
+        if (p.final_verdict === "DEVIATES" || p.final_verdict === "UNCLEAR") {
+            base.push(p);
+            return;
+        }
+        if (isManualEscalatedProvision(p)) {
+            base.push(buildManualEscalatedProvision(p));
+        }
+    });
+    return base;
+}
+
+function getDocviewWorkflowProvisions(provisions) {
+    return (provisions || []).map((p) => {
+        if (isManualEscalatedProvision(p)) return buildManualEscalatedProvision(p);
+        return p;
+    });
+}
+
+function getDocviewDomIdSuffix(pid, tenantIdx) {
+    return `${tenantIdx}-${String(pid || "").replace(/[^a-zA-Z0-9_-]/g, "_")}`;
+}
+
+function buildDocviewDraftDecisionControls(provision, tenantIdx) {
+    if (!provision || provision.final_verdict !== "DEVIATES") return "";
+    const pid = provision.provision_id || "";
+    const dec = getFinalDraftDecision(tenantIdx, pid);
+    const activeChoice = dec ? dec.choice : null;
+    const hasSavedCustom = activeChoice === "custom" && dec && dec.text;
+    const modifyLabel = hasSavedCustom ? "Keep Modified ✓" : "Modify in Summary…";
+    return `
+        <span class="fd-decision-label">Draft Decision:</span>
+        <button class="fd-btn${activeChoice === 'template' ? ' fd-btn-active' : ''}" data-choice="template"
+            onclick="window.CAM.fdChooseSimple(${tenantIdx}, '${esc(pid)}', 'template'); event.stopPropagation();">
+            Keep Reference Draft
+        </button>
+        <button class="fd-btn${activeChoice === 'tenant' ? ' fd-btn-active' : ''}" data-choice="tenant"
+            onclick="window.CAM.fdChooseSimple(${tenantIdx}, '${esc(pid)}', 'tenant'); event.stopPropagation();">
+            Keep Tenant Draft
+        </button>
+        <button class="fd-btn${activeChoice === 'custom' ? ' fd-btn-active' : ''}" data-choice="custom"
+            onclick="window.CAM.openDocviewModify(${tenantIdx}, '${esc(pid)}'); event.stopPropagation();">
+            ${modifyLabel}
+        </button>
+    `;
+}
+
+function buildDocviewDeviationControls(provision, tenantIdx) {
+    if (!provision) return "";
+    const pid = provision.provision_id || "";
+    const suffix = getDocviewDomIdSuffix(pid, tenantIdx);
+    const resKey = `${tenantIdx}:${pid}`;
+    const res = resolutionState[resKey] || { status: "open", notes: [] };
+    const resStatus = res.status || "open";
+    const resNotes = res.notes || [];
+    const noteCount = resNotes.length;
+    const noteCountHtml = noteCount > 0 ? `<span class="res-note-count">${noteCount} note${noteCount !== 1 ? "s" : ""}</span>` : "";
+    const statusDefs = [
+        { key: "open", label: "Open", cls: "res-open" },
+        { key: "in_review", label: "In Review", cls: "res-inreview" },
+        { key: "escalated", label: "Escalate to Client", cls: "res-escalated" },
+        { key: "not_a_deviation", label: "Not a Deviation", cls: "res-notdeviation" },
+        { key: "resolved", label: "Resolved", cls: "res-resolved" },
+    ];
+    const statusPillsHtml = statusDefs.map((s) =>
+        `<button class="res-pill ${s.cls}${resStatus === s.key ? " res-pill-active" : ""}"
+            data-status="${s.key}" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}"
+            onclick="window.CAM.setResolutionStatus('${esc(pid)}', ${tenantIdx}, '${s.key}', this)">
+            ${s.label}
+        </button>`
+    ).join("");
+
+    return `
+        <div class="resolution-bar docview-resolution-bar" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}">
+            <div class="res-status-row finding-workflow-row">
+                <div class="workflow-group workflow-group-status">
+                    <span class="res-label">Status:</span>
+                    <div class="res-pills">${statusPillsHtml}</div>
+                </div>
+                <div class="workflow-divider" aria-hidden="true"></div>
+                <div class="workflow-group workflow-group-decision">
+                    ${buildDocviewDraftDecisionControls(provision, tenantIdx)}
+                </div>
+                <div class="workflow-divider" aria-hidden="true"></div>
+                <div class="workflow-group workflow-group-tools">
+                    <span class="res-tools-label">Tools:</span>
+                    <button class="res-notes-toggle" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}"
+                        onclick="window.CAM.toggleDocviewResolutionNotes('${esc(pid)}', ${tenantIdx}); event.stopPropagation();">
+                        📝 Notes${noteCountHtml ? ` ${noteCountHtml}` : ""}
+                    </button>
+                    <button class="res-advisor-btn" onclick="window.CAM.openResolutionAdvisor('${esc(pid)}', ${tenantIdx}); event.stopPropagation();">
+                        💡 AI Advisor
+                    </button>
+                </div>
+                <div class="workflow-divider workflow-divider-spacer" aria-hidden="true"></div>
+                <div class="workflow-open-actions workflow-group">
+                    <a class="docview-link card-docview-link card-docview-link--btn"
+                       href="#"
+                       onclick="window.CAM.openDocviewSummary(${tenantIdx}, '${esc(pid)}'); return false;">
+                        Open Contract Summary
+                    </a>
+                    <a class="card-audit-link card-audit-link--btn"
+                       href="#"
+                       onclick="window.CAM.jumpToAuditProvision(${tenantIdx}, '${esc(pid)}'); return false;"
+                       title="View full CAM analysis in Audit Trail">
+                        Open CAM Audit Trail
+                    </a>
+                </div>
+            </div>
+            <div class="res-notes-panel hidden docview-res-notes-panel" id="docview-res-notes-${suffix}">
+                ${resNotes.map((n, noteIdx) => `
+                    <div class="res-note-entry">
+                        <span class="res-note-ts">${formatResTimestamp(n.timestamp)}</span>
+                        <span class="res-note-text">${esc(n.text)}</span>
+                        <button class="res-note-delete" onclick="window.CAM.deleteDocviewResolutionNote('${esc(pid)}', ${tenantIdx}, ${noteIdx}); event.stopPropagation();">Delete</button>
+                    </div>`).join("")}
+                <div class="res-note-input-row">
+                    <textarea class="res-note-input" id="docview-res-input-${suffix}"
+                        placeholder="Add a note…" rows="2"></textarea>
+                    <button class="res-note-save-btn"
+                        onclick="window.CAM.saveDocviewResolutionNote('${esc(pid)}', ${tenantIdx})">Save</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function buildDocviewConformingControls(provision, tenantIdx) {
+    if (!provision || !provision.provision_id || provision.provision_id === "LP-00") return "";
+    const pid = provision.provision_id;
+    const concernState = getConformingConcernState(pid);
+    return `
+        <div class="conforming-concern-bar docview-concern-bar">
+            <span class="conforming-concern-label">Mark:</span>
+            <button class="conforming-concern-btn${concernState === 'concern' ? ' concern-active' : ''}"
+                onclick="window.CAM.handleConformingConcernAction('${esc(pid)}', 'concern'); event.stopPropagation();">
+                📝 Note a concern
+            </button>
+            <button class="conforming-concern-btn${concernState === 'flag' ? ' flag-active' : ''}"
+                onclick="window.CAM.handleConformingConcernAction('${esc(pid)}', 'flag'); event.stopPropagation();">
+                ⚠ Escalate as Deviation
+            </button>
+            ${concernState !== 'none' ? `<button class="conforming-concern-btn"
+                onclick="window.CAM.handleConformingConcernAction('${esc(pid)}', 'clear'); event.stopPropagation();">✕ Clear</button>` : ""}
+            <div class="workflow-open-actions workflow-group">
+                <a class="docview-link card-docview-link card-docview-link--btn"
+                   href="#"
+                   onclick="window.CAM.openDocviewSummary(${tenantIdx}, '${esc(pid)}'); return false;">
+                    Open Contract Summary
+                </a>
+                <a class="card-audit-link card-audit-link--btn"
+                   href="#"
+                   onclick="window.CAM.jumpToAuditProvision(${tenantIdx}, '${esc(pid)}'); return false;"
+                   title="View full CAM analysis in Audit Trail">
+                    Open CAM Audit Trail
+                </a>
+            </div>
+        </div>
+    `;
+}
+
+function scrollToTenant(index) {
+    // Step 116: Navigate to contract detail via Contracts tab
+    if (activeTopTab !== "contracts") {
+        switchTopTab("contracts");
+    }
+    openContractDetail(index);
+}
+
+function refreshDocviewIfActive(tenantIdx) {
+    if (activeResultsTab === "docview" && contractDetailOpen && tenantIdx === currentTenantIndex) {
+        renderDocumentView();
+    }
+}
+
+function openDocviewModify(tenantIdx, pid) {
+    switchResultsTab("findings");
+    const targetCard = document.getElementById(`dev-${pid}`);
+    if (targetCard) {
+        setTimeout(() => {
+            targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+            targetCard.classList.add("highlight-flash");
+            setTimeout(() => targetCard.classList.remove("highlight-flash"), 1500);
+            finalDraftModify(tenantIdx, pid);
+        }, 100);
+    } else {
+        finalDraftModify(tenantIdx, pid);
+    }
+}
+
+function openDocviewSummary(tenantIdx, pid) {
+    switchResultsTab("findings");
+    setTimeout(() => {
+        let targetCard = document.getElementById(`dev-${pid}`);
+
+        if (!targetCard) {
+            const conformingList = document.getElementById("conforming-list");
+            const conformingToggle = document.getElementById("conforming-toggle");
+            if (conformingList && conformingList.classList.contains("hidden")) {
+                conformingList.classList.remove("hidden");
+                if (conformingToggle) {
+                    conformingToggle.innerHTML = `&#9660; Conforming Provisions (no action needed)`;
+                }
+            }
+
+            const conformingItem = document.querySelector(`.conforming-item[data-pid="${CSS.escape(pid)}"]`);
+            if (conformingItem) {
+                const detail = conformingItem.querySelector(".conforming-detail");
+                const chevron = conformingItem.querySelector(".conforming-chevron");
+                if (detail && detail.classList.contains("hidden")) {
+                    detail.classList.remove("hidden");
+                }
+                if (chevron) chevron.innerHTML = "&#9652;";
+                targetCard = conformingItem;
+            }
+        }
+
+        if (!targetCard) return;
+
+        const stickyShell = document.querySelector(".contract-detail-sticky-shell");
+        const stickyHeight = stickyShell ? stickyShell.getBoundingClientRect().height : 0;
+        const resultsContent = document.querySelector(".results-content");
+        if (resultsContent) {
+            const panelRect = resultsContent.getBoundingClientRect();
+            const targetRect = targetCard.getBoundingClientRect();
+            const nextTop = resultsContent.scrollTop + (targetRect.top - panelRect.top) - stickyHeight - 12;
+            resultsContent.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
+        } else {
+            const top = window.scrollY + targetCard.getBoundingClientRect().top - stickyHeight - 12;
+            window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+        }
+        targetCard.classList.add("highlight-flash");
+        setTimeout(() => targetCard.classList.remove("highlight-flash"), 1500);
+    }, 100);
+}
+
+function updateDocviewResolutionNoteCount(pid, tenantIdx) {
+    const key = `${tenantIdx}:${pid}`;
+    const count = ((resolutionState[key] || {}).notes || []).length;
+    const toggleBtn = document.querySelector(`.docview-resolution-bar .res-notes-toggle[data-pid="${pid}"][data-tenant-idx="${tenantIdx}"]`);
+    if (!toggleBtn) return;
+    if (count > 0) {
+        toggleBtn.innerHTML = `📝 Notes <span class="res-note-count">${count} note${count > 1 ? "s" : ""}</span>`;
+    } else {
+        toggleBtn.innerHTML = `📝 Notes`;
+    }
+}
+
+function renderDocviewResolutionNotesPanel(pid, tenantIdx) {
+    const suffix = getDocviewDomIdSuffix(pid, tenantIdx);
+    const panel = document.getElementById(`docview-res-notes-${suffix}`);
+    if (!panel) return;
+    const key = `${tenantIdx}:${pid}`;
+    const notes = ((resolutionState[key] || {}).notes || []);
+    const inputRow = panel.querySelector(".res-note-input-row");
+    panel.querySelectorAll(".res-note-entry").forEach((el) => el.remove());
+    notes.forEach((note, noteIdx) => {
+        const noteDiv = document.createElement("div");
+        noteDiv.className = "res-note-entry";
+        noteDiv.innerHTML = `<span class="res-note-ts">${formatResTimestamp(note.timestamp)}</span><span class="res-note-text">${esc(note.text)}</span><button class="res-note-delete" onclick="window.CAM.deleteDocviewResolutionNote('${esc(pid)}', ${tenantIdx}, ${noteIdx}); event.stopPropagation();">Delete</button>`;
+        if (inputRow) panel.insertBefore(noteDiv, inputRow);
+        else panel.appendChild(noteDiv);
+    });
+}
+
+function toggleDocviewResolutionNotes(pid, tenantIdx) {
+    const suffix = getDocviewDomIdSuffix(pid, tenantIdx);
+    const panel = document.getElementById(`docview-res-notes-${suffix}`);
+    if (!panel) return;
+    panel.classList.toggle("hidden");
+    if (!panel.classList.contains("hidden")) {
+        const input = document.getElementById(`docview-res-input-${suffix}`);
+        if (input) input.focus();
+    }
+}
+
+async function saveDocviewResolutionNote(pid, tenantIdx) {
+    const suffix = getDocviewDomIdSuffix(pid, tenantIdx);
+    const input = document.getElementById(`docview-res-input-${suffix}`);
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    const saved = await addResolutionNote(pid, tenantIdx, text);
+    if (saved) {
+        input.value = "";
+        renderDocviewResolutionNotesPanel(pid, tenantIdx);
+        updateDocviewResolutionNoteCount(pid, tenantIdx);
+    }
+}
+
+async function deleteDocviewResolutionNote(pid, tenantIdx, noteIdx) {
+    const deleted = await deleteResolutionNote(pid, tenantIdx, noteIdx);
+    if (deleted) {
+        renderDocviewResolutionNotesPanel(pid, tenantIdx);
+        updateDocviewResolutionNoteCount(pid, tenantIdx);
+    }
+}
+
+function handleConformingConcernAction(pid, action) {
+    const tenant = currentResults && currentResults.tenants ? currentResults.tenants[currentTenantIndex] : null;
+    const provisions = (tenant && tenant.results && tenant.results.provisions) || [];
+    const modelsUsed = (tenant && tenant.results && tenant.results.models_used) || {};
+    const provision = provisions.find((entry) => entry.provision_id === pid);
+    const current = getConformingConcernState(pid);
+
+    if (action === "clear") {
+        setConformingConcernEntry(pid, "none");
+    } else if (action === current) {
+        setConformingConcernEntry(pid, "none");
+    } else if (action === "flag") {
+        const reason = window.prompt(
+            "Optional reason for escalating this clause as a deviation:",
+            getConformingConcernReason(pid)
+        );
+        if (reason === null) return;
+        setConformingConcernEntry(pid, "flag", reason);
+        if (confirm("Create a rule so this is flagged automatically next time?")) {
+            window.CAM.showRuleCreationDialog(pid, (provision && provision.provision_name) || pid);
+        }
+    } else {
+        setConformingConcernEntry(pid, action);
+    }
+
+    renderConforming(provisions, modelsUsed);
+    renderDeviations(provisions, modelsUsed, currentTenantIndex, currentDiscoveries || {});
+    renderNavSidebar();
+    if (contractDetailOpen && currentTenantIndex >= 0) {
+        renderContractClauseFilterBar(provisions);
+    }
+    updateFinalDraftBar();
+    applyContractClauseFilters();
+    refreshDocviewIfActive(currentTenantIndex);
+
+    if (action === "flag") {
+        setTimeout(() => jumpToFinding(pid), 50);
+    }
+}
+
+function updateNavActive(index) {
+    const detailView = document.getElementById("contract-detail-view");
+    const shouldHighlight =
+        contractDetailOpen &&
+        detailView &&
+        !detailView.classList.contains("hidden") &&
+        (activeResultsTab === "findings" || activeResultsTab === "docview" || activeResultsTab === "audittrail");
+
+    document.querySelectorAll(".nav-tenant").forEach(function(el) {
+        el.classList.remove("active");
+    });
+    document.querySelectorAll(".nav-tenant-label").forEach(function(el) {
+        el.classList.remove("active");
+    });
+    if (!shouldHighlight) return;
+    const navCard = document.querySelector('.nav-sidebar .nav-tenant[data-tenant-index="' + index + '"]');
+    if (navCard) navCard.classList.add("active");
+    const navLabel = document.querySelector('.nav-sidebar .nav-tenant-label[data-nav-tenant-index="' + index + '"]');
+    if (navLabel) navLabel.classList.add("active");
+}
+
+function fmtDuration(secs) {
+    const s = Math.round(secs);
+    if (s < 60) return s + "s";
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const rem = s % 60;
+    if (h > 0) return `${h}h ${m}m ${rem}s`;
+    return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+}
+
+function formatTenantName(filename) {
+    if (!filename) return "Unknown";
+    // Strip extension
+    let name = filename.replace(/\.[^.]+$/, "");
+    // Replace underscores/hyphens with spaces, format nicely
+    // "T-04_subtle" → "T-04 (subtle)", "T-07_aggressive" → "T-07 (aggressive)"
+    const match = name.match(/^(T-\d+)[_-](.+)$/i);
+    if (match) return `${match[1]} (${match[2]})`;
+    return name.replace(/[_-]/g, " ");
+}
+
+function renderDealOverview() {
+    const panel = $("#deal-overview-panel");
+    if (!panel) return;
+    if (!currentResults || !currentResults.tenants || !currentResults.tenants.length) {
+        panel.classList.add("hidden");
+        return;
+    }
+
+    // Use first tenant's deal_overview (all tenants share the same lease template context)
+    const firstResult = currentResults.tenants[0].results;
+    if (!firstResult) {
+        panel.classList.add("hidden");
+        return;
+    }
+
+    const deal = firstResult.deal_overview || {};
+    const meta = firstResult.contract_metadata || {};
+
+    // Resolve fields: deal_overview preferred, fall back to contract_metadata
+    const landlord = deal.landlord_name || (shouldShowField(meta.landlord) ? meta.landlord : "");
+    const tenant = deal.tenant_name || (shouldShowField(meta.tenant) ? meta.tenant : "");
+    const property = deal.property_address || (shouldShowField(meta.property_description) ? meta.property_description : "");
+    const propertyType = deal.property_type || "";
+    const leaseTermYears = deal.lease_term_years;
+    const commencement = deal.commencement_date || (shouldShowField(meta.effective_date) ? meta.effective_date : "");
+    const expiration = deal.expiration_date || (shouldShowField(meta.expiration_date) ? meta.expiration_date : "");
+    const renewal = deal.renewal_options || "";
+    const rent = deal.base_rent_monthly || (shouldShowField(meta.base_rent) ? meta.base_rent : "");
+    const escalation = deal.escalation || "";
+    const security = deal.security_deposit || "";
+    const cam = deal.cam_structure || "";
+    const use = deal.permitted_use || (shouldShowField(meta.permitted_use) ? meta.permitted_use : "");
+    const govLaw = deal.governing_law || (shouldShowField(meta.governing_law) ? meta.governing_law : "");
+    // Check if we have enough data to show the panel
+    const hasData = landlord || tenant || property || rent || leaseTermYears;
+    if (!hasData) {
+        panel.classList.add("hidden");
+        return;
+    }
+
+    // Build term string
+    let termStr = "";
+    if (leaseTermYears) {
+        termStr = leaseTermYears + " year" + (leaseTermYears !== 1 ? "s" : "");
+        if (commencement && expiration) termStr += ` (${esc(commencement)} \u2013 ${esc(expiration)})`;
+        else if (commencement) termStr += ` (from ${esc(commencement)})`;
+    } else if (shouldShowField(meta.term_length)) {
+        termStr = meta.term_length;
+        if (commencement) termStr += ` (from ${esc(commencement)})`;
+    }
+
+    // Build parties header
+    let partiesHtml = "";
+    if (landlord) partiesHtml += `<div class="deal-party">${esc(landlord)} <span class="deal-role">(Landlord)</span></div>`;
+    if (tenant) partiesHtml += `<div class="deal-party">${esc(tenant)} <span class="deal-role">(Tenant)</span></div>`;
+
+    // Property line
+    let propertyHtml = "";
+    if (property) {
+        propertyHtml = `<div class="deal-property">${esc(property)}`;
+        if (propertyType) propertyHtml += ` &mdash; ${esc(propertyType)}`;
+        propertyHtml += `</div>`;
+    }
+
+    // Build deal grid rows (two-column layout for terms)
+    const gridItems = [];
+    if (termStr) gridItems.push(["Term", termStr]);
+    if (rent) gridItems.push(["Rent", rent]);
+    if (escalation) gridItems.push(["Escalation", escalation]);
+    if (security) gridItems.push(["Security", security]);
+    if (cam) gridItems.push(["CAM/OpEx", cam]);
+    if (use) gridItems.push(["Use", use]);
+    if (renewal) gridItems.push(["Renewal", renewal]);
+    if (govLaw) gridItems.push(["Governing Law", govLaw]);
+
+    let gridHtml = "";
+    if (gridItems.length) {
+        gridHtml = `<div class="deal-grid">`;
+        gridItems.forEach(([label, value]) => {
+            gridHtml += `<div class="deal-grid-item"><span class="deal-label">${esc(label)}</span><span class="deal-value">${esc(value)}</span></div>`;
+        });
+        gridHtml += `</div>`;
+    }
+
+    const analyzedProvisions = firstResult.provisions || [];
+    const provCount = analyzedProvisions.length;
+
+    panel.innerHTML = `<div class="deal-overview-card">
+        <div class="deal-overview-header">BASE LEASE TERMS</div>
+        ${partiesHtml}
+        ${propertyHtml}
+        ${gridHtml}
+    </div>`;
+    panel.classList.remove("hidden");
+}
+
+// ── AI Summary Bar (048) ──
+
+async function renderAISummaryBar() {
+    const bar = $("#ai-summary-bar");
+    if (!bar || !currentResults || !currentResults.tenants) return;
+
+    bar.classList.remove("hidden");
+
+    // ── Stats line ──
+    const tenants = currentResults.tenants;
+    const firstResult = tenants[0]?.results || {};
+    const provisionsPerTenant = firstResult.provisions?.length || 0;
+    let totalDeviations = 0, totalCritical = 0, totalHigh = 0;
+    let tenantsWithDeviations = 0;
+
+    tenants.forEach(t => {
+        const s = t.results?.summary;
+        if (!s) return;
+        totalDeviations += s.deviates || 0;
+        totalCritical  += s.critical || 0;
+        totalHigh      += s.high || 0;
+        if (s.deviates > 0) tenantsWithDeviations++;
+    });
+
+    const statsEl = $("#ai-summary-stats");
+    if (statsEl) {
+        let stats = `${tenants.length} lease${tenants.length !== 1 ? "s" : ""} reviewed`;
+        if (provisionsPerTenant) stats += ` \u00B7 ${provisionsPerTenant} provisions per lease`;
+        if (totalCritical > 0) stats += ` \u00B7 ${totalCritical} critical finding${totalCritical !== 1 ? "s" : ""}`;
+        else if (totalDeviations > 0) stats += ` \u00B7 ${totalDeviations} deviation${totalDeviations !== 1 ? "s" : ""}`;
+        statsEl.textContent = stats;
+    }
+
+    // ── AI paragraph ──
+    const paraEl = $("#ai-summary-paragraph");
+    if (!paraEl) return;
+
+    // Check cache — don't regenerate if already done for this job
+    if (currentResults._aiSummary) {
+        paraEl.innerHTML = currentResults._aiSummary;
+        return;
+    }
+
+    // Build compact context for the AI call
+    const isSingle = tenants.length === 1;
+    const summaryData = tenants.map(t => {
+        const s = t.results?.summary || {};
+        const deviations = (t.results?.provisions || [])
+            .filter(p => p.final_verdict === "DEVIATES")
+            .map(p => `${p.provision_id} ${p.provision_name || ""} (${p.severity || "MEDIUM"})`)
+            .join(", ");
+        // For single-lease runs, omit the tenant label so the AI doesn't name or count tenants
+        const label = isSingle ? "" : `${formatTenantName(t.filename)}: `;
+        return `${label}${s.deviates || 0} deviation${(s.deviates || 0) !== 1 ? "s" : ""} \u2014 ${deviations || "none"}`;
+    }).join("\n");
+
+    // Count clean vs deviating tenants for summary context (Step 116)
+    const cleanCount = tenants.filter(t => {
+        const s = t.results?.summary;
+        return s && (s.deviates || 0) === 0;
+    }).length;
+    const cleanContext = cleanCount > 0 ? `\n\n${cleanCount} of ${tenants.length} leases conform fully to the standard template.` : "";
+
+    // Step 183: Build CAM confidence context for AI summary
+    let camContext = '';
+    let hasUncertain = false;
+    if (!isSingle) {
+        let totalWithhold = 0;
+        let totalReview = 0;
+        let totalScored = 0;
+        tenants.forEach(t => {
+            const cs = t.results?.cam_contract_summary;
+            if (cs) {
+                totalWithhold += (cs.withhold_uncertain ?? (cs.governance_counts?.WITHHOLD_SIGNAL || 0));
+                totalReview += (cs.governance_counts?.REVIEW_SIGNAL || 0);
+                totalScored += ((cs.provisions_scored || 0) - (cs.withhold_no_baseline || 0));
+            }
+        });
+        const uncertain = totalWithhold + totalReview;
+        if (uncertain > 0 && totalScored > 0) {
+            camContext = `\n\nNote: Across all leases, ${uncertain} of ${totalScored} total clause evaluations had lower AI confidence and may benefit from additional human review.`;
+            hasUncertain = true;
+        }
+    } else {
+        const t0 = tenants[0];
+        const cs0 = t0?.results?.cam_contract_summary;
+        if (cs0) {
+            const withhold0 = cs0.withhold_uncertain ?? (cs0.governance_counts?.WITHHOLD_SIGNAL || 0);
+            const review0 = cs0.governance_counts?.REVIEW_SIGNAL || 0;
+            const noBaseline0 = cs0.withhold_no_baseline || 0;
+            const uncertain0 = withhold0 + review0;  // excludes no-baseline withholds
+            const total0 = (cs0.provisions_scored || 0) - noBaseline0;  // denominator excludes no-baseline
+            const confident0 = cs0.governance_counts?.ASSERT_SIGNAL || 0;
+            const ratio0 = total0 > 0 ? confident0 / total0 : 0;
+            const tier0 = ratio0 >= 0.75 ? 'high' : ratio0 >= 0.50 ? 'moderate' : 'low';
+            if (uncertain0 > 0) {
+                camContext = `\n\nNote: AI confidence was ${tier0} overall. ${uncertain0} of ${total0} standard clause evaluations had lower confidence and may benefit from additional human review.`;
+                hasUncertain = true;
+            } else {
+                camContext = `\n\nNote: AI confidence was ${tier0} overall across all ${total0} standard clauses evaluated.`;
+            }
+        }
+    }
+    const confidenceInstruction = hasUncertain
+        ? (isSingle
+            ? " If the note above mentions lower-confidence clauses, add a brief third sentence mentioning this."
+            : " If the note above mentions lower-confidence clause evaluations, include a brief final sentence about this.")
+        : "";
+
+    const singleConforms = isSingle && cleanCount === 1;
+    const prompt = isSingle
+        ? `You are summarizing a single lease deviation analysis for a lawyer's review. Write 2-3 plain-English sentences about this one lease. ${
+            singleConforms
+              ? "State that the lease fully conforms to the standard template."
+              : "State that the lease does not fully conform to the standard template. Describe which types of provisions deviate and their severity."
+          } Always refer to it as 'the standard template', never 'our template' or 'our standard template'. Do not use the words 'leases' or 'tenants'. Do not name or label the lease. Do not recommend signing, rejecting, or revising. Do not give legal advice. Do not use bullet points.${confidenceInstruction}${camContext}\n\nLease findings:\n${summaryData}`
+        : `You are summarizing lease deviation analysis results for a lawyer's review. Write 2-3 plain-English sentences. Start by stating how many of the ${tenants.length} leases conform fully to the standard template (${cleanCount} do). Then identify which tenants have the most significant issues and what types of provisions are affected. Report what was found. Do not recommend signing, rejecting, or revising any lease. Do not give legal advice. Do not use bullet points. Do not mention AI or analysis pipelines.${confidenceInstruction}\n\nResults:\n${summaryData}${cleanContext}${camContext}`;
+
+    try {
+        const resp = await fetch("/api/ai-summary", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt, job_id: currentJobId }),
+        });
+        const data = await resp.json();
+        const text = data.summary || "";
+        if (text) {
+            const escaped = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            paraEl.innerHTML = escaped;
+            currentResults._aiSummary = escaped;
+        } else {
+            paraEl.innerHTML = `<span class="ai-summary-error">Summary unavailable.</span>`;
+        }
+    } catch (err) {
+        console.error("AI summary error:", err);
+        paraEl.innerHTML = `<span class="ai-summary-error">Summary unavailable.</span>`;
+    }
+}
+
+function toggleTechDetails() {
+    const content = $("#tech-details-content");
+    const toggle = $("#tech-details-toggle");
+    if (!content) return;
+    const isHidden = content.classList.contains("hidden");
+    content.classList.toggle("hidden", !isHidden);
+    if (toggle) toggle.innerHTML = (isHidden ? "&#9660;" : "&#9658;") + " Technical Details";
+    if (isHidden) renderTechDetails();
+}
+
+function downloadSynopsis() {
+    if (currentJobId) downloadFile(`/api/jobs/${currentJobId}/summary`);
+}
+
+function exportJSON() {
+    exportAllJSON();
+}
+
+function renderBatchMeta() {
+    const el = $("#batch-meta");
+    if (!currentResults || !currentResults.tenants) return;
+
+    const tenants = currentResults.tenants;
+    const firstResult = tenants.length > 0 && tenants[0].results ? tenants[0].results : {};
+    const meta = firstResult.contract_metadata || {};
+
+    // Portfolio header from template metadata
+    const propertyName = shouldShowField(meta.property_description) ? meta.property_description : "";
+    const landlordName = shouldShowField(meta.landlord) ? meta.landlord : "";
+
+    // Headline: property name or generic
+    const portfolioTitle = propertyName || "Lease Portfolio Review";
+    const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+    // Stats
+    const totalTenants = tenants.length;
+    const provisionsPerTenant = firstResult.provisions ? firstResult.provisions.length : 0;
+    let tenantsWithDeviations = 0;
+    let totalCritical = 0;
+    let totalHigh = 0;
+    tenants.forEach(t => {
+        if (t.results && t.results.summary) {
+            if (t.results.summary.deviates > 0) tenantsWithDeviations++;
+            totalCritical += t.results.summary.critical || 0;
+            totalHigh += t.results.summary.high || 0;
+        }
+    });
+
+    let statsLine = `${totalTenants} tenant lease${totalTenants !== 1 ? "s" : ""} reviewed`;
+    if (provisionsPerTenant) statsLine += ` \u00B7 ${provisionsPerTenant} provisions per lease`;
+
+    let findingsLine = "";
+    if (tenantsWithDeviations > 0) {
+        findingsLine = `${tenantsWithDeviations} of ${totalTenants} tenant${totalTenants !== 1 ? "s" : ""} require review`;
+        if (totalCritical > 0) findingsLine += ` \u00B7 ${totalCritical} critical finding${totalCritical !== 1 ? "s" : ""}`;
+        else if (totalHigh > 0) findingsLine += ` \u00B7 ${totalHigh} high-severity finding${totalHigh !== 1 ? "s" : ""}`;
+    } else {
+        findingsLine = `\u2705 All ${totalTenants} tenants conform to standard template`;
+    }
+
+    const sectionHeading = tenantsWithDeviations > 0 && tenantsWithDeviations === totalTenants
+        ? "Leases with Significant Deviations"
+        : "Lease Analysis Results";
+
+    el.innerHTML = `<div class="batch-portfolio-header">
+        <div class="batch-section-heading">${esc(sectionHeading)}</div>
+        <div class="batch-portfolio-title">${esc(portfolioTitle)}</div>
+        ${landlordName ? `<div class="batch-portfolio-sub">Landlord: ${esc(landlordName)}</div>` : ""}
+        <div class="batch-portfolio-sub">${esc(dateStr)}</div>
+        <div class="batch-portfolio-stats">${statsLine}</div>
+        <div class="batch-portfolio-stats" style="font-weight:600;">${findingsLine}</div>
+    </div>`;
+}
+
+function renderCrossTenantMatrix() {
+    const container = $("#cross-tenant-matrix");
+    if (!container) return;
+    if (!currentResults || !currentResults.tenants || currentResults.tenants.length < 2) {
+        container.classList.add("hidden");
+        return;
+    }
+
+    const tenants = currentResults.tenants;
+
+    // Aggregate: for each provision_id, collect which tenants have it as DEVIATES
+    const issueMap = {};  // pid -> { pname, severity, tenants: [{index, filename}] }
+    const cleanTenants = [];
+
+    tenants.forEach((t, i) => {
+        if (!t.results || !t.results.provisions) return;
+        let hasDeviation = false;
+        t.results.provisions.forEach(p => {
+            if (p.final_verdict === "DEVIATES") {
+                hasDeviation = true;
+                const pid = p.provision_id;
+                if (!issueMap[pid]) {
+                    issueMap[pid] = {
+                        pname: p.provision_name || pid,
+                        severity: p.severity || "MEDIUM",
+                        tenants: [],
+                    };
+                }
+                // Use highest severity across tenants
+                const existingSev = SEVERITY_ORDER.indexOf(issueMap[pid].severity);
+                const thisSev = SEVERITY_ORDER.indexOf(p.severity || "MEDIUM");
+                if (thisSev >= 0 && (existingSev < 0 || thisSev < existingSev)) {
+                    issueMap[pid].severity = p.severity;
+                }
+                issueMap[pid].tenants.push({ index: i, filename: t.filename });
+            }
+        });
+        if (!hasDeviation) cleanTenants.push({ index: i, filename: t.filename });
+    });
+
+    const issues = Object.entries(issueMap).map(([pid, info]) => ({ pid, ...info }));
+    if (issues.length === 0 && cleanTenants.length === 0) {
+        container.classList.add("hidden");
+        return;
+    }
+
+    // Sort by severity
+    issues.sort((a, b) => {
+        const ai = SEVERITY_ORDER.indexOf(a.severity);
+        const bi = SEVERITY_ORDER.indexOf(b.severity);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+    });
+
+    const sevIcons = { CRITICAL: "\uD83D\uDD34", HIGH: "\uD83D\uDFE0", MEDIUM: "\uD83D\uDFE1", LOW: "\u2B1C" };
+
+    let html = `<div class="card cross-tenant-card">
+        <div class="card-header">Cross-Tenant Issue Matrix</div>`;
+
+    issues.forEach(issue => {
+        const icon = sevIcons[issue.severity] || "\u2B1C";
+        const label = `${issue.pid} ${(issue.pname || "").replace(/^LP-\d{2}\s*/, "")}`;
+        const chips = issue.tenants.map(t =>
+            `<span class="xtenant-chip" data-tenant="${t.index}" data-pid="${esc(issue.pid)}">${esc(formatTenantName(t.filename))}</span>`
+        ).join("");
+        html += `<div class="xtenant-row xtenant-row-${issue.severity}" data-severity="${esc(issue.severity)}" data-tenants="${esc(JSON.stringify(issue.tenants.map(t => String(t.index))))}">
+            <span class="xtenant-icon">${icon}</span>
+            <span class="xtenant-issue">${esc(label)}</span>
+            <div class="xtenant-chips">${chips}</div>
+        </div>`;
+    });
+
+    if (cleanTenants.length > 0) {
+        const cleanNames = cleanTenants.map(t => esc(formatTenantName(t.filename))).join(", ");
+        html += `<div class="xtenant-row xtenant-row-CONFORMS">
+            <span class="xtenant-icon">\uD83D\uDFE2</span>
+            <span class="xtenant-issue">All provisions conform</span>
+            <div class="xtenant-chips">${cleanNames}</div>
+        </div>`;
+    }
+
+    html += `</div>`;
+    container.innerHTML = html;
+    container.classList.remove("hidden");
+
+    // Wire up tenant chip clicks
+    container.querySelectorAll(".xtenant-chip").forEach(chip => {
+        chip.addEventListener("click", () => {
+        const tenantIdx = parseInt(chip.dataset.tenant, 10);
+        const pid = chip.dataset.pid;
+        switchTopTab("contracts");
+            openContractDetail(tenantIdx);
+            setTimeout(() => jumpToFinding(pid), 200);
+        });
+    });
+}
+
+// ── Step 132: Deal Brief Banner on Analysis Overview ──
+function renderDealBrief() {
+    var banner = document.getElementById('deal-brief-banner');
+    if (!banner || !currentResults || !currentResults.tenants) return;
+
+    var tenants = currentResults.tenants;
+    var firstResult = tenants[0] && tenants[0].results ? tenants[0].results : null;
+    if (!firstResult) { banner.classList.add('hidden'); return; }
+
+    // ── Line 1: Deal identity ──
+    var deal = firstResult.deal_overview || {};
+    var meta = firstResult.contract_metadata || {};
+    var landlord = deal.landlord_name || meta.landlord || '';
+    var property = deal.property_address || meta.property_description || '';
+    var leaseType = deal.lease_type || deal.property_type || '';
+    var termYears = deal.lease_term_years;
+    var termStr = '';
+    if (termYears) {
+        termStr = termYears + ' year' + (termYears !== 1 ? 's' : '');
+    } else if (meta.term_length) {
+        termStr = meta.term_length;
+    }
+
+    var identityParts = [landlord, property, leaseType, termStr].filter(function(v) { return v; });
+    var line1Html = '';
+    if (identityParts.length > 0) {
+        line1Html = '<div class="deal-brief-identity">' + identityParts.map(function(v) { return esc(String(v)); }).join(' \u00B7 ') + '</div>';
+    }
+
+    // ── Compute deviations, highest severity, top flag across all tenants ──
+    var SEV_RANK = { 'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'CONFORMS': 0 };
+    var totalDeviations = 0;
+    var highestSev = 'CONFORMS';
+    var highestRank = 0;
+    var topFlag = null; // { name, headline }
+
+    tenants.forEach(function(t) {
+        var provisions = t.results && t.results.provisions ? t.results.provisions : [];
+        provisions.forEach(function(p) {
+            if (!p.provision_id || p.provision_id === 'LP-00') return;
+            if (p.final_verdict !== 'CONFORMS') {
+                totalDeviations++;
+                var sev = p.severity || 'LOW';
+                var rank = SEV_RANK[sev] !== undefined ? SEV_RANK[sev] : 0;
+                if (rank > highestRank) {
+                    highestRank = rank;
+                    highestSev = sev;
+                    var headline = p.risk_headline || p.challenge_details || p.what_changed || '';
+                    if (headline.length > 80) headline = headline.substring(0, 77) + '...';
+                    topFlag = { name: p.provision_name || p.provision_id, headline: headline };
+                } else if (rank === highestRank && !topFlag) {
+                    var hl = p.risk_headline || p.challenge_details || p.what_changed || '';
+                    if (hl.length > 80) hl = hl.substring(0, 77) + '...';
+                    topFlag = { name: p.provision_name || p.provision_id, headline: hl };
+                }
+            }
+        });
+    });
+
+    // ── Line 2: Verdict ──
+    var tenantCount = tenants.length;
+    var line2Html = '';
+    if (totalDeviations === 0) {
+        line2Html = '<div class="deal-brief-verdict" style="color: var(--success, #15803d);">'
+            + esc(tenantCount + ' lease' + (tenantCount !== 1 ? 's' : '') + ' reviewed')
+            + ' \u00B7 All provisions conform to standard template</div>';
+    } else {
+        var sevClass = highestSev === 'CRITICAL' ? 'color: var(--danger, #dc2626);'
+            : highestSev === 'HIGH' ? 'color: #c2410c;'
+            : highestSev === 'MEDIUM' ? 'color: var(--warning, #d97706);'
+            : 'color: var(--info, #64748b);';
+        line2Html = '<div class="deal-brief-verdict">'
+            + esc(tenantCount + ' lease' + (tenantCount !== 1 ? 's' : '') + ' reviewed')
+            + ' \u00B7 ' + esc(totalDeviations + ' deviation' + (totalDeviations !== 1 ? 's' : '') + ' found')
+            + ' \u00B7 Highest: <span style="' + sevClass + '">' + esc(highestSev) + '</span>'
+            + '</div>';
+    }
+
+    // ── Line 3: Top flag ──
+    var line3Html = '';
+    if (totalDeviations > 0 && topFlag) {
+        line3Html = '<div class="deal-brief-topflag"><strong>Top flag:</strong> ' + esc(topFlag.name);
+        if (topFlag.headline) {
+            line3Html += ' \u2014 ' + esc(topFlag.headline);
+        }
+        line3Html += '</div>';
+    }
+
+    banner.innerHTML = line1Html + line2Html + line3Html;
+    banner.classList.remove('hidden');
+    // Show the "Run Summary" section heading
+    var summaryHeading = document.getElementById('run-summary-heading');
+    if (summaryHeading) summaryHeading.classList.remove('hidden');
+}
+
+// ── Step 131: Provisions Scope Card on Analysis Overview ──
+function renderProvisionsScopeCard() {
+    var container = document.getElementById('provisions-scope-card');
+    if (!container || !currentResults || !currentResults.tenants) return;
+
+    var tenants = currentResults.tenants;
+
+    // ── Build worst-severity map across all tenants ──
+    var SEV_RANK = { 'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'CONFORMS': 0 };
+    var worstMap = {}; // provision_id → { severity, name }
+
+    tenants.forEach(function(t) {
+        var provisions = t.results && t.results.provisions ? t.results.provisions : [];
+        provisions.forEach(function(p) {
+            var pid = p.provision_id;
+            if (!pid || pid === 'LP-00') return; // skip identity provision
+            var sev = p.severity || 'CONFORMS';
+            var rank = SEV_RANK[sev] !== undefined ? SEV_RANK[sev] : 0;
+            if (!worstMap[pid] || rank > SEV_RANK[worstMap[pid].severity]) {
+                worstMap[pid] = {
+                    severity: sev,
+                    name: p.provision_name || pid
+                };
+            }
+        });
+    });
+
+    if (Object.keys(worstMap).length === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+
+    // ── Sort provision IDs: LP-xx numerically, then CUSTOM-xx, then ADDED-xx ──
+    var pidSortKey = function(pid) {
+        var m = (pid || '').match(/^(LP|CUSTOM|ADDED)-(\d+)/i);
+        if (!m) return [2, 999];
+        var prefix = m[1].toUpperCase();
+        var num = parseInt(m[2], 10);
+        if (prefix === 'LP') return [0, num];
+        if (prefix === 'CUSTOM') return [1, num];
+        return [2, num];
+    };
+
+    var sortedIds = Object.keys(worstMap).sort(function(a, b) {
+        var ka = pidSortKey(a), kb = pidSortKey(b);
+        return ka[0] - kb[0] || ka[1] - kb[1];
+    });
+
+    // ── Build pill HTML ──
+    var chips = sortedIds.map(function(pid) {
+        var entry = worstMap[pid];
+        var sev = entry.severity;
+        var fullName = entry.name || '';
+        // Strip "LP-XX " prefix from display name
+        var shortName = fullName.replace(/^LP-\d{2}\s*/, '').replace(/^CUSTOM-\d+\s*/, '');
+        var label = pid + ' ' + shortName;
+        var sevClass = sev === 'CONFORMS' ? 'conforms' : sev.toLowerCase();
+        return '<span class="pscope-pill pscope-pill-' + sevClass + '" title="' + esc(fullName) + '">'
+            + esc(label) + '</span>';
+    }).join('');
+
+    // ── Non-standard scan tag ──
+    var scanRan = false;
+    var scanFoundCount = 0;
+    tenants.forEach(function(t) {
+        var disc = t.results && t.results.discoveries;
+        if (disc && typeof disc === 'object' && Object.keys(disc).length > 0) {
+            scanRan = true;
+            var standalone = disc.standalone || [];
+            scanFoundCount += standalone.length;
+        }
+    });
+
+    var scanTag = '';
+    if (scanRan) {
+        if (scanFoundCount === 0) {
+            scanTag = '<span class="pscope-scan-tag pscope-scan-clean">+ Non-standard clause scan \u2713</span>';
+        } else {
+            scanTag = '<span class="pscope-scan-tag pscope-scan-found">+ Non-standard clause scan \u00B7 ' + scanFoundCount + ' found</span>';
+        }
+    }
+
+    container.innerHTML = '<div class="pscope-header">PROVISIONS ANALYZED</div>'
+        + '<div class="pscope-pills">' + chips + scanTag + '</div>';
+    container.classList.remove('hidden');
+}
+
+function renderContractStatusPanel() {
+    const panel = $("#contract-status-panel");
+    if (!panel || !currentResults || !currentResults.tenants) return;
+
+    const tenants = currentResults.tenants;
+    const firstResult = currentResults.tenants[0] && currentResults.tenants[0].results;
+    const provCount = firstResult && firstResult.provisions ? firstResult.provisions.length : 0;
+
+    // Build sortable list with severity scoring
+    const cards = tenants.map((t, i) => {
+        const s = t.results && t.results.summary ? t.results.summary : null;
+        const provisions = t.results && t.results.provisions ? t.results.provisions : [];
+        const deviations = provisions
+            .filter(p => p.final_verdict === "DEVIATES")
+            .sort((a, b) => {
+                const ai = SEVERITY_ORDER.indexOf(a.severity);
+                const bi = SEVERITY_ORDER.indexOf(b.severity);
+                return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+            });
+        const highestSev = s ? getHighestSeverity(s) : null;
+        const sevScore = highestSev ? (SEVERITY_ORDER.indexOf(highestSev) + 1 || 99) : 99;
+        return { t, i, s, deviations, highestSev, sevScore };
+    });
+
+    // Sort: worst severity first, then clean contracts
+    cards.sort((a, b) => a.sevScore - b.sevScore);
+
+    let html = `<div class="findings-panel-header">
+        <div class="findings-panel-subtitle">Standard template &mdash; deviations from these terms are flagged below</div>
+        ${provCount > 0 ? `<div class="findings-panel-provcount">${provCount} provision${provCount !== 1 ? "s" : ""} analyzed</div>` : ""}
+    </div>`;
+    cards.forEach(({ t, i, s, deviations, highestSev }) => {
+        const name = esc(formatTenantName(t.filename || ""));
+        const isActive = i === currentTenantIndex;
+
+        if (!s) {
+            // No results (cancelled/error)
+            const msg = t.status === "cancelled" ? "Cancelled" : (t.error && t.error.startsWith("GATE_ABORT:") ? "Not a commercial lease" : (t.error || "No results"));
+            html += `<div class="contract-card contract-card-empty ${isActive ? "contract-card-active" : ""}"
+                         data-tenant="${i}">
+                <div class="contract-card-header">
+                    <span class="contract-card-name">${name}</span>
+                    <span class="contract-card-status status-empty">${esc(msg)}</span>
+                </div>
+            </div>`;
+            return;
+        }
+
+        // Status badge
+        let statusLabel, statusClass;
+        if (s.critical > 0)       { statusLabel = "\u26A0 Immediate Action"; statusClass = "status-critical"; }
+        else if (s.high > 0)      { statusLabel = "\u26A0 Review Recommended"; statusClass = "status-high"; }
+        else if (s.deviates > 0)  { statusLabel = "\u00B7 Monitor"; statusClass = "status-medium"; }
+        else                      { statusLabel = "\u2713 Clear"; statusClass = "status-clear"; }
+
+        // Step 119: Build tenant/property subtitle line
+        const meta = t.results && t.results.contract_metadata ? t.results.contract_metadata : {};
+        const tenantStr = (meta.tenant_name || '').trim() || 'N/A';
+        const propertyStr = (meta.property_description || '').trim() || 'N/A';
+        const metaLine = `<div class="contract-card-meta">
+            <span class="contract-meta-item">Tenant: ${esc(tenantStr)}</span>
+            <span class="contract-meta-sep">&middot;</span>
+            <span class="contract-meta-item">Property: ${esc(propertyStr)}</span>
+        </div>`;
+
+        // Step 125: Lease blurb
+        const blurb125 = buildLeaseBlurb(t.results);
+        const blurbLine = blurb125 ? `<div class="contract-card-blurb">${esc(blurb125)}</div>` : '';
+
+        html += `<div class="contract-card ${isActive ? "contract-card-active" : ""}"
+                     data-tenant="${i}" data-severity="${esc(highestSev || "")}">
+            <div class="contract-card-header">
+                <span class="contract-card-name">${name}</span>
+                <span class="contract-card-status ${statusClass}">${statusLabel}</span>
+            </div>
+            ${metaLine}
+            ${blurbLine}`;
+
+        // Severity-colored provision chips — compact visual fingerprint
+        if (deviations.length === 0) {
+            html += `<div class="contract-card-clean">\u2713 All ${s.total_provisions_checked || provCount} provisions conform to standard template</div>`;
+        } else {
+            html += `<div class="overview-chip-row">`;
+            deviations.forEach(p => {
+                const sev = (p.severity || 'MEDIUM').toUpperCase();
+                const pid = p.provision_id || '';
+                const shortName = (p.provision_name || '').replace(/^LP-\d{2}\s*/, '').replace(/^CUSTOM-\d{2}\s*/, '');
+                const label = shortName ? `${esc(pid)} ${esc(shortName)}` : esc(pid);
+                html += `<span class="overview-chip overview-chip-${sev.toLowerCase()}">${label}</span>`;
+            });
+            html += `</div>`;
+        }
+
+        html += `</div>`;
+    });
+
+    // Top contract cards removed — all contracts shown in unified CONTRACTS section below
+    panel.innerHTML = '';
+    panel.classList.add('hidden');
+
+}
+
+function renderBatchTable() {
+    const tbody = $("#batch-table-body");
+    const tenants = currentResults.tenants;
+
+    // Build sortable array with original indices
+    const sortable = tenants.map((t, i) => ({ tenant: t, origIndex: i }));
+    // Sort by severity descending
+    sortable.sort((a, b) => {
+        const sa = a.tenant.results && a.tenant.results.summary ? a.tenant.results.summary : {};
+        const sb = b.tenant.results && b.tenant.results.summary ? b.tenant.results.summary : {};
+        const sevA = SEVERITY_ORDER.indexOf(getHighestSeverity(sa));
+        const sevB = SEVERITY_ORDER.indexOf(getHighestSeverity(sb));
+        return (sevA === -1 ? 99 : sevA) - (sevB === -1 ? 99 : sevB);
+    });
+
+    tbody.innerHTML = sortable.map(({ tenant: t, origIndex: i }) => {
+        const r = t.results;
+        if (!r || !r.summary) {
+            const msg = t.status === "cancelled"
+                ? '<span class="cancelled-badge">Cancelled</span>'
+                : (t.error && t.error.startsWith("GATE_ABORT:")
+                    ? "This document does not appear to be a commercial lease. Please check the uploaded file."
+                    : (t.error ? esc(t.error) : "No results"));
+            return `<tr data-index="${i}">
+                <td>${esc(formatTenantName(t.filename))}</td>
+                <td colspan="3">${msg}</td>
+            </tr>`;
+        }
+
+        const s = r.summary;
+
+        let actionLabel = "No action";
+        let actionClass = "action-clear";
+        if (s.critical > 0) { actionLabel = "Immediate"; actionClass = "action-immediate"; }
+        else if (s.high > 0) { actionLabel = "Review"; actionClass = "action-review"; }
+        else if (s.deviates > 0) { actionLabel = "Monitor"; actionClass = "action-monitor"; }
+
+        // Build severity breakdown — show each non-zero severity as its own mini badge
+        const sevBreakdown = [];
+        if (s.critical > 0) sevBreakdown.push(`<span class="severity-badge severity-CRITICAL">${SEVERITY_ICONS["CRITICAL"] || ""} ${s.critical} CRITICAL</span>`);
+        if (s.high > 0)     sevBreakdown.push(`<span class="severity-badge severity-HIGH">${SEVERITY_ICONS["HIGH"] || ""} ${s.high} HIGH</span>`);
+        if (s.medium > 0)   sevBreakdown.push(`<span class="severity-badge severity-MEDIUM">${SEVERITY_ICONS["MEDIUM"] || ""} ${s.medium} MEDIUM</span>`);
+        if (s.low > 0)      sevBreakdown.push(`<span class="severity-badge severity-LOW">${SEVERITY_ICONS["LOW"] || ""} ${s.low} LOW</span>`);
+        const sevCell = sevBreakdown.length > 0
+            ? `<div class="sev-breakdown">${sevBreakdown.join("")}</div>`
+            : `<span class="text-muted">—</span>`;
+
+        return `<tr data-index="${i}" class="${i === currentTenantIndex ? "active-row" : ""}">
+            <td>${esc(formatTenantName(t.filename))}</td>
+            <td>${s.deviates}</td>
+            <td>${sevCell}</td>
+            <td><span class="batch-action ${actionClass}">${actionLabel}</span></td>
+        </tr>`;
+    }).join("");
+
+    tbody.querySelectorAll("tr[data-index]").forEach(tr => {
+        tr.addEventListener("click", () => {
+            const idx = parseInt(tr.dataset.index, 10);
+            switchTopTab("contracts");
+            openContractDetail(idx);
+        });
+    });
+}
+
+function renderTechDetails() {
+    const el = $("#tech-details-content");
+    if (!el || !currentResults || !currentResults.tenants) return;
+
+    const tenants = currentResults.tenants;
+    const firstResult = tenants.length > 0 && tenants[0].results ? tenants[0].results : {};
+    const templateName = firstResult.template_file || "N/A";
+    const modelsUsed = firstResult.models_used || {};
+
+    let totalTime = 0;
+    let totalCalls = 0;
+    const provisionIds = new Set();
+    tenants.forEach(t => {
+        if (t.results) {
+            totalTime += t.results.elapsed_sec || 0;
+            totalCalls += t.results.api_calls_total || 0;
+            (t.results.provisions || []).forEach(p => {
+                if (p.provision_id) provisionIds.add(p.provision_id);
+            });
+        }
+    });
+
+    const modelNames = [];
+    if (modelsUsed.extraction) modelNames.push(`Extraction: ${getModelDisplayName(modelsUsed.extraction)}`);
+    if (modelsUsed.evaluator_a) modelNames.push(`Eval A: ${getModelDisplayName(modelsUsed.evaluator_a)}`);
+    if (modelsUsed.evaluator_b) modelNames.push(`Eval B: ${getModelDisplayName(modelsUsed.evaluator_b)}`);
+    if (modelsUsed.evaluator_c) modelNames.push(`Eval C: ${getModelDisplayName(modelsUsed.evaluator_c)}`);
+    if (modelsUsed.challenger) modelNames.push(`Challenger: ${getModelDisplayName(modelsUsed.challenger)}`);
+    if (modelsUsed.severity) modelNames.push(`Severity: ${getModelDisplayName(modelsUsed.severity)}`);
+
+    const pids = Array.from(provisionIds).sort().join(", ");
+
+    el.innerHTML = `<div style="display:grid; grid-template-columns:auto 1fr; gap:0.25rem 1rem; font-size:0.8125rem;">
+        <span style="color:var(--text-muted);">Template:</span><span>${esc(templateName)}</span>
+        <span style="color:var(--text-muted);">Processing time:</span><span>${formatTime(totalTime)}</span>
+        <span style="color:var(--text-muted);">API calls:</span><span>${totalCalls} total (${Math.round(totalCalls / tenants.length)} per tenant)</span>
+        ${modelNames.length ? `<span style="color:var(--text-muted);">Models:</span><span>${modelNames.map(n => esc(n)).join("<br>")}</span>` : ""}
+        <span style="color:var(--text-muted);">Provisions:</span><span>${esc(pids)}</span>
+    </div>`;
+}
+
+function renderTenantSelector() {
+    const select = $("#tenant-select");
+    select.innerHTML = currentResults.tenants.map((t, i) =>
+        `<option value="${i}">${esc(t.filename)}</option>`
+    ).join("");
+    select.value = currentTenantIndex;
+}
+
+function shortProvisionName(pid, fullName) {
+    // "LP-01 Rent & Payment Terms" → "LP-01 Rent"
+    if (!fullName) return pid || "";
+    // Remove the "LP-XX " prefix from the name to get just the topic
+    const topic = fullName.replace(/^LP-\d{2}\s*/, "");
+    // Take first word or two (up to first & / , or 3rd word)
+    const words = topic.split(/\s+/);
+    const short = words.length <= 2 ? words.join(" ") : words.slice(0, 2).join(" ");
+    return `${pid} ${short}`;
+}
+
+function renderProvisionsChecklist(provisions) {
+    const container = $("#provisions-checklist");
+    if (!provisions || provisions.length === 0) {
+        container.classList.add("hidden");
+        return;
+    }
+
+    // Suppress LP-00 from checklist pills unless it deviates (Step 116)
+    const filteredProvisions = provisions.filter(p => p.provision_id !== "LP-00" || p.final_verdict === "DEVIATES");
+
+    // Sort by provision ID: LP-xx numerically, then CUSTOM-xx, then ADDED-xx
+    const pidSortKey = function(pid) {
+        const m = (pid || "").match(/^(LP|CUSTOM|ADDED)-(\d+)/i);
+        if (!m) return [2, 999];
+        const prefix = m[1].toUpperCase();
+        const num = parseInt(m[2], 10);
+        if (prefix === "LP") return [0, num];
+        if (prefix === "CUSTOM") return [1, num];
+        return [2, num];
+    };
+
+    const sorted = filteredProvisions.slice().sort(function(a, b) {
+        const ka = pidSortKey(a.provision_id || "");
+        const kb = pidSortKey(b.provision_id || "");
+        return ka[0] - kb[0] || ka[1] - kb[1];
+    });
+
+    const chips = sorted.map(p => {
+        const pid = p.provision_id || "";
+        const fullName = p.provision_name || "";
+        const label = `${pid} ${fullName.replace(/^LP-\d{2}\s*/, "")}`;
+
+        // Step 184: Confidence class and data attribute
+        const sig = p.cam_score ? p.cam_score.governance_signal : '';
+        const confClass = {
+            'ASSERT_SIGNAL':        '',
+            'ASSERT_REVIEW_SIGNAL': 'prov-chip-conf-review',
+            'REVIEW_SIGNAL':        'prov-chip-conf-review',
+            'WITHHOLD_SIGNAL':      'prov-chip-conf-uncertain',
+        }[sig] || '';
+        const confData = sig ? ` data-confidence="${esc(sig)}"` : '';
+        const confSuffix = confClass ? ' <span class="prov-chip-conf-dot" title="AI confidence lower on this clause">~</span>' : '';
+
+        if (p.final_verdict === "DEVIATES") {
+            const sev = p.severity || "MEDIUM";
+            return `<span class="prov-chip prov-chip-deviates prov-chip-${esc(sev)} ${confClass}" data-pid="${esc(pid)}"${confData}>${esc(label)}${confSuffix}</span>`;
+        } else if (p.final_verdict === "UNCLEAR") {
+            return `<span class="prov-chip prov-chip-unclear ${confClass}" data-pid="${esc(pid)}"${confData}>${esc(label)}${confSuffix}</span>`;
+        } else {
+            return `<span class="prov-chip prov-chip-conforms ${confClass}"${confData}>${esc(label)}${confSuffix}</span>`;
+        }
+    }).join("");
+
+    // Step 123: append non-standard clause scan indicator
+    const scanTag = '<span class="provision-scan-tag">+ Non-standard clause scan</span>';
+
+    container.innerHTML = `<div class="provisions-checked-header">Provisions Checked</div>
+        <div class="provisions-checked-chips">${chips}${scanTag}</div>`;
+    container.classList.remove("hidden");
+
+    // Show the results legend
+    const legend = $("#results-legend");
+    if (legend) legend.classList.remove("hidden");
+
+    // Wire up clicking on deviation/unclear chips to scroll to that finding
+    container.querySelectorAll(".prov-chip-deviates, .prov-chip-unclear").forEach(chip => {
+        chip.addEventListener("click", () => {
+            jumpToFinding(chip.dataset.pid);
+        });
+    });
+}
+
+function jumpToFinding(pid) {
+    // Ensure we're on the findings tab
+    if (activeResultsTab !== "findings") switchResultsTab("findings");
+    const card = document.getElementById(`dev-${pid}`);
+    if (card) {
+        setTimeout(() => {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+            card.classList.add("highlight-flash");
+            setTimeout(() => card.classList.remove("highlight-flash"), 1500);
+        }, activeResultsTab !== "findings" ? 150 : 0);
+    }
+}
+
+async function loadResolutions() {
+    if (!currentJobId) return;
+    try {
+        const resp = await fetch(`/api/jobs/${currentJobId}/resolutions`);
+        if (resp.ok) {
+            const data = await resp.json();
+            resolutionState = data.resolutions || {};
+        }
+    } catch (e) { /* silent */ }
+}
+
+async function renderTenantResults() {
+    const tenant = currentResults.tenants[currentTenantIndex];
+    if (!tenant || !tenant.results) {
+        $("#contract-summary").innerHTML = "<p>No results available for this tenant.</p>";
+        $("#deviations-list").innerHTML = "";
+        $("#conforming-list").innerHTML = "";
+        $("#provisions-checklist").classList.add("hidden");
+        return;
+    }
+
+    syncChatScopeToCurrentTenant(false);
+
+    await loadResolutions();
+    const r = tenant.results;
+    renderContractSummary(r.contract_metadata || {});
+    renderContractAIComment(currentTenantIndex);
+    renderProvisionsChecklist(r.provisions || []);
+    const discoveries = r.discoveries || {};
+    renderDeviations(r.provisions || [], r.models_used || {}, currentTenantIndex, discoveries);
+    renderContractClauseFilterBar(r.provisions || []);
+    renderConforming(r.provisions || [], r.models_used || {});
+    renderAdditionalFindings(discoveries, r.models_used || {});
+    applyFilters(); // 043: reapply active severity filter to new finding-cards
+    applyContractClauseFilters();
+    loadExistingFeedback();
+    injectFinalDraftBar();
+}
+
+function updateContractDetailHeader(tenantIdx) {
+    var tenant = currentResults && currentResults.tenants ? currentResults.tenants[tenantIdx] : null;
+    var headerEl = document.getElementById("contract-detail-header");
+    if (!tenant || !headerEl) return;
+
+    var name = formatTenantName(tenant.filename || "");
+    var provisions = tenant.results && tenant.results.provisions ? tenant.results.provisions : [];
+    var deviationCount = provisions.filter(function(p) {
+        return p.final_verdict === "DEVIATES" || p.final_verdict === "UNCLEAR";
+    }).length;
+    var s = tenant.results && tenant.results.summary;
+    var sevCounts = {};
+    if (s) {
+        ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].forEach(function(sv) {
+            sevCounts[sv] = s[sv.toLowerCase()] || 0;
+        });
+    }
+
+    var actionBadge = '';
+    if (sevCounts['CRITICAL'] > 0)      actionBadge = ' <span class="snapshot-action-badge action-badge-critical">\u26A0 Immediate Action</span>';
+    else if (sevCounts['HIGH'] > 0)     actionBadge = ' <span class="snapshot-action-badge action-badge-high">\u26A0 Review Recommended</span>';
+    else if (s && (s.deviates || 0) > 0) actionBadge = ' <span class="snapshot-action-badge action-badge-medium">\u00B7 Monitor</span>';
+    else if (s)                          actionBadge = ' <span class="snapshot-action-badge action-badge-clear">\u2713 Clear</span>';
+
+    var deviationBadge = deviationCount > 0
+        ? ' <span class="contract-detail-deviation-badge">' + deviationCount + ' Deviation' + (deviationCount !== 1 ? 's' : '') + '</span>'
+        : '';
+
+    var resolution = getContractResolution(tenantIdx);
+    var resBadge = '';
+    if (resolution === "clean") {
+        resBadge = ' <span class="snapshot-resolution-badge res-badge-clean">\u2713 Clean</span>';
+    } else if (resolution === "resolved") {
+        resBadge = ' <span class="snapshot-resolution-badge res-badge-resolved">\u2713 Resolved</span>';
+    }
+
+    headerEl.innerHTML = '<div class="contract-detail-header-row">'
+        + '<h2 class="contract-detail-name">' + esc(name) + actionBadge + deviationBadge + resBadge + '</h2>'
+        + '<div id="final-draft-status" class="contract-final-draft-status hidden"></div>'
+        + '</div>';
+}
+
+function getContractPickerStatusValue(tenant) {
+    var s = tenant && tenant.results ? tenant.results.summary : null;
+    if (!s) return null;
+    if (s.critical > 0) return 'immediate';
+    if (s.high > 0) return 'review';
+    if ((s.deviates || 0) > 0) return 'monitor';
+    return 'clear';
+}
+
+function getAvailableContractPickerStatuses() {
+    const tenants = (currentResults && currentResults.tenants) ? currentResults.tenants : [];
+    const statuses = new Set();
+    tenants.forEach(function(tenant) {
+        const status = getContractPickerStatusValue(tenant);
+        if (status) statuses.add(status);
+    });
+    return statuses;
+}
+
+function buildContractPickerStatusOptions() {
+    const available = getAvailableContractPickerStatuses();
+    const optionDefs = [
+        { value: 'immediate', label: 'Immediate Action' },
+        { value: 'review', label: 'Review Recommended' },
+        { value: 'monitor', label: 'Monitor' },
+        { value: 'clear', label: 'Clear' }
+    ];
+    if (contractPickerSeverityFilter !== 'all' && !available.has(contractPickerSeverityFilter)) {
+        contractPickerSeverityFilter = 'all';
+    }
+    let html = '<option value="all">Contract Risk: All</option>';
+    optionDefs.forEach(function(opt) {
+        if (!available.has(opt.value)) return;
+        html += '<option value="' + opt.value + '"' + (contractPickerSeverityFilter === opt.value ? ' selected' : '') + '>' + opt.label + '</option>';
+    });
+    return html;
+}
+
+function renderContractPickerFilterBar() {
+    const bar = $("#contract-clause-filter-bar");
+    const selectorDropdown = $("#contract-selector-dropdown");
+    if (!bar) return;
+    bar.classList.remove("hidden");
+    bar.innerHTML = `
+        <div class="contract-clause-filter-group">
+            <span class="contract-clause-filter-label">Contract Filter</span>
+            <select id="contract-picker-severity-filter" class="contract-clause-filter-select">
+                ${buildContractPickerStatusOptions()}
+            </select>
+        </div>
+    `;
+    selectorDropdown?.classList.remove("hidden");
+    $("#contract-picker-severity-filter")?.addEventListener("change", (e) => {
+        contractPickerSeverityFilter = e.target.value;
+        renderContractSelectorBar(null);
+    });
+}
+
+function getAvailableClauseFilterValues(provisions) {
+    const deviations = getDeviationWorkflowProvisions(provisions);
+    const severitySet = new Set();
+    const statusSet = new Set();
+    let hasRead = false;
+    let hasUnread = false;
+    let hasNotes = false;
+    let hasNoNotes = false;
+
+    deviations.forEach(function(p) {
+        const pid = p.provision_id || "";
+        const severity = (p.severity || "").toUpperCase();
+        if (severity) severitySet.add(severity);
+        const key = `${currentTenantIndex}:${pid}`;
+        const resolution = (resolutionState[key] || {}).status || 'open';
+        statusSet.add(resolution);
+        const noteCount = ((resolutionState[key] || {}).notes || []).length;
+        if (noteCount > 0) hasNotes = true;
+        else hasNoNotes = true;
+        if (isNoted(currentTenantIndex, pid)) hasRead = true;
+        else hasUnread = true;
+    });
+
+    return {
+        severities: severitySet,
+        statuses: statusSet,
+        hasRead,
+        hasUnread,
+        hasNotes,
+        hasNoNotes
+    };
+}
+
+function renderContractSelectorBar(selectedTenantIdx) {
+    var selectorBar = document.getElementById('contract-selector-bar');
+    var selectorDrop = document.getElementById('contract-selector-dropdown');
+    var filterBar = document.getElementById('contract-clause-filter-bar');
+    if (!selectorBar || !selectorDrop || !currentResults || !currentResults.tenants) return;
+
+    if (selectedTenantIdx === null || selectedTenantIdx === undefined) {
+        var filteredTenants = currentResults.tenants
+            .map(function(t, i) { return { tenant: t, index: i }; })
+            .filter(function(entry) {
+                if (contractPickerSeverityFilter === 'all') return true;
+                return getContractPickerStatusValue(entry.tenant) === contractPickerSeverityFilter;
+            });
+
+        selectorDrop.innerHTML = '<option value="">— Select a contract —</option>'
+            + filteredTenants.map(function(entry) {
+                var name = (entry.tenant.filename || ('Contract ' + (entry.index + 1))).replace(/\.[^/.]+$/, '');
+                return '<option value="' + entry.index + '">' + esc(name) + '</option>';
+            }).join('');
+        selectorDrop.value = '';
+        selectorDrop.onchange = function() {
+            var idx = parseInt(selectorDrop.value, 10);
+            if (!isNaN(idx)) openContractDetail(idx);
+        };
+        selectorBar.classList.remove('hidden');
+        renderContractPickerFilterBar();
+        return;
+    }
+
+    selectorDrop.innerHTML = currentResults.tenants.map(function(t, i) {
+        var dName = formatTenantName(t.filename || ('Contract ' + (i + 1)));
+        var dSummary = t.results && t.results.summary ? t.results.summary : null;
+        var dHighest = dSummary ? getHighestSeverity(dSummary) : null;
+        var dStatusLabel = getStatusLabel(dHighest);
+        return '<option value="' + i + '">' + esc(dName) + ' — ' + dStatusLabel + '</option>';
+    }).join('');
+    selectorDrop.value = String(selectedTenantIdx);
+    selectorDrop.onchange = function() {
+        var idx = parseInt(selectorDrop.value, 10);
+        if (!isNaN(idx)) openContractDetail(idx);
+    };
+    selectorBar.classList.remove('hidden');
+    if (filterBar) filterBar.classList.remove('hidden');
+}
+
+function renderContractClauseFilterBar(provisions) {
+    const bar = $("#contract-clause-filter-bar");
+    if (!bar) return;
+    const available = getAvailableClauseFilterValues(provisions);
+    const severityDefs = [
+        { value: 'CRITICAL', label: 'Critical' },
+        { value: 'HIGH', label: 'High' },
+        { value: 'MEDIUM', label: 'Medium' },
+        { value: 'LOW', label: 'Low' }
+    ];
+    const statusDefs = [
+        { value: 'open', label: 'Open' },
+        { value: 'in_review', label: 'In Review' },
+        { value: 'escalated', label: 'Escalated' },
+        { value: 'not_a_deviation', label: 'Not a Deviation' },
+        { value: 'resolved', label: 'Resolved' }
+    ];
+
+    if (contractClauseSeverityFilter !== 'all' && !available.severities.has(contractClauseSeverityFilter)) {
+        contractClauseSeverityFilter = 'all';
+    }
+    if (contractClauseStatusFilter !== 'all' && !available.statuses.has(contractClauseStatusFilter)) {
+        contractClauseStatusFilter = 'all';
+    }
+    if (contractClauseReadFilter === 'read' && !available.hasRead) contractClauseReadFilter = 'all';
+    if (contractClauseReadFilter === 'unread' && !available.hasUnread) contractClauseReadFilter = 'all';
+    if (contractClauseNotesFilter === 'has_notes' && !available.hasNotes) contractClauseNotesFilter = 'all';
+    if (contractClauseNotesFilter === 'no_notes' && !available.hasNoNotes) contractClauseNotesFilter = 'all';
+
+    const severityOptions = ['<option value="all">Severity: All</option>']
+        .concat(severityDefs.filter(def => available.severities.has(def.value)).map(def =>
+            `<option value="${def.value}"${contractClauseSeverityFilter === def.value ? ' selected' : ''}>${def.label}</option>`
+        )).join('');
+    const statusOptions = ['<option value="all">Status: All</option>']
+        .concat(statusDefs.filter(def => available.statuses.has(def.value)).map(def =>
+            `<option value="${def.value}"${contractClauseStatusFilter === def.value ? ' selected' : ''}>${def.label}</option>`
+        )).join('');
+    const readOptions = ['<option value="all">Read: All</option>']
+        .concat(available.hasRead ? [`<option value="read"${contractClauseReadFilter === 'read' ? ' selected' : ''}>Read</option>`] : [])
+        .concat(available.hasUnread ? [`<option value="unread"${contractClauseReadFilter === 'unread' ? ' selected' : ''}>Unread</option>`] : [])
+        .join('');
+    const notesOptions = ['<option value="all">Notes: All</option>']
+        .concat(available.hasNotes ? [`<option value="has_notes"${contractClauseNotesFilter === 'has_notes' ? ' selected' : ''}>Has Notes</option>`] : [])
+        .concat(available.hasNoNotes ? [`<option value="no_notes"${contractClauseNotesFilter === 'no_notes' ? ' selected' : ''}>No Notes</option>`] : [])
+        .join('');
+
+    bar.classList.remove("hidden");
+    bar.innerHTML = `
+        <div class="contract-clause-filter-group">
+            <span class="contract-clause-filter-label">Clause Filters</span>
+            <select id="contract-clause-severity-filter" class="contract-clause-filter-select">
+                ${severityOptions}
+            </select>
+            <select id="contract-clause-status-filter" class="contract-clause-filter-select">
+                ${statusOptions}
+            </select>
+            <select id="contract-clause-read-filter" class="contract-clause-filter-select">
+                ${readOptions}
+            </select>
+            <select id="contract-clause-notes-filter" class="contract-clause-filter-select">
+                ${notesOptions}
+            </select>
+            <button type="button" class="contract-clause-filter-reset" id="contract-clause-filter-reset">Reset</button>
+            ${(() => {
+                const tenant = currentResults && currentResults.tenants ? currentResults.tenants[currentTenantIndex] : null;
+                return tenant && tenant.has_annotated
+                    ? `<button type="button" class="btn btn-secondary btn-sm contract-annotated-btn"
+                        onclick="window.CAM.downloadFile('/api/jobs/${currentJobId}/results/${currentTenantIndex}/annotated')">
+                        Download Annotated Tenant Lease
+                    </button>`
+                    : '';
+            })()}
+            <button type="button" class="fd-generate-btn contract-final-draft-btn" id="fd-generate-btn" disabled
+                onclick="window.CAM.generateFinalDraft()">Generate Final Draft ↓</button>
+        </div>
+    `;
+
+    $("#contract-clause-severity-filter")?.addEventListener("change", (e) => {
+        contractClauseSeverityFilter = e.target.value;
+        applyContractClauseFilters();
+    });
+    $("#contract-clause-status-filter")?.addEventListener("change", (e) => {
+        contractClauseStatusFilter = e.target.value;
+        applyContractClauseFilters();
+    });
+    $("#contract-clause-read-filter")?.addEventListener("change", (e) => {
+        contractClauseReadFilter = e.target.value;
+        applyContractClauseFilters();
+    });
+    $("#contract-clause-notes-filter")?.addEventListener("change", (e) => {
+        contractClauseNotesFilter = e.target.value;
+        applyContractClauseFilters();
+    });
+    $("#contract-clause-filter-reset")?.addEventListener("click", () => {
+        contractClauseSeverityFilter = 'all';
+        contractClauseStatusFilter = 'all';
+        contractClauseReadFilter = 'all';
+        contractClauseNotesFilter = 'all';
+        const tenant = currentResults && currentResults.tenants ? currentResults.tenants[currentTenantIndex] : null;
+        renderContractClauseFilterBar((tenant && tenant.results && tenant.results.provisions) || []);
+        applyContractClauseFilters();
+    });
+}
+
+function applyContractClauseFilters() {
+    const cards = Array.from(document.querySelectorAll("#deviations-list .finding-card"));
+    const header = $("#deviations-header");
+    const total = cards.length;
+    let visible = 0;
+
+    cards.forEach(card => {
+        const pid = card.dataset.provision || "";
+        const tenantIdx = parseInt(card.dataset.tenantIdx || String(currentTenantIndex), 10);
+        const severity = (card.dataset.severity || '').toUpperCase();
+        const key = `${tenantIdx}:${pid}`;
+        const resolution = (resolutionState[key] || {}).status || 'open';
+        const hasNotes = ((resolutionState[key] || {}).notes || []).length > 0;
+        const isRead = isNoted(tenantIdx, pid);
+
+        const severityOk = contractClauseSeverityFilter === 'all' || severity === contractClauseSeverityFilter;
+        const statusOk = contractClauseStatusFilter === 'all' || resolution === contractClauseStatusFilter;
+        const readOk = contractClauseReadFilter === 'all'
+            || (contractClauseReadFilter === 'read' && isRead)
+            || (contractClauseReadFilter === 'unread' && !isRead);
+        const notesOk = contractClauseNotesFilter === 'all'
+            || (contractClauseNotesFilter === 'has_notes' && hasNotes)
+            || (contractClauseNotesFilter === 'no_notes' && !hasNotes);
+
+        const show = severityOk && statusOk && readOk && notesOk;
+        card.classList.toggle("hidden", !show);
+        if (show) visible++;
+    });
+
+    if (header) header.textContent = "Deviations";
+}
+
+function shouldShowField(value) {
+    if (!value || typeof value !== "string") return false;
+    // Strip underscores and TBDs, then check for meaningful content
+    const cleaned = value.replace(/_{2,}/g, "").replace(/TBD/gi, "").trim();
+    if (cleaned.length < 5) return false;
+    // Known useless patterns
+    if (/TBD.*\$.*TBD/i.test(value)) return false;   // "TBD Dollars ($TBD)"
+    if (/TBD day of TBD/i.test(value)) return false;  // "TBD day of TBD, 20__"
+    if (/^20__$/.test(value.trim())) return false;
+    return true;
+}
+
+function truncateToSentence(text, maxChars) {
+    if (maxChars === undefined) maxChars = 250;
+    if (!text || text.length <= maxChars) return text;
+    var truncated = text.substring(0, maxChars);
+    var lastEnd = Math.max(
+        truncated.lastIndexOf(". "),
+        truncated.lastIndexOf(".) "),
+        truncated.lastIndexOf("; ")
+    );
+    if (lastEnd > 80) return text.substring(0, lastEnd + 1);
+    var lastSpace = truncated.lastIndexOf(" ");
+    if (lastSpace > 80) return truncated.substring(0, lastSpace) + "...";
+    return truncated + "...";
+}
+
+// Step 125: Build deal overview table HTML for Contract Summary tab
+function buildDealOverviewTable(tenantResult) {
+    if (!tenantResult) return '';
+    var deal = tenantResult.deal_overview || {};
+    var meta = tenantResult.contract_metadata || {};
+
+    var d = function(v) { return (v && typeof v === 'string' && v.trim()) ? esc(v.trim()) : '\u2014'; };
+
+    var landlord = deal.landlord_name || meta.landlord || '';
+    var tenantName = deal.tenant_name || meta.tenant_name || meta.tenant || '';
+    var property = deal.property_address || meta.property_description || '';
+    var termYears = deal.lease_term_years;
+    var commencement = deal.commencement_date || meta.effective_date || '';
+    var expiration = deal.expiration_date || '';
+    var rent = deal.base_rent_monthly || meta.base_rent || '';
+    var escalation = deal.escalation || '';
+    var camStructure = deal.cam_structure || '';
+    var security = deal.security_deposit || '';
+    var renewal = deal.renewal_options || '';
+    var permittedUse = deal.permitted_use || meta.permitted_use || '';
+    var govLaw = deal.governing_law || meta.governing_law || '';
+    var keyTerms = deal.key_terms_summary || [];
+
+    // Build term string
+    var termStr = '';
+    if (termYears) {
+        termStr = termYears + ' year' + (termYears !== 1 ? 's' : '');
+        if (commencement || expiration) {
+            termStr += '  \u00B7  Commencement: ' + d(commencement) + '  \u00B7  Expiration: ' + d(expiration);
+        }
+    } else if (meta.term_length) {
+        termStr = meta.term_length;
+    }
+
+    // Build economics lines
+    var econLines = [];
+    econLines.push('Base Rent: ' + d(rent));
+    if (escalation) econLines.push('Escalation: ' + d(escalation));
+    if (camStructure) econLines.push('CAM: ' + d(camStructure));
+    if (security) econLines.push('Security Deposit: ' + d(security));
+
+    // Build rows
+    var rows = '';
+    rows += '<div class="deal-overview-label">Parties</div><div class="deal-overview-value">'
+        + 'Landlord: ' + d(landlord) + '<br>Tenant: ' + d(tenantName) + '</div>';
+    rows += '<div class="deal-overview-label">Property</div><div class="deal-overview-value' + (!property ? ' empty' : '') + '">'
+        + d(property) + '</div>';
+    rows += '<div class="deal-overview-label">Term</div><div class="deal-overview-value' + (!termStr ? ' empty' : '') + '">'
+        + (termStr ? esc(termStr) : '\u2014') + '</div>';
+    rows += '<div class="deal-overview-label">Economics</div><div class="deal-overview-value">'
+        + econLines.join('<br>') + '</div>';
+    rows += '<div class="deal-overview-label">Options</div><div class="deal-overview-value' + (!renewal ? ' empty' : '') + '">'
+        + 'Renewal: ' + d(renewal) + '</div>';
+    rows += '<div class="deal-overview-label">Use</div><div class="deal-overview-value">'
+        + d(permittedUse)
+        + (govLaw ? '<br>Governing Law: ' + d(govLaw) : '')
+        + '</div>';
+
+    // Key terms bullets
+    var keyTermsHtml = '';
+    if (keyTerms && keyTerms.length > 0) {
+        keyTermsHtml = '<div class="deal-key-terms"><div class="deal-key-terms-heading">Key Terms</div><ul>';
+        keyTerms.forEach(function(kt) {
+            if (kt && typeof kt === 'string' && kt.trim()) {
+                keyTermsHtml += '<li>' + esc(kt.trim()) + '</li>';
+            }
+        });
+        keyTermsHtml += '</ul></div>';
+    }
+
+    return '<div class="deal-overview-section">'
+        + '<div class="deal-overview-heading">Deal Overview</div>'
+        + '<div class="deal-overview-table">' + rows + '</div>'
+        + keyTermsHtml
+        + '</div>';
+}
+
+function renderContractSummary(meta) {
+    const container = $("#contract-summary");
+
+    // Get current tenant's results for deviation stats
+    const tenant = currentResults.tenants[currentTenantIndex];
+    const r = tenant && tenant.results ? tenant.results : {};
+    const summary = r.summary || {};
+    const provisions = r.provisions || [];
+    const totalProvisions = provisions.length;
+    const deviationCount = summary.deviates || 0;
+
+    // Filter metadata — only show fields with real data
+    const tenantName = shouldShowField(meta.tenant) ? meta.tenant : "";
+    const landlord = shouldShowField(meta.landlord) ? meta.landlord : "";
+    const property = shouldShowField(meta.property_description) ? meta.property_description : "";
+    const term = shouldShowField(meta.term_length) ? meta.term_length : "";
+    const rent = shouldShowField(meta.base_rent) ? meta.base_rent : "";
+    const startDate = shouldShowField(meta.effective_date) ? meta.effective_date : "";
+    const govLaw = shouldShowField(meta.governing_law) ? meta.governing_law : "";
+
+    // If ALL key fields are empty, show fallback
+    const hasAnyField = tenantName || landlord || property || term || rent;
+    if (!hasAnyField && !deviationCount) {
+        container.innerHTML = `<div class="contract-hero">
+            <div class="contract-headline">${esc(tenant.filename || "Tenant Lease")}</div>
+            <div class="contract-subline">Contract details not available \u2014 see executed lease.</div>
+            <div class="contract-footer">${totalProvisions} provision${totalProvisions !== 1 ? "s" : ""} analyzed${govLaw ? ` &middot; Governing law: ${esc(govLaw)}` : ""}</div>
+        </div>`;
+        return;
+    }
+
+    // Headline
+    const headline = tenantName || tenant.filename || "Tenant Lease";
+    const sublines = [];
+    if (property) sublines.push(esc(property));
+    if (landlord) sublines.push(`Landlord: ${esc(landlord)}`);
+
+    // Term as text line (added to sublines)
+    if (term) sublines.push(`Term: ${esc(term)}`);
+
+    // Deviation chips row
+    const deviationProvisions = provisions
+        .filter(p => p.final_verdict === "DEVIATES")
+        .sort((a, b) => {
+            const ai = SEVERITY_ORDER.indexOf(a.severity);
+            const bi = SEVERITY_ORDER.indexOf(b.severity);
+            return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
+
+    let chipsHtml = "";
+    if (deviationProvisions.length > 0) {
+        // 6a: Deviation count on its own line
+        const sevParts = [];
+        if (summary.critical) sevParts.push(`${summary.critical} CRITICAL`);
+        if (summary.high) sevParts.push(`${summary.high} HIGH`);
+        if (summary.medium) sevParts.push(`${summary.medium} MEDIUM`);
+        if (summary.low) sevParts.push(`${summary.low} LOW`);
+        const countText = `${deviationCount} Deviation${deviationCount !== 1 ? "s" : ""} &middot; ${sevParts.join(" &middot; ")}`;
+
+        // 6b + 6c: Risk headline chips color-coded by severity, clickable
+        const headlineChips = deviationProvisions.map(d => {
+            const sev = d.severity || "LOW";
+            const pid = d.provision_id || "";
+            let headline = d.risk_headline || d.challenge_details || d.what_changed || "";
+            return `<span class="risk-headline-chip risk-headline-${sev}" data-pid="${esc(pid)}">${esc(headline)}</span>`;
+        }).join("");
+
+        chipsHtml = `<div class="contract-chips-row">
+            <span class="deviation-count-chip">${countText}</span>
+        </div>
+        <div class="contract-chips-row">
+            ${headlineChips}
+        </div>`;
+    } else {
+        chipsHtml = `<div class="contract-chips-row">
+            <span class="deviation-count-chip conforming-chip">\u2705 All provisions conform</span>
+        </div>`;
+    }
+
+    // Footer
+    const footerParts = [];
+    footerParts.push(`${totalProvisions} provision${totalProvisions !== 1 ? "s" : ""} analyzed`);
+    if (govLaw) footerParts.push(`Governing law: ${esc(govLaw)}`);
+
+    // Step 182: CAM confidence summary line
+    let camConfidenceHtml = '';
+    const camSummary = r.cam_contract_summary;
+    if (camSummary) {
+        const confident   = (camSummary.governance_counts && camSummary.governance_counts.ASSERT_SIGNAL) || 0;
+        const total       = camSummary.provisions_scored || 0;
+        const noBaseline  = camSummary.withhold_no_baseline || 0;
+        const effectiveTotal = total - noBaseline;
+        const ratio = effectiveTotal > 0 ? confident / effectiveTotal : 1.0;
+        const tier = ratio >= 0.75 ? 'High' : ratio >= 0.50 ? 'Medium' : 'Low';
+
+        let noBaselineNote = '';
+        if (noBaseline > 0) {
+            noBaselineNote = ` <span class="cam-confidence-note">+ ${noBaseline} tenant-added clause${noBaseline !== 1 ? 's' : ''} reviewed separately (no template baseline)</span>`;
+        }
+        camConfidenceHtml = `<div class="cam-confidence-line">Analysis confidence: <strong>${tier}</strong> (${confident} of ${effectiveTotal} standard provisions confidently evaluated)${noBaselineNote} <a href="#" class="cam-confidence-help" onclick="window.CAM.showAboutModal('cam-confidence-explainer'); return false;" title="What does this mean?">?</a></div>`;
+    }
+
+    // analysis_completeness display (Step 192)
+    const completeness = r.analysis_completeness || {};
+    const cStatus = completeness.status || '';
+    let completenessHtml = '';
+    if (cStatus === 'COMPLETE') {
+        completenessHtml = `<div class="analysis-completeness completeness-complete">
+            &#10003; Full document coverage confirmed
+        </div>`;
+    } else if (cStatus === 'GAPS_RESOLVED') {
+        const repaired = completeness.gaps_resolved_by_reextraction || 0;
+        // Only show if something was actually repaired — zero is noise
+        if (repaired > 0) {
+            completenessHtml = `<div class="analysis-completeness completeness-resolved">
+                &#10003; ${repaired} subsection${repaired !== 1 ? 's' : ''} recovered via targeted re-extraction
+            </div>`;
+        }
+    } else if (cStatus === 'GAPS_UNRESOLVED') {
+        const remaining = completeness.gaps_remaining || 0;
+        completenessHtml = `<div class="analysis-completeness completeness-unresolved">
+            &#9888; ${remaining} section${remaining !== 1 ? 's' : ''} could not be fully extracted
+            &mdash; manual review recommended
+        </div>`;
+    }
+
+    // Step 125: Deal overview table above hero
+    const dealOverviewHtml = buildDealOverviewTable(r);
+
+    const isCollapsed = !!contractSummaryCollapseState[currentTenantIndex];
+    const compactParties = [landlord ? `Landlord: ${esc(landlord)}` : "", tenantName ? `Tenant: ${esc(tenantName)}` : ""]
+        .filter(Boolean)
+        .join("  •  ");
+
+    container.innerHTML = `
+        <button type="button" class="contract-summary-toggle${isCollapsed ? ' is-collapsed' : ''}"
+            onclick="window.CAM.toggleContractSummaryCollapse(${currentTenantIndex}); return false;">
+            <span class="contract-summary-toggle-text">Contract Overview</span>
+            <span class="contract-summary-toggle-icon">${isCollapsed ? '&#9656;' : '&#9662;'}</span>
+        </button>
+        <div class="contract-summary-compact${isCollapsed ? '' : ' hidden'}">${compactParties || esc(headline)}</div>
+        <div id="contract-summary-body" class="contract-summary-body${isCollapsed ? ' hidden' : ''}">
+            ${dealOverviewHtml}<div class="contract-hero">
+                <div class="contract-headline">${esc(headline)}</div>
+                ${sublines.length ? `<div class="contract-subline">${sublines.join("<br>")}</div>` : ""}
+                ${chipsHtml}
+                ${camConfidenceHtml}
+                ${completenessHtml}
+                <div class="contract-footer">${footerParts.join(" &middot; ")}</div>
+            </div>
+        </div>`;
+
+    // Wire up "View in context" links in contract summary
+    container.querySelectorAll(".docview-link").forEach(link => {
+        link.addEventListener("click", (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            jumpToDocview(link.dataset.pid);
+        });
+    });
+
+    // Wire up clickable risk headline chips (6c)
+    container.querySelectorAll(".risk-headline-chip[data-pid]").forEach(chip => {
+        chip.style.cursor = "pointer";
+        chip.addEventListener("click", () => {
+            jumpToFinding(chip.dataset.pid);
+        });
+    });
+}
+
+function toggleContractSummaryCollapse(tenantIdx) {
+    const idx = Number.isInteger(tenantIdx) ? tenantIdx : currentTenantIndex;
+    contractSummaryCollapseState[idx] = !contractSummaryCollapseState[idx];
+    const body = document.getElementById("contract-summary-body");
+    const toggle = document.querySelector(".contract-summary-toggle");
+    const compact = document.querySelector(".contract-summary-compact");
+    const aiComment = document.getElementById("contract-ai-comment");
+    if (body) body.classList.toggle("hidden", !!contractSummaryCollapseState[idx]);
+    if (compact) compact.classList.toggle("hidden", !contractSummaryCollapseState[idx]);
+    if (aiComment) aiComment.classList.toggle("hidden", !!contractSummaryCollapseState[idx] || !aiComment.innerHTML.trim());
+    if (toggle) {
+        toggle.classList.toggle("is-collapsed", !!contractSummaryCollapseState[idx]);
+        const icon = toggle.querySelector(".contract-summary-toggle-icon");
+        if (icon) icon.innerHTML = contractSummaryCollapseState[idx] ? "&#9656;" : "&#9662;";
+    }
+}
+
+// ── Per-Contract AI Comment ──
+
+async function renderContractAIComment(tenantIdx) {
+    var el = document.getElementById('contract-ai-comment');
+    if (!el || !currentResults) return;
+
+    var tenant = currentResults.tenants[tenantIdx];
+    if (!tenant || !tenant.results) { el.classList.add('hidden'); return; }
+
+    // Cache per tenant
+    if (tenant._aiComment) {
+        el.innerHTML = tenant._aiComment;
+        el.classList.toggle('hidden', !!contractSummaryCollapseState[tenantIdx]);
+        return;
+    }
+
+    var r = tenant.results;
+    var summary = r.summary || {};
+    var provisions = r.provisions || [];
+    var deviations = provisions.filter(function(p) { return p.final_verdict === 'DEVIATES'; });
+    var name = formatTenantName(tenant.filename || 'this lease');
+
+    // Show loading state
+    el.innerHTML = '<span class="contract-ai-comment-loading">&#x2728; Analyzing&hellip;</span>';
+    el.classList.toggle('hidden', !!contractSummaryCollapseState[tenantIdx]);
+
+    // Build compact context
+    var devList = deviations.map(function(d) {
+        return (d.provision_id || '') + ' ' + (d.provision_name || '') + ' (' + (d.severity || 'MEDIUM') + ')'
+            + (d.risk_headline ? ': ' + d.risk_headline : '');
+    }).join('\n');
+
+    // Step 183: CAM confidence note for per-contract AI comment
+    var camNote = '';
+    var uncertain183 = 0;
+    var camSumm = tenant && tenant.results ? tenant.results.cam_contract_summary : null;
+    if (camSumm) {
+        var withhold183 = (camSumm.governance_counts && camSumm.governance_counts.WITHHOLD_SIGNAL) || 0;
+        var reviewSig183 = (camSumm.governance_counts && camSumm.governance_counts.REVIEW_SIGNAL) || 0;
+        uncertain183 = withhold183 + reviewSig183;
+        var total183 = camSumm.provisions_scored || 0;
+        if (uncertain183 > 0) {
+            camNote = '\n\nNote: ' + uncertain183 + ' of ' + total183 + ' clause evaluations had lower AI confidence.';
+        }
+    }
+
+    var prompt;
+    var confInstruction183;
+    if (deviations.length === 0) {
+        confInstruction183 = uncertain183 > 0 ? " If the note mentions lower-confidence clauses, add a second sentence mentioning this." : "";
+        prompt = 'You are summarizing a single commercial lease analysis for a lawyer. Write exactly 1 plain-English sentence stating that this lease fully conforms to the standard template across all provisions reviewed. Do not recommend signing or any action. Do not mention AI or analysis pipelines. Do not use the words \'tenant\' or \'landlord\' or name the lease.' + confInstruction183 + camNote;
+    } else {
+        confInstruction183 = uncertain183 > 0 ? " If the note above mentions lower-confidence clauses, add a brief third sentence: 'Note that [N] clause(s) had lower AI confidence and should be reviewed carefully.'" : "";
+        prompt = 'You are summarizing a single commercial lease analysis for a lawyer. Write exactly 2 plain-English sentences. Sentence 1: state the number of deviations found and the highest severity level. Sentence 2: identify the most significant risk (the highest-severity provision) and briefly explain what changed. Do not recommend signing, rejecting, or revising. Do not give legal advice. Do not use bullet points. Do not mention AI or analysis pipelines. Do not name the lease or tenant.' + confInstruction183 + '\n\nFindings:\n' + devList + camNote;
+    }
+
+    try {
+        var resp = await fetch('/api/ai-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt, job_id: currentJobId }),
+        });
+        var data = await resp.json();
+        var text = data.summary || '';
+        if (text) {
+            var escaped = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            var html = '<span class="contract-ai-comment-icon">&#x2728;</span><span class="contract-ai-comment-text">' + escaped + '</span>';
+            el.innerHTML = html;
+            tenant._aiComment = html;
+            el.classList.toggle('hidden', !!contractSummaryCollapseState[tenantIdx]);
+        } else {
+            el.classList.add('hidden');
+        }
+    } catch (err) {
+        el.classList.add('hidden');
+        console.error('Contract AI comment error:', err);
+    }
+}
+
+// ── Model Name Helpers ──
+
+function getModelDisplayName(modelId) {
+    return MODEL_DISPLAY_NAMES[modelId] || modelId || "Unknown Model";
+}
+
+function getEvaluatorNames(modelsUsed) {
+    return {
+        A: {
+            name: getModelDisplayName(modelsUsed.evaluator_a),
+            fallback: modelsUsed.evaluator_a_fallback || false,
+        },
+        B: {
+            name: getModelDisplayName(modelsUsed.evaluator_b),
+            fallback: modelsUsed.evaluator_b_fallback || false,
+        },
+        C: {
+            name: getModelDisplayName(modelsUsed.evaluator_c),
+            fallback: modelsUsed.evaluator_c_fallback || false,
+        },
+    };
+}
+
+function getProviderShortNames(modelsUsed) {
+    const names = getEvaluatorNames(modelsUsed);
+    const companies = new Set();
+    Object.values(names).forEach(obj => {
+        const n = obj.name || obj;
+        const match = n.match(/\(([^)]+)\)/);
+        if (match) companies.add(match[1]);
+    });
+    return Array.from(companies);
+}
+
+// ── Cross-Reference Linking ──
+
+function linkifyProvisions(text, analyzedPids, currentPid) {
+    if (!text) return "";
+    // Escape first, then replace LP-XX patterns
+    let html = esc(text);
+    html = html.replace(/LP-\d{2}/g, (match) => {
+        if (match === currentPid) return match; // Don't link to self
+        if (analyzedPids.has(match)) {
+            return `<span class="provision-link" data-pid="${match}">${match}</span>`;
+        }
+        return `<span class="provision-link-unanalyzed" title="This provision was not included in the analysis. Re-run with ${match} selected to see full impact.">${match} (not analyzed)</span>`;
+    });
+    return html;
+}
+
+function detectCascadeRefs(d, analyzedPids) {
+    // Look for LP-XX references in key text fields (excluding self)
+    const pid = d.provision_id || "";
+    const fields = [
+        d.challenge_details, d.severity_reasoning, d.financial_impact,
+        d.recommended_action, d.cascade_analysis,
+    ].filter(Boolean).join(" ");
+    const refs = new Set();
+    const matches = fields.match(/LP-\d{2}/g) || [];
+    matches.forEach(m => { if (m !== pid) refs.add(m); });
+    return Array.from(refs);
+}
+
+
+// ── Deviation Rendering ──
+
+function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
+    // Build a map: provision_id → [discovery items that belong to it]
+    const discByProvision = {};
+    const discStandalone = (discoveries && discoveries.standalone) || [];
+    for (const disc of discStandalone) {
+        const lps = disc.unique_suggested_lps || [];
+        for (const lp of lps) {
+            if (!discByProvision[lp]) discByProvision[lp] = [];
+            discByProvision[lp].push(disc);
+        }
+    }
+
+    const container = $("#deviations-list");
+    const deviations = getDeviationWorkflowProvisions(provisions)
+        .sort((a, b) => {
+            const ai = SEVERITY_ORDER.indexOf(a.severity);
+            const bi = SEVERITY_ORDER.indexOf(b.severity);
+            return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        });
+
+    const header = $("#deviations-header");
+    header.textContent = "Deviations";
+
+    const progressEl = document.getElementById("resolution-progress");
+    if (progressEl) progressEl.remove();
+
+    if (deviations.length === 0) {
+        container.innerHTML = '<div class="alert alert-success">No deviations detected. All analyzed provisions conform to the standard template.</div>';
+        return;
+    }
+
+    const evalNames = getEvaluatorNames(modelsUsed);
+
+    // Build set of all analyzed provision IDs
+    const analyzedPids = new Set(provisions.map(p => p.provision_id).filter(Boolean));
+
+    container.innerHTML = deviations.map(d => {
+        const pid = d.provision_id || "";
+        const pname = d.provision_name || "";
+        const sev = d.severity || "";
+        const sectionRef = d.tenant_section_ref || "";
+        const icon = SEVERITY_ICONS[sev] || "";
+
+        const challenge = d.challenge_details || "";
+        const riskHeadline = d.risk_headline || "";
+        const action = d.recommended_action || "";
+
+        const credibilityLine = renderCredibilityLine(d, modelsUsed, tenantIdx, pid, sev);
+
+        // Linkify cross-references
+        const lChallenge = linkifyProvisions(challenge, analyzedPids, pid);
+        const lAction = linkifyProvisions(action, analyzedPids, pid);
+
+        // Cascade badge
+        const cascadeRefs = detectCascadeRefs(d, analyzedPids);
+        const cascadeBadge = cascadeRefs.length > 0
+            ? `<span class="cascade-badge">\uD83D\uDD17 Affects ${cascadeRefs.join(", ")}</span>`
+            : "";
+
+        // Template vs tenant language blocks (shown in card-summary)
+        const templateText = d.template_text || "";
+        const tenantText = d.tenant_text || "";
+        const hasDeviation = d.final_verdict === "DEVIATES";
+
+        let languageHtml = "";
+        if (templateText || tenantText) {
+            const isDeviates = d.final_verdict === "DEVIATES";
+            const isAdded    = !templateText && tenantText;
+            const isRemoved  = templateText && !tenantText;
+            const isModified = templateText && tenantText && isDeviates;
+
+            if (isAdded) {
+                languageHtml = `
+                <div class="finding-language-pair">
+                    <div class="finding-language finding-language--added">
+                        <div class="finding-language-label finding-language-label--added">
+                            \u2795 Inserted by tenant — not present in standard template
+                        </div>
+                        <div class="finding-language-text finding-language-text--added">${esc(tenantText)}</div>
+                    </div>
+                </div>`;
+            } else if (isRemoved) {
+                languageHtml = `
+                <div class="finding-language-pair">
+                    <div class="finding-language finding-language--removed">
+                        <div class="finding-language-label finding-language-label--removed">
+                            Standard Template — omitted from tenant lease
+                        </div>
+                        <div class="finding-language-text finding-language-text--removed">${esc(templateText)}</div>
+                    </div>
+                    <div class="finding-language finding-language--removed-placeholder">
+                        <div class="finding-language-label">Tenant Lease</div>
+                        <div class="finding-language-text finding-language-text--removed-placeholder">
+                            This provision was omitted from the tenant's lease.
+                        </div>
+                    </div>
+                </div>`;
+            } else if (isModified) {
+                const { templateHtml, tenantHtml } = computeWordDiff(templateText, tenantText);
+                languageHtml = `
+                <div class="finding-language-pair finding-language-pair--diff">
+                    <div class="finding-language">
+                        <div class="finding-language-label">
+                            Standard Template
+                            <span class="diff-legend diff-legend--removed">removed</span>
+                        </div>
+                        <div class="finding-language-text finding-language-text--template-diff">${templateHtml}</div>
+                    </div>
+                    <div class="finding-language finding-language--modified">
+                        <div class="finding-language-label finding-language-label--modified">
+                            Tenant Lease
+                            <span class="diff-legend diff-legend--added">added</span>
+                        </div>
+                        <div class="finding-language-text finding-language-text--tenant-diff">${tenantHtml}</div>
+                    </div>
+                </div>`;
+            } else {
+                languageHtml = `
+                <div class="finding-language-pair">
+                    ${templateText ? `<div class="finding-language">
+                        <div class="finding-language-label">Standard Template</div>
+                        <div class="finding-language-text">${esc(templateText)}</div>
+                    </div>` : ""}
+                    ${tenantText ? `<div class="finding-language">
+                        <div class="finding-language-label">Tenant Lease</div>
+                        <div class="finding-language-text">${esc(tenantText)}</div>
+                    </div>` : ""}
+                </div>`;
+            }
+        }
+
+        // Cascade source callout (Item 4b)
+        const cascadeSource = d.cascade_source;
+        let cascadeSourceHtml = "";
+        if (cascadeSource && cascadeSource.term) {
+            const csSection = cascadeSource.defined_in || "";
+            cascadeSourceHtml = `<div class="cascade-source-callout">
+                <span>\uD83D\uDCCC Key definition: "${esc(cascadeSource.term)}"${csSection ? ` &mdash; ${esc(csSection)}` : ""}</span>
+                ${csSection ? `<a class="cascade-source-link" data-section="${esc(csSection)}">Click to view in document &#8594;</a>` : ""}
+            </div>`;
+        }
+
+        // Item 6: UNCLEAR → "Needs Review" styling
+        const isUnclear = d.final_verdict === "UNCLEAR";
+        const displaySev = isUnclear ? "Needs Review" : sev;
+        const displayIcon = isUnclear ? "\u2753" : icon;
+        const sevClass = isUnclear ? "severity-review" : `severity-${sev}`;
+
+        const discoveredBadge = d.discovered
+            ? `<span class="discovered-badge">\uD83D\uDD0D Unique</span>`
+            : "";
+
+        // Step 186: notedCls needed by resolution bar below
+        const notedCls = isNoted(tenantIdx, pid) ? " noted-active" : "";
+
+        // Resolution bar — look up current state for this card
+        const resKey = `${tenantIdx}:${pid}`;
+        const res = resolutionState[resKey] || { status: "open", notes: [] };
+        const resStatus = res.status || "open";
+        const resNotes = res.notes || [];
+        const lastNote = resNotes.length > 0 ? resNotes[resNotes.length - 1] : null;
+        const noteCount = resNotes.length;
+        const noteCountHtml = noteCount > 0
+            ? `<span class="res-note-count">${noteCount} note${noteCount > 1 ? "s" : ""}</span>`
+            : "";
+
+        const statusDefs = [
+            { key: "open",       label: "Open",               cls: "res-open"     },
+            { key: "in_review",  label: "In Review",           cls: "res-inreview" },
+            { key: "escalated",  label: "Escalate to Client",  cls: "res-escalated"},
+            { key: "not_a_deviation", label: "Not a Deviation", cls: "res-notdeviation" },
+            { key: "resolved",   label: "Resolved",           cls: "res-resolved" },
+        ];
+        const statusPillsHtml = statusDefs.map(s =>
+            `<button class="res-pill ${s.cls}${resStatus === s.key ? " res-pill-active" : ""}"
+                     data-status="${s.key}" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}"
+                     onclick="window.CAM.setResolutionStatus('${esc(pid)}', ${tenantIdx}, '${s.key}', this)">
+                 ${s.label}
+             </button>`
+        ).join("");
+
+        const workflowActionsHtml = `
+            <div class="workflow-open-actions workflow-group">
+                <a class="docview-link card-docview-link card-docview-link--btn" data-pid="${esc(pid)}">Open Document Comparison</a>
+                <a class="card-audit-link card-audit-link--btn"
+                   href="#"
+                   onclick="window.CAM.jumpToAuditProvision(${tenantIdx}, '${esc(pid)}'); return false;"
+                   title="View full CAM analysis in Audit Trail">
+                    Open CAM Audit Trail
+                </a>
+            </div>
+        `;
+
+        let draftDecisionControlsHtml = "";
+        if (d.final_verdict === 'DEVIATES') {
+            const dec = getFinalDraftDecision(tenantIdx, pid);
+            const activeChoice = dec ? dec.choice : null;
+            const hasSavedCustom = activeChoice === 'custom' && dec && dec.text;
+            const modifyLabel = hasSavedCustom ? 'Keep Modified \u2713' : 'Modify\u2026';
+            draftDecisionControlsHtml = `
+                <span class="fd-decision-label">Draft Decision:</span>
+                <button class="fd-btn${activeChoice === 'template' ? ' fd-btn-active' : ''}" data-choice="template"
+                    onclick="window.CAM.fdChooseSimple(${tenantIdx}, '${esc(pid)}', 'template'); event.stopPropagation();">
+                    Keep Reference Draft
+                </button>
+                <button class="fd-btn${activeChoice === 'tenant' ? ' fd-btn-active' : ''}" data-choice="tenant"
+                    onclick="window.CAM.fdChooseSimple(${tenantIdx}, '${esc(pid)}', 'tenant'); event.stopPropagation();">
+                    Keep Tenant Draft
+                </button>
+                <button class="fd-btn${activeChoice === 'custom' ? ' fd-btn-active' : ''}" data-choice="custom"
+                    onclick="window.CAM.finalDraftModify(${tenantIdx}, '${esc(pid)}'); event.stopPropagation();">
+                    ${modifyLabel}
+                </button>
+            `;
+        }
+
+        const resolutionBarHtml = `
+        <div class="resolution-bar" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}">
+            <div class="res-status-row finding-workflow-row">
+                <div class="workflow-group workflow-group-status">
+                    <span class="res-label">Status:</span>
+                    <div class="res-pills">${statusPillsHtml}</div>
+                </div>
+                ${draftDecisionControlsHtml ? `<div class="workflow-divider" aria-hidden="true"></div><div class="workflow-group workflow-group-decision">${draftDecisionControlsHtml}</div>` : ""}
+                <div class="workflow-divider" aria-hidden="true"></div>
+                <div class="workflow-group workflow-group-tools">
+                    <span class="res-tools-label">Tools:</span>
+                    <button class="res-notes-toggle" onclick="window.CAM.toggleResolutionNotes('${esc(pid)}', ${tenantIdx})"
+                            data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}">
+                        \uD83D\uDCDD Notes${noteCountHtml ? " " + noteCountHtml : ""}
+                    </button>
+                    <button class="res-advisor-btn" onclick="window.CAM.openResolutionAdvisor('${esc(pid)}', ${tenantIdx})">
+                        \uD83D\uDCA1 AI Advisor
+                    </button>
+                </div>
+                <div class="workflow-divider workflow-divider-spacer" aria-hidden="true"></div>
+                ${workflowActionsHtml}
+            </div>
+            <div class="res-notes-panel hidden" id="res-notes-${esc(pid)}-${tenantIdx}">
+                ${resNotes.map((n, noteIdx) => `
+                    <div class="res-note-entry">
+                        <span class="res-note-ts">${formatResTimestamp(n.timestamp)}</span>
+                        <span class="res-note-text">${esc(n.text)}</span>
+                        <button class="res-note-delete" onclick="window.CAM.deleteResolutionNote('${esc(pid)}', ${tenantIdx}, ${noteIdx}); event.stopPropagation();">Delete</button>
+                    </div>`).join("")}
+                <div class="res-note-input-row">
+                    <textarea class="res-note-input" id="res-input-${esc(pid)}-${tenantIdx}"
+                              placeholder="Add a note\u2026 (saved on blur or Enter+Shift)" rows="2"></textarea>
+                    <button class="res-note-save-btn"
+                            onclick="window.CAM.saveResolutionNote('${esc(pid)}', ${tenantIdx})">Save</button>
+                </div>
+            </div>
+        </div>`;
+
+        const resolvedCls = (resStatus === "resolved" || resStatus === "not_a_deviation") ? " resolution-resolved" : "";
+        const govSig184 = d.cam_score ? (d.cam_score.governance_signal || '') : '';
+        const expandedCls = (resStatus === "resolved" || resStatus === "not_a_deviation") ? "" : " card-expanded";
+        return `<div class="finding-card ${sevClass}${resolvedCls}${expandedCls}" id="dev-${pid}" data-provision="${esc(pid)}" data-severity="${esc(sev)}" data-tenant-idx="${tenantIdx}" data-confidence="${esc(govSig184)}">
+            <div class="deviation-header">
+                <div class="deviation-header-main">
+                    <div class="deviation-header-left">
+                        <span class="provision-title">${esc(pid)} ${esc(pname)}</span>
+                        <span class="severity-badge ${sevClass}">${displayIcon} ${displaySev}</span>
+                        ${credibilityLine}
+                        ${discoveredBadge}
+                    </div>
+                    <div class="deviation-header-right">
+                        ${sectionRef ? `<span class="section-ref">${esc(sectionRef)}</span>` : ""}
+                    </div>
+                </div>
+                <div class="deviation-header-actions">
+                    <button class="finding-read-toggle${notedCls}"
+                            title="Mark this provision as read"
+                            onclick="window.CAM.toggleNoted(${tenantIdx}, '${esc(pid)}', this); event.stopPropagation();">
+                        ${isNoted(tenantIdx, pid) ? "\u2713 Read" : "Mark as Read"}
+                    </button>
+                    <span class="finding-collapse-indicator" aria-hidden="true"></span>
+                </div>
+            </div>
+            ${cascadeBadge ? `<div style="padding:0.25rem 1rem;">${cascadeBadge}</div>` : ""}
+            ${cascadeSourceHtml}
+            <div class="card-summary">
+                ${riskHeadline ? `<div class="risk-headline">${esc(riskHeadline)}</div>` : ""}
+                ${languageHtml}
+                ${challenge ? `<div class="detail-section">
+                    <div class="detail-label">What Changed</div>
+                    <div class="detail-text">${lChallenge}</div>
+                </div>` : ""}
+                ${action ? `<div class="detail-section">
+                    <div class="detail-label">Recommended Action</div>
+                    <div class="detail-text">${lAction}</div>
+                </div>` : ""}
+            </div>
+            ${resolutionBarHtml}
+            ${d.final_verdict === 'DEVIATES' ? (() => {
+                const dec = getFinalDraftDecision(tenantIdx, pid);
+                const activeChoice = dec ? dec.choice : null;
+                return `
+                <div class="fd-modify-panel${activeChoice === 'custom' ? '' : ' hidden'}">
+                    <div class="fd-modify-cols">
+                        <div class="fd-modify-col">
+                            <div class="fd-modify-col-label">Reference</div>
+                            <div class="fd-modify-col-text">${esc(d.template_text || '\u2014')}</div>
+                        </div>
+                        <div class="fd-modify-col">
+                            <div class="fd-modify-col-label">Tenant</div>
+                            <div class="fd-modify-col-text">${esc(d.tenant_text || '\u2014')}</div>
+                        </div>
+                    </div>
+                    <textarea class="fd-modify-textarea" rows="4"
+                        placeholder="Type your draft text here, or use Smart Draft in Chat\u2026">${dec && dec.choice === 'custom' ? esc(dec.text) : ''}</textarea>
+                    <div class="fd-modify-actions">
+                        <button class="fd-ai-draft-btn"
+                            onclick="window.CAM.fdOpenChatDraft(${tenantIdx}, '${esc(pid)}', 'custom'); event.stopPropagation();">
+                            \u2728 Smart Draft in Chat
+                        </button>
+                        <button class="fd-note-btn"
+                            onclick="window.CAM.fdSaveAsNote(${tenantIdx}, '${esc(pid)}'); event.stopPropagation();">
+                            Save as Note
+                        </button>
+                        <button class="fd-clear-btn"
+                            onclick="window.CAM.fdClear(${tenantIdx}, '${esc(pid)}'); event.stopPropagation();">
+                            Clear
+                        </button>
+                        <button class="fd-save-open-btn"
+                            onclick="window.CAM.fdSave(${tenantIdx}, '${esc(pid)}', false); event.stopPropagation();">
+                            Save Leave Open
+                        </button>
+                        <button class="fd-save-btn"
+                            onclick="window.CAM.fdSave(${tenantIdx}, '${esc(pid)}', true); event.stopPropagation();">
+                            Save & Resolve
+                        </button>
+                    </div>
+                </div>`;
+            })() : ''}
+            ${buildNotableClausesHtml(discByProvision[pid] || [], pid, modelsUsed, d)}
+        </div>`;
+    }).join("");
+
+    // Wire up header click to toggle card open/close (for resolution bar etc)
+    container.querySelectorAll(".finding-card .deviation-header").forEach(header => {
+        header.addEventListener("click", () => {
+            header.closest(".finding-card").classList.toggle("card-expanded");
+        });
+    });
+
+    // Wire up cross-reference links
+    container.querySelectorAll(".provision-link").forEach(link => {
+        link.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const targetPid = link.dataset.pid;
+            const targetCard = document.getElementById(`dev-${targetPid}`);
+            if (targetCard) {
+                targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+                targetCard.classList.add("highlight-flash");
+                setTimeout(() => targetCard.classList.remove("highlight-flash"), 1500);
+            }
+        });
+    });
+
+    // Wire up "View in document comparison" links
+    container.querySelectorAll(".docview-link").forEach(link => {
+        link.addEventListener("click", (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            jumpToDocview(link.dataset.pid);
+        });
+    });
+
+    // Wire up cascade source links
+    container.querySelectorAll(".cascade-source-link").forEach(link => {
+        link.addEventListener("click", (e) => {
+            e.stopPropagation();
+            // Switch to doc view and search for the section reference
+            switchResultsTab("docview");
+            const sectionText = link.dataset.section || "";
+            setTimeout(() => {
+                const searchInput = $("#docview-search-input");
+                if (searchInput && sectionText) {
+                    searchInput.value = sectionText;
+                    performDocSearch(sectionText);
+                }
+            }, 200);
+        });
+    });
+}
+
+// ── Credibility Line (1F) ──
+
+function renderCredibilityLine(d, modelsUsed, tenantIdx, pid, sev) {
+    const verdicts = d.evaluator_verdicts || {};
+    const agreeing = Object.values(verdicts).filter(v => v === "DEVIATES").length;
+    const total = Object.keys(verdicts).length || 3;
+
+    const fragSignals = (d.fragility && d.fragility.signals) ? d.fragility.signals : [];
+    const rulesCount = fragSignals.length;
+
+    const agreementText = `${agreeing}/${total} evaluators agree`;
+    const ruleText = rulesCount > 0 ? ` \u00B7 ${rulesCount} rule${rulesCount > 1 ? "s" : ""} triggered` : "";
+    const label = agreementText + ruleText + " \u2192";
+
+    const colorCls = {
+        'CRITICAL': 'credibility-critical',
+        'HIGH':     'credibility-high',
+        'MEDIUM':   'credibility-medium',
+        'LOW':      'credibility-low',
+    }[sev] || 'credibility-low';
+
+    return `<a class="credibility-line credibility-link ${colorCls}"
+               href="#"
+               title="View full evaluator analysis in Audit Trail"
+               onclick="window.CAM.jumpToAuditProvision(${tenantIdx}, '${pid}'); return false;"
+            >${label}</a>`;
+}
+
+// ── Evaluator Panels (1B) ──
+
+function renderEvaluatorPanels(d, evalNames) {
+    const reasoning = d.evaluator_reasoning;
+    const verdicts = d.evaluator_verdicts || {};
+    const confidences = d.evaluator_confidences || {};
+
+    if (!reasoning || typeof reasoning === "string") return "";
+
+    const keys = ["A", "B", "C"];
+    const panels = keys.map(key => {
+        const nameStr = (evalNames[key] && evalNames[key].name) || `Evaluator ${key}`;
+        const isFallback = evalNames[key] && evalNames[key].fallback;
+        const fallbackBadge = isFallback
+            ? ` <span class="fallback-note" title="Primary model unavailable — fallback used">↩ fallback</span>`
+            : "";
+        const verdict = verdicts[key] || "";
+        const reason = reasoning[key] || "";
+        const colorClass = EVALUATOR_COLORS[key] || "eval-blue";
+
+        if (!reason) return "";
+
+        return `<div class="evaluator-card ${colorClass}">
+            <div class="evaluator-card-header">
+                <span class="evaluator-name">${esc(nameStr)}${fallbackBadge}</span>
+                <span class="evaluator-verdict verdict-${verdict}">${esc(verdict)}</span>
+            </div>
+            <div class="evaluator-card-body">${esc(reason)}</div>
+        </div>`;
+    }).filter(Boolean);
+
+    if (panels.length === 0) return "";
+
+    return `<div class="evaluator-analysis-section">
+        <div class="evaluator-analysis-header">Independent Evaluator Analysis</div>
+        <div class="evaluator-analysis-intro">Three AI models from different providers independently analyzed this provision without seeing each other's work.</div>
+        <div class="evaluator-panels">${panels.join("")}</div>
+    </div>`;
+}
+
+// ── Pipeline Stages (1C) ──
+
+function renderPipelineStages(d, modelsUsed) {
+    const meta = d.cam_metadata || {};
+    const stagesRun = meta.stages_run || [];
+    const rulesFired = meta.rules_fired || [];
+    const verdict = d.final_verdict || "";
+    const severity = d.severity || "";
+    const providers = getProviderShortNames(modelsUsed);
+
+    const allStages = [1, 2, 3, 4, 5, 6];
+    const lines = allStages.map(stage => {
+        const ran = stagesRun.includes(stage);
+        const info = STAGE_DESCRIPTIONS[stage] || { name: `Stage ${stage}`, desc: "" };
+        let icon = ran ? "\u2705" : "\u23ED\uFE0F";
+        let extra = "";
+
+        if (stage === 2 && ran) {
+            extra = providers.length > 0 ? ` (${providers.join(", ")})` : "";
+        } else if (stage === 3 && !ran) {
+            extra = " \u2014 Skipped (unanimous agreement, no challenge needed)";
+        } else if (stage === 4 && ran) {
+            extra = rulesFired.length > 0
+                ? ` \u2014 ${rulesFired.length} detection rule${rulesFired.length > 1 ? "s" : ""} triggered`
+                : "";
+        } else if (stage === 5 && !ran) {
+            extra = " \u2014 Skipped (conforms)";
+        } else if (stage === 6 && ran) {
+            extra = ` \u2014 Verdict: ${verdict}` + (severity && severity !== "CONFORMS" ? ` (${severity})` : "");
+        }
+
+        return `<div class="pipeline-stage ${ran ? "stage-ran" : "stage-skipped"}">
+            <span class="stage-icon">${icon}</span>
+            <span class="stage-name">${esc(info.name)}</span>
+            <span class="stage-desc">${esc(info.desc)}${extra}</span>
+        </div>`;
+    });
+
+    return `<div class="pipeline-section expandable">
+        <button class="expandable-toggle" data-label="How This Was Analyzed">&#9654; How This Was Analyzed</button>
+        <div class="expandable-content pipeline-content">${lines.join("")}</div>
+    </div>`;
+}
+
+// ── Fragility Signals in Plain English (1D) ──
+// Always renders all 8 rules (fired + unfired) in Detailed mode
+
+function renderFragilitySignals(d) {
+    const frag = d.fragility;
+    if (!frag) return "";
+
+    const signals = frag.signals || [];
+    const totalRules = ALL_FRAGILITY_SIGNALS.length;
+    const firedCount = signals.length;
+
+    if (firedCount === 0 && !frag.fragile) return "";
+
+    const allLines = ALL_FRAGILITY_SIGNALS.map(sig => {
+        const fired = signals.includes(sig);
+        const translation = FRAGILITY_TRANSLATIONS[sig] || sig;
+        return `<div class="rule-line ${fired ? "rule-fired" : "rule-clear"}">
+            <span>${fired ? "\u2705" : "\u2796"}</span>
+            <span class="rule-name">${esc(sig.replace(/_/g, " "))}</span>
+            <span class="rule-desc">\u2014 ${esc(translation)}</span>
+        </div>`;
+    });
+
+    return `<div class="fragility-section">
+        <div class="fragility-header">Detection Rules${firedCount > 0 ? ` \u2014 ${firedCount} Triggered` : ""}</div>
+        <div class="fragility-rules">${allLines.join("")}</div>
+    </div>`;
+}
+
+// ── Cross-Reference Warnings (Step 115) ──
+
+function renderCrossReferenceWarnings(d) {
+    const xref = d.cross_reference_links;
+    if (!xref || !xref.linked_deviations || xref.linked_deviations.length === 0) return "";
+
+    const items = xref.linked_deviations.map(ld => {
+        return `<div class="crossref-item">
+            <span class="crossref-term">${esc(ld.defined_term)}</span>
+            <span class="crossref-arrow">\u2192</span>
+            <span class="crossref-ref">See ${esc(ld.deviating_provision)} \u2014 <span class="sev-badge sev-${(ld.severity || "").toUpperCase()}">${esc(ld.severity)}</span></span>
+            <div class="crossref-summary">${esc(ld.summary)}</div>
+        </div>`;
+    });
+
+    return `<div class="crossref-section">
+        <div class="crossref-header">\u26A0 Cross-Reference Warnings</div>
+        <div class="crossref-note">${esc(xref.linkage_warning)}</div>
+        <div class="crossref-items">${items.join("")}</div>
+    </div>`;
+}
+
+// ── Confidence Display (1E) ──
+
+function renderConfidences(d, evalNames) {
+    const confidences = d.evaluator_confidences;
+    const verdicts = d.evaluator_verdicts || {};
+    if (!confidences) return "";
+
+    const keys = ["A", "B", "C"];
+    const lines = keys.map(key => {
+        const name = (evalNames[key] && evalNames[key].name) || `Evaluator ${key}`;
+        const conf = confidences[key];
+        const verdict = verdicts[key] || "";
+        if (conf === undefined) return "";
+        const pct = Math.round(conf * 100);
+        return `<div class="confidence-line">
+            <span class="confidence-name">${esc(name)}</span>
+            <span class="confidence-verdict verdict-${verdict}">${esc(verdict)}</span>
+            <span class="confidence-bar-wrap">
+                <span class="confidence-bar-fill" style="width:${pct}%"></span>
+            </span>
+            <span class="confidence-pct">${pct}%</span>
+        </div>`;
+    }).filter(Boolean);
+
+    if (lines.length === 0) return "";
+
+    return `<div class="confidence-section">
+        <div class="confidence-header">Evaluator Confidence Scores</div>
+        ${lines.join("")}
+    </div>`;
+}
+
+// ── Expandable Sections ──
+
+function renderExpandableAutoOpen(label, content) {
+    if (!content) return "";
+    return `<div class="expandable">
+        <button class="expandable-toggle" data-label="${esc(label)}">&#9660; ${esc(label)}</button>
+        <div class="expandable-content open">${esc(content)}</div>
+    </div>`;
+}
+
+// ── Dissent Detection (042) ──
+
+function getDissentingEvaluators(provision, evalNames) {
+    // Returns array of {name, reasoning} for evaluators who said DEVIATES
+    // on a provision that ultimately CONFORMS via challenger COSMETIC_ONLY
+    if (
+        provision.final_verdict !== "CONFORMS" ||
+        provision.challenge_finding !== "COSMETIC_ONLY"
+    ) return [];
+
+    const verdicts = provision.evaluator_verdicts || {};
+    const reasoning = provision.evaluator_reasoning || {};
+    const dissenters = [];
+
+    for (const key of ["A", "B", "C"]) {
+        if (verdicts[key] === "DEVIATES") {
+            const nameObj = evalNames[key];
+            const name = (nameObj && nameObj.name) ? nameObj.name : `Evaluator ${key}`;
+            dissenters.push({
+                key,
+                name,
+                reasoning: reasoning[key] || "",
+            });
+        }
+    }
+    return dissenters;
+}
+
+// ── Conforming Provisions ──
+
+function renderConforming(provisions, modelsUsed) {
+    const list = $("#conforming-list");
+    const conforming = provisions.filter(p => p.provision_id !== "LP-00" && p.final_verdict === "CONFORMS" && !isManualEscalatedProvision(p));
+    list.classList.add("hidden");
+    $("#conforming-toggle").innerHTML = `&#9654; Conforming Provisions (${conforming.length})`;
+
+    const providers = getProviderShortNames(modelsUsed);
+    const evalNames = getEvaluatorNames(modelsUsed);
+
+    ensureConformingConcernsLoaded();
+
+    list.innerHTML = conforming.map(c => {
+        const pid = c.provision_id || "";
+        const detailId = `conf-detail-${pid}`;
+        const concernState = getConformingConcernState(pid);
+
+        const discoveredTag = c.discovered
+            ? ` <span class="discovered-inline">\uD83D\uDD0D</span>`
+            : "";
+
+        // Concern indicator on the summary line
+        const concernBadge = concernState === "flag"
+            ? ` <span style="font-size:0.7rem;background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:3px;font-weight:600;">\u26A0 Flagged</span>`
+            : concernState === "concern"
+            ? ` <span style="font-size:0.7rem;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:3px;font-weight:600;">\uD83D\uDCCB Concern noted</span>`
+            : "";
+
+        const summaryMeta = providers.length > 0 ? providers.join(", ") : "";
+        const sectionRef = c.tenant_section_ref || c.template_section_ref || "";
+
+        // Clause text pair
+        const tmplText = c.template_text || "";
+        const tenantText = c.tenant_text || "";
+        const clausePairHtml = (tmplText || tenantText) ? `
+            <div class="conforming-clause-pair">
+                <div class="conforming-clause-col">
+                    <div class="conforming-clause-label">Standard Template</div>
+                    <div class="conforming-clause-text">${esc(tmplText || "\u2014")}</div>
+                </div>
+                <div class="conforming-clause-col">
+                    <div class="conforming-clause-label">Tenant Lease</div>
+                    <div class="conforming-clause-text">${esc(tenantText || "\u2014")}</div>
+                </div>
+            </div>` : `<div style="font-size:0.8rem;color:var(--text-muted);padding:0.25rem 0;">Clause text not available — view in Audit Trail.</div>`;
+
+        // Dissent detection (042)
+        const dissenters = getDissentingEvaluators(c, evalNames);
+        let dissentHtml = "";
+        if (dissenters.length > 0) {
+            const dissentPanelId = `dissent-${pid}`;
+            const flagLabel = dissenters.length === 1
+                ? "1 evaluator flagged"
+                : `${dissenters.length} evaluators flagged`;
+            const panels = dissenters.map(d => `
+                <div class="dissent-evaluator">
+                    <div class="dissent-evaluator-header">
+                        <span class="dissent-evaluator-name">${esc(d.name)}</span>
+                        <span class="evaluator-verdict verdict-DEVIATES">DEVIATES</span>
+                    </div>
+                    <div class="dissent-evaluator-reasoning">${esc(d.reasoning)}</div>
+                </div>`).join("");
+            dissentHtml = `
+                <div class="dissent-toggle" data-target="${dissentPanelId}">
+                    &#9873; ${esc(flagLabel)} &middot; challenger determined cosmetic
+                    <span class="dissent-chevron">&#9662;</span>
+                </div>
+                <div class="dissent-panel hidden" id="${dissentPanelId}">
+                    <div class="dissent-panel-header">&#9873; Minority Flag &mdash; Challenger Overruled</div>
+                    <div class="dissent-panel-intro">One evaluator independently flagged this provision as a deviation. The challenger reviewed the reasoning and determined the difference is cosmetic. Shown for transparency.</div>
+                    ${panels}
+                </div>`;
+        }
+
+        // Concern bar
+        const concernBar = `
+            <div class="conforming-concern-bar">
+                <span class="conforming-concern-label">Mark:</span>
+                <button class="conforming-concern-btn${concernState === 'concern' ? ' concern-active' : ''}"
+                    data-pid="${esc(pid)}" data-action="concern">
+                    \uD83D\uDCCB Note a concern
+                </button>
+                <button class="conforming-concern-btn${concernState === 'flag' ? ' flag-active' : ''}"
+                    data-pid="${esc(pid)}" data-action="flag">
+                    \u26A0 Escalate as Deviation
+                </button>
+                ${concernState !== 'none' ? `<button class="conforming-concern-btn" data-pid="${esc(pid)}" data-action="clear" style="color:var(--text-muted);">\u2715 Clear</button>` : ""}
+                <div class="workflow-open-actions workflow-group">
+                    <a class="card-docview-link card-docview-link--btn"
+                       href="#"
+                       onclick="window.CAM.jumpToDocview('${esc(pid)}'); return false;"
+                       title="Open this clause in Document Comparison">
+                        Open Document Comparison
+                    </a>
+                    <a class="card-audit-link card-audit-link--btn"
+                       href="#"
+                       onclick="window.CAM.jumpToAuditProvision(${currentTenantIndex}, '${esc(pid)}'); return false;"
+                       title="View full CAM analysis in Audit Trail">
+                        Open CAM Audit Trail
+                    </a>
+                </div>
+            </div>`;
+
+        return `<li class="conforming-item${dissenters.length > 0 ? " has-dissent" : ""}" data-pid="${esc(pid)}">
+            <div class="conforming-main" data-detail-id="${detailId}">
+                <div class="conforming-main-left">
+                    <div class="conforming-summary-title-row">
+                        <span class="conforming-summary-title">${esc(pid)} ${esc(c.provision_name)}</span>${discoveredTag}${concernBadge}
+                    </div>
+                    ${summaryMeta ? `<div class="conforming-summary-meta">${esc(summaryMeta)}</div>` : ""}
+                </div>
+                <div class="conforming-main-right">
+                    ${sectionRef ? `<span class="section-ref">${esc(sectionRef)}</span>` : ""}
+                    <button class="finding-read-toggle${isNoted(currentTenantIndex, pid) ? " noted-active" : ""}"
+                        title="Mark this provision as read"
+                        onclick="window.CAM.toggleNoted(${currentTenantIndex}, '${esc(pid)}', this); event.stopPropagation();">
+                        ${isNoted(currentTenantIndex, pid) ? "Read" : "Mark as Read"}
+                    </button>
+                    <span class="conforming-chevron">&#9652;</span>
+                </div>
+            </div>
+            <div class="conforming-detail" id="${detailId}">
+                ${clausePairHtml}
+                ${dissentHtml}
+                ${concernBar}
+            </div>
+        </li>`;
+    }).join("") + `<li class="conforming-close-row">
+        <button class="conforming-close-all-btn" onclick="window.CAM.collapseAllConforming(); return false;">&#9660; Close all</button>
+    </li>`;
+
+    // Wire up expand/collapse on conforming-main click
+    list.querySelectorAll(".conforming-main").forEach(row => {
+        row.addEventListener("click", e => {
+            if (e.target.closest(".dissent-toggle, .conforming-concern-btn")) return;
+            const detailId = row.dataset.detailId;
+            const detail = document.getElementById(detailId);
+            if (!detail) return;
+            const isOpen = !detail.classList.contains("hidden");
+            detail.classList.toggle("hidden", isOpen);
+            const chevron = row.querySelector(".conforming-chevron");
+            if (chevron) chevron.innerHTML = isOpen ? "&#9662;" : "&#9652;";
+        });
+    });
+
+    // Wire up concern bar buttons
+    list.querySelectorAll(".conforming-concern-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+            e.stopPropagation();
+            const pid = btn.dataset.pid;
+            const action = btn.dataset.action;
+            const current = getConformingConcernState(pid);
+            if (action === "clear") {
+                setConformingConcernEntry(pid, "none");
+            } else if (action === current) {
+                setConformingConcernEntry(pid, "none"); // toggle off
+            } else if (action === "flag") {
+                const provision = conforming.find(entry => entry.provision_id === pid);
+                const reason = window.prompt(
+                    "Optional reason for escalating this clause as a deviation:",
+                    getConformingConcernReason(pid)
+                );
+                if (reason === null) return;
+                setConformingConcernEntry(pid, "flag", reason);
+                if (confirm("Create a rule so this is flagged automatically next time?")) {
+                    window.CAM.showRuleCreationDialog(pid, (provision && provision.provision_name) || pid);
+                }
+            } else {
+                setConformingConcernEntry(pid, action);
+            }
+            // Re-render just this item's concern bar + badge
+            // Full re-render is cleanest — re-call with same args
+            renderConforming(provisions, modelsUsed);
+            renderDeviations(provisions, modelsUsed, currentTenantIndex, currentDiscoveries || {});
+            renderNavSidebar();
+            if (contractDetailOpen && currentTenantIndex >= 0) {
+                renderContractClauseFilterBar(provisions);
+            }
+            updateFinalDraftBar();
+            applyContractClauseFilters();
+            // Re-open the detail panel for this provision after re-render
+            const newDetail = document.getElementById(`conf-detail-${pid}`);
+            if (newDetail && action !== "flag") newDetail.classList.remove("hidden");
+            const newChevron = list.querySelector(`li[data-pid="${pid}"] .conforming-chevron`);
+            if (newChevron && action !== "flag") newChevron.innerHTML = "&#9652;";
+            if (action === "flag") {
+                setTimeout(() => jumpToFinding(pid), 50);
+            }
+        });
+    });
+
+    // Wire up dissent toggle clicks (042)
+    list.querySelectorAll(".dissent-toggle").forEach(toggle => {
+        toggle.addEventListener("click", e => {
+            e.stopPropagation();
+            const targetId = toggle.dataset.target;
+            const panel = document.getElementById(targetId);
+            if (!panel) return;
+            const isOpen = !panel.classList.contains("hidden");
+            panel.classList.toggle("hidden", isOpen);
+            const chevron = toggle.querySelector(".dissent-chevron");
+            if (chevron) chevron.innerHTML = isOpen ? "&#9662;" : "&#9652;";
+        });
+    });
+}
+
+function renderTenantDownloads(idx, filename) {
+    return;
+}
+
+// ══════════════════════════════════════════════════════
+// Results Tab Switching & Document Comparison View
+// ══════════════════════════════════════════════════════
+
+function jumpToDocview(pid) {
+    docviewReturnTarget = pid;
+    switchResultsTab("docview");
+    setTimeout(() => {
+        let target = document.getElementById(`fulldoc-${pid}`);
+        if (!target) target = document.querySelector(`.docview-provision-header[data-pid="${pid}"]`);
+        if (target) {
+            scrollDocviewTargetIntoView(target);
+            target.classList.add("highlight-flash");
+            setTimeout(() => target.classList.remove("highlight-flash"), 1500);
+        }
+    }, 180);
+}
+
+// Show a "no contract selected" placeholder in the detail area
+function showNoContractPlaceholder(tab) {
+    activeTopTab = tab;
+    activeResultsTab = tab;
+    persistResultsViewState();
+    if (!currentResults || !currentResults.tenants) {
+        // No run loaded at all — show a helpful empty state instead of blank
+        var _subLabels = { findings: 'Contract Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
+        setSubheader(_subLabels[tab] || tab);
+        var detail = document.getElementById('contract-detail-view');
+        var overview = document.getElementById('overview-tab-content');
+        var contractsTab = document.getElementById('contracts-tab-content');
+        if (overview) overview.classList.add('hidden');
+        if (contractsTab) contractsTab.classList.add('hidden');
+        if (detail) detail.classList.remove('hidden');
+        setResultsContentDetailMode(true);
+        var placeholder = document.getElementById('no-contract-placeholder');
+        if (!placeholder) {
+            placeholder = document.createElement('div');
+            placeholder.id = 'no-contract-placeholder';
+            if (detail) detail.appendChild(placeholder);
+        }
+        placeholder.classList.remove('hidden');
+        placeholder.innerHTML = '<div class="ncp-inner">'
+            + '<div class="ncp-icon">&#128196;</div>'
+            + '<div class="ncp-title">No analysis loaded</div>'
+            + '<div class="ncp-msg">Upload contracts to begin, or reload a previous run.</div>'
+            + '</div>';
+        return;
+    }
+    var tenants = currentResults.tenants;
+
+    // Update subheader immediately
+    var _subLabels = { findings: 'Contract Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
+    setSubheader(_subLabels[tab] || tab);
+
+    // Single contract: auto-open immediately
+    if (tenants.length === 1) {
+        openContractDetail(0);
+        return;
+    }
+
+    // Show detail area, hide overview + contracts tab
+    var overview     = document.getElementById('overview-tab-content');
+    var contractsTab = document.getElementById('contracts-tab-content');
+    var detail       = document.getElementById('contract-detail-view');
+    if (overview)     overview.classList.add('hidden');
+    if (contractsTab) contractsTab.classList.add('hidden');
+    if (detail)       detail.classList.remove('hidden');
+    setResultsContentDetailMode(true);
+
+    // Mark the clicked tab as active (no contract open)
+    var tabNames = { findings: 'Contract Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
+    document.querySelectorAll('#top-tab-bar .top-tab[data-top-tab]').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('#top-tab-bar .top-tab[data-tab]').forEach(function(t) {
+        t.classList.toggle('active', t.dataset.tab === tab);
+    });
+
+    // Clear tab content areas
+    ['findings-tab', 'docview-tab', 'audittrail-tab'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+    });
+
+    // Clear the detail header
+    var headerEl = document.getElementById('contract-detail-header');
+    if (headerEl) headerEl.innerHTML = '';
+
+    // Show contract selector + contract-level filters before a contract is selected
+    renderContractSelectorBar(null);
+
+    // Render the placeholder message below the selector
+    var placeholder = document.getElementById('no-contract-placeholder');
+    if (!placeholder) {
+        placeholder = document.createElement('div');
+        placeholder.id = 'no-contract-placeholder';
+        if (detail) detail.appendChild(placeholder);
+    }
+    placeholder.classList.remove('hidden');
+    var label = tabNames[tab] || 'this view';
+    placeholder.innerHTML = '<div class="ncp-inner">'
+        + '<div class="ncp-icon">&#128196;</div>'
+        + '<div class="ncp-title">No contract selected</div>'
+        + '<div class="ncp-msg">Choose a contract from the dropdown above, or click <strong>Contracts</strong> to browse all contracts.</div>'
+        + '</div>';
+}
+
+var TAB_SUBHEADER_LABELS = {
+    findings:   'Contract Summary',
+    docview:    'Document Comparison',
+    audittrail: 'Audit Trail'
+};
+
+function setDocviewStickyControlsVisible(isVisible) {
+    var controls = document.getElementById('docview-sticky-controls');
+    if (!controls) return;
+    controls.classList.toggle('hidden', !isVisible);
+}
+
+function switchResultsTab(tab) {
+    // Guard — if no contract is open:
+    // Audit Trail can show the full run view; other tabs need a contract
+    if (!contractDetailOpen) {
+        if (tab === 'audittrail') {
+            setSubheader('Audit Trail');
+            // Show detail area, hide overview + contracts tab, mark tab active
+            var overview     = document.getElementById('overview-tab-content');
+            var contractsTab = document.getElementById('contracts-tab-content');
+            var detail       = document.getElementById('contract-detail-view');
+            if (overview)     overview.classList.add('hidden');
+            if (contractsTab) contractsTab.classList.add('hidden');
+            if (detail)       detail.classList.remove('hidden');
+            setResultsContentDetailMode(true);
+            document.querySelectorAll('#top-tab-bar .top-tab[data-top-tab]').forEach(function(t) { t.classList.remove('active'); });
+            document.querySelectorAll('#top-tab-bar .top-tab[data-tab]').forEach(function(t) {
+                t.classList.toggle('active', t.dataset.tab === 'audittrail');
+            });
+            // Hide placeholder if showing
+            var ncp = document.getElementById('no-contract-placeholder');
+            if (ncp) ncp.classList.add('hidden');
+            renderContractSelectorBar(null);
+            // Clear header
+            var hdr = document.getElementById('contract-detail-header');
+            if (hdr) hdr.innerHTML = '<h2 class="contract-detail-name">Full Run Audit Trail</h2>';
+            // Show audit tab content, hide others
+            var _fTab = document.getElementById('findings-tab');
+            var _dTab = document.getElementById('docview-tab');
+            var _aTab = document.getElementById('audittrail-tab');
+            if (_fTab) _fTab.classList.add('hidden');
+            if (_dTab) _dTab.classList.add('hidden');
+            if (_aTab) _aTab.classList.remove('hidden');
+            setDocviewStickyControlsVisible(false);
+            activeResultsTab = 'audittrail';
+            renderAuditTrail(true);
+            return;
+        }
+        setDocviewStickyControlsVisible(false);
+        showNoContractPlaceholder(tab);
+        return;
+    }
+
+    activeResultsTab = tab;
+    if (tab === "findings" || tab === "docview" || tab === "audittrail") {
+        activeTopTab = tab;
+    }
+    setSubheader(TAB_SUBHEADER_LABELS[tab] || tab);
+
+    // Update tab bar active state (Step 129 fix: $ → $ for querySelectorAll)
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail").forEach(t => {
+        t.classList.toggle("active", t.dataset.tab === tab);
+    });
+
+    // Show/hide tab content
+    const findingsTab = $("#findings-tab");
+    const docviewTab = $("#docview-tab");
+    const auditTab = $("#audittrail-tab");
+
+    if (tab === "findings") {
+        findingsTab.classList.remove("hidden");
+        docviewTab.classList.add("hidden");
+        auditTab.classList.add("hidden");
+        setDocviewStickyControlsVisible(false);
+    } else if (tab === "audittrail") {
+        findingsTab.classList.add("hidden");
+        docviewTab.classList.add("hidden");
+        auditTab.classList.remove("hidden");
+        setDocviewStickyControlsVisible(false);
+        renderAuditTrail();
+    } else {
+        findingsTab.classList.add("hidden");
+        docviewTab.classList.remove("hidden");
+        auditTab.classList.add("hidden");
+        setDocviewStickyControlsVisible(true);
+        renderDocumentView();
+    }
+
+    // Scroll contract detail view to top so nav buttons stay visible
+    var detail = document.getElementById('contract-detail-view');
+    if (detail) detail.scrollTo({ top: 0, behavior: 'instant' });
+    // Also scroll the main content area to top
+    var mainContent = document.getElementById('main-content') || document.querySelector('.results-content');
+    if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'instant' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    persistResultsViewState();
+}
+
+// Sort provisions for docview based on docviewSort setting.
+// "reference" = reference-lease article/section order
+// "contract"  = tenant-led article/section order, with template refs only as fallback
+function sortProvisionsForDocview(provisions) {
+    if (docviewSort === "taxonomy") {
+        return provisions.slice().sort((a, b) => {
+            const aid = a.provision_id || "";
+            const bid = b.provision_id || "";
+            if (aid === "LP-00" && bid !== "LP-00") return -1;
+            if (bid === "LP-00" && aid !== "LP-00") return 1;
+            return aid.localeCompare(bid, undefined, { numeric: true });
+        });
+    }
+    const romanToInt = s => {
+        const R = { I:1, V:5, X:10, L:50, C:100, D:500, M:1000 };
+        let val = 0, prev = 0;
+        for (const c of [...s.toUpperCase()].reverse()) {
+            const n = R[c] || 0;
+            val += n >= prev ? n : -n;
+            prev = n;
+        }
+        return val;
+    };
+    const contractPos = p => {
+        const ref = p.template_section_ref || p.tenant_section_ref || "";
+        // Article number (Roman or decimal) takes precedence
+        let m = ref.match(/Article\s+([IVXLCDM]+)/i);
+        if (m) return romanToInt(m[1]);
+        m = ref.match(/Article\s+(\d+)/i);
+        if (m) return parseInt(m[1], 10);
+        // Fall back to first section number
+        m = ref.match(/Section\s+([\d.]+)/i);
+        if (m) return parseFloat(m[1]) + 0.001; // fractional so article wins
+        // CUSTOM/ADDED and no ref go last, preserving their LP order within that group
+        const pid = p.provision_id || "";
+        if (pid.startsWith("CUSTOM-") || pid.startsWith("ADDED-")) return 9000;
+        return 8000; // known provision but no ref — before CUSTOM
+    };
+    return provisions.slice().sort((a, b) => contractPos(a) - contractPos(b));
+}
+
+function sortProvisionsForDocviewTenantLed(provisions) {
+    if (docviewSort === "reference") {
+        return sortProvisionsForDocview(provisions);
+    }
+
+    const romanToInt = (s) => {
+        const R = { I:1, V:5, X:10, L:50, C:100, D:500, M:1000 };
+        let val = 0;
+        let prev = 0;
+        for (const c of [...s.toUpperCase()].reverse()) {
+            const n = R[c] || 0;
+            val += n >= prev ? n : -n;
+            prev = n;
+        }
+        return val;
+    };
+
+    const parseOrderRef = (ref) => {
+        const normalized = (ref || "").trim();
+        if (!normalized) return null;
+
+        let article = 9999;
+        let match = normalized.match(/Article\s+([IVXLCDM]+)/i);
+        if (match) {
+            article = romanToInt(match[1]);
+        } else {
+            match = normalized.match(/Article\s+(\d+)/i);
+            if (match) article = parseInt(match[1], 10);
+        }
+
+        let sectionParts = [];
+        match = normalized.match(/Sections?\s+([\d.\-]+)/i);
+        if (match) {
+            const firstSection = match[1].split("-")[0];
+            sectionParts = firstSection.split(".").map((part) => parseInt(part, 10) || 0);
+        }
+
+        return {
+            article,
+            sectionParts,
+            raw: normalized.toLowerCase(),
+        };
+    };
+
+    const compareRefs = (aRef, bRef) => {
+        if (!aRef && !bRef) return 0;
+        if (!aRef) return 1;
+        if (!bRef) return -1;
+        if (aRef.article !== bRef.article) return aRef.article - bRef.article;
+        const len = Math.max(aRef.sectionParts.length, bRef.sectionParts.length);
+        for (let i = 0; i < len; i++) {
+            const aPart = aRef.sectionParts[i] || 0;
+            const bPart = bRef.sectionParts[i] || 0;
+            if (aPart !== bPart) return aPart - bPart;
+        }
+        return aRef.raw.localeCompare(bRef.raw, undefined, { numeric: true });
+    };
+
+    const getSortMeta = (p) => {
+        const pid = p.provision_id || "";
+        return {
+            tenantRef: parseOrderRef(p.tenant_section_ref || ""),
+            templateRef: parseOrderRef(p.template_section_ref || ""),
+            pid,
+            isCustom: pid.startsWith("CUSTOM-") || pid.startsWith("ADDED-"),
+        };
+    };
+
+    return (provisions || []).slice().sort((a, b) => {
+        const aMeta = getSortMeta(a);
+        const bMeta = getSortMeta(b);
+
+        if (aMeta.pid === "LP-00" && bMeta.pid !== "LP-00") return -1;
+        if (bMeta.pid === "LP-00" && aMeta.pid !== "LP-00") return 1;
+
+        const tenantCmp = compareRefs(aMeta.tenantRef, bMeta.tenantRef);
+        if (tenantCmp !== 0) return tenantCmp;
+
+        const templateCmp = compareRefs(aMeta.templateRef, bMeta.templateRef);
+        if (templateCmp !== 0) return templateCmp;
+
+        if (aMeta.isCustom !== bMeta.isCustom) return aMeta.isCustom ? 1 : -1;
+        return aMeta.pid.localeCompare(bMeta.pid, undefined, { numeric: true });
+    });
+}
+
+function renderDocumentView() {
+    if (!currentResults || !currentResults.tenants) return;
+
+    // Sync mode and sort toggle button active states
+    document.querySelectorAll(".docview-mode-btn").forEach(function(b) {
+        b.classList.toggle("active", b.dataset.mode === docviewMode);
+    });
+    document.querySelectorAll(".docview-sort-btn").forEach(function(b) {
+        b.classList.toggle("active", b.dataset.sort === docviewSort);
+    });
+
+    // Populate docview tenant selector
+    const dts = $("#docview-tenant-select");
+    if (dts && dts.options.length === 0) {
+        dts.innerHTML = currentResults.tenants.map((t, i) =>
+            `<option value="${i}">${esc(t.filename)}</option>`
+        ).join("");
+    }
+    if (dts) dts.value = currentTenantIndex;
+
+    if (docviewMode === "full") {
+        $("#docview-full").classList.remove("hidden");
+        $("#docview-sidebyside-wrapper").classList.add("hidden");
+        renderFullDocumentView();
+    } else {
+        $("#docview-full").classList.add("hidden");
+        $("#docview-sidebyside-wrapper").classList.remove("hidden");
+        renderSideBySideView();
+    }
+}
+
+// ── Full Document View (Item 5) ──
+
+function renderFullDocumentView() {
+    const tenant = currentResults.tenants[currentTenantIndex];
+    if (!tenant || !tenant.results) {
+        $("#docview-main").innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-muted);">No results available for this tenant.</div>';
+        $("#docview-sidebar").innerHTML = "";
+        return;
+    }
+
+    const r = tenant.results;
+    const fullText = r.full_tenant_text || "";
+    const provisions = sortProvisionsForDocviewTenantLed(getDocviewWorkflowProvisions(r.provisions || []));
+
+    // If no full text available, fall back to side-by-side
+    if (!fullText) {
+        $("#docview-main").innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-muted);">Full document text not available for this analysis. Use Side-by-Side view instead.</div>';
+        renderFullDocSidebar(provisions, []);
+        return;
+    }
+
+    // ── Section matching: find each provision's location in the full text ──
+    const matches = []; // { pid, start, end, provision }
+    provisions.forEach(p => {
+        const tenantText = (p.tenant_text || "").trim();
+        if (!tenantText || tenantText.length < 20) return;
+
+        // Try progressively shorter substrings
+        let found = false;
+        for (const len of [80, 60, 40]) {
+            if (found) break;
+            const needle = tenantText.substring(0, Math.min(len, tenantText.length)).trim();
+            if (needle.length < 15) continue;
+            const idx = fullText.indexOf(needle);
+            if (idx !== -1) {
+                // Try to find the end too
+                const endNeedle = tenantText.length > 40
+                    ? tenantText.substring(tenantText.length - 30).trim()
+                    : "";
+                let endIdx = idx + needle.length;
+                if (endNeedle) {
+                    const searchEnd = fullText.indexOf(endNeedle, idx);
+                    if (searchEnd !== -1) endIdx = searchEnd + endNeedle.length;
+                }
+                matches.push({ pid: p.provision_id, start: idx, end: endIdx, provision: p });
+                found = true;
+            }
+        }
+        // Fallback: case-insensitive search
+        if (!found) {
+            const needle = tenantText.substring(0, Math.min(50, tenantText.length)).trim().toLowerCase();
+            if (needle.length >= 15) {
+                const idx = fullText.toLowerCase().indexOf(needle);
+                if (idx !== -1) {
+                    matches.push({ pid: p.provision_id, start: idx, end: idx + needle.length, provision: p });
+                }
+            }
+        }
+    });
+
+    // Sort matches by position
+    matches.sort((a, b) => a.start - b.start);
+
+    // ── Build main panel HTML with inline annotations ──
+    let mainHtml = "";
+    let cursor = 0;
+
+    matches.forEach(m => {
+        const p = m.provision;
+        const isDeviation = p.final_verdict === "DEVIATES";
+
+        // Text before this match
+        if (m.start > cursor) {
+            mainHtml += `<span>${esc(fullText.substring(cursor, m.start))}</span>`;
+        }
+
+        // Highlighted region
+        const sevClass = isDeviation ? `fulldoc-hl-${p.severity || "MEDIUM"}` : "";
+        mainHtml += `<span class="fulldoc-highlight ${sevClass}" id="fulldoc-${m.pid}" data-pid="${esc(m.pid)}">${esc(fullText.substring(m.start, m.end))}</span>`;
+
+        // Margin callout for deviations (compact sticky-note style)
+        if (isDeviation) {
+            const icon = SEVERITY_ICONS[p.severity] || "";
+            const headline = p.risk_headline || p.challenge_details || "";
+            mainHtml += `<div class="fulldoc-callout fulldoc-callout-${p.severity || "MEDIUM"}">
+                <span class="fulldoc-callout-header"><span class="severity-badge severity-${p.severity || ""}">${icon} ${p.severity || ""}</span> ${esc(m.pid)}</span>
+                ${headline ? `<span class="fulldoc-callout-text">&mdash; ${esc(truncateToSentence(headline, 120))}</span>` : ""}
+                <a class="fulldoc-callout-link" data-pid="${esc(m.pid)}">View full analysis &#8594;</a>
+            </div>`;
+        }
+
+        cursor = m.end;
+    });
+
+    // Remaining text after last match
+    if (cursor < fullText.length) {
+        mainHtml += `<span>${esc(fullText.substring(cursor))}</span>`;
+    }
+
+    const mainEl = $("#docview-main");
+    mainEl.innerHTML = `<div class="fulldoc-text">${mainHtml}</div>`;
+
+    // Wire callout links
+    mainEl.querySelectorAll(".fulldoc-callout-link").forEach(link => {
+        link.addEventListener("click", () => {
+            const pid = link.dataset.pid;
+            switchResultsTab("findings");
+            const card = document.getElementById(`dev-${pid}`);
+            if (card) {
+                setTimeout(() => {
+                    card.scrollIntoView({ behavior: "smooth", block: "center" });
+                    card.classList.add("highlight-flash");
+                    setTimeout(() => card.classList.remove("highlight-flash"), 1500);
+                }, 100);
+            }
+        });
+    });
+
+    // ── Build sidebar ──
+    renderFullDocSidebar(provisions, matches);
+
+    // ── Scroll sync: track active provision ──
+    const highlights = mainEl.querySelectorAll(".fulldoc-highlight");
+    if (highlights.length > 0) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const pid = entry.target.dataset.pid;
+                    document.querySelectorAll(".fulldoc-sidebar-item").forEach(item => {
+                        item.classList.toggle("active", item.dataset.pid === pid);
+                    });
+                }
+            });
+        }, { root: mainEl, threshold: 0.3 });
+
+        highlights.forEach(hl => observer.observe(hl));
+    }
+}
+
+function buildTocSeverityMaps(provisions, primarySide = "tenant") {
+    const sectionMap = new Map();
+    const articleMap = new Map();
+    const severityRank = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+
+    const promote = (map, key, severity) => {
+        if (!key || !severity) return;
+        const current = map.get(key);
+        if (!current || (severityRank[severity] || 0) > (severityRank[current] || 0)) {
+            map.set(key, severity);
+        }
+    };
+
+    getDeviationWorkflowProvisions(provisions || []).forEach((p) => {
+        const severity = (p.severity || "MEDIUM").toUpperCase();
+        const ref = primarySide === "template" ? (p.template_section_ref || "") : (p.tenant_section_ref || "");
+        if (!ref) return;
+        const sectionMatch = ref.match(/Sections?\s+([\d.]+)/i);
+        if (sectionMatch) promote(sectionMap, sectionMatch[1], severity);
+        const articleMatch = ref.match(/Article\s+([IVXLC\d]+)/i);
+        if (articleMatch) promote(articleMap, articleMatch[1].toUpperCase(), severity);
+    });
+
+    return { sectionMap, articleMap };
+}
+
+function renderFullDocSidebar(provisions, matches) {
+    const sidebar = $("#docview-sidebar");
+    // Provisions TOC moved to left nav sidebar — docview sidebar now shows article TOC only
+    sidebar.innerHTML = '<div class="fulldoc-sidebar-header">Document Sections</div>';
+    const tenant = currentResults.tenants[currentTenantIndex];
+    const fullText = tenant && tenant.results ? (tenant.results.full_tenant_text || "") : "";
+    renderSidebarTOC(sidebar, fullText, "fulldoc", { provisions, primarySide: "tenant" });
+}
+
+function renderSidebarTOC(sidebar, fullText, scrollTargetPrefix, options = {}) {
+    if (!fullText) return;
+    const { provisions = [], primarySide = "tenant" } = options;
+    const { sectionMap, articleMap } = buildTocSeverityMaps(provisions, primarySide);
+
+    // Parse article headers from lease text
+    const articlePattern = /^(?:={3,}\s*)?(?:ARTICLE\s+[IVXLC\d]+\s*[—–\-]\s*(.+?))(?:\s*={3,})?$/gmi;
+    const articles = [];
+    const sections = [];
+    const sectionPattern = /^Section\s+([\d.]+)\.\s+(.+)$/gmi;
+    let match;
+    while ((match = articlePattern.exec(fullText)) !== null) {
+        const fullMatch = match[0].replace(/={3,}/g, "").trim();
+        articles.push({ title: fullMatch, index: match.index });
+    }
+    while ((match = sectionPattern.exec(fullText)) !== null) {
+        const sectionNumber = match[1];
+        const remainder = (match[2] || "").trim();
+        const shortTitle = remainder.split(".")[0].trim();
+        const sectionLabel = shortTitle
+            ? `Section ${sectionNumber}. ${shortTitle}`
+            : `Section ${sectionNumber}`;
+        sections.push({ title: sectionLabel, index: match.index, sectionNumber });
+    }
+
+    const outline = articles
+        .map((entry) => ({ ...entry, type: "article" }))
+        .concat(sections.map((entry) => ({ ...entry, type: "section" })))
+        .sort((a, b) => a.index - b.index);
+
+    if (outline.length === 0) return;
+
+    let tocHtml = `<div class="fulldoc-sidebar-divider"></div>
+        <div class="sidebar-toc-toggle" id="toc-toggle-${scrollTargetPrefix}">
+            <span class="toc-arrow">&#9654;</span> TABLE OF CONTENTS
+        </div>
+        <div class="sidebar-toc-content hidden" id="toc-content-${scrollTargetPrefix}">`;
+
+    outline.forEach((entry, i) => {
+        const entryClass = entry.type === "section" ? " sidebar-toc-item-section" : " sidebar-toc-item-article";
+        const sectionAttr = entry.sectionNumber ? ` data-section-number="${esc(entry.sectionNumber)}"` : "";
+        const severity = entry.type === "section"
+            ? (sectionMap.get(entry.sectionNumber || "") || "")
+            : (() => {
+                const articleMatch = entry.title.match(/ARTICLE\s+([IVXLC\d]+)/i);
+                return articleMatch ? (articleMap.get(articleMatch[1].toUpperCase()) || "") : "";
+            })();
+        const severityDot = severity ? `<span class="sidebar-toc-severity sidebar-toc-severity-${severity}"></span>` : "";
+        tocHtml += `<div class="sidebar-toc-item${entryClass}" data-toc-idx="${i}" data-toc-text="${esc(entry.title)}"${sectionAttr}>${severityDot}<span>${esc(entry.title)}</span></div>`;
+    });
+    tocHtml += `</div>`;
+
+    sidebar.insertAdjacentHTML("beforeend", tocHtml);
+
+    // Wire toggle
+    const toggle = sidebar.querySelector(`#toc-toggle-${scrollTargetPrefix}`);
+    const content = sidebar.querySelector(`#toc-content-${scrollTargetPrefix}`);
+    if (toggle && content) {
+        toggle.addEventListener("click", () => {
+            const isOpen = !content.classList.contains("hidden");
+            content.classList.toggle("hidden");
+            const arrow = toggle.querySelector(".toc-arrow");
+            if (arrow) arrow.innerHTML = isOpen ? "&#9654;" : "&#9660;";
+        });
+    }
+
+    // Wire TOC item clicks — find text in the main panel and scroll to it
+    sidebar.querySelectorAll(".sidebar-toc-item").forEach(item => {
+        item.addEventListener("click", () => {
+            const entry = outline[parseInt(item.dataset.tocIdx, 10)];
+            const searchText = entry.title;
+            if (scrollTargetPrefix === "sbs") {
+                const articleMatch = searchText.match(/ARTICLE\s+([IVXLC\d]+)/i);
+                const sectionNumber = item.dataset.sectionNumber || "";
+                const primaryAttr = docviewSort === "reference" ? "data-template-ref" : "data-tenant-ref";
+                const headers = Array.from(document.querySelectorAll(".docview-provision-header"));
+
+                let target = null;
+                if (sectionNumber) {
+                    const escapedSection = sectionNumber.replace(".", "\\.");
+                    target = headers.find((header) => {
+                        const ref = header.getAttribute(primaryAttr) || "";
+                        return new RegExp(`Sections?\\s+${escapedSection}\\b|Section\\s+${escapedSection}\\b`, "i").test(ref);
+                    }) || null;
+                }
+                if (articleMatch) {
+                    const articleToken = articleMatch[1].toUpperCase();
+                    target = target || headers.find((header) => {
+                        const ref = header.getAttribute(primaryAttr) || "";
+                        return new RegExp(`Article\\s+${articleToken}\\b`, "i").test(ref);
+                    }) || null;
+                }
+                if (target) {
+                    const mainPanel = $(".docview-main-sbs");
+                    scrollElementIntoPanelView(target, mainPanel, getDocviewJumpOffset(mainPanel));
+                    target.classList.add("highlight-flash");
+                    setTimeout(() => target.classList.remove("highlight-flash"), 1500);
+                    return;
+                }
+            }
+            const mainPanel = scrollTargetPrefix === "fulldoc" ? $("#docview-main") : $(".docview-main-sbs");
+            if (!mainPanel) return;
+
+            // Find the text in the rendered content
+            const walker = document.createTreeWalker(mainPanel, NodeFilter.SHOW_TEXT, null);
+            while (walker.nextNode()) {
+                const idx = walker.currentNode.textContent.indexOf(searchText.substring(0, 30));
+                if (idx !== -1) {
+                    const parent = walker.currentNode.parentElement;
+                    scrollElementIntoPanelView(parent, mainPanel, getDocviewJumpOffset(mainPanel));
+                    parent.classList.add("highlight-flash");
+                    setTimeout(() => parent.classList.remove("highlight-flash"), 1500);
+                    break;
+                }
+            }
+        });
+    });
+}
+
+function renderSidebarTOC(sidebar, fullText, scrollTargetPrefix, options = {}) {
+    if (!fullText) return;
+    const { provisions = [], primarySide = "tenant" } = options;
+    const { sectionMap, articleMap } = buildTocSeverityMaps(provisions, primarySide);
+
+    const articlePattern = /^(?:={3,}\s*)?(?:ARTICLE\s+[IVXLC\d]+\s*[—–\-]\s*(.+?))(?:\s*={3,})?$/gmi;
+    const sectionPattern = /^Section\s+([\d.]+)\.\s+(.+)$/gmi;
+    const articles = [];
+    const sections = [];
+    let match;
+
+    while ((match = articlePattern.exec(fullText)) !== null) {
+        articles.push({ title: match[0].replace(/={3,}/g, "").trim(), index: match.index });
+    }
+    while ((match = sectionPattern.exec(fullText)) !== null) {
+        const sectionNumber = match[1];
+        const remainder = (match[2] || "").trim();
+        const shortTitle = remainder.split(".")[0].trim();
+        sections.push({
+            title: shortTitle ? `Section ${sectionNumber}. ${shortTitle}` : `Section ${sectionNumber}`,
+            index: match.index,
+            sectionNumber
+        });
+    }
+
+    const outline = articles
+        .map((entry) => ({ ...entry, type: "article" }))
+        .concat(sections.map((entry) => ({ ...entry, type: "section" })))
+        .sort((a, b) => a.index - b.index);
+
+    if (outline.length === 0) return;
+
+    const articleGroups = articles.map((article, idx) => {
+        const nextArticleIndex = idx < articles.length - 1 ? articles[idx + 1].index : Number.POSITIVE_INFINITY;
+        const groupedSections = sections.filter((section) => section.index > article.index && section.index < nextArticleIndex);
+        return {
+            ...article,
+            outlineIndex: outline.findIndex((entry) => entry.type === "article" && entry.index === article.index),
+            articleToken: (article.title.match(/ARTICLE\s+([IVXLC\d]+)/i) || [null, ""])[1].toUpperCase(),
+            sections: groupedSections.map((section) => ({
+                ...section,
+                outlineIndex: outline.findIndex((entry) => entry.type === "section" && entry.index === section.index)
+            }))
+        };
+    });
+
+    let tocHtml = `<div class="fulldoc-sidebar-divider"></div>
+        <div class="sidebar-toc-toggle" id="toc-toggle-${scrollTargetPrefix}">
+            <span class="toc-arrow">&#9654;</span> TABLE OF CONTENTS
+        </div>
+        <div class="sidebar-toc-content hidden" id="toc-content-${scrollTargetPrefix}">`;
+
+    if (articleGroups.some((group) => group.sections.length > 0)) {
+        tocHtml += `<button type="button" class="sidebar-toc-expand-all" data-expanded="false">Expand All Sections</button>`;
+    }
+
+    articleGroups.forEach((group, articleIdx) => {
+        const articleSeverity = group.articleToken ? (articleMap.get(group.articleToken) || "") : "";
+        const articleSeverityDot = articleSeverity ? `<span class="sidebar-toc-severity sidebar-toc-severity-${articleSeverity}"></span>` : "";
+        const hasSections = group.sections.length > 0;
+        const firstSectionAttr = hasSections ? ` data-first-section-number="${esc(group.sections[0].sectionNumber)}"` : "";
+        tocHtml += `<div class="sidebar-toc-group" data-article-group="${articleIdx}">
+            <div class="sidebar-toc-item sidebar-toc-item-article" data-toc-idx="${group.outlineIndex}" data-toc-text="${esc(group.title)}"${firstSectionAttr}>
+                <button type="button" class="sidebar-toc-group-toggle${hasSections ? "" : " sidebar-toc-group-toggle-hidden"}" data-article-group-toggle="${articleIdx}" aria-label="Toggle sections">${hasSections ? "&#9654;" : ""}</button>
+                ${articleSeverityDot}
+                <span>${esc(group.title)}</span>
+            </div>`;
+
+        if (hasSections) {
+            tocHtml += `<div class="sidebar-toc-sections hidden" data-article-sections="${articleIdx}">`;
+            group.sections.forEach((section) => {
+                const sectionSeverity = sectionMap.get(section.sectionNumber || "") || "";
+                const sectionSeverityDot = sectionSeverity ? `<span class="sidebar-toc-severity sidebar-toc-severity-${sectionSeverity}"></span>` : "";
+                tocHtml += `<div class="sidebar-toc-item sidebar-toc-item-section" data-toc-idx="${section.outlineIndex}" data-toc-text="${esc(section.title)}" data-section-number="${esc(section.sectionNumber)}">${sectionSeverityDot}<span>${esc(section.title)}</span></div>`;
+            });
+            tocHtml += `</div>`;
+        }
+
+        tocHtml += `</div>`;
+    });
+    tocHtml += `</div>`;
+
+    sidebar.insertAdjacentHTML("beforeend", tocHtml);
+
+    const toggle = sidebar.querySelector(`#toc-toggle-${scrollTargetPrefix}`);
+    const content = sidebar.querySelector(`#toc-content-${scrollTargetPrefix}`);
+    if (toggle && content) {
+        toggle.addEventListener("click", () => {
+            const isOpen = !content.classList.contains("hidden");
+            content.classList.toggle("hidden");
+            const arrow = toggle.querySelector(".toc-arrow");
+            if (arrow) arrow.innerHTML = isOpen ? "&#9654;" : "&#9660;";
+        });
+    }
+
+    const navigateToTocEntry = (item) => {
+        const entry = outline[parseInt(item.dataset.tocIdx, 10)];
+        if (!entry) return;
+        const searchText = entry.title;
+        if (scrollTargetPrefix === "sbs") {
+            const articleMatch = searchText.match(/ARTICLE\s+([IVXLC\d]+)/i);
+            const sectionNumber = item.dataset.sectionNumber || item.dataset.firstSectionNumber || "";
+            const primaryAttr = docviewSort === "reference" ? "data-template-ref" : "data-tenant-ref";
+            const headers = Array.from(document.querySelectorAll(".docview-provision-header"));
+
+            let target = null;
+            if (sectionNumber) {
+                const escapedSection = sectionNumber.replace(".", "\\.");
+                target = headers.find((header) => {
+                    const ref = header.getAttribute(primaryAttr) || "";
+                    return new RegExp(`Sections?\\s+${escapedSection}\\b|Section\\s+${escapedSection}\\b`, "i").test(ref);
+                }) || null;
+            }
+            if (articleMatch) {
+                const articleToken = articleMatch[1].toUpperCase();
+                target = target || headers.find((header) => {
+                    const ref = header.getAttribute(primaryAttr) || "";
+                    return new RegExp(`Article\\s+${articleToken}\\b`, "i").test(ref);
+                }) || null;
+            }
+            if (target) {
+                const mainPanel = $(".docview-main-sbs");
+                scrollElementIntoPanelView(target, mainPanel, getDocviewJumpOffset(mainPanel));
+                target.classList.add("highlight-flash");
+                setTimeout(() => target.classList.remove("highlight-flash"), 1500);
+                return;
+            }
+        }
+
+        const mainPanel = scrollTargetPrefix === "fulldoc" ? $("#docview-main") : $(".docview-main-sbs");
+        if (!mainPanel) return;
+        const walker = document.createTreeWalker(mainPanel, NodeFilter.SHOW_TEXT, null);
+        while (walker.nextNode()) {
+            const idx = walker.currentNode.textContent.indexOf(searchText.substring(0, 30));
+            if (idx !== -1) {
+                const parent = walker.currentNode.parentElement;
+                scrollElementIntoPanelView(parent, mainPanel, getDocviewJumpOffset(mainPanel));
+                parent.classList.add("highlight-flash");
+                setTimeout(() => parent.classList.remove("highlight-flash"), 1500);
+                break;
+            }
+        }
+    };
+
+    sidebar.querySelectorAll(".sidebar-toc-group-toggle[data-article-group-toggle]").forEach((toggleBtn) => {
+        toggleBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            const groupId = toggleBtn.dataset.articleGroupToggle;
+            const sectionBlock = sidebar.querySelector(`[data-article-sections="${groupId}"]`);
+            if (!sectionBlock) return;
+            const isOpen = !sectionBlock.classList.contains("hidden");
+            sectionBlock.classList.toggle("hidden");
+            toggleBtn.innerHTML = isOpen ? "&#9654;" : "&#9660;";
+        });
+    });
+
+    const expandAllBtn = sidebar.querySelector(".sidebar-toc-expand-all");
+    if (expandAllBtn) {
+        expandAllBtn.addEventListener("click", () => {
+            const expand = expandAllBtn.dataset.expanded !== "true";
+            sidebar.querySelectorAll(".sidebar-toc-sections").forEach((sectionBlock) => {
+                sectionBlock.classList.toggle("hidden", !expand);
+            });
+            sidebar.querySelectorAll(".sidebar-toc-group-toggle[data-article-group-toggle]").forEach((toggleBtn) => {
+                if (!toggleBtn.classList.contains("sidebar-toc-group-toggle-hidden")) {
+                    toggleBtn.innerHTML = expand ? "&#9660;" : "&#9654;";
+                }
+            });
+            expandAllBtn.dataset.expanded = expand ? "true" : "false";
+            expandAllBtn.textContent = expand ? "Collapse All Sections" : "Expand All Sections";
+        });
+    }
+
+    sidebar.querySelectorAll(".sidebar-toc-item").forEach((item) => {
+        item.addEventListener("click", (event) => {
+            if (event.target.closest(".sidebar-toc-group-toggle")) return;
+            navigateToTocEntry(item);
+        });
+    });
+}
+
+function scrollElementIntoPanelView(target, panel, topOffset = 72) {
+    if (!target || !panel) return;
+    const panelRect = panel.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const nextTop = panel.scrollTop + (targetRect.top - panelRect.top) - topOffset;
+    panel.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
+}
+
+function getDocviewJumpOffset(panel) {
+    if (!panel) return 72;
+    if (panel.classList.contains("docview-main-sbs")) {
+        const stickyHeader = panel.querySelector(".docview-sbs-sticky-header");
+        const stickyHeight = stickyHeader ? stickyHeader.getBoundingClientRect().height : 0;
+        return Math.round(stickyHeight + 12);
+    }
+    return 40;
+}
+
+function scrollDocviewTargetIntoView(target) {
+    if (!target) return;
+    const panel = target.closest(".docview-main-sbs, #docview-main") || (docviewMode === "full" ? $("#docview-main") : $(".docview-main-sbs"));
+    if (!panel) return;
+    scrollElementIntoPanelView(target, panel, getDocviewJumpOffset(panel));
+}
+
+// ── Side-by-Side View (original) ──
+
+function renderSideBySideView() {
+    const tenant = currentResults.tenants[currentTenantIndex];
+    if (!tenant || !tenant.results) {
+        $("#docview-container").innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-muted);">No results available for this tenant.</div>';
+        $("#docview-sidebar-sbs").innerHTML = "";
+        return;
+    }
+
+    const r = tenant.results;
+    const provisions = sortProvisionsForDocviewTenantLed(getDocviewWorkflowProvisions(r.provisions || []));
+
+    const templateFile = r.template_file || "Standard Template";
+    const tenantFile = r.tenant_file || tenant.filename || "Tenant Lease";
+
+    // Build the side-by-side frame
+    let html = "";
+
+    const tenantLeads = docviewSort === "contract";
+
+    html += `<div class="docview-sbs-sticky-header">`;
+    html += `<div class="docview-back-link">&#8592; Back to Summary</div>`;
+    html += `<div class="docview-sbs-column-header-row">`;
+
+    // Column headers
+    const referenceHeaderClass = docviewSort === "reference" ? "docview-column-header-primary" : "docview-column-header-secondary";
+    const tenantHeaderClass = docviewSort === "contract" ? "docview-column-header-primary" : "docview-column-header-secondary";
+    if (tenantLeads) {
+        html += `<div class="docview-column-header ${referenceHeaderClass}">Standard Template &mdash; ${esc(templateFile)}</div>`;
+        html += `<div class="docview-column-header ${tenantHeaderClass}">Tenant Lease &mdash; ${esc(tenantFile)}</div>`;
+    } else {
+        html += `<div class="docview-column-header ${tenantHeaderClass}">Tenant Lease &mdash; ${esc(tenantFile)}</div>`;
+        html += `<div class="docview-column-header ${referenceHeaderClass}">Standard Template &mdash; ${esc(templateFile)}</div>`;
+    }
+    html += `</div>`;
+    html += `</div>`;
+    html += `<div class="docview-sbs-body">`;
+
+    provisions.forEach(p => {
+        const pid = p.provision_id || "";
+        const pname = p.provision_name || "";
+        const verdict = p.final_verdict || "";
+        const severity = p.severity || "";
+        const sectionRef = p.tenant_section_ref || "";
+        const templateText = p.template_text || "";
+        const tenantText = p.tenant_text || "";
+        const templateSectionRef = p.template_section_ref || "";
+        const tenantSectionRef = p.tenant_section_ref || "";
+        const status = (p.cam_metadata || {}).extraction_status || "";
+        const credibilityLine = isDeviationWorkflowProvision(p)
+            ? renderCredibilityLine(p, r.models_used || {}, currentTenantIndex, pid, severity)
+            : "";
+
+        let rowClass = "conforms";
+        let severityBadge = "";
+        let templateContent = esc(templateText) || '<span style="color:var(--text-muted); font-style:italic;">No text extracted</span>';
+        let tenantContent   = esc(tenantText)   || '<span style="color:var(--text-muted); font-style:italic;">No text extracted</span>';
+
+        if (verdict === "DEVIATES") {
+            rowClass = "deviation";
+            const icon = SEVERITY_ICONS[severity] || "";
+            severityBadge = `<span class="severity-badge severity-${severity}">${icon} ${severity}</span>`;
+
+            // Apply word-level diff when both sides exist
+            if (templateText && tenantText) {
+                const { templateHtml, tenantHtml } = computeWordDiff(templateText, tenantText);
+                templateContent = templateHtml;
+                tenantContent   = tenantHtml;
+            } else if (!tenantText) {
+                tenantContent = '<span style="color:var(--text-muted); font-style:italic;">Not found in tenant lease</span>';
+            }
+        } else if (status === "TEMPLATE_ONLY" || !tenantText) {
+            rowClass = "omission";
+            tenantContent = "&#9888;&#65039; Not found in tenant lease";
+        }
+
+        // Provision header (spans full width via grid-column)
+        const analysisToggle = isDeviationWorkflowProvision(p)
+            ? `<button class="docview-header-toggle${openDocviewProvision === pid ? " open" : ""}"
+                    data-pid="${esc(pid)}"
+                    title="${openDocviewProvision === pid ? "Hide analysis" : "Show analysis"}"
+                    onclick="event.stopPropagation(); window.CAM.toggleDocviewAnalysis('${esc(pid)}');">
+                    ${openDocviewProvision === pid ? "▴" : "▾"}
+               </button>`
+            : "";
+        const readBtn = `<button class="finding-read-toggle${isNoted(currentTenantIndex, pid) ? " noted-active" : ""}"
+                title="Mark this provision as read"
+                onclick="window.CAM.toggleNoted(${currentTenantIndex}, '${esc(pid)}', this); event.stopPropagation();">
+            ${isNoted(currentTenantIndex, pid) ? "✓ Read" : "Mark as Read"}
+        </button>`;
+
+        html += `<div class="docview-provision-header docview-${rowClass}" data-pid="${esc(pid)}" data-template-ref="${esc(templateSectionRef)}" data-tenant-ref="${esc(tenantSectionRef)}" id="sidebyside-${esc(pid)}">
+            <div class="deviation-header-main">
+                <div class="deviation-header-left">
+                    <span class="provision-title">${esc(pid)} ${esc(pname)}</span>
+                    ${severityBadge}
+                    ${credibilityLine || ""}
+                </div>
+                <div class="deviation-header-right">
+                    ${sectionRef ? `<span class="section-ref">${esc(sectionRef)}</span>` : ""}
+                </div>
+            </div>
+            <div class="deviation-header-actions">
+                ${readBtn}
+                ${analysisToggle}
+            </div>
+        </div>`;
+
+        // Text cells: the leading document stays on the right
+        if (tenantLeads) {
+            html += `<div class="docview-text docview-template docview-${rowClass}">${templateContent}</div>`;
+            html += `<div class="docview-text docview-tenant docview-${rowClass}">${tenantContent}</div>`;
+        } else {
+            html += `<div class="docview-text docview-tenant docview-${rowClass}">${tenantContent}</div>`;
+            html += `<div class="docview-text docview-template docview-${rowClass}">${templateContent}</div>`;
+        }
+
+        const whatChanged = (p.challenge_details || "").trim();
+        const recommendedAction = (p.recommended_action || "").trim();
+        if (isDeviationWorkflowProvision(p) && (whatChanged || recommendedAction)) {
+            html += `<div class="docview-clause-summary" style="grid-column: 1 / -1;">`;
+            if (whatChanged) {
+                html += `<div class="detail-section">
+                    <div class="detail-label">What Changed</div>
+                    <div class="detail-text">${esc(whatChanged)}</div>
+                </div>`;
+            }
+            if (recommendedAction) {
+                html += `<div class="detail-section">
+                    <div class="detail-label">Recommended Action</div>
+                    <div class="detail-text">${esc(recommendedAction)}</div>
+                </div>`;
+            }
+            html += `</div>`;
+        }
+
+        if (isDeviationWorkflowProvision(p)) {
+            html += `<div class="docview-row-controls" style="grid-column: 1 / -1;">${buildDocviewDeviationControls(p, currentTenantIndex)}</div>`;
+        } else {
+            html += `<div class="docview-row-controls" style="grid-column: 1 / -1;">${buildDocviewConformingControls(p, currentTenantIndex)}</div>`;
+        }
+
+    });
+    html += `</div>`;
+
+    const container = $("#docview-container");
+    container.className = "docview-container docview-container-sbs";
+    container.innerHTML = html;
+
+    // Shared back-to-summary handler
+    function handleBackToSummary() {
+        switchResultsTab("findings");
+        if (docviewReturnTarget) {
+            const targetCard = document.getElementById(`dev-${docviewReturnTarget}`);
+            if (targetCard) {
+                setTimeout(() => {
+                    targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+                    targetCard.classList.add("highlight-flash");
+                    setTimeout(() => targetCard.classList.remove("highlight-flash"), 1500);
+                }, 100);
+            }
+            docviewReturnTarget = null;
+        }
+    }
+
+    // Wire up back-to-summary link (top of grid)
+    const backLink = container.querySelector(".docview-back-link");
+    if (backLink) {
+        backLink.addEventListener("click", handleBackToSummary);
+    }
+
+    // Populate side-by-side sidebar
+    renderSbsSidebar(provisions, tenantLeads, r);
+}
+
+function renderSbsSidebar(provisions, tenantLeads, results) {
+    const sidebar = $("#docview-sidebar-sbs");
+    if (!sidebar) return;
+
+    sidebar.innerHTML = `<div class="fulldoc-sidebar-header">${tenantLeads ? "Tenant Lease Sections" : "Reference Lease Sections"}</div>`;
+
+    const primaryFullText = tenantLeads
+        ? ((results && results.full_tenant_text) || "")
+        : ((results && results.full_template_text) || "");
+
+    if (primaryFullText) {
+        renderSidebarTOC(sidebar, primaryFullText, "sbs", { provisions, primarySide: tenantLeads ? "tenant" : "template" });
+        return;
+    }
+
+    renderMappedSidebarTOC(sidebar, provisions, tenantLeads ? "tenant" : "template");
+}
+
+function renderMappedSidebarTOC(sidebar, provisions, primarySide = "tenant") {
+    if (!sidebar) return;
+    const seen = new Set();
+    const refs = [];
+
+    (provisions || []).forEach((p) => {
+        const ref = primarySide === "tenant" ? (p.tenant_section_ref || "") : (p.template_section_ref || "");
+        if (!ref || seen.has(ref)) return;
+        seen.add(ref);
+        refs.push(ref);
+    });
+
+    if (refs.length === 0) {
+        sidebar.insertAdjacentHTML("beforeend", `<div class="fulldoc-sidebar-divider"></div><div class="sidebar-empty-note">No document sections available.</div>`);
+        return;
+    }
+
+    const sectionTitle = primarySide === "tenant" ? "TENANT SECTIONS" : "REFERENCE SECTIONS";
+    let html = `<div class="fulldoc-sidebar-divider"></div>
+        <div class="sidebar-toc-toggle" id="toc-toggle-sbs-mapped">
+            <span class="toc-arrow">&#9660;</span> ${sectionTitle}
+        </div>
+        <div class="sidebar-toc-content" id="toc-content-sbs-mapped">`;
+
+    refs.forEach((ref, idx) => {
+        html += `<div class="sidebar-toc-item" data-ref-idx="${idx}" data-ref-value="${esc(ref)}">${esc(ref)}</div>`;
+    });
+    html += `</div>`;
+    sidebar.insertAdjacentHTML("beforeend", html);
+
+    sidebar.querySelectorAll(".sidebar-toc-item[data-ref-value]").forEach((item) => {
+        item.addEventListener("click", () => {
+            const refValue = item.dataset.refValue || "";
+            const selector = primarySide === "tenant"
+                ? `.docview-provision-header[data-tenant-ref="${CSS.escape(refValue)}"]`
+                : `.docview-provision-header[data-template-ref="${CSS.escape(refValue)}"]`;
+            const target = document.querySelector(selector);
+            if (target) {
+                const mainPanel = $(".docview-main-sbs");
+                scrollElementIntoPanelView(target, mainPanel, getDocviewJumpOffset(mainPanel));
+                target.classList.add("highlight-flash");
+                setTimeout(() => target.classList.remove("highlight-flash"), 1500);
+            }
+        });
+    });
+}
+
+function toggleDocviewAnalysis(pid, provisions) {
+    const container = $("#docview-container");
+    const analysisHost = container.querySelector(".docview-sbs-body") || container;
+    if (!provisions) {
+        const tenant = currentResults && currentResults.tenants ? currentResults.tenants[currentTenantIndex] : null;
+        provisions = sortProvisionsForDocviewTenantLed(getDocviewWorkflowProvisions((tenant && tenant.results && tenant.results.provisions) || []));
+    }
+
+    // Close any existing open panel
+    const existing = analysisHost.querySelector(".docview-analysis");
+    if (existing) {
+        const existingPid = existing.dataset.pid;
+        existing.remove();
+        if (existingPid === pid) {
+            openDocviewProvision = null;
+            const toggleBtn = container.querySelector(`.docview-header-toggle[data-pid="${CSS.escape(pid)}"]`);
+            if (toggleBtn) {
+                toggleBtn.classList.remove("open");
+                toggleBtn.innerHTML = "▾";
+                toggleBtn.title = "Show analysis";
+            }
+            return; // Clicking same provision toggles off
+        }
+    }
+
+    openDocviewProvision = pid;
+    container.querySelectorAll(".docview-header-toggle").forEach((btn) => {
+        btn.classList.toggle("open", btn.dataset.pid === pid);
+        btn.innerHTML = btn.dataset.pid === pid ? "▴" : "▾";
+        btn.title = btn.dataset.pid === pid ? "Hide analysis" : "Show analysis";
+    });
+
+    // Find the provision data
+    const p = provisions.find(pr => pr.provision_id === pid);
+    if (!p) return;
+
+    const severity = p.severity || "";
+    const icon = SEVERITY_ICONS[severity] || "";
+    const riskHL = p.risk_headline || "";
+    const challenge = p.challenge_details || "";
+    const sevReasoning = p.severity_reasoning || "";
+    const financial = p.financial_impact || "";
+    const action = p.recommended_action || "";
+    const verdicts = p.evaluator_verdicts || {};
+    const agreeing = Object.values(verdicts).filter(v => v === "DEVIATES").length;
+    const total = Object.keys(verdicts).length || 3;
+
+    let panelHtml = `<div class="docview-analysis" data-pid="${esc(pid)}">
+        <div class="docview-analysis-header">
+            <span><span class="severity-badge severity-${severity}">${icon} ${severity}</span> &mdash; ${esc(p.provision_name || "")}</span>
+            <button class="docview-analysis-close">&times;</button>
+        </div>`;
+
+    if (riskHL) {
+        panelHtml += `<div class="risk-headline" style="padding:0 1rem;">${esc(riskHL)}</div>`;
+    }
+    if (challenge) {
+        panelHtml += `<div class="detail-section">
+            <div class="detail-label">What Changed</div>
+            <div class="detail-text">${esc(challenge)}</div>
+        </div>`;
+    }
+    if (sevReasoning) {
+        panelHtml += `<div class="detail-section">
+            <div class="detail-label">Impact</div>
+            <div class="detail-text">${esc(sevReasoning)}</div>
+        </div>`;
+    }
+    if (financial) {
+        panelHtml += `<div class="detail-section">
+            <div class="detail-label">Financial Impact</div>
+            <div class="detail-text">${esc(financial)}</div>
+        </div>`;
+    }
+    if (action) {
+        panelHtml += `<div class="detail-section">
+            <div class="detail-label">Recommended Action</div>
+            <div class="detail-text">${esc(action)}</div>
+        </div>`;
+    }
+
+    if (!riskHL && !challenge && !sevReasoning && !financial && !action) {
+        panelHtml += `<div class="detail-section">
+            <div class="detail-label">Analysis</div>
+            <div class="detail-text">No narrative analysis is available for this clause yet. You can still review the text comparison, notes, and workflow tools from the summary page.</div>
+        </div>`;
+    }
+
+    panelHtml += `<div class="evaluator-line">Evaluators: ${agreeing}/${total} agree DEVIATES</div>`;
+    panelHtml += `<div class="docview-back-to-card" data-provision="${esc(pid)}">&#8592; Back to Summary</div>`;
+    panelHtml += `</div>`;
+
+    // Insert the panel after the provision's text cells (header + 2 text cells)
+    const allChildren = Array.from(analysisHost.children);
+    const headerEl = analysisHost.querySelector(`.docview-provision-header[data-pid="${pid}"]`);
+    if (headerEl) {
+        const headerIdx = allChildren.indexOf(headerEl);
+        // After header come 2 text cells (headerIdx+1 = template, headerIdx+2 = tenant)
+        const insertAfter = allChildren[headerIdx + 2] || headerEl;
+        insertAfter.insertAdjacentHTML("afterend", panelHtml);
+    }
+
+    // Wire close button
+    const panel = analysisHost.querySelector(`.docview-analysis[data-pid="${pid}"]`);
+    if (panel) {
+        panel.querySelector(".docview-analysis-close").addEventListener("click", () => {
+            panel.remove();
+            openDocviewProvision = null;
+        });
+        // Wire "Back to Summary" link
+        const backLink = panel.querySelector(".docview-back-to-card");
+        if (backLink) {
+            backLink.addEventListener("click", () => {
+                switchResultsTab("findings");
+                const targetCard = document.getElementById(`dev-${pid}`);
+                if (targetCard) {
+                    setTimeout(() => {
+                        targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+                        targetCard.classList.add("highlight-flash");
+                        setTimeout(() => targetCard.classList.remove("highlight-flash"), 1500);
+                    }, 100);
+                }
+            });
+        }
+    }
+}
+
+// ── Feedback ──
+
+async function submitFeedback(provisionId, assessment, btn) {
+    if (!currentJobId) return;
+
+    // Support both new card-quick-feedback and old feedback-area
+    const area = btn.closest(".card-quick-feedback") || btn.closest(".feedback-area");
+    if (!area) return;
+
+    const savedEl = area.querySelector(".quick-feedback-saved") ||
+                    area.querySelector(".feedback-saved");
+
+    // Mark button as selected
+    area.querySelectorAll(".qfb, [data-assessment]").forEach(b => {
+        b.classList.remove("qfb-selected", "active");
+    });
+    btn.classList.add("qfb-selected");
+
+    // Show confirmation inline
+    if (savedEl) {
+        const labels = { agree: "Flagged \u2713", disagree: "Dismissed \u2713", unsure: "Noted \u2713" };
+        savedEl.textContent = labels[assessment] || "Saved \u2713";
+        savedEl.classList.remove("hidden");
+    }
+
+    try {
+        await fetch(`/api/jobs/${currentJobId}/feedback`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                tenant_index: currentTenantIndex,
+                provision_id: provisionId,
+                assessment: assessment,
+            })
+        });
+    } catch (err) {
+        console.error("Feedback error:", err);
+    }
+
+    // Show inline follow-up prompt when user clicks "No" (disagree)
+    if (assessment === 'disagree') {
+        const existing = area.querySelector('.qfb-followup');
+        if (existing) existing.remove();
+
+        const pname = btn.closest('.finding-card')?.dataset?.provision || provisionId;
+        const followup = document.createElement('div');
+        followup.className = 'qfb-followup';
+        followup.dataset.pid = provisionId;
+        followup.dataset.pname = pname;
+        followup.innerHTML = `
+            <span class="qfb-followup-msg">This finding will remain visible in this run.
+            Want to create a rule so it won't be flagged in future analyses?</span>
+            <div class="qfb-followup-btns">
+                <button class="qfb-followup-yes">Create Rule</button>
+                <button class="qfb-followup-cancel">Cancel</button>
+            </div>`;
+
+        followup.querySelector('.qfb-followup-yes').addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.CAM.showRuleCreationDialog(provisionId, pname);
+            followup.remove();
+        });
+        followup.querySelector('.qfb-followup-cancel').addEventListener('click', (e) => {
+            e.stopPropagation();
+            followup.remove();
+        });
+
+        area.appendChild(followup);
+    }
+}
+
+function loadExistingFeedback() {
+    if (!currentJobData || !currentJobData.feedback) return;
+
+    const feedback = currentJobData.feedback.filter(
+        f => f.tenant_index === currentTenantIndex
+    );
+
+    feedback.forEach(f => {
+        // Try new quick-feedback first, fall back to old feedback-area
+        const area = document.querySelector(`.card-quick-feedback[data-pid="${f.provision_id}"]`)
+                  || document.querySelector(`.feedback-area[data-pid="${f.provision_id}"]`);
+        if (!area) return;
+
+        const labels = { agree: "Flagged \u2713", disagree: "Dismissed \u2713", unsure: "Noted \u2713" };
+        const savedEl = area.querySelector(".quick-feedback-saved") ||
+                        area.querySelector(".feedback-saved");
+        if (savedEl) {
+            savedEl.textContent = labels[f.assessment] || "Saved";
+            savedEl.classList.remove("hidden");
+        }
+        // Mark the matching button selected
+        const btn = area.querySelector(`[data-assessment="${f.assessment}"]`);
+        if (btn) {
+            area.querySelectorAll(".qfb, [data-assessment]").forEach(b => {
+                b.classList.remove("qfb-selected", "active");
+            });
+            btn.classList.add("qfb-selected");
+        }
+    });
+}
+
+// ── Downloads & Export ──
+
+function _triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function downloadFile(url) {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function exportAllJSON() {
+    if (!currentResults) return;
+    const blob = new Blob([JSON.stringify(currentResults, null, 2)], {type: "application/json"});
+    _triggerDownload(blob, `CAM_Results_${currentJobId || "export"}.json`);
+}
+
+function exportTenantJSON(idx) {
+    if (!currentResults || !currentResults.tenants[idx]) return;
+    const data = currentResults.tenants[idx];
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: "application/json"});
+    _triggerDownload(blob, `CAM_Results_${data.filename || "tenant"}.json`);
+}
+
+function exportAuditJSON(singleContract) {
+    if (!currentResults) return;
+    const jobId = currentJobId || "unknown";
+    const date = new Date().toISOString().slice(0, 10);
+    const scope = singleContract ? `_T${currentTenantIndex + 1}` : "_all";
+    const filename = `CAM_Audit_Trail_${jobId}${scope}_${date}.json`;
+
+    const allTenants = currentResults.tenants || [];
+    const tenantsToExport = singleContract ? [allTenants[currentTenantIndex]].filter(Boolean) : allTenants;
+
+    // Build export object: job-level metadata + per-tenant pipeline results
+    const exportObj = {
+        export_type: singleContract ? "CAM Audit Trail (Single Contract)" : "CAM Audit Trail (All Contracts)",
+        exported_at: new Date().toISOString(),
+        job_id: jobId,
+        tenants: tenantsToExport.map(t => ({
+            filename: t.filename,
+            pipeline_version: t.results && t.results.pipeline_version,
+            pipeline_domain_label: t.results && t.results.pipeline_domain_label,
+            timestamp: t.results && t.results.timestamp,
+            models_used: t.results && t.results.models_used,
+            api_calls_total: t.results && t.results.api_calls_total,
+            elapsed_sec: t.results && t.results.elapsed_sec,
+            summary: t.results && t.results.summary,
+            provisions: t.results && (t.results.provisions || []).map(p => ({
+                provision_id: p.provision_id,
+                provision_name: p.provision_name,
+                final_verdict: p.final_verdict,
+                severity: p.severity,
+                severity_floor_applied: p.severity_floor_applied,
+                agreement_pattern: p.agreement_pattern,
+                evaluator_verdicts: p.evaluator_verdicts,
+                evaluator_reasoning: p.evaluator_reasoning,
+                evaluator_confidences: p.evaluator_confidences,
+                challenge_finding: p.challenge_finding,
+                challenge_details: p.challenge_details,
+                fragility: p.fragility,
+                cam_metadata: p.cam_metadata,
+                risk_headline: p.risk_headline,
+                severity_reasoning: p.severity_reasoning,
+                financial_impact: p.financial_impact,
+                recommended_action: p.recommended_action,
+            })),
+        })),
+    };
+
+    const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
+    _triggerDownload(blob, filename);
+}
+
+function exportAuditText(singleContract) {
+    if (!currentResults) return;
+    const jobId = currentJobId || "unknown";
+    const date = new Date().toISOString().slice(0, 10);
+    const scope = singleContract ? `_T${currentTenantIndex + 1}` : "_all";
+    const filename = `CAM_Audit_Report_${jobId}${scope}_${date}.txt`;
+
+    const allTenants = currentResults.tenants || [];
+    const tenantsToExport = singleContract ? [allTenants[currentTenantIndex]].filter(Boolean) : allTenants;
+
+    const STAGE_NAMES = {1:"Extraction",2:"Rules Check",3:"Evaluation",4:"Challenge",5:"Severity",6:"Disposition"};
+    const lines = [];
+    const hr = (char = "\u2550", n = 72) => char.repeat(n);
+    const sep = (char = "\u2500", n = 56) => char.repeat(n);
+
+    lines.push("CAM\u2122 AUDIT TRAIL REPORT");
+    lines.push(`Patent Pending \u00b7 ${new Date().toLocaleString()}`);
+    lines.push(`Job ID: ${jobId}`);
+    lines.push(singleContract ? `Scope: Single Contract (T${currentTenantIndex + 1})` : "Scope: All Contracts");
+    lines.push(hr());
+    lines.push("");
+
+    tenantsToExport.forEach((tenant, ti) => {
+        const r = tenant.results || {};
+        const m = r.models_used || {};
+        lines.push(hr("\u2550"));
+        lines.push(`TENANT ${ti + 1}: ${tenant.filename || "Unknown"}`);
+        lines.push(hr("\u2550"));
+        lines.push("");
+
+        // Run metadata
+        lines.push("RUN METADATA");
+        lines.push(sep());
+        lines.push(`Pipeline:   ${r.pipeline_version || "\u2014"} \u00b7 ${r.pipeline_domain_label || ""}`);
+        lines.push(`Timestamp:  ${r.timestamp || "\u2014"}`);
+        lines.push(`Template:   ${r.template_file || "\u2014"}`);
+        lines.push(`API calls:  ${r.api_calls_total || "\u2014"}  |  Elapsed: ${r.elapsed_sec ? fmtDuration(r.elapsed_sec) : "\u2014"}`);
+        lines.push("");
+
+        lines.push("MODELS USED");
+        lines.push(sep());
+        if (m.extractor) lines.push(`  Extractor:   ${m.extractor} (${m.extractor_provider || ""})`);
+        if (m.evaluator_a) lines.push(`  Evaluator A: ${m.evaluator_a} (${m.evaluator_a_provider || ""})`);
+        if (m.evaluator_b) lines.push(`  Evaluator B: ${m.evaluator_b} (${m.evaluator_b_provider || ""})`);
+        if (m.evaluator_c) lines.push(`  Evaluator C: ${m.evaluator_c} (${m.evaluator_c_provider || ""})`);
+        if (m.challenger)  lines.push(`  Challenger:  ${m.challenger}`);
+        if (m.severity_assessor) lines.push(`  Severity:    ${m.severity_assessor}`);
+        lines.push("");
+
+        // Per-provision trace
+        lines.push("PROVISION PIPELINE TRACES");
+        lines.push(sep());
+        lines.push("");
+
+        (r.provisions || []).forEach(p => {
+            const meta = p.cam_metadata || {};
+            const stagesRun = new Set(meta.stages_run || []);
+            const rulesFired = meta.rules_fired || [];
+            const frag = p.fragility || {};
+
+            lines.push(`[${p.provision_id || ""}] ${p.provision_name || ""}`);
+            lines.push(`  Final Verdict: ${p.final_verdict || "\u2014"}  |  Severity: ${p.severity || "\u2014"}${p.severity_floor_applied ? " (floor applied)" : ""}`);
+            lines.push(`  Agreement: ${p.agreement_pattern || "\u2014"}`);
+            lines.push("");
+
+            lines.push("  PIPELINE STAGES:");
+            [1,2,3,4,5,6].forEach(s => {
+                const ran = stagesRun.has(s);
+                let note = ran ? "" : " \u2014 skipped";
+                if (s === 2 && ran) note = ` \u2192 rules: ${rulesFired.length > 0 ? rulesFired.join(", ") : "none"} \u2192 ${meta.triage_result || ""}`;
+                if (s === 4 && ran && p.challenge_finding) note = ` \u2192 ${p.challenge_finding}`;
+                lines.push(`    ${ran ? "\u2713" : "\u2298"} Stage ${s}: ${STAGE_NAMES[s]}${note}`);
+            });
+            lines.push("");
+
+            lines.push("  EVALUATOR VOTES:");
+            ["A","B","C"].forEach(k => {
+                const verdict = (p.evaluator_verdicts || {})[k] || "unavailable";
+                const conf = (p.evaluator_confidences || {})[k];
+                const confStr = conf != null && conf > 0 ? ` (confidence: ${conf.toFixed(2)})` : "";
+                const reasoning = (p.evaluator_reasoning || {})[k] || "";
+                lines.push(`    ${k}: ${verdict}${confStr}`);
+                if (reasoning && reasoning !== "(evaluator unavailable)") {
+                    // Wrap reasoning at ~70 chars
+                    const wrapped = reasoning.match(/.{1,70}(\s|$)/g) || [reasoning];
+                    wrapped.forEach(line => lines.push(`       ${line.trim()}`));
+                }
+            });
+            lines.push("");
+
+            if (p.challenge_finding) {
+                lines.push(`  CHALLENGE: ${p.challenge_finding}`);
+                if (p.challenge_details) lines.push(`    ${p.challenge_details}`);
+                lines.push("");
+            }
+
+            if (frag.fragile != null) {
+                lines.push(`  FRAGILITY: ${frag.fragile ? "yes" : "no"}${frag.score != null ? " (score: " + frag.score.toFixed(3) + ")" : ""}`);
+                if ((frag.signals || []).length > 0) {
+                    lines.push(`    Signals: ${frag.signals.join(", ")}`);
+                }
+                lines.push("");
+            }
+
+            lines.push(sep("\u00b7", 40));
+            lines.push("");
+        });
+    });
+
+    lines.push(hr());
+    lines.push("Generated by CAM\u2122 \u00b7 Patent Pending \u00b7 This is a diagnostic tool, not legal advice.");
+
+    const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+    _triggerDownload(blob, filename);
+}
+
+// ── Direct Job Load (from URL) ──
+
+async function loadJobDirect(jobId) {
+    currentJobId = jobId;
+
+    setupEventListeners();
+
+    try {
+        const resp = await fetch(`/api/jobs/${jobId}`);
+
+        if (resp.status === 410) {
+            showExpiredPage();
+            return;
+        }
+        if (!resp.ok) {
+            showState("gate");
+            return;
+        }
+
+        const job = await resp.json();
+        currentJobData = job;
+
+        if (job.status === "completed") {
+            await loadResults();
+            showState("results");
+        } else if (job.status === "cancelled") {
+            showState("processing");
+            handleCancelledJob(job);
+        } else if (job.status === "processing" || job.status === "queued") {
+            showState("processing");
+            initProcessingView(job);
+            startPolling();
+        } else if (job.status === "failed") {
+            showState("processing");
+            renderProgress(job);
+            const container = $("#tenant-progress-list");
+            container.innerHTML += `<div class="alert alert-error mt-2">${esc(job.error || "Analysis failed.")}</div>`;
+        }
+    } catch (err) {
+        console.error("Direct load error:", err);
+        showState("gate");
+    }
+}
+
+// ── Helpers ──
+
+/**
+ * computeWordDiff(templateText, tenantText)
+ * Returns { templateHtml, tenantHtml } with inline span highlights.
+ * Uses LCS (longest common subsequence) on word tokens.
+ */
+function computeWordDiff(templateText, tenantText) {
+    function tokenize(text) {
+        return text.match(/\S+|\s+/g) || [];
+    }
+
+    const tplTokens = tokenize(templateText);
+    const tenTokens = tokenize(tenantText);
+    const m = tplTokens.length;
+    const n = tenTokens.length;
+
+    // For large texts, fall back to sentence-level diff
+    if (m > 400 || n > 400) {
+        return fallbackDiff(templateText, tenantText);
+    }
+
+    const dp = Array.from({ length: m + 1 }, () => new Int16Array(n + 1));
+    for (let i = m - 1; i >= 0; i--) {
+        for (let j = n - 1; j >= 0; j--) {
+            if (tplTokens[i] === tenTokens[j]) {
+                dp[i][j] = dp[i + 1][j + 1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1]);
+            }
+        }
+    }
+
+    let tplHtml = "";
+    let tenHtml = "";
+    let i = 0, j = 0;
+
+    while (i < m || j < n) {
+        if (i < m && j < n && tplTokens[i] === tenTokens[j]) {
+            tplHtml += esc(tplTokens[i]);
+            tenHtml += esc(tenTokens[j]);
+            i++; j++;
+        } else if (j < n && (i >= m || dp[i][j + 1] >= dp[i + 1][j])) {
+            if (tenTokens[j].trim()) {
+                tenHtml += `<span class="diff-added">${esc(tenTokens[j])}</span>`;
+            } else {
+                tenHtml += esc(tenTokens[j]);
+            }
+            j++;
+        } else {
+            if (tplTokens[i].trim()) {
+                tplHtml += `<span class="diff-removed">${esc(tplTokens[i])}</span>`;
+            } else {
+                tplHtml += esc(tplTokens[i]);
+            }
+            i++;
+        }
+    }
+
+    return { templateHtml: tplHtml, tenantHtml: tenHtml };
+}
+
+/**
+ * Fallback for long texts: sentence-level diff.
+ */
+function fallbackDiff(templateText, tenantText) {
+    const tplSentences = templateText.split(/(?<=[.!?])\s+/);
+    const tenSentences = tenantText.split(/(?<=[.!?])\s+/);
+    const tplSet = new Set(tplSentences.map(s => s.trim()));
+    const tenSet = new Set(tenSentences.map(s => s.trim()));
+
+    const tplHtml = tplSentences.map(s =>
+        tenSet.has(s.trim())
+            ? esc(s)
+            : `<span class="diff-removed">${esc(s)}</span>`
+    ).join(" ");
+
+    const tenHtml = tenSentences.map(s =>
+        tplSet.has(s.trim())
+            ? esc(s)
+            : `<span class="diff-added">${esc(s)}</span>`
+    ).join(" ");
+
+    return { templateHtml: tplHtml, tenantHtml: tenHtml };
+}
+
+function esc(str) {
+    if (!str) return "";
+    const div = document.createElement("div");
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
+function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = Math.round(seconds % 60);
+    return `${m}m ${s}s`;
+}
+
+function getHighestSeverity(summary) {
+    for (const sev of SEVERITY_ORDER) {
+        if (summary[sev.toLowerCase()] > 0) return sev;
+    }
+    return "CONFORMS";
+}
+
+// Step 129: Status label for contract selector dropdown
+function getStatusLabel(highestSev) {
+    if (!highestSev || highestSev === 'CONFORMS') return 'Clear';
+    if (highestSev === 'CRITICAL') return 'Immediate Action';
+    if (highestSev === 'HIGH') return 'Review Recommended';
+    if (highestSev === 'MEDIUM') return 'Monitor';
+    if (highestSev === 'LOW') return 'Monitor';
+    return 'Clear';
+}
+
+// Step 125: Build one-sentence lease blurb from structured fields
+function buildLeaseBlurb(tenantResult) {
+    if (!tenantResult) return null;
+    var deal = tenantResult.deal_overview || {};
+    var meta = tenantResult.contract_metadata || {};
+    var parts = [];
+
+    // Term
+    var term = deal.lease_term_years
+        ? (deal.lease_term_years + '-year')
+        : (meta.term_length || null);
+    if (term) parts.push(term);
+
+    // CAM structure (net vs gross)
+    var cam = (deal.cam_structure || '').toLowerCase();
+    if (cam.indexOf('triple net') !== -1 || cam.indexOf('nnn') !== -1) parts.push('triple net');
+    else if (cam.indexOf('gross') !== -1) parts.push('gross');
+
+    // Always "retail lease"
+    parts.push('retail lease');
+
+    // Renewal
+    var renewal = deal.renewal_options || meta.renewal_options || '';
+    if (renewal && renewal.toLowerCase() !== 'none' && renewal.trim() !== '') {
+        var r = renewal.replace(/one \(1\)/ig, 'one')
+                       .replace(/additional period of /ig, '')
+                       .replace(/\(\d+\)/g, '').trim().toLowerCase();
+        if (r) parts.push('with ' + r);
+    }
+
+    if (parts.length <= 1) return null; // just "retail lease" — not useful
+    return parts.join(' ').replace(/\s+/g, ' ').trim() + '.';
+}
+
+function getRiskRating(summary) {
+    if (summary.critical > 0 || summary.high >= 2) {
+        return {label: "\uD83D\uDD34 HIGH", class: "risk-high"};
+    }
+    if (summary.high > 0 || summary.medium >= 2) {
+        return {label: "\u26A0\uFE0F MEDIUM", class: "risk-medium"};
+    }
+    if (summary.deviates > 0) {
+        return {label: "LOW", class: "risk-low"};
+    }
+    return {label: "\u2705 CLEAR", class: "risk-low"};
+}
+
+// ══════════════════════════════════════════════════════
+// Document View Text Search (039t Item 3)
+// ══════════════════════════════════════════════════════
+
+let searchMatches = [];
+let searchCurrentIndex = -1;
+let searchDebounceTimer = null;
+
+function initDocviewSearch() {
+    const input = $("#docview-search-input");
+    const prevBtn = $("#docview-search-prev");
+    const nextBtn = $("#docview-search-next");
+    const clearBtn = $("#docview-search-clear");
+
+    if (!input) return;
+
+    input.addEventListener("input", () => {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => performDocSearch(input.value), 300);
+    });
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            if (e.shiftKey) navigateSearch(-1);
+            else navigateSearch(1);
+        }
+    });
+    prevBtn.addEventListener("click", () => navigateSearch(-1));
+    nextBtn.addEventListener("click", () => navigateSearch(1));
+    clearBtn.addEventListener("click", () => {
+        input.value = "";
+        clearDocSearch();
+        input.focus();
+    });
+}
+
+function getSearchTarget() {
+    // Get the visible content panel based on current view mode
+    if (docviewMode === "full") {
+        return $("#docview-main");
+    } else {
+        return $("#docview-container");
+    }
+}
+
+function performDocSearch(query) {
+    clearDocSearch();
+    if (!query || query.length < 2) {
+        $("#docview-search-count").textContent = "";
+        return;
+    }
+
+    const target = getSearchTarget();
+    if (!target) return;
+
+    const searchText = query.toLowerCase();
+
+    // Walk text nodes and wrap matches
+    const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT, null);
+    const textNodes = [];
+    while (walker.nextNode()) {
+        // Skip nodes inside search bar or callout links
+        if (walker.currentNode.parentElement.closest(".docview-search-bar")) continue;
+        textNodes.push(walker.currentNode);
+    }
+
+    textNodes.forEach(node => {
+        const text = node.textContent;
+        const lower = text.toLowerCase();
+        let idx = lower.indexOf(searchText);
+        if (idx === -1) return;
+
+        const frag = document.createDocumentFragment();
+        let cursor = 0;
+
+        while (idx !== -1) {
+            // Text before match
+            if (idx > cursor) {
+                frag.appendChild(document.createTextNode(text.substring(cursor, idx)));
+            }
+            // Match
+            const mark = document.createElement("mark");
+            mark.className = "search-match";
+            mark.textContent = text.substring(idx, idx + searchText.length);
+            frag.appendChild(mark);
+            searchMatches.push(mark);
+
+            cursor = idx + searchText.length;
+            idx = lower.indexOf(searchText, cursor);
+        }
+        // Text after last match
+        if (cursor < text.length) {
+            frag.appendChild(document.createTextNode(text.substring(cursor)));
+        }
+        node.parentNode.replaceChild(frag, node);
+    });
+
+    const countEl = $("#docview-search-count");
+    if (searchMatches.length > 0) {
+        searchCurrentIndex = 0;
+        updateSearchActive();
+        countEl.textContent = `1 of ${searchMatches.length}`;
+    } else {
+        countEl.textContent = "No matches";
+    }
+}
+
+function navigateSearch(direction) {
+    if (searchMatches.length === 0) return;
+    searchCurrentIndex = (searchCurrentIndex + direction + searchMatches.length) % searchMatches.length;
+    updateSearchActive();
+    $("#docview-search-count").textContent = `${searchCurrentIndex + 1} of ${searchMatches.length}`;
+}
+
+function updateSearchActive() {
+    searchMatches.forEach((m, i) => {
+        m.className = i === searchCurrentIndex ? "search-match-active" : "search-match";
+    });
+    if (searchMatches[searchCurrentIndex]) {
+        searchMatches[searchCurrentIndex].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+}
+
+function clearDocSearch() {
+    // Remove all <mark> elements and restore text
+    const target = getSearchTarget();
+    if (target) {
+        target.querySelectorAll("mark.search-match, mark.search-match-active").forEach(mark => {
+            const parent = mark.parentNode;
+            parent.replaceChild(document.createTextNode(mark.textContent), mark);
+            parent.normalize();
+        });
+    }
+    searchMatches = [];
+    searchCurrentIndex = -1;
+    const countEl = $("#docview-search-count");
+    if (countEl) countEl.textContent = "";
+}
+
+// ══════════════════════════════════════════════════════
+// FOLLOW-UP Q&A CHAT — Always-On Panel (039v)
+// ══════════════════════════════════════════════════════
+
+let chatInitialized = false;
+
+// ── Multi-Model Chat Guards (039z) ──
+
+function updateSynthesizerDefault() {
+    const checked = new Set(
+        Array.from(document.querySelectorAll('#chat-model-options input[type=checkbox]:checked'))
+            .map(cb => cb.value)
+    );
+    const all = ["claude", "gpt", "grok", "gemini"];
+    const synthSelect = $("#chat-synthesizer-select");
+    if (!synthSelect) return;
+
+    // Find first model not in the checked set
+    const preferred = all.find(m => !checked.has(m));
+    if (preferred) {
+        synthSelect.value = preferred;
+    } else {
+        synthSelect.value = "claude";
+    }
+
+    // Grey out options that ARE in the checked set
+    Array.from(synthSelect.options).forEach(opt => {
+        opt.disabled = checked.has(opt.value);
+        if (opt.disabled && synthSelect.value === opt.value) {
+            synthSelect.value = preferred || "claude";
+        }
+    });
+}
+
+function updateSynthesisAvailability() {
+    const checkedCount = document.querySelectorAll('#chat-model-options input[type=checkbox]:checked').length;
+    const synthRadio = document.querySelector('input[name="synth-mode"][value="synthesized"]');
+    const synthLabel = synthRadio?.closest('.synth-option');
+    const individualRadio = document.querySelector('input[name="synth-mode"][value="individual"]');
+    const hintEl = $("#chat-synth-hint");
+
+    if (checkedCount <= 1) {
+        if (synthRadio) {
+            synthRadio.disabled = true;
+            if (synthLabel) synthLabel.style.opacity = "0.4";
+            if (individualRadio) individualRadio.checked = true;
+            individualRadio?.dispatchEvent(new Event("change"));
+        }
+        if (hintEl) {
+            hintEl.textContent = checkedCount === 1 ? "Select 2+ models to synthesize" : "";
+            hintEl.classList.remove("hidden");
+        }
+    } else {
+        if (synthRadio) {
+            synthRadio.disabled = false;
+            if (synthLabel) synthLabel.style.opacity = "";
+        }
+        if (hintEl) hintEl.classList.add("hidden");
+    }
+}
+
+function updateAskButtonState() {
+    const checkedCount = document.querySelectorAll('#chat-model-options input[type=checkbox]:checked').length;
+    const isMulti = $("#chat-mode-select")?.value === "multi";
+    const sendBtn = $("#chat-send-btn");
+    if (!sendBtn) return;
+
+    if (isMulti && checkedCount === 0) {
+        sendBtn.disabled = true;
+        sendBtn.title = "Select at least one model";
+    } else {
+        sendBtn.disabled = false;
+        sendBtn.title = "";
+    }
+}
+
+function renderAnalysisChatWelcome() {
+    const messagesEl = $("#chat-messages");
+    if (!messagesEl) return;
+    if (messagesEl.querySelector(".chat-analysis-welcome")) return;
+
+    const isScoped = chatScopeTenantIdx !== "" || chatScopeProvisionId !== "";
+    const isDraftMode = isScoped && chatStarterMode === "draft";
+    const starters = isDraftMode
+        ? [
+            "Draft balanced replacement language for this provision",
+            "Make this more landlord-friendly",
+            "Make this more tenant-friendly",
+            "Narrow the change to just one point",
+            "Draft a reasonable fallback position",
+            "Draft a compromise clause I can mark up",
+        ]
+        : isScoped
+        ? [
+            "Summarize this issue in practical terms",
+            "What is the real negotiation risk here?",
+            "What should I push back on?",
+            "Draft replacement language for this provision",
+            "What is a reasonable fallback position?",
+        ]
+        : [
+            "What are the biggest issues in this lease?",
+            "Which provisions should I review first?",
+            "Summarize the main risks for me",
+            "What should I negotiate hardest?",
+        ];
+
+    const welcome = document.createElement("div");
+    welcome.className = "chat-analysis-welcome";
+    welcome.innerHTML =
+        (isDraftMode
+            ? "Use chat to draft and refine replacement language for this provision. Pick a drafting direction below or type your own request."
+            : isScoped
+            ? "Use chat to analyze this issue, test negotiation ideas, or draft replacement language."
+            : "Ask about the analysis, compare risks, or get drafting and negotiation guidance.") +
+        '<div class="chat-analysis-starters">' +
+        starters.map(s => `<button class="chat-analysis-starter" onclick="window.CAM.askAnalysisQuestion(this.textContent)">${esc(s)}</button>`).join("") +
+        '</div>';
+    messagesEl.appendChild(welcome);
+}
+
+function refreshAnalysisChatWelcome() {
+    const messagesEl = $("#chat-messages");
+    if (!messagesEl) return;
+    const welcome = messagesEl.querySelector(".chat-analysis-welcome");
+    if (welcome) welcome.remove();
+    if (!messagesEl.querySelector(".chat-msg")) renderAnalysisChatWelcome();
+}
+
+function initChat() {
+    if (chatInitialized) return;
+    const sendBtn = $("#chat-send-btn");
+    const input = $("#chat-input");
+    const modeSelect = $("#chat-mode-select");
+    const multiOptions = $("#chat-multi-options");
+
+    if (!sendBtn || !input) return;
+    chatInitialized = true;
+    renderAnalysisChatWelcome();
+
+    sendBtn.addEventListener("click", () => sendChatMessage());
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendChatMessage();
+        }
+    });
+
+    if (modeSelect) {
+        modeSelect.addEventListener("change", () => {
+            if (multiOptions) multiOptions.classList.toggle("hidden", modeSelect.value !== "multi");
+            // Run guards when switching to multi mode
+            if (modeSelect.value === "multi") {
+                updateSynthesisAvailability();
+                updateSynthesizerDefault();
+                updateAskButtonState();
+            } else {
+                // Re-enable Ask button for single mode
+                sendBtn.disabled = false;
+                sendBtn.title = "";
+            }
+        });
+    }
+
+    // Checkbox change listeners — run all guards
+    document.querySelectorAll('#chat-model-options input[type=checkbox]').forEach(cb => {
+        cb.addEventListener("change", () => {
+            updateSynthesisAvailability();
+            updateSynthesizerDefault();
+            updateAskButtonState();
+        });
+    });
+
+    // Synth radio change — show/hide synthesizer row
+    document.querySelectorAll('input[name="synth-mode"]').forEach(radio => {
+        radio.addEventListener("change", () => {
+            const isSynth = document.querySelector('input[name="synth-mode"]:checked')?.value === "synthesized";
+            const synthRow = $("#chat-synthesizer-row");
+            if (synthRow) synthRow.classList.toggle("hidden", !isSynth);
+        });
+    });
+}
+
+// ── Panel Resize Handle (Item 1) ──
+function syncResultsTopBarLayout() {
+    const root = document.documentElement;
+    if (!root) return;
+
+    const isNarrow = window.innerWidth <= 900;
+    const chatPanel = $("#chat-panel");
+    const navSidebar = $("#nav-sidebar");
+    const chatVisible = chatPanel && getComputedStyle(chatPanel).display !== "none";
+    const navVisible = navSidebar && getComputedStyle(navSidebar).display !== "none";
+
+    root.style.setProperty("--chat-panel-width", (!isNarrow && chatVisible) ? `${chatPanel.offsetWidth}px` : "0px");
+    root.style.setProperty("--results-sidebar-width", (!isNarrow && navVisible) ? `${navSidebar.offsetWidth}px` : "0px");
+}
+
+function initPanelResize() {
+    const handle = $("#chat-panel-resize");
+    const panel = $("#chat-panel");
+    syncResultsTopBarLayout();
+    if (!resultsTopBarLayoutBound) {
+        window.addEventListener("resize", syncResultsTopBarLayout);
+        resultsTopBarLayoutBound = true;
+    }
+    if (!handle || !panel) return;
+
+    let startX, startWidth;
+
+    function onMouseDown(e) {
+        e.preventDefault();
+        startX = e.clientX;
+        startWidth = panel.offsetWidth;
+        handle.classList.add("active");
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+    }
+
+    function onMouseMove(e) {
+        const dx = startX - e.clientX; // dragging left = wider
+        let newWidth = startWidth + dx;
+        newWidth = Math.max(320, Math.min(newWidth, window.innerWidth * 0.7));
+        panel.style.width = newWidth + "px";
+        syncResultsTopBarLayout();
+    }
+
+    function onMouseUp() {
+        handle.classList.remove("active");
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        syncResultsTopBarLayout();
+    }
+
+    handle.addEventListener("mousedown", onMouseDown);
+}
+
+// ── Export Chat (Item 3) ──
+function exportChat() {
+    if (chatHistory.length === 0) return;
+
+    const messagesEl = $("#chat-messages");
+    if (!messagesEl) return;
+
+    let text = "CAM Lease Analysis — Chat Transcript\n";
+    text += "Date: " + new Date().toLocaleDateString() + "\n";
+    text += "=".repeat(50) + "\n\n";
+
+    messagesEl.querySelectorAll(".chat-msg").forEach(msg => {
+        if (msg.classList.contains("chat-msg-user")) {
+            text += "YOU:\n" + msg.textContent.trim() + "\n\n";
+        } else if (msg.classList.contains("chat-msg-ai")) {
+            const label = msg.querySelector(".chat-msg-label");
+            const modelName = label ? label.textContent.trim() : "AI";
+            const content = msg.cloneNode(true);
+            const labelEl = content.querySelector(".chat-msg-label");
+            if (labelEl) labelEl.remove();
+            text += modelName.toUpperCase() + ":\n" + content.textContent.trim() + "\n\n";
+        } else if (msg.classList.contains("chat-msg-synthesis")) {
+            text += "NOTE:\n" + msg.textContent.trim() + "\n\n";
+        }
+        text += "-".repeat(50) + "\n\n";
+    });
+
+    text += "\nDisclaimer: AI-generated analysis — not legal advice.\n";
+
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `lease_chat_${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ── Linkify Provisions in Chat Responses (Item 7) ──
+function linkifyChatProvisions(html) {
+    if (!html) return html;
+
+    // Match LP-XX provision IDs
+    html = html.replace(/\b(LP-\d{2})\b/g, (match, pid) => {
+        return `<a class="chat-provision-link" href="#" onclick="window.CAM.jumpToProvision('${pid}'); return false;">${match}</a>`;
+    });
+
+    // Match Section X.X references
+    html = html.replace(/\b(Section\s+\d+\.\d+)\b/gi, (match, section) => {
+        return `<a class="chat-provision-link" href="#" onclick="window.CAM.searchInDoc('${section}'); return false;">${match}</a>`;
+    });
+
+    return html;
+}
+
+function jumpToProvision(pid) {
+    // Switch to findings tab
+    switchResultsTab("findings");
+
+    // Find the finding card
+    const card = document.querySelector(`.finding-card[data-provision="${pid}"]`);
+    if (card) {
+        // Scroll into view within the results content area
+        const resultsContent = $("#results-content");
+        if (resultsContent) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        // Flash highlight
+        card.classList.add("highlight-flash");
+        setTimeout(() => card.classList.remove("highlight-flash"), 2000);
+    }
+}
+
+function searchInDoc(text) {
+    // Switch to document comparison tab
+    switchResultsTab("docview");
+
+    // Trigger search
+    setTimeout(() => {
+        const searchInput = $("#docview-search-input");
+        if (searchInput) {
+            searchInput.value = text;
+            searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+        }
+    }, 200);
+}
+
+function formatChatResponse(text) {
+    if (!text) return "";
+
+    // Item 8: Extract code blocks before HTML escaping, replace with placeholders
+    const codeBlocks = [];
+    text = text.replace(/```[\w]*\n?([\s\S]*?)```/g, (match, code) => {
+        const idx = codeBlocks.length;
+        codeBlocks.push(code.trim());
+        return `%%CODEBLOCK_${idx}%%`;
+    });
+
+    // HTML escape
+    text = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+    // Markdown formatting
+    text = text
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+        .replace(/^### (.*?)$/gm, "<h4>$1</h4>")
+        .replace(/^## (.*?)$/gm, "<h3>$1</h3>")
+        .replace(/^# (.*?)$/gm, "<h2>$1</h2>")
+        .replace(/^\d+\.\s+(.*?)$/gm, "<li>$1</li>")
+        .replace(/^- (.*?)$/gm, "<li>$1</li>")
+        .replace(/\n{2,}/g, "<br><br>")
+        .replace(/\n/g, "<br>");
+
+    // Restore code blocks as styled blockquotes
+    codeBlocks.forEach((code, idx) => {
+        const escapedCode = code
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        text = text.replace(`%%CODEBLOCK_${idx}%%`, `<blockquote class="chat-code-block">${escapedCode}</blockquote>`);
+    });
+
+    return text;
+}
+
+function canSaveChatNote() {
+    return chatScopeProvisionId !== "" && chatScopeTenantIdx !== "";
+}
+
+function appendChatNoteAction(msgEl, noteText) {
+    if (!msgEl || !noteText || !canSaveChatNote()) return;
+    const actions = document.createElement("div");
+    actions.className = "chat-msg-actions";
+    const btn = document.createElement("button");
+    btn.className = "chat-save-note-btn";
+    btn.type = "button";
+    btn.textContent = "Save as Note";
+    btn.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+        const ok = await saveChatResponseAsNote(noteText);
+        btn.textContent = ok ? "Saved to Notes" : "Save as Note";
+        if (!ok) btn.disabled = false;
+    });
+    actions.appendChild(btn);
+    msgEl.appendChild(actions);
+}
+
+async function sendChatMessage() {
+    const input = $("#chat-input");
+    const messagesEl = $("#chat-messages");
+    if (!input || !messagesEl || !currentJobId) return;
+
+    const question = input.value.trim();
+    if (!question) return;
+
+    const welcome = messagesEl.querySelector(".chat-analysis-welcome");
+    if (welcome) welcome.remove();
+
+    const modeSelect = $("#chat-mode-select");
+    const selectedValue = modeSelect ? modeSelect.value : "claude";
+
+    // Item 5: Determine mode and model from combined picker
+    const isMulti = selectedValue === "multi";
+    const mode = isMulti ? "multi" : "single";
+    const singleModel = isMulti ? null : selectedValue;
+
+    const models = [];
+    let synthesize = false;
+    if (isMulti) {
+        document.querySelectorAll("#chat-model-options input[type=checkbox]:checked").forEach(cb => {
+            models.push(cb.value);
+        });
+        const synthRadio = document.querySelector('input[name="synth-mode"]:checked');
+        synthesize = !synthRadio || synthRadio.value === "synthesized";
+    }
+
+    // Show user message
+    const userMsg = document.createElement("div");
+    userMsg.className = "chat-msg chat-msg-user";
+    userMsg.textContent = question;
+    messagesEl.appendChild(userMsg);
+    input.value = "";
+
+    // Show typing indicator
+    const typing = document.createElement("div");
+    typing.className = "chat-typing";
+    typing.textContent = isMulti ? "Getting responses from multiple models..." : "Thinking...";
+    messagesEl.appendChild(typing);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    try {
+        const synthesizerModel = $("#chat-synthesizer-select")?.value || "claude";
+        // Use chat scope state (044) — scope set by dropdown or askAboutFinding()
+        const activeTenantIdx = chatScopeTenantIdx !== "" ? parseInt(chatScopeTenantIdx, 10) : null;
+        const activeProvisionId = chatScopeProvisionId !== "" ? chatScopeProvisionId : null;
+
+        const fetchBody = {
+            question,
+            mode,
+            models,
+            synthesize,
+            synthesizer: synthesizerModel,
+            provision_id: activeProvisionId,
+            tenant_idx: activeTenantIdx,    // NEW — pass to backend
+            history: chatHistory,
+        };
+        // Item 5: Send model for single mode
+        if (singleModel) fetchBody.model = singleModel;
+
+        const resp = await fetch(`/api/jobs/${currentJobId}/chat`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fetchBody),
+        });
+
+        typing.remove();
+
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || "Chat failed");
+        }
+
+        const data = await resp.json();
+
+        if (data.mode === "multi" && data.synthesized_response) {
+            // Synthesized mode — single unified response
+            const aiMsg = document.createElement("div");
+            aiMsg.className = "chat-msg chat-msg-ai";
+            aiMsg.setAttribute("data-model", "synthesized");
+            const label = document.createElement("div");
+            label.className = "chat-msg-label";
+            const synthBy = data.synthesized_by || "Claude";
+            label.innerHTML = `<span class="chat-model-dot synthesized"></span> Synthesized by ${esc(synthBy)}`;
+            aiMsg.appendChild(label);
+            const content = document.createElement("div");
+            content.innerHTML = linkifyChatProvisions(formatChatResponse(data.synthesized_response));
+            aiMsg.appendChild(content);
+            appendChatNoteAction(aiMsg, data.synthesized_response || "");
+            messagesEl.appendChild(aiMsg);
+
+            // Store both synthesis and individual responses in history
+            chatHistory.push({ role: "user", content: question });
+            const historyContent = data.synthesized_response +
+                "\n\nIndividual model responses:\n" +
+                Object.entries(data.individual_responses || {})
+                    .map(([k, v]) => `[${k.toUpperCase()}]: ${v}`)
+                    .join("\n\n");
+            chatHistory.push({ role: "assistant", content: historyContent });
+
+        } else if (data.mode === "multi" && data.responses) {
+            // Individual mode — show each model separately
+            const modelLabels = { claude: "Claude", gpt: "GPT-5.2", grok: "Grok", gemini: "Gemini" };
+            const expectedModels = { claude: "claude-sonnet-4-20250514", gpt: "gpt-5.2", grok: "grok-3", gemini: "gemini-2.5-pro" };
+
+            // Item 4: Build labeled history content
+            let historyContent = "";
+            for (const [modelKey, response] of Object.entries(data.responses)) {
+                const baseLabel = modelLabels[modelKey] || modelKey;
+                const actualModel = (data.actual_models || {})[modelKey] || "";
+                const friendlyActual = getModelDisplayName(actualModel);
+                const isFallback = actualModel && actualModel !== expectedModels[modelKey];
+
+                const displayLabel = isFallback
+                    ? `${friendlyActual} <span class="fallback-note">\u21a9 fallback</span>`
+                    : baseLabel + (actualModel ? ` <span class="model-version">(${esc(friendlyActual)})</span>` : "");
+
+                historyContent += `[${baseLabel}]: ${response}\n\n`;
+
+                const aiMsg = document.createElement("div");
+                aiMsg.className = "chat-msg chat-msg-ai";
+                aiMsg.setAttribute("data-model", modelKey);
+                const label = document.createElement("div");
+                label.className = "chat-msg-label";
+                label.innerHTML = `<span class="chat-model-dot ${esc(modelKey)}"></span> ${displayLabel}`;
+                aiMsg.appendChild(label);
+                const content = document.createElement("div");
+                content.innerHTML = linkifyChatProvisions(formatChatResponse(response));
+                aiMsg.appendChild(content);
+                appendChatNoteAction(aiMsg, response || "");
+                messagesEl.appendChild(aiMsg);
+            }
+
+            // Synthesis note if responses differ significantly
+            const responses = Object.values(data.responses);
+            if (responses.length > 1) {
+                const lengths = responses.map(r => r.length);
+                const avgLen = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+                const hasVariance = lengths.some(l => Math.abs(l - avgLen) > avgLen * 0.3);
+                if (hasVariance) {
+                    const synthMsg = document.createElement("div");
+                    synthMsg.className = "chat-msg chat-msg-synthesis";
+                    const synthLabel = document.createElement("div");
+                    synthLabel.className = "chat-msg-label";
+                    synthLabel.textContent = "Note";
+                    synthMsg.appendChild(synthLabel);
+                    const synthContent = document.createElement("div");
+                    synthContent.textContent = "The models provided different perspectives. Consider reviewing each response and consulting qualified counsel.";
+                    synthMsg.appendChild(synthContent);
+                    messagesEl.appendChild(synthMsg);
+                }
+            }
+
+            // Item 4: Store labeled multi-model responses in chatHistory
+            chatHistory.push({ role: "user", content: question });
+            chatHistory.push({ role: "assistant", content: historyContent });
+
+        } else {
+            // Single model response with attribution
+            const modelKey = data.model_key || singleModel || "claude";
+            const actualModel = data.actual_model || "";
+            const friendlyActual = actualModel ? getModelDisplayName(actualModel) : "";
+            const singleLabel = data.model_label || "Claude";
+            const singleDisplayLabel = friendlyActual
+                ? `${esc(singleLabel)} <span class="model-version">(${esc(friendlyActual)})</span>`
+                : esc(singleLabel);
+
+            const aiMsg = document.createElement("div");
+            aiMsg.className = "chat-msg chat-msg-ai";
+            aiMsg.setAttribute("data-model", modelKey);
+            const label = document.createElement("div");
+            label.className = "chat-msg-label";
+            label.innerHTML = `<span class="chat-model-dot ${esc(modelKey)}"></span> ${singleDisplayLabel}`;
+            aiMsg.appendChild(label);
+            const content = document.createElement("div");
+            content.innerHTML = linkifyChatProvisions(formatChatResponse(data.response || ""));
+            aiMsg.appendChild(content);
+            appendChatNoteAction(aiMsg, data.response || "");
+            messagesEl.appendChild(aiMsg);
+
+            // Update chat history
+            chatHistory.push({ role: "user", content: question });
+            chatHistory.push({ role: "assistant", content: data.response || "" });
+        }
+
+    } catch (err) {
+        typing.remove();
+        const errMsg = document.createElement("div");
+        errMsg.className = "chat-msg chat-msg-ai";
+        errMsg.style.color = "var(--danger)";
+        errMsg.textContent = `Error: ${err.message}`;
+        messagesEl.appendChild(errMsg);
+    }
+
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+function askAboutFinding(pid, tenantIdx, presetQuestion, starterMode = "analysis") {
+    // Set scope to the relevant contract + provision
+    const contractSel = $("#chat-scope-contract");
+    const provisionSel = $("#chat-scope-provision");
+
+    let resolvedTenantIdx = (typeof tenantIdx === "number" && !isNaN(tenantIdx)) ? tenantIdx : null;
+
+    // Find which tenant index has this provision if no explicit tenant was passed
+    if ((resolvedTenantIdx == null || isNaN(resolvedTenantIdx)) && currentResults && currentResults.tenants) {
+        resolvedTenantIdx = currentResults.tenants.findIndex(t =>
+            t.results && t.results.provisions &&
+            t.results.provisions.some(p => p.provision_id === pid)
+        );
+    }
+
+    if (resolvedTenantIdx != null && resolvedTenantIdx >= 0) {
+        chatScopeTenantIdx = String(resolvedTenantIdx);
+        if (contractSel) contractSel.value = chatScopeTenantIdx;
+        populateChatScopeProvisions();
+    }
+
+    chatScopeProvisionId = pid;
+    if (provisionSel) provisionSel.value = pid;
+    chatStarterMode = starterMode;
+    updateChatScopeIndicator();
+
+    // Pre-fill input
+    const input = $("#chat-input");
+    if (input) {
+        input.value = typeof presetQuestion === "string" ? presetQuestion : `What are the practical implications of this deviation?`;
+        input.focus();
+    }
+
+    // Open panel on mobile
+    const panel = $("#chat-panel");
+    if (panel && window.innerWidth <= 900) {
+        panel.classList.add("mobile-open");
+        const fab = $("#chat-fab-mobile");
+        if (fab) fab.classList.add("hidden");
+    }
+
+    const messagesEl = $("#chat-messages");
+    if (messagesEl) messagesEl.scrollTop = messagesEl.scrollHeight;
+    initChat();
+    refreshAnalysisChatWelcome();
+}
+
+async function deleteCurrentJob() {
+    if (!currentJobId) return;
+    if (!confirm("Permanently delete all uploaded documents and analysis results from our server? This cannot be undone.")) return;
+
+    try {
+        const resp = await fetch(`/api/jobs/${currentJobId}`, { method: "DELETE" });
+        if (!resp.ok) throw new Error("Delete failed");
+
+        currentJobId = null;
+        currentJobData = null;
+        currentResults = null;
+        currentTenantIndex = 0;
+        addMoreMode = null;
+        // prescan removed (112)
+        cancelRequested = false;
+        chatHistory = [];
+        // Reset chat panel
+        const chatPanel = $("#chat-panel");
+        if (chatPanel) chatPanel.classList.remove("mobile-open");
+        const chatMessages = $("#chat-messages");
+        if (chatMessages) chatMessages.innerHTML = "";
+        // Reset multi-options panel
+        const multiOpts = $("#chat-multi-options");
+        if (multiOpts) multiOpts.classList.add("hidden");
+        // Hide expiry notice in header
+        const expiryEl = $("#expiry-notice");
+        if (expiryEl) expiryEl.classList.add("hidden");
+        // Clear nav sidebar
+        const navContent = $("#nav-sidebar-content");
+        if (navContent) navContent.innerHTML = "";
+        if (expiryTimer) { clearInterval(expiryTimer); expiryTimer = null; }
+        stopPolling();
+        history.replaceState(null, "", "/");
+        enterApp();
+    } catch (err) {
+        alert("Failed to delete: " + err.message);
+    }
+}
+
+// ══════════════════════════════════════════════════════
+// ADDITIONAL FINDINGS (step 112 — in-pipeline discovery)
+// ══════════════════════════════════════════════════════
+
+function renderAdditionalFindings(discoveries, modelsUsed) {
+    const section = $("#additional-findings-section");
+    const container = $("#additional-findings-list");
+    if (!section || !container) return;
+
+    // Step 118: Check if discovery check ran at all (step 112 populates discoveries object)
+    const discoveryCheckRan = discoveries && typeof discoveries === "object" && Object.keys(discoveries).length > 0;
+    const allStandalone = (discoveries && discoveries.standalone) || [];
+    // Only show true orphans — discoveries with no suggested LP
+    // Discoveries with a suggested_lp are folded into the parent card
+    const standalone = allStandalone.filter(d =>
+        !d.unique_suggested_lps || d.unique_suggested_lps.length === 0
+    );
+
+    if (standalone.length === 0) {
+        // No orphan discoveries — hide section entirely
+        section.style.display = "none";
+        container.innerHTML = "";
+        return;
+    }
+
+    section.style.display = "";
+    container.innerHTML = standalone.map(item => {
+        const name = esc(item.clause_name || "Unnamed Clause");
+        const badge = esc(item.resolution_label || "");
+        const sectionRef = item.tenant_section_ref ? `<div class="discovery-section-ref">${esc(item.tenant_section_ref)}</div>` : "";
+        const clauseText = item.clause_text || "";
+        const truncated = clauseText.length > 500;
+        const displayText = truncated ? clauseText.substring(0, 500) + "..." : clauseText;
+
+        // Model details — resolve A/B/C to actual model names
+        const evalNames = modelsUsed ? getEvaluatorNames(modelsUsed) : {};
+        const evaluators = (item.evaluators_found || []).map(key =>
+            evalNames[key] ? evalNames[key].name : key
+        ).join(", ");
+        const lps = (item.unique_suggested_lps || []).length > 0
+            ? item.unique_suggested_lps.join(", ")
+            : "no standard match";
+
+        // Per-evaluator reasoning (expandable)
+        let reasoningHtml = "";
+        if (item.evaluator_details) {
+            const details = Object.entries(item.evaluator_details).map(([key, det]) => {
+                const modelName = evalNames[key] ? evalNames[key].name : `Model ${key}`;
+                return `<div><strong>${esc(modelName)}:</strong> ${esc(det.reasoning || "")}</div>`;
+            }).join("");
+            reasoningHtml = `<details class="discovery-reasoning"><summary>Model reasoning</summary>${details}</details>`;
+        }
+
+        return `<div class="discovery-card">
+            <div class="discovery-header">
+                <span class="discovery-name">${name}</span>
+                <span class="discovery-resolution-badge">${badge}</span>
+            </div>
+            ${sectionRef}
+            <div class="discovery-clause-text">${esc(displayText)}</div>
+            <div class="discovery-meta">
+                Flagged by: ${esc(evaluators)} &middot; Suggested LP: ${esc(lps)}
+            </div>
+            ${reasoningHtml}
+        </div>`;
+    }).join("");
+}
+
+// (updatePrescanUI, unlockStandardProvisions, lockStandardProvisions removed in step 112)
+
+function resetApp() {
+    // 1. Clear file state
+    templateFile = null;
+    tenantFiles = [];
+    addMoreMode = null;
+    currentJobId = null;
+    templateSummary = null;
+    identityChecks = { landlord: false, property: false, tenant: false };
+    renderTemplateFileList();
+    renderTenantFileList();
+
+    // 2. Clear email fields and close accordion
+    const emailInput = $("#email-input");
+    const emailConfirm = $("#email-confirm-input");
+    if (emailInput) emailInput.value = "";
+    if (emailConfirm) emailConfirm.value = "";
+    const accTrigger = document.getElementById('email-accordion-trigger');
+    const accBody = document.getElementById('email-accordion-body');
+    if (accTrigger) accTrigger.classList.remove('open');
+    if (accBody) accBody.classList.add('hidden');
+
+    // 3. Step 139: Reset to phase 1 (deactivate step 2)
+    const summaryContainer = $("#template-summary-container");
+    if (summaryContainer) summaryContainer.innerHTML = "";
+    deactivateStep2();
+    const gateErrorEl = $("#template-gate-error");
+    if (gateErrorEl) gateErrorEl.classList.add("hidden");
+    const stepLabel = $("#upload-step-label");
+    if (stepLabel) stepLabel.textContent = "Step 1: Upload your reference lease";
+    const subtitle = $("#upload-subtitle");
+    if (subtitle) subtitle.textContent = "Upload your reference lease (standard template or prior executed lease).";
+
+    // 4. Update UI state
+    updateSubmitState();
+}
+
+function toggleEmailAccordion() {
+    const trigger = document.getElementById('email-accordion-trigger');
+    const body = document.getElementById('email-accordion-body');
+    if (!trigger || !body) return;
+    const isOpen = !body.classList.contains('hidden');
+    body.classList.toggle('hidden', isOpen);
+    trigger.classList.toggle('open', !isOpen);
+}
+
+function toggleSecurityAccordion() {
+    const trigger = document.getElementById('security-accordion-trigger');
+    const body = document.getElementById('security-accordion-body');
+    if (!trigger || !body) return;
+    const isOpen = !body.classList.contains('hidden');
+    body.classList.toggle('hidden', isOpen);
+    trigger.classList.toggle('open', !isOpen);
+}
+
+// (reEnableScan removed in step 112)
+
+// (triggerTemplateScan, triggerTenantScan, runNonStandardScan, skipPrescan, renderNonStandardList removed in step 112)
+
+// ══════════════════════════════════════════════════════
+// FILTER BAR (043)
+// ══════════════════════════════════════════════════════
+
+function toggleFilterDropdown(which) {
+    const ids = {
+        contract:   { trigger: "filter-contract-trigger",   panel: "filter-contract-panel"   },
+        severity:   { trigger: "filter-severity-trigger",   panel: "filter-severity-panel"   },
+        confidence: { trigger: "filter-confidence-trigger", panel: "filter-confidence-panel" },
+        provision:  { trigger: "filter-provision-trigger",  panel: "filter-provision-panel"  },
+    };
+    const others = Object.keys(ids).filter(k => k !== which);
+
+    const { trigger: triggerId, panel: panelId } = ids[which];
+    const trigger = $("#" + triggerId);
+    const panel   = $("#" + panelId);
+    if (!panel || !trigger) return;
+
+    // Close other panels
+    others.forEach(k => {
+        const p = $("#" + ids[k].panel);
+        if (p) p.classList.add("hidden");
+    });
+
+    const isOpen = !panel.classList.contains("hidden");
+    if (isOpen) { panel.classList.add("hidden"); return; }
+
+    const rect = trigger.getBoundingClientRect();
+    panel.style.top  = (rect.bottom + 4) + "px";
+    panel.style.left = rect.left + "px";
+    panel.classList.remove("hidden");
+}
+
+// Close open filter panels when clicking outside
+document.addEventListener("click", (e) => {
+    if (!e.target.closest(".filter-dropdown")) {
+        ["filter-contract-panel", "filter-severity-panel", "filter-provision-panel"].forEach(id => {
+            const p = $("#" + id);
+            if (p) p.classList.add("hidden");
+        });
+    }
+});
+
+function initFilterBar() {
+    // Populate contract options
+    const contractOptions = $("#filter-contract-options");
+    if (contractOptions && currentResults && currentResults.tenants) {
+        contractOptions.innerHTML = currentResults.tenants.map((t, i) => `
+            <label class="filter-option">
+                <input type="checkbox" value="${i}" class="filter-contract-cb">
+                <span>${esc(formatTenantName(t.filename || ""))}</span>
+            </label>
+        `).join("");
+    }
+
+    // Contract "All" checkbox
+    const contractAll = $("#filter-contract-all");
+    if (contractAll) {
+        contractAll.addEventListener("change", () => {
+            if (contractAll.checked) {
+                filterContracts.clear();
+                document.querySelectorAll(".filter-contract-cb").forEach(cb => cb.checked = false);
+            }
+            updateFilterLabels();
+            applyFilters();
+        });
+    }
+
+    // Individual contract checkboxes
+    document.querySelectorAll(".filter-contract-cb").forEach(cb => {
+        cb.addEventListener("change", () => {
+            if (cb.checked) {
+                filterContracts.add(cb.value);
+            } else {
+                filterContracts.delete(cb.value);
+            }
+            // Sync "All" checkbox
+            const allCb = $("#filter-contract-all");
+            if (allCb) allCb.checked = filterContracts.size === 0;
+            updateFilterLabels();
+            applyFilters();
+        });
+    });
+
+    // Severity "All" checkbox
+    const sevAll = $("#filter-severity-all");
+    if (sevAll) {
+        sevAll.addEventListener("change", () => {
+            if (sevAll.checked) {
+                filterSeverities.clear();
+                document.querySelectorAll(".filter-sev-cb").forEach(cb => cb.checked = false);
+            }
+            updateFilterLabels();
+            updateContractOptions();
+            applyFilters();
+        });
+    }
+
+    // Individual severity checkboxes
+    document.querySelectorAll(".filter-sev-cb").forEach(cb => {
+        cb.addEventListener("change", () => {
+            if (cb.checked) {
+                filterSeverities.add(cb.value);
+            } else {
+                filterSeverities.delete(cb.value);
+            }
+            // Sync "All" checkbox
+            const allCb = $("#filter-severity-all");
+            if (allCb) allCb.checked = filterSeverities.size === 0;
+            updateFilterLabels();
+            updateContractOptions();
+            applyFilters();
+        });
+    });
+
+    // ── Provision filter (049) ──
+    const provisionOptions = $("#filter-provision-options");
+    if (provisionOptions && currentResults && currentResults.tenants) {
+        const lpProvisions = new Map();
+        const customProvisions = new Map();
+
+        currentResults.tenants.forEach(t => {
+            if (!t.results || !t.results.provisions) return;
+            t.results.provisions.forEach(p => {
+                const pid = p.provision_id;
+                const name = p.provision_name || pid;
+                if (!pid) return;
+                if (pid.startsWith("CUSTOM-") || pid.startsWith("ADDED-")) {
+                    if (!customProvisions.has(pid)) customProvisions.set(pid, name);
+                } else {
+                    if (!lpProvisions.has(pid)) lpProvisions.set(pid, name);
+                }
+            });
+        });
+
+        const lpSorted = [...lpProvisions.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+        const customSorted = [...customProvisions.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+
+        let phtml = "";
+        if (lpSorted.length > 0) {
+            phtml += `<div class="filter-provision-group-label">Standard</div>`;
+            phtml += lpSorted.map(([pid, name]) => {
+                const shortName = name.replace(/^LP-\d{2}\s*/, "");
+                return `<label class="filter-option">
+                    <input type="checkbox" value="${esc(pid)}" class="filter-provision-cb">
+                    <span class="filter-provision-pid">${esc(pid)}</span>
+                    <span class="filter-provision-name">${esc(shortName)}</span>
+                </label>`;
+            }).join("");
+        }
+        if (customSorted.length > 0) {
+            phtml += `<div class="filter-provision-group-label filter-provision-group-custom">Discovered</div>`;
+            phtml += customSorted.map(([pid, name]) => {
+                const shortName = name.replace(/^CUSTOM-\d+\s*/, "").replace(/^ADDED-\d+\s*/, "");
+                return `<label class="filter-option">
+                    <input type="checkbox" value="${esc(pid)}" class="filter-provision-cb">
+                    <span class="filter-provision-pid filter-provision-pid-custom">${esc(pid)}</span>
+                    <span class="filter-provision-name">${esc(shortName)}</span>
+                </label>`;
+            }).join("");
+        }
+        provisionOptions.innerHTML = phtml;
+    }
+
+    // Provision "All" checkbox
+    const provAll = $("#filter-provision-all");
+    if (provAll) {
+        provAll.addEventListener("change", () => {
+            if (provAll.checked) {
+                filterProvisions.clear();
+                document.querySelectorAll(".filter-provision-cb").forEach(cb => cb.checked = false);
+            }
+            updateFilterLabels();
+            updateContractOptions();
+            applyFilters();
+        });
+    }
+
+    // Individual provision checkboxes
+    document.querySelectorAll(".filter-provision-cb").forEach(cb => {
+        cb.addEventListener("change", () => {
+            if (cb.checked) {
+                filterProvisions.add(cb.value);
+            } else {
+                filterProvisions.delete(cb.value);
+            }
+            const allCb = $("#filter-provision-all");
+            if (allCb) allCb.checked = filterProvisions.size === 0;
+            updateFilterLabels();
+            updateContractOptions();
+            applyFilters();
+        });
+    });
+
+    // Step 184: Confidence filter
+    const confAll = document.getElementById('filter-confidence-all');
+    if (confAll) {
+        confAll.addEventListener('change', function() {
+            if (this.checked) {
+                filterConfidence.clear();
+                document.querySelectorAll('.filter-conf-cb').forEach(cb => cb.checked = false);
+            }
+            updateFilterLabels();
+            applyFilters();
+        });
+    }
+    document.querySelectorAll('.filter-conf-cb').forEach(cb => {
+        cb.addEventListener('change', function() {
+            if (this.checked) {
+                filterConfidence.add(this.value);
+            } else {
+                filterConfidence.delete(this.value);
+            }
+            const allCb = document.getElementById('filter-confidence-all');
+            if (allCb) allCb.checked = filterConfidence.size === 0;
+            updateFilterLabels();
+            applyFilters();
+        });
+    });
+
+    // Clear button
+    const clearBtn = $("#filter-clear-btn");
+    if (clearBtn) {
+        clearBtn.addEventListener("click", clearFilters);
+    }
+
+    updateFilterLabels();
+    applyFilters();
+}
+
+function updateContractOptions() {
+    if (!currentResults || !currentResults.tenants) return;
+    const contractOptions = $("#filter-contract-options");
+    if (!contractOptions) return;
+
+    const tenants = currentResults.tenants;
+    const hasSevFilter = filterSeverities.size > 0;
+    const hasProvFilter = filterProvisions.size > 0;
+    const noFilter = !hasSevFilter && !hasProvFilter;
+
+    // Determine which tenant indices have at least one matching deviation
+    const eligibleIndices = new Set();
+    tenants.forEach((t, i) => {
+        if (noFilter) {
+            eligibleIndices.add(i);
+            return;
+        }
+        const provisions = (t.results && t.results.provisions) || [];
+        const hasMatch = provisions.some(p => {
+            if (p.final_verdict !== "DEVIATES") return false;
+            const sevMatch = !hasSevFilter || filterSeverities.has(p.severity);
+            const provMatch = !hasProvFilter || filterProvisions.has(p.provision_id);
+            return sevMatch && provMatch;
+        });
+        if (hasMatch) eligibleIndices.add(i);
+    });
+
+    // Remove any selected contracts that are no longer eligible
+    filterContracts.forEach(idx => {
+        if (!eligibleIndices.has(Number(idx))) {
+            filterContracts.delete(idx);
+        }
+    });
+
+    // Rebuild contract option checkboxes — only eligible contracts
+    contractOptions.innerHTML = [...eligibleIndices].map(i => {
+        const t = tenants[i];
+        const isChecked = filterContracts.has(String(i));
+        return `<label class="filter-option">
+            <input type="checkbox" value="${i}" class="filter-contract-cb"${isChecked ? " checked" : ""}>
+            <span>${esc(formatTenantName(t.filename || ""))}</span>
+        </label>`;
+    }).join("");
+
+    // Re-wire contract checkbox event listeners
+    contractOptions.querySelectorAll(".filter-contract-cb").forEach(cb => {
+        cb.addEventListener("change", () => {
+            if (cb.checked) {
+                filterContracts.add(cb.value);
+            } else {
+                filterContracts.delete(cb.value);
+            }
+            const allCb = $("#filter-contract-all");
+            if (allCb) allCb.checked = filterContracts.size === 0;
+            updateFilterLabels();
+            applyFilters();
+        });
+    });
+
+    // Update "All" checkbox state
+    const allCb = $("#filter-contract-all");
+    if (allCb) allCb.checked = filterContracts.size === 0;
+}
+
+function updateFilterLabels() {
+    // Contract label
+    const contractLabel = $("#filter-contract-label");
+    if (contractLabel) {
+        if (filterContracts.size === 0) {
+            contractLabel.textContent = "All";
+        } else if (filterContracts.size === 1) {
+            const idx = [...filterContracts][0];
+            const tenant = currentResults && currentResults.tenants && currentResults.tenants[idx];
+            contractLabel.textContent = tenant ? formatTenantName(tenant.filename || "") : `1 selected`;
+        } else {
+            contractLabel.textContent = `${filterContracts.size} selected`;
+        }
+    }
+
+    // Severity label
+    const sevLabel = $("#filter-severity-label");
+    if (sevLabel) {
+        if (filterSeverities.size === 0) {
+            sevLabel.textContent = "All";
+        } else if (filterSeverities.size === 1) {
+            sevLabel.textContent = [...filterSeverities][0];
+        } else {
+            sevLabel.textContent = [...filterSeverities].join(", ");
+        }
+    }
+
+    // Provision label (049)
+    const provLabel = $("#filter-provision-label");
+    if (provLabel) {
+        if (filterProvisions.size === 0) {
+            provLabel.textContent = "All";
+        } else if (filterProvisions.size === 1) {
+            provLabel.textContent = [...filterProvisions][0];
+        } else {
+            provLabel.textContent = `${filterProvisions.size} selected`;
+        }
+    }
+
+    // Step 184: Confidence label
+    const confLabel = $('#filter-confidence-label');
+    if (confLabel) {
+        if (filterConfidence.size === 0) confLabel.textContent = 'All';
+        else if (filterConfidence.has('NEEDS_REVIEW') && !filterConfidence.has('HIGH'))
+            confLabel.textContent = 'Needs Review';
+        else if (filterConfidence.has('HIGH') && !filterConfidence.has('NEEDS_REVIEW'))
+            confLabel.textContent = 'High Only';
+        else confLabel.textContent = 'Custom';
+    }
+
+    // Clear button visibility
+    const hasFilters = filterContracts.size > 0 || filterSeverities.size > 0 || filterProvisions.size > 0 || filterConfidence.size > 0;
+    const clearBtn = $("#filter-clear-btn");
+    if (clearBtn) clearBtn.classList.toggle("hidden", !hasFilters);
+    // Also highlight active triggers
+    const contractTrigger = $("#filter-contract-trigger");
+    const sevTrigger = $("#filter-severity-trigger");
+    const provTrigger = $("#filter-provision-trigger");
+    const confTrigger = $("#filter-confidence-trigger");
+    if (contractTrigger) contractTrigger.classList.toggle("filter-trigger-active", filterContracts.size > 0);
+    if (sevTrigger) sevTrigger.classList.toggle("filter-trigger-active", filterSeverities.size > 0);
+    if (provTrigger) provTrigger.classList.toggle("filter-trigger-active", filterProvisions.size > 0);
+    if (confTrigger) confTrigger.classList.toggle("filter-trigger-active", filterConfidence.size > 0);
+}
+
+function applyFilters() {
+    const countEl = $("#filter-active-count");
+    let visible = 0, total = 0;
+
+    // Step 184: confidence match helper
+    function confMatch(signal) {
+        if (filterConfidence.size === 0) return true;
+        if (filterConfidence.has('HIGH') && signal === 'ASSERT_SIGNAL') return true;
+        if (filterConfidence.has('NEEDS_REVIEW') &&
+            ['WITHHOLD_SIGNAL','REVIEW_SIGNAL','ASSERT_REVIEW_SIGNAL'].includes(signal)) return true;
+        return false;
+    }
+
+    // Filter finding-cards (per-tenant view — severity + provision + confidence)
+    document.querySelectorAll(".finding-card[data-severity]").forEach(card => {
+        total++;
+        const sev = card.dataset.severity;
+        const pid = card.dataset.pid;
+        const sig = card.dataset.confidence || 'ASSERT_SIGNAL';
+        const sevMatch = filterSeverities.size === 0 || filterSeverities.has(sev);
+        const provMatch = filterProvisions.size === 0 || filterProvisions.has(pid);
+        const show = sevMatch && provMatch && confMatch(sig);
+        card.style.display = show ? "" : "none";
+        if (show) visible++;
+    });
+
+    // Filter contract status panel deviation rows (severity + provision)
+    document.querySelectorAll(".contract-deviation-row[data-severity]").forEach(row => {
+        const sev = row.dataset.severity;
+        const pid = row.dataset.pid;
+        const sevMatch = filterSeverities.size === 0 || filterSeverities.has(sev);
+        const provMatch = filterProvisions.size === 0 || filterProvisions.has(pid);
+        row.style.display = (sevMatch && provMatch) ? "" : "none";
+    });
+
+    // Hide contract cards entirely if contract filter is active and card not selected
+    document.querySelectorAll(".contract-card[data-tenant]").forEach(card => {
+        const tenantIdx = card.dataset.tenant;
+        const contractMatch = filterContracts.size === 0 || filterContracts.has(String(tenantIdx));
+        card.style.display = contractMatch ? "" : "none";
+    });
+
+    // Update count
+    if (countEl) {
+        if ((filterSeverities.size > 0 || filterContracts.size > 0 || filterProvisions.size > 0 || filterConfidence.size > 0) && total > 0) {
+            countEl.textContent = `${visible} of ${total} issues`;
+            countEl.classList.remove("hidden");
+        } else {
+            countEl.classList.add("hidden");
+        }
+    }
+
+    // (contract filter no longer auto-navigates to a single contract — just filters the cards in place)
+}
+
+function clearFilters() {
+    filterContracts.clear();
+    filterSeverities.clear();
+    filterProvisions.clear();
+    filterConfidence.clear();
+    document.querySelectorAll(".filter-contract-cb, .filter-sev-cb, .filter-provision-cb, .filter-conf-cb").forEach(cb => cb.checked = false);
+    const allContract = $("#filter-contract-all");
+    const allSev = $("#filter-severity-all");
+    const allProv = $("#filter-provision-all");
+    const allConf = $("#filter-confidence-all");
+    if (allContract) allContract.checked = true;
+    if (allSev) allSev.checked = true;
+    if (allProv) allProv.checked = true;
+    if (allConf) allConf.checked = true;
+    updateFilterLabels();
+    updateContractOptions();
+    applyFilters();
+}
+
+// ══════════════════════════════════════════════════════
+// CHAT SCOPE SELECTOR (044)
+// ══════════════════════════════════════════════════════
+
+function updateChatContractOptions() {
+    if (!currentResults || !currentResults.tenants) return;
+    const contractSel = $("#chat-scope-contract");
+    if (!contractSel) return;
+
+    const tenants = currentResults.tenants;
+    const activeProvFilter = chatScopeProvisionId || "";
+    const hasProvFilter = !!activeProvFilter;
+
+    // Rebuild "All Contracts" + eligible tenants only
+    const eligibleIndices = [];
+    tenants.forEach((t, i) => {
+        if (!hasProvFilter) {
+            eligibleIndices.push(i);
+            return;
+        }
+        const provisions = (t.results && t.results.provisions) || [];
+        const hasMatch = provisions.some(p => {
+            if (p.final_verdict !== "DEVIATES") return false;
+            return p.provision_id === activeProvFilter;
+        });
+        if (hasMatch) eligibleIndices.push(i);
+    });
+
+    // Preserve current selection if still eligible, else reset to ""
+    const currentVal = contractSel.value;
+    const currentStillEligible = currentVal === "" ||
+        eligibleIndices.includes(Number(currentVal));
+
+    contractSel.innerHTML = '<option value="">All Contracts</option>';
+    eligibleIndices.forEach(i => {
+        const t = tenants[i];
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = formatTenantName(t.filename || "");
+        contractSel.appendChild(opt);
+    });
+
+    contractSel.value = currentStillEligible ? currentVal : "";
+    if (!currentStillEligible) {
+        chatScopeTenantIdx = "";
+        populateChatScopeProvisions();
+    }
+}
+
+function syncChatScopeToCurrentTenant(resetProvision) {
+    const contractSel = $("#chat-scope-contract");
+    const provisionSel = $("#chat-scope-provision");
+    if (!currentResults || !currentResults.tenants || !currentResults.tenants[currentTenantIndex]) return;
+
+    chatScopeTenantIdx = String(currentTenantIndex);
+    if (resetProvision) {
+        chatScopeProvisionId = "";
+    }
+
+    if (contractSel) {
+        contractSel.value = chatScopeTenantIdx;
+    }
+
+    populateChatScopeProvisions();
+
+    if (provisionSel && chatScopeProvisionId) {
+        provisionSel.value = chatScopeProvisionId;
+    }
+
+    updateChatContractOptions();
+    updateChatScopeIndicator();
+}
+
+function initChatScope() {
+    const contractSel = $("#chat-scope-contract");
+    const provisionSel = $("#chat-scope-provision");
+    const resetBtn = $("#chat-scope-reset");
+    if (!contractSel) return;
+
+    // Populate contract options from loaded tenants
+    contractSel.innerHTML = '<option value="">All Contracts</option>';
+    if (currentResults && currentResults.tenants) {
+        currentResults.tenants.forEach((t, i) => {
+            const opt = document.createElement("option");
+            opt.value = String(i);
+            opt.textContent = formatTenantName(t.filename || "");
+            contractSel.appendChild(opt);
+        });
+    }
+
+    if (currentResults && currentResults.tenants && currentResults.tenants[currentTenantIndex]) {
+        chatScopeTenantIdx = String(currentTenantIndex);
+        contractSel.value = chatScopeTenantIdx;
+    }
+
+    // Contract change → repopulate provisions
+    contractSel.addEventListener("change", () => {
+        chatScopeTenantIdx = contractSel.value;
+        chatScopeProvisionId = "";
+        populateChatScopeProvisions();
+        hideChatAdvisorPrompts();
+        updateChatScopeIndicator();
+    });
+
+    // Provision change
+    if (provisionSel) {
+        provisionSel.addEventListener("change", () => {
+            chatScopeProvisionId = provisionSel.value;
+            updateChatContractOptions();
+            hideChatAdvisorPrompts();
+            updateChatScopeIndicator();
+        });
+    }
+
+    populateChatScopeProvisions();
+    updateChatContractOptions();
+    updateChatScopeIndicator();
+}
+
+function populateChatScopeProvisions() {
+    const provisionSel = $("#chat-scope-provision");
+    if (!provisionSel || !currentResults) return;
+
+    // Collect provisions
+    const seen = new Set();
+    const options = [];
+
+    const tenants = currentResults.tenants || [];
+    const targetIdx = chatScopeTenantIdx !== "" ? parseInt(chatScopeTenantIdx, 10) : null;
+
+    tenants.forEach((t, i) => {
+        if (targetIdx !== null && i !== targetIdx) return;
+        const provisions = t.results && t.results.provisions ? t.results.provisions : [];
+        provisions.forEach(p => {
+            const pid = p.provision_id;
+            if (!pid || seen.has(pid)) return;
+            seen.add(pid);
+            const label = `${pid} ${p.provision_name || ""}`.trim();
+            const isDeviation = p.final_verdict === "DEVIATES";
+            options.push({ pid, label, isDeviation });
+        });
+    });
+
+    // Sort: deviations first, then alphabetically
+    options.sort((a, b) => {
+        if (a.isDeviation && !b.isDeviation) return -1;
+        if (!a.isDeviation && b.isDeviation) return 1;
+        return a.pid.localeCompare(b.pid);
+    });
+
+    provisionSel.innerHTML = '<option value="">All Provisions</option>';
+    options.forEach(o => {
+        const opt = document.createElement("option");
+        opt.value = o.pid;
+        opt.textContent = o.isDeviation ? `⚠ ${o.label}` : o.label;
+        provisionSel.appendChild(opt);
+    });
+
+    // Restore selection if still valid
+    if (chatScopeProvisionId && seen.has(chatScopeProvisionId)) {
+        provisionSel.value = chatScopeProvisionId;
+    } else {
+        provisionSel.value = "";
+        chatScopeProvisionId = "";
+    }
+}
+
+function updateChatScopeIndicator() {
+    const indicator = $("#chat-scope-indicator");
+    const resetBtn = $("#chat-scope-reset");
+    const isScoped = chatScopeTenantIdx !== "" || chatScopeProvisionId !== "";
+
+    if (resetBtn) resetBtn.classList.toggle("hidden", !isScoped);
+
+    if (!indicator) return;
+    if (!isScoped) {
+        indicator.classList.add("hidden");
+        indicator.textContent = "";
+        return;
+    }
+
+    const parts = [];
+    if (chatScopeTenantIdx !== "" && currentResults && currentResults.tenants) {
+        const t = currentResults.tenants[parseInt(chatScopeTenantIdx, 10)];
+        if (t) parts.push(formatTenantName(t.filename || ""));
+    }
+    if (chatScopeProvisionId !== "") {
+        // Find provision name
+        const tenants = currentResults && currentResults.tenants || [];
+        for (const t of tenants) {
+            const p = t.results && t.results.provisions &&
+                      t.results.provisions.find(p => p.provision_id === chatScopeProvisionId);
+            if (p) {
+                parts.push(`${p.provision_id} ${p.provision_name || ""}`.trim());
+                break;
+            }
+        }
+        if (parts.length === 0 || (parts.length === 1 && chatScopeTenantIdx === "")) {
+            parts.push(chatScopeProvisionId);
+        }
+    }
+
+    indicator.textContent = "\uD83D\uDCCC " + parts.join(" \u00B7 ");
+    indicator.classList.remove("hidden");
+    refreshAnalysisChatWelcome();
+}
+
+function showChatAdvisorPrompts(pid, tenantIdx) {
+    const container = $("#chat-advisor-prompts");
+    if (!container) return;
+    container.innerHTML = `
+        <div class="chat-advisor-label">AI Advisor</div>
+        <button class="chat-advisor-chip" onclick="window.CAM.askResolution('${esc(pid)}', ${tenantIdx}, 'summary')">Summarize this issue</button>
+        <button class="chat-advisor-chip" onclick="window.CAM.askResolution('${esc(pid)}', ${tenantIdx}, 'advice')">Advise what to do</button>
+        <button class="chat-advisor-chip" onclick="window.CAM.askResolution('${esc(pid)}', ${tenantIdx}, 'rewrite')">Draft replacement language</button>
+        <button class="chat-advisor-chip" onclick="window.CAM.askResolution('${esc(pid)}', ${tenantIdx}, 'risk')">Risk if accepted as-is</button>
+        <button class="chat-advisor-chip" onclick="window.CAM.askResolution('${esc(pid)}', ${tenantIdx}, 'standard')">Is this market/standard?</button>
+    `;
+    container.classList.remove("hidden");
+}
+
+function hideChatAdvisorPrompts() {
+    const container = $("#chat-advisor-prompts");
+    if (!container) return;
+    container.innerHTML = "";
+    container.classList.add("hidden");
+}
+
+function resetChatScope() {
+    chatScopeTenantIdx = "";
+    chatScopeProvisionId = "";
+    chatStarterMode = "analysis";
+    const contractSel = $("#chat-scope-contract");
+    const provisionSel = $("#chat-scope-provision");
+    if (contractSel) contractSel.value = "";
+    if (provisionSel) {
+        populateChatScopeProvisions();
+        provisionSel.value = "";
+    }
+    hideChatAdvisorPrompts();
+    updateChatScopeIndicator();
+}
+
+function askAnalysisQuestion(question) {
+    const input = $("#chat-input");
+    if (!input) return;
+    input.value = question;
+    input.focus();
+}
+
+// ── Audit Trail ──
+
+function renderAuditTrail(allTenants) {
+    const tab = $("#audittrail-tab");
+    if (!tab || !currentResults) return;
+
+    // Full-run mode: render all tenants stacked by collecting each tenant's HTML
+    if (allTenants) {
+        const savedIdx = currentTenantIndex;
+        let combined = '';
+        currentResults.tenants.forEach(function(t, idx) {
+            if (!t || !t.results) return;
+            currentTenantIndex = idx;
+            renderAuditTrail(false);
+            combined += '<div class="audit-tenant-section">'
+                + '<div class="audit-tenant-heading">' + esc(t.filename || ('Contract ' + (idx + 1))) + '</div>'
+                + tab.innerHTML
+                + '</div>';
+        });
+        currentTenantIndex = savedIdx;
+        tab.innerHTML = combined || '<p>No audit data available.</p>';
+        return;
+    }
+
+    const tenant = currentResults.tenants[currentTenantIndex];
+    if (!tenant || !tenant.results) {
+        tab.innerHTML = "<p>No audit data available.</p>";
+        return;
+    }
+    const r = tenant.results;
+    const provisions = r.provisions || [];
+    const modelsUsed = r.models_used || {};
+
+    // Run metadata block
+    const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : "Unknown";
+    const evalModels = [
+        modelsUsed.evaluator_a,
+        modelsUsed.evaluator_b,
+        modelsUsed.evaluator_c
+    ].filter(Boolean).join(" · ");
+
+    let html = `<div class="audit-export-bar">
+        <span class="audit-export-label">This contract:</span>
+        <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditJSON(true)">
+            ⬇ JSON
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditText(true)">
+            ⬇ Text Report
+        </button>
+        <span class="audit-export-label audit-export-label-sep">All contracts:</span>
+        <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditJSON(false)">
+            ⬇ JSON
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditText(false)">
+            ⬇ Text Report
+        </button>
+    </div>
+    <div class="audit-run-meta">
+        <div class="audit-meta-section">
+            <div class="audit-meta-label">ANALYSIS RUN</div>
+            <div>Pipeline: ${esc(r.pipeline_version || "—")} &middot; ${esc(r.pipeline_domain_label || "")}</div>
+            <div>Timestamp: ${esc(ts)}</div>
+            <div>Template: ${esc(r.template_file || "—")}</div>
+        </div>
+        <div class="audit-meta-section">
+            <div class="audit-meta-label">MODELS USED</div>
+            <div>Extractor: ${esc(modelsUsed.extractor || "—")} (${esc(modelsUsed.extractor_provider || "")})</div>
+            <div>Evaluators: ${esc(evalModels || "—")}</div>
+            <div>Challenger: ${esc(modelsUsed.challenger || "—")}</div>
+            <div>Severity: ${esc(modelsUsed.severity_assessor || "—")}</div>
+        </div>
+        <div class="audit-meta-section">
+            <div class="audit-meta-label">PERFORMANCE</div>
+            <div>${provisions.length} provisions &middot; ${r.api_calls_total || "—"} API calls &middot; ${r.elapsed_sec ? fmtDuration(r.elapsed_sec) + " elapsed" : ""}</div>
+        </div>
+    </div>`;
+
+    // Extract _stage_data for buildAuditDetail
+    const stageData = (currentResults && currentResults.tenants &&
+                       currentResults.tenants[currentTenantIndex] &&
+                       currentResults.tenants[currentTenantIndex].results &&
+                       currentResults.tenants[currentTenantIndex].results._stage_data) || {};
+
+    // Provision rows
+    html += `<div class="audit-controls-bar">
+        <span class="audit-controls-count">${provisions.length} provision${provisions.length !== 1 ? "s" : ""}</span>
+        <div class="audit-controls-buttons">
+            <button class="btn-audit-control" onclick="window.CAM.expandAllAuditRows()">▾ Expand all</button>
+            <button class="btn-audit-control" onclick="window.CAM.collapseAllAuditRows()">&#9656; Collapse all</button>
+        </div>
+    </div>`;
+    html += `<div class="audit-provision-list">`;
+    provisions.forEach((p, idx) => {
+        const pid = p.provision_id || "";
+        const pname = p.provision_name || "";
+        const verdict = p.final_verdict || "";
+        const sev = p.severity || "";
+        const meta = p.cam_metadata || {};
+        const stagesRun = (meta.stages_run || []).join(",");
+        const rulesFired = (meta.rules_fired || []);
+        const agPattern = p.agreement_pattern || "—";
+        const fragile = p.fragility && p.fragility.fragile;
+
+        const verdictBadge = verdict === "DEVIATES"
+            ? `<span class="audit-verdict audit-verdict-deviates">${esc(sev)}</span>`
+            : verdict === "CONFORMS"
+                ? `<span class="audit-verdict audit-verdict-conforms">CONFORMS</span>`
+                : `<span class="audit-verdict audit-verdict-unclear">UNCLEAR</span>`;
+
+        const rulesBadge = rulesFired.length > 0
+            ? `<span class="audit-rules-badge">${rulesFired.length} rule${rulesFired.length !== 1 ? "s" : ""} fired</span>`
+            : `<span class="audit-rules-badge audit-rules-none">no rules</span>`;
+
+        const fragBadge = fragile
+            ? `<span class="audit-fragile-badge" title="${esc((p.fragility.signals || []).join(", "))}">⚠ fragile</span>`
+            : "";
+
+        html += `<div class="audit-provision-row" data-idx="${idx}" data-pid="${esc(pid)}" data-tenant="${currentTenantIndex}">
+            <div class="audit-provision-header" onclick="window.CAM.toggleAuditRow(${idx})">
+                <span class="audit-pid">${esc(pid)}</span>
+                <span class="audit-pname">${esc(pname)}</span>
+                ${verdictBadge}
+                <span class="audit-stages">Stages: ${esc(stagesRun)}</span>
+                ${rulesBadge}
+                <span class="audit-agreement">${esc(agPattern)}</span>
+                ${fragBadge}
+                <span class="audit-chevron">&#9662;</span>
+            </div>
+            <div class="audit-provision-detail hidden" id="audit-detail-${idx}">
+                ${buildAuditDetail(p, modelsUsed, stageData)}
+            </div>
+        </div>`;
+    });
+    html += `</div>`;
+    tab.innerHTML = html;
+}
+
+function buildAuditDetail(p, modelsUsed, stageData) {
+    stageData = stageData || {};
+    const pid = p.provision_id || "";
+    const meta = p.cam_metadata || {};
+    const stagesRun = new Set(meta.stages_run || []);
+    const rulesFired = meta.rules_fired || [];
+
+    // --- Build per-stage lookup tables from _stage_data ---
+    const evalRaw = stageData.evaluator_raw || {};
+    const challengeRaw = (stageData.challenge_raw || []).find(x => x.provision_id === pid) || null;
+    const severityRaw = (stageData.severity_raw || []).find(x => x.provision_id === pid) || null;
+    const fragilityRaw = (stageData.fragility || []).find(x => x.provision_id === pid) || null;
+    const triage = stageData.triage || {};
+    const wasFlagged = (triage.flagged || []).includes(pid);
+
+    let html = `<div class="audit-narrative">`;
+
+    // ── STAGE 1: EXTRACTION ──────────────────────────────────────────────
+    const extMeta = stageData.extraction_meta || {};
+    html += `
+    <div class="audit-stage-block">
+        <div class="audit-stage-title">
+            <span class="audit-stage-num">Stage 1</span>
+            <span class="audit-stage-name">Extraction</span>
+            <span class="audit-stage-model">${esc(extMeta.model || modelsUsed.extractor || '\u2014')}</span>
+        </div>
+        <div class="audit-stage-body">
+            <div class="audit-text-pair">
+                <div class="audit-text-col">
+                    <div class="audit-text-label">Template</div>
+                    <div class="audit-text-content">${esc(p.template_text || '(not present in template)')}</div>
+                </div>
+                <div class="audit-text-col">
+                    <div class="audit-text-label">Tenant</div>
+                    <div class="audit-text-content">${esc(p.tenant_text || '(not found in tenant lease)')}</div>
+                </div>
+            </div>${(() => {
+                const integrity = p._stage1_integrity;
+                if (!integrity) return '';
+                const status = integrity.verification_status || 'unknown';
+                const statusClass = status === 'verified' ? 'audit-integrity-ok'
+                    : (status === 'paraphrased' || status === 'expanded' || status === 'incomplete') ? 'audit-integrity-warn'
+                    : 'audit-integrity-neutral';
+                let intHtml = `<div class="audit-integrity ${statusClass}">`;
+                intHtml += `<span class="audit-integrity-label">Extraction integrity:</span> `;
+                intHtml += `<span class="audit-integrity-status">${esc(status)}</span>`;
+                if (integrity.length_ratio && integrity.length_ratio !== 1.0) {
+                    intHtml += ` <span class="audit-integrity-ratio">(ratio: ${integrity.length_ratio})</span>`;
+                }
+                if (integrity.repair_applied) {
+                    intHtml += ` <span class="audit-integrity-repair">Repaired: ${(integrity.repair_sections || []).join(', ')}</span>`;
+                }
+                if (integrity.input_frozen) {
+                    intHtml += ` <span class="audit-integrity-frozen">&#x1f512; Frozen</span>`;
+                }
+                intHtml += `</div>`;
+                return intHtml;
+            })()}
+        </div>
+    </div>`;
+
+    // ── STAGE 2: RULES CHECK ─────────────────────────────────────────────
+    const triageResult = wasFlagged ? 'Flagged for evaluation' : 'Passed \u2014 skipped evaluation';
+    const triageClass = wasFlagged ? 'audit-triage-flagged' : 'audit-triage-passed';
+    html += `
+    <div class="audit-stage-block">
+        <div class="audit-stage-title">
+            <span class="audit-stage-num">Stage 2</span>
+            <span class="audit-stage-name">Rules Check</span>
+            <span class="audit-stage-model">Automated (0 API calls)</span>
+        </div>
+        <div class="audit-stage-body">`;
+
+    if (rulesFired.length > 0) {
+        html += `<div class="audit-rules-list">`;
+        rulesFired.forEach(ruleId => {
+            const fr = fragilityRaw && fragilityRaw.rules_fired && fragilityRaw.rules_fired.find(r => r.rule_id === ruleId);
+            const detail = fr ? fr.details : '';
+            const excerpts = fr ? (fr.excerpts || []) : [];
+
+            // Build excerpt HTML with highlighted matched phrase
+            let excerptHtml = '';
+            if (excerpts.length > 0) {
+                excerptHtml = excerpts.map(ex => {
+                    if (typeof ex === 'string') {
+                        return `<div class="audit-rule-excerpt">${esc(ex)}</div>`;
+                    }
+                    // Highlight matched phrase within context
+                    const text = ex.text || '';
+                    const phrase = ex.matched_phrase || '';
+                    if (phrase && text.toLowerCase().includes(phrase.toLowerCase())) {
+                        const idx = text.toLowerCase().indexOf(phrase.toLowerCase());
+                        const before = esc(text.slice(0, idx));
+                        const match  = esc(text.slice(idx, idx + phrase.length));
+                        const after  = esc(text.slice(idx + phrase.length));
+                        return `<div class="audit-rule-excerpt">${before}<mark class="audit-rule-highlight">${match}</mark>${after}</div>`;
+                    }
+                    return `<div class="audit-rule-excerpt">${esc(text)}</div>`;
+                }).join('');
+            } else if (detail) {
+                // Fallback: show detail text without highlighting
+                excerptHtml = `<div class="audit-rule-excerpt">${esc(detail)}</div>`;
+            }
+
+            html += `<div class="audit-rule-block">
+                <div class="audit-rule-header">
+                    <span class="audit-rule-id">${esc(ruleId)}</span>
+                    ${fr && fr.details && !excerpts.length ? `<span class="audit-rule-detail">${esc(fr.details)}</span>` : ''}
+                </div>
+                ${excerptHtml}
+            </div>`;
+        });
+        html += `</div>`;
+    } else {
+        html += `<div class="audit-rule-row audit-rule-none">No rules fired</div>`;
+    }
+    html += `<div class="audit-triage-result ${triageClass}">${esc(triageResult)}</div>`;
+    html += `</div></div>`;
+
+    // ── STAGE 3: EVALUATION ──────────────────────────────────────────────
+    if (stagesRun.has(3)) {
+        const evalMeta = stageData.evaluation_meta || {};
+        html += `
+        <div class="audit-stage-block">
+            <div class="audit-stage-title">
+                <span class="audit-stage-num">Stage 3</span>
+                <span class="audit-stage-name">Independent Evaluation</span>
+                <span class="audit-stage-model">${esc(evalMeta.evaluator_count || 3)} models in parallel \u00b7 blind to each other</span>
+            </div>
+            <div class="audit-stage-body">
+                <div class="audit-evaluators">`;
+
+        const evalModelMap = {
+            A: modelsUsed.evaluator_a || 'Evaluator A',
+            B: modelsUsed.evaluator_b || 'Evaluator B',
+            C: modelsUsed.evaluator_c || 'Evaluator C',
+        };
+
+        ['A','B','C'].forEach(key => {
+            const items = evalRaw[key] || [];
+            const ev = items.find(x => x.provision_id === pid);
+            if (!ev) return;
+
+            const verdict = ev.verdict || '\u2014';
+            const conf = ev.confidence != null ? (ev.confidence * 100).toFixed(0) + '%' : '';
+            const basis = ev.evidence_basis || '';
+            const verdClass = verdict === 'DEVIATES' ? 'audit-eval-deviates'
+                            : verdict === 'CONFORMS'  ? 'audit-eval-conforms'
+                            : 'audit-eval-na';
+
+            const basisLabel = {
+                'explicit_text':        '\uD83D\uDCCC Explicit text',
+                'structural_inference': '\uD83D\uDD0D Structural inference',
+                'absence':              '\u2205 Absence',
+                'ambiguous':            '? Ambiguous',
+                'unverified_citation':  '\u26A0 Unverified citation',
+            }[basis] || '';
+
+            const keyDiffs = (ev.key_differences || []);
+
+            html += `<div class="audit-eval-card">
+                <div class="audit-eval-header2">
+                    <span class="audit-eval-key">${esc(key)}</span>
+                    <span class="audit-eval-model-name">${esc(evalModelMap[key])}</span>
+                    <span class="audit-eval-verdict2 ${verdClass}">${esc(verdict)}</span>
+                    ${conf ? `<span class="audit-eval-conf2">${conf}</span>` : ''}
+                    ${basisLabel ? `<span class="audit-eval-basis">${basisLabel}</span>` : ''}
+                </div>
+                ${ev.reasoning ? `<div class="audit-eval-reasoning2">${esc(ev.reasoning)}</div>` : ''}
+                ${keyDiffs.length > 0 ? `<ul class="audit-eval-diffs">${keyDiffs.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : ''}
+            </div>`;
+        });
+
+        html += `</div>
+                <div class="audit-agreement-summary">
+                    Agreement: <strong>${esc(p.agreement_pattern || '\u2014')}</strong>
+                    ${p.cam_score ? ` \u00b7 Evidence basis: <strong>${esc(p.cam_score.evidence_basis || '\u2014')}</strong>` : ''}
+                </div>
+            </div>
+        </div>`;
+    } else {
+        html += `<div class="audit-stage-block audit-stage-skipped">
+            <div class="audit-stage-title">
+                <span class="audit-stage-num">Stage 3</span>
+                <span class="audit-stage-name">Evaluation</span>
+                <span class="audit-stage-skipped-label">Skipped \u2014 passed rules check</span>
+            </div>
+        </div>`;
+    }
+
+    // ── STAGE 4: CHALLENGE ───────────────────────────────────────────────
+    if (stagesRun.has(4) && challengeRaw) {
+        const challengeModel = modelsUsed.challenger || '\u2014';
+        const cv = challengeRaw.challenge_verdict || '\u2014';
+        const cvClass = cv === 'SUBSTANTIVE_DEVIATION' ? 'audit-challenge-sub'
+                       : cv === 'COSMETIC_ONLY' ? 'audit-challenge-cos'
+                       : cv === 'NEEDS_EXPERT' ? 'audit-challenge-exp'
+                       : '';
+
+        html += `
+        <div class="audit-stage-block">
+            <div class="audit-stage-title">
+                <span class="audit-stage-num">Stage 4</span>
+                <span class="audit-stage-name">Challenge</span>
+                <span class="audit-stage-model">${esc(challengeModel)}</span>
+            </div>
+            <div class="audit-stage-body">
+                <div class="audit-challenge-verdict ${cvClass}">
+                    Verdict: ${esc(cv)}
+                </div>
+                ${challengeRaw.substantive_finding ? `<div class="audit-challenge-finding">${esc(challengeRaw.substantive_finding)}</div>` : ''}
+                ${(challengeRaw.hidden_dependencies || []).length > 0 ? `
+                <div class="audit-hidden-deps">
+                    <div class="audit-detail-label">Hidden Dependencies</div>
+                    <ul>${challengeRaw.hidden_dependencies.map(d => `<li>${esc(d)}</li>`).join('')}</ul>
+                </div>` : ''}
+            </div>
+        </div>`;
+    } else if (!stagesRun.has(4)) {
+        html += `<div class="audit-stage-block audit-stage-skipped">
+            <div class="audit-stage-title">
+                <span class="audit-stage-num">Stage 4</span>
+                <span class="audit-stage-name">Challenge</span>
+                <span class="audit-stage-skipped-label">Skipped \u2014 unanimous agreement</span>
+            </div>
+        </div>`;
+    }
+
+    // ── STAGE 5: SEVERITY ────────────────────────────────────────────────
+    if (stagesRun.has(5) && severityRaw) {
+        const sevModel = (stageData.severity_meta || {}).model || modelsUsed.severity_assessor || '\u2014';
+        html += `
+        <div class="audit-stage-block">
+            <div class="audit-stage-title">
+                <span class="audit-stage-num">Stage 5</span>
+                <span class="audit-stage-name">Severity Assessment</span>
+                <span class="audit-stage-model">${esc(sevModel)}</span>
+            </div>
+            <div class="audit-stage-body">
+                <div class="audit-severity-rating">
+                    Rating: <strong>${esc(severityRaw.severity || p.severity || '\u2014')}</strong>
+                    ${p.severity_floor_applied ? ' <span class="audit-floor-note">(floor applied)</span>' : ''}
+                </div>
+                ${severityRaw.severity_reasoning ? `<div class="audit-sev-reasoning">${esc(severityRaw.severity_reasoning)}</div>` : ''}
+                ${severityRaw.financial_impact ? `<div class="audit-detail-label" style="margin-top:0.5rem;">Financial Impact</div>
+                <div class="audit-sev-reasoning">${esc(severityRaw.financial_impact)}</div>` : ''}
+            </div>
+        </div>`;
+    } else if (!stagesRun.has(5)) {
+        html += `<div class="audit-stage-block audit-stage-skipped">
+            <div class="audit-stage-title">
+                <span class="audit-stage-num">Stage 5</span>
+                <span class="audit-stage-name">Severity Assessment</span>
+                <span class="audit-stage-skipped-label">Skipped \u2014 provision conforms</span>
+            </div>
+        </div>`;
+    }
+
+    // ── STAGE 6: FRAGILITY + CAM SCORE ──────────────────────────────────
+    const camScore = p.cam_score || {};
+    html += `
+    <div class="audit-stage-block">
+        <div class="audit-stage-title">
+            <span class="audit-stage-num">Stage 6</span>
+            <span class="audit-stage-name">CAM Reliability Score</span>
+            <span class="audit-stage-model">Automated \u00b7 0 API calls</span>
+        </div>
+        <div class="audit-stage-body">`;
+
+    if (fragilityRaw) {
+        html += `<div class="audit-fragility-row">
+            <span>Fragility: <strong>${fragilityRaw.fragile ? 'yes' : 'no'}</strong></span>
+            ${fragilityRaw.fragility_score != null ? `<span style="margin-left:1rem;">Score: ${fragilityRaw.fragility_score.toFixed(3)}</span>` : ''}
+        </div>`;
+        if ((fragilityRaw.rules_fired || []).length > 0) {
+            html += `<div class="audit-frag-signals">`;
+            fragilityRaw.rules_fired.forEach(r => {
+                html += `<div class="audit-frag-signal-row">
+                    <span class="audit-rule-id">${esc(r.rule_id)}</span>
+                    <span class="audit-frag-signal-name">${esc(r.signal)}</span>
+                    <span class="audit-frag-detail">${esc(r.details || '')}</span>
+                    <span class="audit-frag-conf">conf: ${r.confidence.toFixed(2)}</span>
+                </div>`;
+            });
+            html += `</div>`;
+        }
+    }
+
+    if (camScore.CAM_perm != null) {
+        html += `<div class="audit-cam-scores">
+            <div class="audit-cam-row">
+                <span class="audit-cam-label">CAM (permissive)</span>
+                <span class="audit-cam-val">${camScore.CAM_perm}</span>
+            </div>
+            <div class="audit-cam-row">
+                <span class="audit-cam-label">CAM (strict)</span>
+                <span class="audit-cam-val">${camScore.CAM_strict}</span>
+            </div>
+            <div class="audit-cam-row">
+                <span class="audit-cam-label">ASG (sensitivity gap)</span>
+                <span class="audit-cam-val">${camScore.ASG}</span>
+            </div>
+            <div class="audit-cam-row">
+                <span class="audit-cam-label">Governance signal</span>
+                <span class="audit-cam-val"><strong>${esc(camScore.governance_signal || '\u2014')}</strong></span>
+            </div>
+            <div class="audit-cam-row">
+                <span class="audit-cam-label">A \u00b7 E \u00b7 R \u00b7 F</span>
+                <span class="audit-cam-val">${camScore.A} \u00b7 ${camScore.E_perm} \u00b7 ${camScore.R_perm} \u00b7 ${camScore.F_perm}</span>
+            </div>
+        </div>`;
+    }
+
+    html += `</div></div>`;
+
+    // ── FINAL DISPOSITION ────────────────────────────────────────────────
+    html += `
+    <div class="audit-stage-block audit-disposition-block">
+        <div class="audit-stage-title">
+            <span class="audit-stage-name">Final Disposition</span>
+        </div>
+        <div class="audit-stage-body">
+            <div class="audit-disp-row">
+                <span>Verdict: <strong>${esc(p.final_verdict || '\u2014')}</strong></span>
+                <span style="margin-left:1.5rem;">Severity: <strong>${esc(p.severity || (p.final_verdict === 'CONFORMS' ? 'N/A' : '\u2014'))}</strong></span>
+                ${p.agreement_pattern ? `<span style="margin-left:1.5rem;">Agreement: <strong>${esc(p.agreement_pattern)}</strong></span>` : ''}
+            </div>
+        </div>
+    </div>`;
+
+    html += `</div>`; // close audit-narrative
+    return html;
+}
+
+function toggleAuditRow(idx) {
+    const detail = $(`#audit-detail-${idx}`);
+    const header = document.querySelector(`.audit-provision-row[data-idx="${idx}"] .audit-provision-header`);
+    if (!detail) return;
+    const isOpen = !detail.classList.contains("hidden");
+    detail.classList.toggle("hidden");
+    const chevron = header && header.querySelector(".audit-chevron");
+    if (chevron) chevron.innerHTML = isOpen ? "&#9662;" : "&#9652;";
+}
+
+function expandAllAuditRows() {
+    document.querySelectorAll(".audit-provision-detail").forEach(d => d.classList.remove("hidden"));
+    document.querySelectorAll(".audit-chevron").forEach(c => { c.innerHTML = "&#9652;"; });
+}
+
+function collapseAllConforming() {
+    // Collapse the whole section back to original state — same as clicking the toggle
+    const list = document.getElementById('conforming-list');
+    const toggle = document.getElementById('conforming-toggle');
+    if (!list || !toggle) return;
+    list.classList.add('hidden');
+    toggle.innerHTML = toggle.innerHTML.replace('&#9660;', '&#9654;');
+    // Scroll to the toggle so user lands back at the section header
+    toggle.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function collapseAllAuditRows() {
+    document.querySelectorAll(".audit-provision-detail").forEach(d => d.classList.add("hidden"));
+    document.querySelectorAll(".audit-chevron").forEach(c => { c.innerHTML = "&#9662;"; });
+}
+
+// ── Resolution Workflow Functions ──
+
+function formatResTimestamp(iso) {
+    try {
+        const d = new Date(iso);
+        return d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+             + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+    } catch { return ""; }
+}
+
+async function setResolutionStatus(pid, tenantIdx, status, buttonEl) {
+    const key = `${tenantIdx}:${pid}`;
+    if (!resolutionState[key]) resolutionState[key] = { status: "open", notes: [] };
+    if (status === "resolved" && resolutionState[key].status === "resolved") {
+        status = "open";
+    }
+    if (status === "not_a_deviation" && resolutionState[key].status === "not_a_deviation") {
+        status = "open";
+    }
+    resolutionState[key].status = status;
+
+    // Optimistic UI: update pills
+    const bar = document.querySelector(`.resolution-bar[data-pid="${pid}"][data-tenant-idx="${tenantIdx}"]`);
+    if (bar) {
+        bar.querySelectorAll(".res-pill").forEach(p => {
+            p.classList.toggle("res-pill-active", p.dataset.status === status);
+        });
+    }
+
+    // Update card resolved class
+    const card = document.getElementById(`dev-${pid}`);
+    if (card) {
+        card.classList.toggle("resolution-resolved", status === "resolved" || status === "not_a_deviation");
+    }
+
+    if (status === "not_a_deviation") {
+        try {
+            await fetch(`/api/jobs/${currentJobId}/feedback`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    tenant_index: tenantIdx,
+                    provision_id: pid,
+                    assessment: "disagree",
+                })
+            });
+        } catch (err) {
+            console.error("Feedback error:", err);
+        }
+        if (confirm("Create a rule so this won't be flagged in future analyses?")) {
+            window.CAM.showRuleCreationDialog(pid, pid);
+        }
+    }
+
+    // Refresh progress bar
+    refreshResolutionProgress(tenantIdx);
+    renderNavSidebar();
+    if (contractDetailOpen && tenantIdx === currentTenantIndex) updateContractDetailHeader(tenantIdx);
+    if (contractDetailOpen && tenantIdx === currentTenantIndex) {
+        const tenant = currentResults && currentResults.tenants ? currentResults.tenants[tenantIdx] : null;
+        renderContractClauseFilterBar((tenant && tenant.results && tenant.results.provisions) || []);
+    }
+    updateFinalDraftBar();
+    applyContractClauseFilters();
+    refreshDocviewIfActive(tenantIdx);
+
+    // Persist
+    try {
+        await fetch(`/api/jobs/${currentJobId}/resolution`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tenant_idx: tenantIdx, provision_id: pid, status })
+        });
+    } catch (e) { console.error("Resolution save failed", e); }
+}
+
+function setResolutionResolvedFromDecision(tenantIdx, pid) {
+    const key = `${tenantIdx}:${pid}`;
+    if (!resolutionState[key]) resolutionState[key] = { status: "open", notes: [] };
+    if (resolutionState[key].status === "resolved") return;
+    setResolutionStatus(pid, tenantIdx, "resolved");
+}
+
+function toggleResolutionNotes(pid, tenantIdx) {
+    const panel = document.getElementById(`res-notes-${pid}-${tenantIdx}`);
+    const advisorPanel = document.getElementById(`res-advisor-${pid}-${tenantIdx}`);
+    if (!panel) return;
+    if (advisorPanel) advisorPanel.classList.add("hidden");
+    panel.classList.toggle("hidden");
+    if (!panel.classList.contains("hidden")) {
+        const input = document.getElementById(`res-input-${pid}-${tenantIdx}`);
+        if (input) input.focus();
+    }
+}
+
+function openResolutionAdvisor(pid, tenantIdx) {
+    const panel = document.getElementById(`res-advisor-${pid}-${tenantIdx}`);
+    const notesPanel = document.getElementById(`res-notes-${pid}-${tenantIdx}`);
+    if (notesPanel) notesPanel.classList.add("hidden");
+    if (panel) panel.classList.add("hidden");
+    askAboutFinding(pid, tenantIdx, "");
+    showChatAdvisorPrompts(pid, tenantIdx);
+}
+
+async function saveResolutionNote(pid, tenantIdx) {
+    const input = document.getElementById(`res-input-${pid}-${tenantIdx}`);
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    const saved = await addResolutionNote(pid, tenantIdx, text);
+    if (saved) input.value = "";
+}
+
+function updateResolutionNoteCount(pid, tenantIdx) {
+    const key = `${tenantIdx}:${pid}`;
+    const count = ((resolutionState[key] || {}).notes || []).length;
+    const toggleBtn = document.querySelector(`.res-notes-toggle[data-pid="${pid}"][data-tenant-idx="${tenantIdx}"]`);
+    if (!toggleBtn) return;
+    if (count > 0) {
+        toggleBtn.innerHTML = `📝 Notes <span class="res-note-count">${count} note${count > 1 ? "s" : ""}</span>`;
+    } else {
+        toggleBtn.innerHTML = `📝 Notes`;
+    }
+}
+
+function renderResolutionNotesPanel(pid, tenantIdx) {
+    const key = `${tenantIdx}:${pid}`;
+    const panel = document.getElementById(`res-notes-${pid}-${tenantIdx}`);
+    if (!panel) return;
+    const notes = ((resolutionState[key] || {}).notes || []);
+    const inputRow = panel.querySelector(".res-note-input-row");
+    panel.querySelectorAll(".res-note-entry").forEach(el => el.remove());
+    notes.forEach((note, noteIdx) => {
+        const noteDiv = document.createElement("div");
+        noteDiv.className = "res-note-entry";
+        noteDiv.innerHTML = `<span class="res-note-ts">${formatResTimestamp(note.timestamp)}</span><span class="res-note-text">${esc(note.text)}</span><button class="res-note-delete" onclick="window.CAM.deleteResolutionNote('${esc(pid)}', ${tenantIdx}, ${noteIdx}); event.stopPropagation();">Delete</button>`;
+        if (inputRow) panel.insertBefore(noteDiv, inputRow);
+        else panel.appendChild(noteDiv);
+    });
+}
+
+async function addResolutionNote(pid, tenantIdx, text) {
+    const key = `${tenantIdx}:${pid}`;
+    const now = new Date().toISOString();
+    const normalized = (text || "").trim();
+    if (!normalized) return false;
+    if (!resolutionState[key]) resolutionState[key] = { status: "open", notes: [] };
+    resolutionState[key].notes.push({ text: normalized, timestamp: now });
+
+    // Append note to panel immediately
+    renderResolutionNotesPanel(pid, tenantIdx);
+
+    // Update note count on toggle button
+    updateResolutionNoteCount(pid, tenantIdx);
+
+    // Persist
+    try {
+        await fetch(`/api/jobs/${currentJobId}/resolution`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tenant_idx: tenantIdx, provision_id: pid, note: normalized })
+        });
+    } catch (e) { console.error("Note save failed", e); }
+    if (contractDetailOpen && tenantIdx === currentTenantIndex) {
+        const tenant = currentResults && currentResults.tenants ? currentResults.tenants[tenantIdx] : null;
+        renderContractClauseFilterBar((tenant && tenant.results && tenant.results.provisions) || []);
+    }
+    applyContractClauseFilters();
+    refreshDocviewIfActive(tenantIdx);
+    renderDocviewResolutionNotesPanel(pid, tenantIdx);
+    updateDocviewResolutionNoteCount(pid, tenantIdx);
+    return true;
+}
+
+async function deleteResolutionNote(pid, tenantIdx, noteIdx) {
+    const key = `${tenantIdx}:${pid}`;
+    if (!resolutionState[key] || !Array.isArray(resolutionState[key].notes)) return false;
+    if (noteIdx < 0 || noteIdx >= resolutionState[key].notes.length) return false;
+    if (!window.confirm("Delete this note?")) return false;
+    resolutionState[key].notes.splice(noteIdx, 1);
+
+    renderResolutionNotesPanel(pid, tenantIdx);
+    updateResolutionNoteCount(pid, tenantIdx);
+
+    try {
+        await fetch(`/api/jobs/${currentJobId}/resolution`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tenant_idx: tenantIdx, provision_id: pid, notes: resolutionState[key].notes })
+        });
+    } catch (e) { console.error("Note delete failed", e); }
+    if (contractDetailOpen && tenantIdx === currentTenantIndex) {
+        const tenant = currentResults && currentResults.tenants ? currentResults.tenants[tenantIdx] : null;
+        renderContractClauseFilterBar((tenant && tenant.results && tenant.results.provisions) || []);
+    }
+    applyContractClauseFilters();
+    refreshDocviewIfActive(tenantIdx);
+    renderDocviewResolutionNotesPanel(pid, tenantIdx);
+    updateDocviewResolutionNoteCount(pid, tenantIdx);
+    return true;
+}
+
+async function saveChatResponseAsNote(text) {
+    if (!canSaveChatNote()) return false;
+    const tenantIdx = parseInt(chatScopeTenantIdx, 10);
+    const pid = chatScopeProvisionId;
+    if (Number.isNaN(tenantIdx) || !pid) return false;
+    return await addResolutionNote(pid, tenantIdx, text);
+}
+
+const ADVISOR_PROMPTS = {
+    summary:   "Summarize this clause issue for me in practical terms. What changed, why it matters, and what to watch.",
+    advice:    "Advise what to do with this clause. Should we keep tenant language, push for reference language, modify it, or escalate to the client?",
+    rewrite:   "Draft replacement language for this provision that restores the standard template intent while giving the tenant something reasonable.",
+    risk:      "What is the practical legal and financial risk if we accept this deviation as-is without modification?",
+    standard:  "Is this type of provision modification standard or common in commercial lease negotiations? How unusual is it?",
+};
+
+function askResolution(pid, tenantIdx, promptKey) {
+    const promptText = ADVISOR_PROMPTS[promptKey] || "Tell me more about this deviation.";
+
+    // Close advisor panel
+    const panel = document.getElementById(`res-advisor-${pid}-${tenantIdx}`);
+    if (panel) panel.classList.add("hidden");
+
+    // Use existing askAboutFinding to set context, then override the prompt
+    askAboutFinding(pid, tenantIdx);
+    showChatAdvisorPrompts(pid, tenantIdx);
+    const input = $("#chat-input");
+    if (input) {
+        input.value = promptText;
+        input.focus();
+    }
+}
+
+function refreshResolutionProgress(tenantIdx) {
+    return;
+}
+
+// ══════════════════════════════════════════════════════
+// STEP 116 — Three-level Navigation, Run Snapshot,
+//            Contract Resolution, Completion Banner
+// ══════════════════════════════════════════════════════
+
+// ── Contract Resolution (localStorage) ──
+
+function getContractResolutionKey(tenantIdx) {
+    const tenant = currentResults && currentResults.tenants && currentResults.tenants[tenantIdx];
+    const name = tenant ? (tenant.filename || "tenant_" + tenantIdx) : "tenant_" + tenantIdx;
+    return "cam_res_" + currentJobId + "_" + name;
+}
+
+function getContractResolution(tenantIdx) {
+    if (!currentResults || !currentResults.tenants || !currentResults.tenants[tenantIdx]) return "unreviewed";
+    const tenant = currentResults.tenants[tenantIdx];
+    if (!tenant.results) return "unreviewed";
+    const deviations = (tenant.results.provisions || []).filter(function(p) { return p.final_verdict === "DEVIATES"; });
+    if (deviations.length === 0) return "clean";
+    const key = getContractResolutionKey(tenantIdx);
+    try { return localStorage.getItem(key) || "unreviewed"; } catch(e) { return "unreviewed"; }
+}
+
+function setContractResolution(tenantIdx, status) {
+    const key = getContractResolutionKey(tenantIdx);
+    try { localStorage.setItem(key, status); } catch(e) { /* silent */ }
+    renderNavSidebar();
+    if (!contractDetailOpen) renderRunSnapshot();
+    checkCompletionBanner();
+}
+
+function markContractResolved(tenantIdx) {
+    setContractResolution(tenantIdx, "resolved");
+    closeContractDetail();
+}
+
+function reopenContract(tenantIdx) {
+    setContractResolution(tenantIdx, "unreviewed");
+    renderContractResolutionControls(tenantIdx);
+    renderNavSidebar();
+}
+
+// ── Per-provision Noted toggle (localStorage) ──
+
+function getNotedKey(tenantIdx, pid) {
+    return "cam_noted_" + currentJobId + "_" + tenantIdx + "_" + pid;
+}
+
+function toggleNoted(tenantIdx, pid, btn) {
+    const key = getNotedKey(tenantIdx, pid);
+    try {
+        const current = localStorage.getItem(key) === "1";
+        if (current) {
+            localStorage.removeItem(key);
+            btn.classList.remove("noted-active");
+            btn.textContent = "Mark as Read";
+        } else {
+            localStorage.setItem(key, "1");
+            btn.classList.add("noted-active");
+            btn.textContent = "\u2713 Read";
+        }
+    } catch(e) { /* silent */ }
+    if (contractDetailOpen && tenantIdx === currentTenantIndex) {
+        const tenant = currentResults && currentResults.tenants ? currentResults.tenants[tenantIdx] : null;
+        renderContractClauseFilterBar((tenant && tenant.results && tenant.results.provisions) || []);
+    }
+    applyContractClauseFilters();
+    refreshDocviewIfActive(tenantIdx);
+}
+
+function isNoted(tenantIdx, pid) {
+    try { return localStorage.getItem(getNotedKey(tenantIdx, pid)) === "1"; } catch(e) { return false; }
+}
+
+// ── Completion Banner ──
+
+function checkCompletionBanner() {
+    const banner = document.getElementById("review-completion-banner");
+    if (!banner || !currentResults || !currentResults.tenants) return;
+    const allDone = currentResults.tenants.every(function(_, i) {
+        const res = getContractResolution(i);
+        return res === "resolved" || res === "clean";
+    });
+    if (allDone && currentResults.tenants.length > 0) {
+        banner.innerHTML = '\u2713 Review complete \u2014 all contracts have been assessed.';
+        banner.classList.remove("hidden");
+    } else {
+        banner.classList.add("hidden");
+    }
+}
+
+// ── Top-Level Tab Switching ──
+
+function setSubheader(label) {
+    var el = document.getElementById('tab-subheader');
+    if (el) el.textContent = label;
+}
+
+function switchTopTab(tab) {
+    const overview   = document.getElementById('overview-tab-content');
+    const contractsT = document.getElementById('contracts-tab-content');
+    const detail     = document.getElementById('contract-detail-view');
+    const ncp        = document.getElementById('no-contract-placeholder');
+
+    if (tab === 'contracts') {
+        activeTopTab = 'contracts';
+        persistResultsViewState();
+        setSubheader('Contracts');
+        if (overview)   overview.classList.add('hidden');
+        if (detail)     detail.classList.add('hidden');
+        if (ncp)        ncp.classList.add('hidden');
+        if (contractsT) contractsT.classList.remove('hidden');
+        document.querySelectorAll('#top-tab-bar .top-tab[data-top-tab]').forEach(function(t) {
+            t.classList.toggle('active', t.dataset.topTab === 'contracts');
+        });
+        document.querySelectorAll('#top-tab-bar .top-tab[data-tab]').forEach(function(t) { t.classList.remove('active'); });
+        renderRunSnapshot();
+        return;
+    }
+
+    // Contract detail tabs — findings / docview / audittrail
+    if (tab === 'findings' || tab === 'docview' || tab === 'audittrail') {
+        activeTopTab = tab;
+        activeResultsTab = tab;
+        persistResultsViewState();
+        // Hide overview and contracts list panels
+        if (overview)   overview.classList.add('hidden');
+        if (contractsT) contractsT.classList.add('hidden');
+        // Show the detail container (switchResultsTab manages inner panels + ncp)
+        if (detail)     detail.classList.remove('hidden');
+        // Mark the correct top-tab button as active
+        document.querySelectorAll('#top-tab-bar .top-tab[data-top-tab]').forEach(function(t) {
+            t.classList.toggle('active', t.dataset.topTab === tab);
+        });
+        // Delegate inner panel switching to switchResultsTab
+        switchResultsTab(tab);
+        return;
+    }
+
+    // overview / snapshot
+    activeTopTab = 'overview';
+    persistResultsViewState();
+    setSubheader('Run Synopsis');
+    document.querySelectorAll('#top-tab-bar .top-tab[data-top-tab]').forEach(function(t) {
+        t.classList.toggle('active', t.dataset.topTab === 'overview');
+    });
+    if (contractDetailOpen) {
+        closeContractDetail();
+    } else {
+        if (ncp)        ncp.classList.add('hidden');
+        if (contractsT) contractsT.classList.add('hidden');
+        if (overview)   overview.classList.remove('hidden');
+        if (detail)     detail.classList.add('hidden');
+        document.querySelectorAll('#top-tab-bar .top-tab[data-tab]').forEach(function(t) { t.classList.remove('active'); });
+    }
+}
+
+// ── Step 130: Contract name filter dropdown builder ──
+
+function buildContractFilterDropdown() {
+    var dropdown = document.getElementById('snapshot-contract-dropdown');
+    var btn = document.getElementById('snapshot-contract-filter-btn');
+    var wrap = document.getElementById('snapshot-contract-filter-wrap');
+    if (!dropdown || !btn || !currentResults || !currentResults.tenants) return;
+
+    // Determine which tenants pass Severity + Status filters (before contract name filter)
+    var tenants = currentResults.tenants;
+    var eligibleIndices = [];
+    tenants.forEach(function(t, i) {
+        var s = t.results && t.results.summary ? t.results.summary : null;
+        var provisions = t.results && t.results.provisions ? t.results.provisions : [];
+        var deviations = provisions.filter(function(p) { return p.final_verdict === 'DEVIATES'; });
+        var highestSev = s ? getHighestSeverity(s) : null;
+        var isClean = deviations.length === 0 && s;
+        var resolution = getContractResolution(i);
+
+        // Severity filter
+        var sevOk = true;
+        if (snapshotSeverityFilter !== 'all') {
+            var sevRank = { 'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
+            var threshold = { 'critical': 4, 'high': 3, 'medium': 2, 'issues': 1 };
+            var cardRank = sevRank[highestSev] || 0;
+            sevOk = !isClean && cardRank >= (threshold[snapshotSeverityFilter] || 0);
+        }
+
+        // Status filter
+        var statusOk = true;
+        if (snapshotStatusFilter === 'unreviewed') statusOk = resolution !== 'resolved' && !isClean;
+        else if (snapshotStatusFilter === 'resolved') statusOk = resolution === 'resolved';
+        else if (snapshotStatusFilter === 'clear') statusOk = isClean;
+
+        if (sevOk && statusOk) eligibleIndices.push(i);
+    });
+
+    // Build checkbox list
+    var html = '<div class="snapshot-contract-dropdown-inner">';
+    if (eligibleIndices.length === 0) {
+        html += '<div class="snapshot-contract-dropdown-empty">No contracts match current filters</div>';
+    } else {
+        // "All" checkbox at top
+        var allChecked = snapshotContractFilter.size === 0;
+        html += '<label class="snapshot-contract-check-row snapshot-contract-all-row">'
+            + '<input type="checkbox" class="snapshot-contract-check-all" ' + (allChecked ? 'checked' : '') + '>'
+            + '<span>All contracts</span>'
+            + '</label>';
+
+        eligibleIndices.forEach(function(i) {
+            var t = tenants[i];
+            var name = formatTenantName(t.filename || ('Contract ' + (i + 1)));
+            var s = t.results && t.results.summary ? t.results.summary : null;
+            var highest = s ? getHighestSeverity(s) : null;
+            var statusLabel = getStatusLabel(highest);
+            var checked = snapshotContractFilter.size === 0 || snapshotContractFilter.has(i);
+            html += '<label class="snapshot-contract-check-row">'
+                + '<input type="checkbox" class="snapshot-contract-check-item" data-tenant="' + i + '" ' + (checked ? 'checked' : '') + '>'
+                + '<span class="snapshot-contract-check-name">' + esc(name) + '</span>'
+                + '<span class="snapshot-contract-check-status">' + esc(statusLabel) + '</span>'
+                + '</label>';
+        });
+    }
+    // Apply button at bottom — closes dropdown and triggers render
+    html += '<div class="snapshot-contract-dropdown-footer">'
+        + '<button class="snapshot-contract-apply-btn">Apply</button>'
+        + '</div>';
+    html += '</div>';
+    dropdown.innerHTML = html;
+
+    // Wire: toggle dropdown open/close on button click
+    btn.onclick = function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+    };
+
+    // Wire: "All contracts" checkbox — just updates state, no re-render yet
+    var allChk = dropdown.querySelector('.snapshot-contract-check-all');
+    if (allChk) {
+        allChk.addEventListener('change', function() {
+            // Check all individual boxes
+            dropdown.querySelectorAll('.snapshot-contract-check-item').forEach(function(c) {
+                c.checked = true;
+            });
+        });
+    }
+
+    // Wire: individual checkboxes — just update "All" state, no re-render yet
+    dropdown.querySelectorAll('.snapshot-contract-check-item').forEach(function(chk) {
+        chk.addEventListener('change', function() {
+            var allItems = dropdown.querySelectorAll('.snapshot-contract-check-item');
+            var allCheckedNow = Array.from(allItems).every(function(c) { return c.checked; });
+            if (allChk) allChk.checked = allCheckedNow;
+        });
+    });
+
+    // Wire: Apply button — commit selection, close dropdown, re-render
+    var applyBtn = dropdown.querySelector('.snapshot-contract-apply-btn');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var allItems = dropdown.querySelectorAll('.snapshot-contract-check-item');
+            var newSet = new Set();
+            allItems.forEach(function(c) {
+                if (c.checked) newSet.add(parseInt(c.dataset.tenant, 10));
+            });
+            // If all checked, treat as no filter
+            if (newSet.size === eligibleIndices.length) newSet = new Set();
+            snapshotContractFilter = newSet;
+            btn.textContent = snapshotContractFilter.size === 0
+                ? 'Contracts: All \u25BE'
+                : 'Contracts: ' + snapshotContractFilter.size + ' selected \u25BE';
+            dropdown.classList.add('hidden');
+            renderRunSnapshot();
+        });
+    }
+}
+
+function applyContractFilterAndRenderCards() {
+    renderRunSnapshot();
+}
+
+// ── Run Snapshot Rendering ──
+
+function setResultsContentDetailMode(enabled) {
+    var resultsContent = document.getElementById('results-content');
+    if (!resultsContent) return;
+    resultsContent.classList.toggle('results-content-detail', !!enabled);
+}
+
+function renderRunSnapshot() {
+    const container = document.getElementById("snapshot-cards");
+    if (!container || !currentResults || !currentResults.tenants) return;
+    // Ensure the contracts tab content is visible
+    var contractsTab = document.getElementById('contracts-tab-content');
+    if (contractsTab) contractsTab.classList.remove('hidden');
+
+    const tenants = currentResults.tenants;
+
+    // ── Step 124: Build enriched card data for pipeline ──
+    var allCards = tenants.map(function(t, i) {
+        var s = t.results && t.results.summary ? t.results.summary : null;
+        var provisions = t.results && t.results.provisions ? t.results.provisions : [];
+        var deviations = provisions.filter(function(p) { return p.final_verdict === "DEVIATES"; });
+        var highestSev = s ? getHighestSeverity(s) : null;
+        var sevScore = highestSev ? (SEVERITY_ORDER.indexOf(highestSev) + 1 || 99) : 99;
+        var isClean = deviations.length === 0 && s;
+        var resolution = getContractResolution(i);
+        var name = formatTenantName(t.filename || "");
+        var meta = t.results && t.results.contract_metadata ? t.results.contract_metadata : {};
+        var tenantName = (meta.tenant_name || '').trim();
+        var propertyDesc = (meta.property_description || '').trim();
+        // Severity counts
+        var sevCounts = {};
+        deviations.forEach(function(d) { var sv = d.severity || "MEDIUM"; sevCounts[sv] = (sevCounts[sv] || 0) + 1; });
+        return {
+            t: t, i: i, s: s, provisions: provisions, deviations: deviations,
+            highestSev: highestSev, sevScore: sevScore, isClean: isClean,
+            resolution: resolution, name: name, tenantName: tenantName,
+            propertyDesc: propertyDesc, sevCounts: sevCounts
+        };
+    });
+
+    // ── Pipeline Step 1: Severity filter ──
+    var filtered = allCards;
+    if (snapshotSeverityFilter !== 'all') {
+        filtered = filtered.filter(function(c) {
+            if (!c.s) return false; // hide no-results
+            if (snapshotSeverityFilter === 'critical') return (c.sevCounts['CRITICAL'] || 0) > 0;
+            if (snapshotSeverityFilter === 'high') return (c.sevCounts['CRITICAL'] || 0) > 0 || (c.sevCounts['HIGH'] || 0) > 0;
+            if (snapshotSeverityFilter === 'medium') return (c.sevCounts['CRITICAL'] || 0) > 0 || (c.sevCounts['HIGH'] || 0) > 0 || (c.sevCounts['MEDIUM'] || 0) > 0;
+            if (snapshotSeverityFilter === 'issues') return c.deviations.length > 0;
+            return true;
+        });
+    }
+
+    // ── Pipeline Step 2: Status filter ──
+    if (snapshotStatusFilter !== 'all') {
+        filtered = filtered.filter(function(c) {
+            if (snapshotStatusFilter === 'unreviewed') return c.resolution === 'unreviewed';
+            if (snapshotStatusFilter === 'resolved') return c.resolution === 'resolved';
+            if (snapshotStatusFilter === 'clear') return c.isClean;
+            return true;
+        });
+    }
+
+    // ── Pipeline Step 3: Contract name filter (Step 130) ──
+    if (snapshotContractFilter.size > 0) {
+        filtered = filtered.filter(function(c) {
+            return snapshotContractFilter.has(c.i);
+        });
+    }
+
+    // ── Pipeline Step 4: Search filter ──
+    if (snapshotSearch) {
+        var q = snapshotSearch.toLowerCase();
+        filtered = filtered.filter(function(c) {
+            return c.name.toLowerCase().indexOf(q) !== -1
+                || c.tenantName.toLowerCase().indexOf(q) !== -1
+                || c.propertyDesc.toLowerCase().indexOf(q) !== -1;
+        });
+    }
+
+    // ── Pipeline Step 5: Sort ──
+    if (snapshotSort === 'risk') {
+        filtered.sort(function(a, b) {
+            if (a.isClean && !b.isClean) return 1;
+            if (!a.isClean && b.isClean) return -1;
+            if (a.sevScore !== b.sevScore) return a.sevScore - b.sevScore;
+            // Tiebreak: most critical first, then high, then medium, then total
+            var ac = a.sevCounts['CRITICAL'] || 0, bc = b.sevCounts['CRITICAL'] || 0;
+            if (ac !== bc) return bc - ac;
+            var ah = a.sevCounts['HIGH'] || 0, bh = b.sevCounts['HIGH'] || 0;
+            if (ah !== bh) return bh - ah;
+            var am = a.sevCounts['MEDIUM'] || 0, bm = b.sevCounts['MEDIUM'] || 0;
+            if (am !== bm) return bm - am;
+            return b.deviations.length - a.deviations.length;
+        });
+    } else if (snapshotSort === 'issues') {
+        filtered.sort(function(a, b) { return b.deviations.length - a.deviations.length; });
+    } else if (snapshotSort === 'name') {
+        filtered.sort(function(a, b) { return a.name.localeCompare(b.name); });
+    } else if (snapshotSort === 'unreviewed') {
+        filtered.sort(function(a, b) {
+            var aUn = a.resolution === 'unreviewed' ? 0 : 1;
+            var bUn = b.resolution === 'unreviewed' ? 0 : 1;
+            if (aUn !== bUn) return aUn - bUn;
+            // Within same group, sort by risk
+            if (a.isClean && !b.isClean) return 1;
+            if (!a.isClean && b.isClean) return -1;
+            return a.sevScore - b.sevScore;
+        });
+    }
+
+    // ── Render toolbar into persistent bar (stays visible in contract detail too) ──
+    var toolbarBar = document.getElementById('snapshot-toolbar-bar');
+    if (toolbarBar) toolbarBar.classList.remove('hidden');
+    var toolbarHtml = '<div class="snapshot-toolbar">'
+        + '<select class="snapshot-toolbar-select" id="snapshot-sort-select">'
+        + '<option value="risk"' + (snapshotSort === 'risk' ? ' selected' : '') + '>Sort: Risk</option>'
+        + '<option value="issues"' + (snapshotSort === 'issues' ? ' selected' : '') + '>Sort: Most Issues</option>'
+        + '<option value="name"' + (snapshotSort === 'name' ? ' selected' : '') + '>Sort: Name (A\u2013Z)</option>'
+        + '<option value="unreviewed"' + (snapshotSort === 'unreviewed' ? ' selected' : '') + '>Sort: Unreviewed First</option>'
+        + '</select>'
+        + '<select class="snapshot-toolbar-select" id="snapshot-severity-select">'
+        + '<option value="all"' + (snapshotSeverityFilter === 'all' ? ' selected' : '') + '>Severity: All</option>'
+        + '<option value="critical"' + (snapshotSeverityFilter === 'critical' ? ' selected' : '') + '>Critical</option>'
+        + '<option value="high"' + (snapshotSeverityFilter === 'high' ? ' selected' : '') + '>High &amp; above</option>'
+        + '<option value="medium"' + (snapshotSeverityFilter === 'medium' ? ' selected' : '') + '>Medium &amp; above</option>'
+        + '<option value="issues"' + (snapshotSeverityFilter === 'issues' ? ' selected' : '') + '>Issues only</option>'
+        + '</select>'
+        + '<select class="snapshot-toolbar-select" id="snapshot-status-select">'
+        + '<option value="all"' + (snapshotStatusFilter === 'all' ? ' selected' : '') + '>Status: All</option>'
+        + '<option value="unreviewed"' + (snapshotStatusFilter === 'unreviewed' ? ' selected' : '') + '>Unreviewed</option>'
+        + '<option value="resolved"' + (snapshotStatusFilter === 'resolved' ? ' selected' : '') + '>Resolved</option>'
+        + '<option value="clear"' + (snapshotStatusFilter === 'clear' ? ' selected' : '') + '>Clear</option>'
+        + '</select>'
+        + '<div class="snapshot-contract-filter-wrap" id="snapshot-contract-filter-wrap">'
+        + '<button class="snapshot-toolbar-select snapshot-contract-filter-btn" id="snapshot-contract-filter-btn">'
+        + (snapshotContractFilter.size === 0 ? 'Contracts: All' : 'Contracts: ' + snapshotContractFilter.size + ' selected')
+        + '</button>'
+        + '<div class="snapshot-contract-dropdown hidden" id="snapshot-contract-dropdown"></div>'
+        + '</div>'
+        + '<div class="snapshot-toolbar-search">'
+        + '<span class="search-icon">\uD83D\uDD0D</span>'
+        + '<input type="text" id="snapshot-search-input" placeholder="Search contracts..." value="' + esc(snapshotSearch) + '">'
+        + '</div>'
+        + '</div>';
+
+    // Render toolbar into persistent bar (not into cards container)
+    if (toolbarBar) toolbarBar.innerHTML = toolbarHtml;
+
+    // ── Build cards HTML ──
+    var html = '';
+
+    if (filtered.length === 0) {
+        html += '<div class="snapshot-no-results">No contracts match your search</div>';
+    } else {
+        html += '<div class="snapshot-grid">';
+        filtered.forEach(function(c) {
+            var t = c.t, i = c.i, s = c.s, deviations = c.deviations, highestSev = c.highestSev, isClean = c.isClean;
+            var nameEsc = esc(c.name);
+            var resolution = c.resolution;
+            var provCount = c.provisions.length;
+
+            var sTenantStr = c.tenantName || 'N/A';
+            var sPropertyStr = c.propertyDesc || 'N/A';
+            var sMetaLine = '<div class="snapshot-card-meta">'
+                + 'Tenant: ' + esc(sTenantStr) + ' &middot; Property: ' + esc(sPropertyStr)
+                + '</div>';
+
+            var activeClass = (snapshotActiveIndex === i) ? ' contract-card-active' : '';
+
+            // Step 125: Lease blurb
+            var blurb125 = buildLeaseBlurb(t.results);
+            var blurbLine = blurb125 ? '<div class="contract-card-blurb">' + esc(blurb125) + '</div>' : '';
+
+            if (isClean) {
+                html += '<div class="snapshot-card snapshot-card-clean' + activeClass + '" data-tenant="' + i + '">'
+                    + '<div class="snapshot-card-header">'
+                    + '<span class="snapshot-card-name">' + nameEsc + '</span>'
+                    + '<div class="snapshot-card-badges"><span class="snapshot-resolution-badge res-badge-clean">\u2713 Clear</span></div>'
+                    + '</div>'
+                    + sMetaLine
+                    + blurbLine
+                    + '<div class="snapshot-card-body snapshot-card-body-clean">'
+                    + 'All ' + provCount + ' provisions conform to standard template'
+                    + '</div>'
+                    + '<div class="snapshot-card-footer">'
+                    + '<button class="snapshot-open-btn" data-tenant="' + i + '">Open Contract \u2192</button>'
+                    + '</div>'
+                    + '</div>';
+            } else if (!s) {
+                var msg = t.status === "cancelled" ? "Cancelled" : (t.error && t.error.startsWith("GATE_ABORT:") ? "Not a commercial lease" : (t.error || "No results"));
+                html += '<div class="snapshot-card snapshot-card-empty' + activeClass + '" data-tenant="' + i + '">'
+                    + '<div class="snapshot-card-header">'
+                    + '<span class="snapshot-card-name">' + nameEsc + '</span>'
+                    + '<span class="snapshot-resolution-badge res-badge-empty">' + esc(msg) + '</span>'
+                    + '</div></div>';
+            } else {
+                // Action-level badge
+                var actionLabel, actionClass;
+                if ((c.sevCounts['CRITICAL'] || 0) > 0)      { actionLabel = '\u26A0 Immediate Action'; actionClass = 'action-badge-critical'; }
+                else if ((c.sevCounts['HIGH'] || 0) > 0)     { actionLabel = '\u26A0 Review Recommended'; actionClass = 'action-badge-high'; }
+                else if (deviations.length > 0)              { actionLabel = '\u00B7 Monitor'; actionClass = 'action-badge-medium'; }
+                else                                          { actionLabel = '\u2713 Clear'; actionClass = 'action-badge-clear'; }
+
+                var statusBadge;
+                if (resolution === "resolved") {
+                    statusBadge = '<span class="snapshot-resolution-badge res-badge-resolved">\u2713 Resolved</span>';
+                } else {
+                    statusBadge = '<span class="snapshot-resolution-badge res-badge-unreviewed">\u26A0 Unreviewed</span>';
+                }
+
+                // Severity-colored provision chips — clickable, jump to provision in contract detail
+                var chipRow = '<div class="overview-chip-row">';
+                var sortedDevs = deviations.slice().sort(function(a, b) {
+                    return (SEVERITY_ORDER.indexOf(a.severity) || 99) - (SEVERITY_ORDER.indexOf(b.severity) || 99);
+                });
+                sortedDevs.forEach(function(d) {
+                    var pid = d.provision_id || '';
+                    var shortName = (d.provision_name || '').replace(/^LP-\d{2}\s*/, '').replace(/^CUSTOM-\d{2}\s*/, '');
+                    var label = shortName ? pid + ' ' + shortName : pid;
+                    var chipSev = (d.severity || 'MEDIUM').toLowerCase();
+                    var chipTitle = d.risk_headline ? esc(d.risk_headline) : 'Jump to ' + esc(pid);
+                    chipRow += '<span class="overview-chip overview-chip-' + chipSev + ' chip-jumpable" data-tenant="' + i + '" data-pid="' + esc(pid) + '" title="' + chipTitle + '">' + esc(label) + '</span>';
+                });
+                chipRow += '</div>';
+
+                html += '<div class="snapshot-card snapshot-card-findings' + activeClass + '" data-tenant="' + i + '">'
+                    + '<div class="snapshot-card-header">'
+                    + '<span class="snapshot-card-name">' + nameEsc + '</span>'
+                    + '<div class="snapshot-card-badges">'
+                    + '<span class="snapshot-action-badge ' + actionClass + '">' + actionLabel + '</span>'
+                    + statusBadge
+                    + '</div>'
+                    + '</div>'
+                    + sMetaLine
+                    + blurbLine
+                    + chipRow
+                    + '<div class="snapshot-card-footer">'
+                    + '<button class="snapshot-open-btn" data-tenant="' + i + '">Open Contract \u2192</button>'
+                    + '</div>'
+                    + '</div>';
+            }
+        });
+        html += '</div>';
+    }
+
+    container.innerHTML = html;
+
+    // ── Wire toolbar controls ──
+    var sortSel = document.getElementById('snapshot-sort-select');
+    if (sortSel) sortSel.addEventListener('change', function() {
+        snapshotSort = sortSel.value;
+        renderRunSnapshot();
+    });
+    var sevSel = document.getElementById('snapshot-severity-select');
+    if (sevSel) sevSel.addEventListener('change', function() {
+        snapshotSeverityFilter = sevSel.value;
+        renderRunSnapshot();
+    });
+    var statusSel = document.getElementById('snapshot-status-select');
+    if (statusSel) statusSel.addEventListener('change', function() {
+        snapshotStatusFilter = statusSel.value;
+        renderRunSnapshot();
+    });
+    var searchInput = document.getElementById('snapshot-search-input');
+    if (searchInput) {
+        var debounceTimer = null;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(function() {
+                snapshotSearch = searchInput.value;
+                renderRunSnapshot();
+                // Restore focus + cursor position after re-render
+                var inp = document.getElementById('snapshot-search-input');
+                if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
+            }, 150);
+        });
+    }
+
+    // ── Step 130: Contract name filter dropdown ──
+    buildContractFilterDropdown();
+
+    // Wire "Open Contract →" buttons
+    container.querySelectorAll('.snapshot-open-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var idx = parseInt(btn.dataset.tenant, 10);
+            openContractDetail(idx);
+        });
+    });
+
+    // Wire chip clicks → open Contract Detail + jump to provision in findings
+    container.querySelectorAll('.chip-jumpable[data-pid]').forEach(function(chip) {
+        chip.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var idx = parseInt(chip.dataset.tenant, 10);
+            var pid = chip.dataset.pid;
+            openContractDetail(idx);
+            setTimeout(function() { jumpToFinding(pid); }, 300);
+        });
+    });
+}
+
+// ── Contract Detail ──
+
+function openContractDetail(tenantIdx) {
+    contractDetailOpen = true;
+    contractDetailIdx = tenantIdx;
+    currentTenantIndex = tenantIdx;
+    snapshotActiveIndex = tenantIdx;   // Step 120: remember for tab switch
+    syncChatScopeToCurrentTenant(true);
+
+    // Hide overview + contracts tab, show detail
+    var overview     = document.getElementById('overview-tab-content');
+    var contractsTab = document.getElementById('contracts-tab-content');
+    var detail       = document.getElementById('contract-detail-view');
+    if (overview)     overview.classList.add('hidden');
+    if (contractsTab) contractsTab.classList.add('hidden');
+    if (detail)       detail.classList.remove('hidden');
+    setResultsContentDetailMode(true);
+
+    // Hide the no-contract placeholder if it was showing
+    var ncp = document.getElementById('no-contract-placeholder');
+    if (ncp) ncp.classList.add('hidden');
+
+    // Deactivate top-level tabs; subheader will be set by the active results tab
+    document.querySelectorAll("#top-tab-bar .top-tab[data-top-tab]").forEach(function(t) {
+        t.classList.remove("active");
+    });
+
+    // Render header
+    var tenant = currentResults.tenants[tenantIdx];
+    updateContractDetailHeader(tenantIdx);
+
+    // Step 129: Contract selector dropdown + clause filters
+    renderContractSelectorBar(tenantIdx);
+
+    // Step 129: Hide toolbar bar when in contract detail
+    var tb = document.getElementById('snapshot-toolbar-bar');
+    if (tb) tb.classList.add('hidden');
+
+    // Set docview tenant selector
+    var dts = document.getElementById("docview-tenant-select");
+    if (dts) dts.value = tenantIdx;
+
+    // Set hidden tenant selector
+    var ts = document.getElementById("tenant-select");
+    if (ts) ts.value = tenantIdx;
+
+    // Render tenant content
+    renderTenantResults();
+
+    // Render resolution controls
+    renderContractResolutionControls(tenantIdx);
+
+    // Stay on whichever sub-tab was already active (or default to findings)
+    switchResultsTab(activeResultsTab || "findings");
+    persistResultsViewState();
+
+    // Update nav
+    updateNavActive(tenantIdx);
+
+    // Scroll to top of page so nav tabs stay visible
+    window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+function closeContractDetail() {
+    contractDetailOpen = false;
+    contractDetailIdx = -1;
+    snapshotActiveIndex = null;  // Step 122: back button clears memory
+    var overview     = document.getElementById('overview-tab-content');
+    var contractsTab = document.getElementById('contracts-tab-content');
+    var detail       = document.getElementById('contract-detail-view');
+    if (detail) detail.classList.add('hidden');
+    setResultsContentDetailMode(false);
+    persistResultsViewState();
+
+    // Return to whichever top tab was active before opening detail
+    var returnTab = (activeTopTab === 'contracts') ? 'contracts' : 'overview';
+    if (returnTab === 'contracts') {
+        if (contractsTab) contractsTab.classList.remove('hidden');
+        if (overview)     overview.classList.add('hidden');
+    } else {
+        if (overview)     overview.classList.remove('hidden');
+        if (contractsTab) contractsTab.classList.add('hidden');
+    }
+
+    // Hide the no-contract placeholder if it was showing
+    var ncp = document.getElementById('no-contract-placeholder');
+    if (ncp) ncp.classList.add('hidden');
+
+    // Step 129: Hide contract selector dropdown
+    var selectorBar = document.getElementById('contract-selector-bar');
+    if (selectorBar) selectorBar.classList.add('hidden');
+
+    // Re-activate the correct top-tab
+    document.querySelectorAll('#top-tab-bar .top-tab[data-top-tab]').forEach(function(t) {
+        t.classList.toggle('active', t.dataset.topTab === returnTab);
+    });
+
+    // Hide per-tenant checklist — it belongs inside contract detail, not run overview
+    var checklist = document.getElementById('provisions-checklist');
+    if (checklist) checklist.classList.add('hidden');
+    var legend = document.getElementById('results-legend');
+    if (legend) legend.classList.add('hidden');
+
+    renderRunSnapshot();
+}
+
+// ── Section collapse/expand ──
+var sectionCollapsed = { 'run-summary': false, 'contracts': false };
+
+function toggleSection(name) {
+    sectionCollapsed[name] = !sectionCollapsed[name];
+    var collapsed = sectionCollapsed[name];
+
+    var icon = document.getElementById(name + '-toggle-icon');
+    if (icon) icon.textContent = collapsed ? '\u25b8' : '\u25be';
+
+    if (name === 'run-summary') {
+        var ids = ['deal-brief-banner', 'deal-overview-panel', 'ai-summary-bar',
+                   'provisions-checklist', 'results-legend', 'filter-bar',
+                   'provisions-scope-card', 'contract-status-panel', 'review-completion-banner'];
+        ids.forEach(function(id) {
+            var el = document.getElementById(id);
+            // only touch elements that are currently visible (not already hidden for other reasons)
+            if (el && !el.classList.contains('section-user-hidden') && collapsed) {
+                el.dataset.sectionHidden = '1';
+                el.classList.add('hidden');
+            } else if (el && el.dataset.sectionHidden === '1' && !collapsed) {
+                delete el.dataset.sectionHidden;
+                el.classList.remove('hidden');
+            }
+        });
+    } else if (name === 'contracts') {
+        var ids2 = ['snapshot-toolbar-bar', 'snapshot-tab-content'];
+        ids2.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el && collapsed) {
+                el.dataset.sectionHidden = '1';
+                el.classList.add('hidden');
+            } else if (el && el.dataset.sectionHidden === '1' && !collapsed) {
+                delete el.dataset.sectionHidden;
+                el.classList.remove('hidden');
+            }
+        });
+    }
+}
+
+function renderContractResolutionControls(tenantIdx) {
+    return;
+}
+
+// ══════════════════════════════════════════════════════
+// HELP CHAT (upload page) (086)
+// ══════════════════════════════════════════════════════
+
+function initHelpChat() {
+    if (helpChatInitialized) return;
+    const panel = $("#help-chat-panel");
+    const sendBtn = $("#help-chat-send-btn");
+    const input = $("#help-chat-input");
+    if (!panel) return;
+    helpChatInitialized = true;
+
+    sendBtn.addEventListener("click", () => sendHelpChatMessage());
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendHelpChatMessage();
+        }
+    });
+
+    renderHelpChatWelcome();
+}
+
+function renderHelpChatWelcome() {
+    const messagesEl = $("#help-chat-messages");
+    if (!messagesEl) return;
+    messagesEl.innerHTML = "";
+
+    const starters = [
+        "How do I get started?",
+        "Why is CAM unique?",
+        "What does LP-07 (CAM charges) mean?",
+        "Ask any lease-related question...",
+    ];
+
+    const welcome = document.createElement("div");
+    welcome.className = "help-chat-welcome";
+    welcome.innerHTML = "Ask me anything about lease analysis, provisions, or what to look for." +
+        '<div class="help-chat-starters">' +
+        starters.map(s => {
+            if (s.endsWith("...")) {
+                return `<span class="help-chat-hint">${esc(s)}</span>`;
+            }
+            return `<button class="help-chat-starter" onclick="window.CAM.askHelpQuestion(this.textContent)">${esc(s)}</button>`;
+        }).join("") + '</div>';
+    messagesEl.appendChild(welcome);
+}
+
+function refreshHelpChatStarters() {
+    const messagesEl = $("#help-chat-messages");
+    if (!messagesEl) return;
+    const welcome = messagesEl.querySelector(".help-chat-welcome");
+    if (!welcome) return;
+
+    const starters = [
+        "How do I get started?",
+        "What does LP-07 (CAM charges) mean?",
+        "Why is CAM unique?",
+    ];
+
+    starters.push("Ask any lease-related question...");
+
+    welcome.innerHTML = "Ask me anything about lease analysis, provisions, or what to look for." +
+        '<div class="help-chat-starters">' +
+        starters.map(s => {
+            if (s.endsWith("...")) {
+                return `<span class="help-chat-hint">${esc(s)}</span>`;
+            }
+            return `<button class="help-chat-starter" onclick="window.CAM.askHelpQuestion(this.textContent)">${esc(s)}</button>`;
+        }).join("") + '</div>';
+}
+
+function gatherUploadContext() {
+    const ctx = {};
+
+    // Selected provision IDs
+    const selected = [];
+    document.querySelectorAll("#provision-list input[type=checkbox]:checked").forEach(cb => {
+        selected.push(cb.value);
+    });
+    if (selected.length > 0) ctx.selected_provisions = selected;
+
+    // Uploaded filenames
+    const files = [];
+    document.querySelectorAll("#template-file-list .file-name, #tenant-file-list .file-name").forEach(el => {
+        files.push(el.textContent.trim());
+    });
+    if (files.length > 0) ctx.uploaded_files = files;
+
+    // Custom provisions
+    const customs = customProvisions.map(cp => cp.name || cp.id);
+    if (customs.length > 0) ctx.custom_provisions = customs;
+
+    // (Prescan results removed in step 112 — discovery moved into pipeline)
+
+    return ctx;
+}
+
+async function sendHelpChatMessage() {
+    const input = $("#help-chat-input");
+    const messagesEl = $("#help-chat-messages");
+    if (!input || !messagesEl) return;
+
+    const question = input.value.trim();
+    if (!question) return;
+
+    // Remove welcome message on first real question
+    const welcome = messagesEl.querySelector(".help-chat-welcome");
+    if (welcome) welcome.remove();
+
+    // Show user message
+    const userMsg = document.createElement("div");
+    userMsg.className = "chat-msg chat-msg-user";
+    userMsg.textContent = question;
+    messagesEl.appendChild(userMsg);
+    input.value = "";
+
+    // Scroll page so the chat is visible
+    messagesEl.closest(".help-chat-panel, .processing-chat-panel")
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    // Show typing indicator
+    const typing = document.createElement("div");
+    typing.className = "chat-typing";
+    typing.textContent = "Thinking\u2026";
+    messagesEl.appendChild(typing);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    try {
+        const context = gatherUploadContext();
+        const resp = await fetch("/api/chat/general", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                question,
+                context,
+                history: helpChatHistory.slice(-10),
+            }),
+        });
+
+        typing.remove();
+
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || "Chat failed");
+        }
+
+        const data = await resp.json();
+
+        const aiMsg = document.createElement("div");
+        aiMsg.className = "chat-msg chat-msg-ai";
+        aiMsg.innerHTML = formatChatResponse(data.response || "");
+        messagesEl.appendChild(aiMsg);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+
+        helpChatHistory.push({ role: "user", content: question });
+        helpChatHistory.push({ role: "assistant", content: data.response || "" });
+
+    } catch (err) {
+        typing.remove();
+        const errMsg = document.createElement("div");
+        errMsg.className = "chat-msg chat-msg-ai";
+        errMsg.textContent = "Sorry, something went wrong. Please try again.";
+        messagesEl.appendChild(errMsg);
+        console.error("Help chat error:", err);
+    }
+}
+
+function askHelpQuestion(question) {
+    const input = $("#help-chat-input");
+    if (input) {
+        input.value = question;
+        sendHelpChatMessage();
+    }
+}
+
+// ── Expose to global scope ──
+// ══════════════════════════════════════════════════════
+// Processing Email Capture (099)
+// ══════════════════════════════════════════════════════
+
+function maybeShowEmailCapture(jobEmail) {
+    const card = document.getElementById('processing-email-capture');
+    if (!card) return;
+    if (!jobEmail) {
+        card.classList.remove('hidden');
+    } else {
+        card.classList.add('hidden');
+    }
+}
+
+async function submitProcessingEmail() {
+    const input = document.getElementById('processing-email-input');
+    const confirm = document.getElementById('processing-email-confirm');
+    const mismatch = document.getElementById('processing-email-mismatch');
+    const status = document.getElementById('processing-email-status');
+    const btn = document.getElementById('processing-email-btn');
+    if (!input || !currentJobId) return;
+
+    const email = input.value.trim();
+    const confirmEmail = confirm ? confirm.value.trim() : email;
+
+    if (!email || !email.includes('@')) {
+        showProcessingEmailStatus('Please enter a valid email address.', 'error');
+        return;
+    }
+    if (email !== confirmEmail) {
+        if (mismatch) mismatch.classList.remove('hidden');
+        return;
+    }
+    if (mismatch) mismatch.classList.add('hidden');
+
+    btn.disabled = true;
+    try {
+        const resp = await fetch(`/api/jobs/${currentJobId}/email`, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ email })
+        });
+        if (resp.ok) {
+            showProcessingEmailStatus("\u2713 We'll email you when analysis is complete.", 'success');
+            document.getElementById('processing-email-capture').classList.add('hidden');
+        } else {
+            showProcessingEmailStatus('Something went wrong. Please try again.', 'error');
+            btn.disabled = false;
+        }
+    } catch (e) {
+        showProcessingEmailStatus('Connection error. Please try again.', 'error');
+        btn.disabled = false;
+    }
+}
+
+function showProcessingEmailStatus(msg, type) {
+    const el = document.getElementById('processing-email-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = `processing-email-status ${type}`;
+    el.classList.remove('hidden');
+}
+
+// ══════════════════════════════════════════════════════
+// Educational Carousel (099)
+// ══════════════════════════════════════════════════════
+
+let _carouselIndex = 0;
+let _carouselTotal = 0;
+let _carouselTimer = null;
+
+function initCarousel() {
+    const track = document.getElementById('cam-carousel-track');
+    const dotsContainer = document.getElementById('cam-carousel-dots');
+    if (!track || !dotsContainer) return;
+
+    const slides = track.querySelectorAll('.cam-slide');
+    _carouselTotal = slides.length;
+    _carouselIndex = 0;
+
+    // Build dots
+    dotsContainer.innerHTML = '';
+    for (let i = 0; i < _carouselTotal; i++) {
+        const dot = document.createElement('span');
+        dot.className = 'cam-carousel-dot' + (i === 0 ? ' active' : '');
+        dot.onclick = () => carouselGoTo(i);
+        dotsContainer.appendChild(dot);
+    }
+
+    carouselGoTo(0);
+    _startCarouselTimer();
+}
+
+function _startCarouselTimer() {
+    if (_carouselTimer) clearInterval(_carouselTimer);
+    _carouselTimer = setInterval(() => {
+        carouselGoTo((_carouselIndex + 1) % _carouselTotal);
+    }, 11000);
+}
+
+function carouselGoTo(idx) {
+    _carouselIndex = idx;
+    const track = document.getElementById('cam-carousel-track');
+    const dotsContainer = document.getElementById('cam-carousel-dots');
+    if (!track) return;
+    track.style.transform = `translateX(-${idx * 100}%)`;
+    if (dotsContainer) {
+        dotsContainer.querySelectorAll('.cam-carousel-dot').forEach((d, i) => {
+            d.classList.toggle('active', i === idx);
+        });
+    }
+}
+
+function carouselNext() {
+    carouselGoTo((_carouselIndex + 1) % _carouselTotal);
+    _startCarouselTimer(); // reset auto-advance on manual nav
+}
+
+function carouselPrev() {
+    carouselGoTo((_carouselIndex - 1 + _carouselTotal) % _carouselTotal);
+    _startCarouselTimer();
+}
+
+function stopCarousel() {
+    if (_carouselTimer) {
+        clearInterval(_carouselTimer);
+        _carouselTimer = null;
+    }
+}
+
+// ══════════════════════════════════════════════════════
+// Processing Chat (while-you-wait)
+// ══════════════════════════════════════════════════════
+
+function initProcessingChat() {
+    if (processingChatInitialized) return;
+    const panel = $("#processing-chat-panel");
+    const sendBtn = $("#processing-chat-send-btn");
+    const input = $("#processing-chat-input");
+    if (!panel) return;
+    processingChatInitialized = true;
+
+    sendBtn.addEventListener("click", () => sendProcessingChatMessage());
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendProcessingChatMessage();
+        }
+    });
+
+    renderProcessingChatWelcome();
+}
+
+function renderProcessingChatWelcome() {
+    const messagesEl = $("#processing-chat-messages");
+    if (!messagesEl) return;
+    messagesEl.innerHTML = "";
+
+    const starters = [
+        "What makes CAM different?",
+        "What is a CAM charge in a lease?",
+        "What provisions matter most?",
+        "Ask anything about leases...",
+    ];
+
+    const welcome = document.createElement("div");
+    welcome.className = "processing-chat-welcome";
+    welcome.innerHTML = "While you wait, ask me anything about CAM, lease analysis, or commercial real estate provisions." +
+        '<div class="processing-chat-starters">' +
+        starters.map(s => {
+            if (s.endsWith("...")) {
+                return `<span class="help-chat-hint">${esc(s)}</span>`;
+            }
+            return `<button class="processing-chat-starter" onclick="window.CAM.askProcessingQuestion(this.textContent)">${esc(s)}</button>`;
+        }).join("") + '</div>';
+    messagesEl.appendChild(welcome);
+}
+
+async function sendProcessingChatMessage() {
+    const input = $("#processing-chat-input");
+    const messagesEl = $("#processing-chat-messages");
+    if (!input || !messagesEl) return;
+
+    const question = input.value.trim();
+    if (!question) return;
+
+    // Remove welcome message on first real question
+    const welcome = messagesEl.querySelector(".processing-chat-welcome");
+    if (welcome) welcome.remove();
+
+    // Show user message
+    const userMsg = document.createElement("div");
+    userMsg.className = "chat-msg chat-msg-user";
+    userMsg.textContent = question;
+    messagesEl.appendChild(userMsg);
+    input.value = "";
+
+    // Scroll page so the chat is visible
+    messagesEl.closest(".help-chat-panel, .processing-chat-panel")
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    // Show typing indicator
+    const typing = document.createElement("div");
+    typing.className = "chat-typing";
+    typing.textContent = "Thinking\u2026";
+    messagesEl.appendChild(typing);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    try {
+        const resp = await fetch("/api/chat/general", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                question,
+                context: { phase: "processing", job_id: currentJobId || "" },
+                history: processingChatHistory.slice(-10),
+            }),
+        });
+
+        typing.remove();
+
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || "Chat failed");
+        }
+
+        const data = await resp.json();
+
+        const aiMsg = document.createElement("div");
+        aiMsg.className = "chat-msg chat-msg-ai";
+        aiMsg.innerHTML = formatChatResponse(data.response || "");
+        messagesEl.appendChild(aiMsg);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+
+        processingChatHistory.push({ role: "user", content: question });
+        processingChatHistory.push({ role: "assistant", content: data.response || "" });
+
+    } catch (err) {
+        typing.remove();
+        const errMsg = document.createElement("div");
+        errMsg.className = "chat-msg chat-msg-ai";
+        errMsg.textContent = "Sorry, something went wrong. Please try again.";
+        messagesEl.appendChild(errMsg);
+        console.error("Processing chat error:", err);
+    }
+}
+
+function askProcessingQuestion(question) {
+    const input = $("#processing-chat-input");
+    if (input) {
+        input.value = question;
+        sendProcessingChatMessage();
+    }
+}
+
+function resetProcessingChat() {
+    processingChatHistory = [];
+    processingChatInitialized = false;
+}
+
+// ══════════════════════════════════════════════════════
+// User Rules (Step 140)
+// ══════════════════════════════════════════════════════
+
+function showRuleCreationDialog(provCode, provName) {
+    const suggestion = `Provision ${provCode} (${provName}): treat this type of change as conforming in future analyses.`;
+    const modal = $("#rules-dialog-modal");
+    const textarea = $("#rules-dialog-text");
+    const provHint = $("#rules-dialog-provision-hint");
+    const statusEl = $("#rules-dialog-status");
+    if (!modal || !textarea) return;
+
+    textarea.value = suggestion;
+    if (provHint) provHint.value = provCode;
+    if (statusEl) { statusEl.textContent = ""; statusEl.classList.add("hidden"); }
+
+    modal.classList.add("open");
+    textarea.focus();
+    textarea.select();
+}
+
+async function saveRule() {
+    const textarea = $("#rules-dialog-text");
+    const provHint = $("#rules-dialog-provision-hint");
+    const saveBtn = $("#rules-dialog-save");
+    const statusEl = $("#rules-dialog-status");
+
+    const text = (textarea?.value || "").trim();
+    if (!text) return;
+
+    const code = sessionStorage.getItem("cam_access_code") || "";
+
+    if (saveBtn) saveBtn.disabled = true;
+    if (statusEl) { statusEl.textContent = "Saving..."; statusEl.classList.remove("hidden"); }
+
+    try {
+        const resp = await fetch("/api/rules", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                access_code: code,
+                text: text,
+                provision_hint: provHint?.value || "",
+            }),
+        });
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || "Save failed");
+        }
+        if (statusEl) { statusEl.textContent = "\u2713 Rule saved \u2014 will apply to future runs."; }
+        setTimeout(() => closeRuleDialog(), 2000);
+    } catch (err) {
+        if (statusEl) { statusEl.textContent = "Error: " + err.message; }
+    } finally {
+        if (saveBtn) saveBtn.disabled = false;
+    }
+}
+
+function closeRuleDialog() {
+    const modal = $("#rules-dialog-modal");
+    if (modal) modal.classList.remove("open");
+}
+
+async function showRulesPanel() {
+    const modal = $("#rules-panel-modal");
+    const list = $("#rules-panel-list");
+    if (!modal || !list) return;
+
+    const code = sessionStorage.getItem("cam_access_code") || "";
+    list.innerHTML = '<div style="color:var(--text-muted)">Loading...</div>';
+    modal.classList.add("open");
+
+    try {
+        const resp = await fetch(`/api/rules?access_code=${encodeURIComponent(code)}`);
+        if (!resp.ok) throw new Error("Failed to load rules");
+        const data = await resp.json();
+        const rules = data.rules || [];
+
+        if (rules.length === 0) {
+            list.innerHTML = '<div style="color:var(--text-muted);font-size:0.875rem;">No rules yet. Click "No" on a finding\'s feedback row to create one.</div>';
+            return;
+        }
+
+        list.innerHTML = "";
+        rules.forEach(rule => {
+            const item = document.createElement("div");
+            item.className = "rules-panel-item";
+            item.innerHTML = `
+                <div class="rules-panel-item-text">${esc(rule.text)}</div>
+                <div class="rules-panel-item-meta">
+                    ${rule.provision_hint ? `<span class="rules-panel-tag">${esc(rule.provision_hint)}</span>` : ""}
+                    <span class="rules-panel-date">${rule.created_at.slice(0,10)}</span>
+                </div>
+                <button class="rules-panel-delete" data-id="${esc(rule.id)}" onclick="window.CAM.deleteRule('${esc(rule.id)}', this)">Delete</button>
+            `;
+            list.appendChild(item);
+        });
+    } catch (err) {
+        list.innerHTML = `<div style="color:var(--text-muted)">Error: ${esc(err.message)}</div>`;
+    }
+}
+
+async function deleteRule(ruleId, btnEl) {
+    const code = sessionStorage.getItem("cam_access_code") || "";
+    if (btnEl) btnEl.disabled = true;
+    try {
+        const resp = await fetch(`/api/rules/${encodeURIComponent(ruleId)}?access_code=${encodeURIComponent(code)}`, {
+            method: "DELETE",
+        });
+        if (!resp.ok) throw new Error("Delete failed");
+        const item = btnEl?.closest(".rules-panel-item");
+        if (item) item.remove();
+    } catch (err) {
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = "Error"; }
+    }
+}
+
+// ── Final Draft ──────────────────────────────────────────────────────────────
+
+function getFinalDraftKey(tenantIdx, pid) {
+    return `${tenantIdx}:${pid}`;
+}
+
+function setFinalDraftDecision(tenantIdx, pid, choice, text) {
+    const key = getFinalDraftKey(tenantIdx, pid);
+    const prev = finalDraftDecisions[key] || {};
+    finalDraftDecisions[key] = { ...prev, choice, text };
+    updateFinalDraftBar();
+    updateDecisionBadge(tenantIdx, pid, choice);
+}
+
+function getFinalDraftDecision(tenantIdx, pid) {
+    return finalDraftDecisions[getFinalDraftKey(tenantIdx, pid)] || null;
+}
+
+function getFinalDraftTenantIndices() {
+    if (!currentResults || !Array.isArray(currentResults.tenants)) return [];
+    if (contractDetailOpen && currentTenantIndex >= 0 && currentTenantIndex < currentResults.tenants.length) {
+        return [currentTenantIndex];
+    }
+    return currentResults.tenants.map((_, idx) => idx);
+}
+
+function countFinalDraftDecisions() {
+    if (!currentResults) return { decided: 0, resolved: 0, ready: 0, total: 0 };
+    let total = 0, decided = 0, resolved = 0, ready = 0;
+    getFinalDraftTenantIndices().forEach(i => {
+        const t = currentResults.tenants[i];
+        getDeviationWorkflowProvisions((t.results?.provisions || [])).forEach(p => {
+                total++;
+                const dec = finalDraftDecisions[getFinalDraftKey(i, p.provision_id)];
+                const status = (resolutionState[`${i}:${p.provision_id}`] || {}).status || 'open';
+                // custom only counts as decided if text has been explicitly saved
+                const isDecided = !!(dec && (dec.choice === 'template' || dec.choice === 'tenant' || (dec.choice === 'custom' && dec.saved && dec.text)));
+                if (isDecided) decided++;
+                if (status === 'resolved' || status === 'not_a_deviation') resolved++;
+                if ((status === 'not_a_deviation') || (isDecided && status === 'resolved')) ready++;
+        });
+    });
+    return { decided, resolved, ready, total };
+}
+
+function updateFinalDraftBar() {
+    const statusEl = $('#final-draft-status');
+    const btn = $('#fd-generate-btn');
+    if (!statusEl && !btn) return;
+    const { decided, resolved, ready, total } = countFinalDraftDecisions();
+    const remaining = Math.max(0, total - ready);
+    if (statusEl) {
+        if (total === 0) statusEl.classList.add('hidden');
+        else {
+            statusEl.classList.remove('hidden');
+            statusEl.innerHTML = '<span class="fd-bar-label">📋 Final Draft:</span> '
+                + '<span class="fd-counter">' + `${remaining} deviation${remaining === 1 ? '' : 's'} remaining` + '</span>';
+        }
+    }
+    if (btn) btn.disabled = ready < total;
+}
+
+function updateDecisionBadge(tenantIdx, pid, choice) {
+    // Update the button states on the card
+    const card = document.getElementById(`dev-${pid}`);
+    if (!card) return;
+    card.querySelectorAll('.fd-btn').forEach(btn => {
+        btn.classList.toggle('fd-btn-active', btn.dataset.choice === choice);
+    });
+    // Show/hide the modify panel
+    const modifyPanel = card.querySelector('.fd-modify-panel');
+    if (modifyPanel) modifyPanel.classList.toggle('hidden', choice !== 'custom');
+}
+
+// Open the modify panel (no AI call — user must explicitly click AI Draft)
+function finalDraftModify(tenantIdx, pid) {
+    const dec = getFinalDraftDecision(tenantIdx, pid);
+    // If switching away from a saved custom back to Modify, just re-open panel
+    if (!dec || dec.choice !== 'custom') {
+        // Mark as custom but with no saved text yet (unsaved)
+        finalDraftDecisions[getFinalDraftKey(tenantIdx, pid)] = { choice: 'custom', text: '', saved: false };
+        updateFinalDraftBar();
+    }
+    const card = document.getElementById(`dev-${pid}`);
+    if (!card) return;
+    const panel = card.querySelector('.fd-modify-panel');
+    if (!panel) return;
+    panel.classList.remove('hidden');
+    card.querySelectorAll('.fd-btn').forEach(btn => {
+        btn.classList.toggle('fd-btn-active', btn.dataset.choice === 'custom');
+    });
+}
+
+// Keep Reference or Keep Tenant — with override confirm if saved custom text exists
+function fdChooseSimple(tenantIdx, pid, choice) {
+    const dec = getFinalDraftDecision(tenantIdx, pid);
+    if (dec && dec.choice === 'custom' && dec.saved && dec.text) {
+        const label = choice === 'template' ? 'Keep Reference' : 'Keep Tenant';
+        if (!confirm(`You have saved modified text for this provision. Switch to "${label}" and discard your edits?`)) return;
+    }
+    setFinalDraftDecision(tenantIdx, pid, choice, '');
+    refreshDocviewIfActive(tenantIdx);
+    const key = `${tenantIdx}:${pid}`;
+    const isResolved = (resolutionState[key] || {}).status === "resolved";
+    if (!isResolved && confirm("Mark this issue as resolved now?")) {
+        setResolutionStatus(pid, tenantIdx, "resolved");
+    }
+}
+
+// AI Draft button — fetch suggestion and insert into textarea (not auto-saved)
+function fdOpenChatDraft(tenantIdx, pid, mode = 'custom') {
+    askAboutFinding(pid, tenantIdx, "", "draft");
+}
+
+async function fdAiDraft(tenantIdx, pid, mode = 'custom') {
+    let templateText = '', tenantText = '';
+    if (currentResults && currentResults.tenants && currentResults.tenants[tenantIdx]) {
+        const provs = currentResults.tenants[tenantIdx].results?.provisions || [];
+        const p = provs.find(p => p.provision_id === pid);
+        if (p) { templateText = p.template_text || ''; tenantText = p.tenant_text || ''; }
+    }
+    const card = document.getElementById(`dev-${pid}`);
+    if (!card) return;
+    const panel = card.querySelector('.fd-modify-panel');
+    if (!panel) return;
+    const textarea = panel.querySelector('.fd-modify-textarea');
+    const instructionInput = panel.querySelector('.fd-modify-instruction');
+    const aiBtn = panel.querySelector('.fd-ai-draft-btn');
+    const saveBtn = panel.querySelector('.fd-save-btn');
+    if (aiBtn) { aiBtn.disabled = true; aiBtn.textContent = 'Drafting\u2026'; }
+    if (saveBtn) saveBtn.disabled = true;
+    if (textarea) textarea.placeholder = 'AI is drafting a compromise\u2026';
+    const customInstruction = instructionInput ? instructionInput.value.trim() : '';
+    const modeInstructionMap = {
+        middle: 'Draft a balanced middle-ground clause between the reference and tenant language.',
+        landlord: 'Draft a clause that remains commercially reasonable but leans toward the landlord position.',
+        tenant: 'Draft a clause that remains commercially reasonable but leans toward the tenant position.',
+        narrow: 'Draft the smallest targeted change needed to address the deviation while preserving as much existing language as possible.',
+        custom: customInstruction
+            ? `Draft based on this user instruction: ${customInstruction}`
+            : 'Draft a balanced middle-ground clause between the reference and tenant language.'
+    };
+    try {
+        const prompt = `You are a commercial real estate attorney drafting compromise lease language.
+
+Standard template clause:
+${templateText}
+
+Tenant's proposed clause:
+${tenantText}
+
+Draft a single clause revision that follows this drafting direction:
+${modeInstructionMap[mode] || modeInstructionMap.custom}
+
+Requirements:
+- Balances landlord and tenant interests
+- Honor specific numeric or business instructions if the user gave any
+- Uses clear, standard commercial lease language
+- Is concise (do not add commentary or explanation)
+- Returns ONLY the clause text, nothing else`;
+        const resp = await fetch('/api/ai-summary', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt }),
+        });
+        const data = await resp.json();
+        if (textarea) {
+            textarea.value = data.summary || '';
+            textarea.placeholder = 'Edit or click Save to keep this text\u2026';
+        }
+        const key = getFinalDraftKey(tenantIdx, pid);
+        if (instructionInput && customInstruction) {
+            finalDraftDecisions[key] = { ...(finalDraftDecisions[key] || {}), choice: 'custom', instruction: customInstruction };
+        }
+    } catch(e) {
+        if (textarea) textarea.placeholder = 'AI draft failed \u2014 type your compromise text here';
+    } finally {
+        if (aiBtn) { aiBtn.disabled = false; aiBtn.textContent = '\u2728 Draft from instruction'; }
+        if (saveBtn) saveBtn.disabled = false;
+    }
+}
+
+// Save button — explicitly commits textarea content
+function fdSave(tenantIdx, pid, markResolved = true) {
+    const card = document.getElementById(`dev-${pid}`);
+    if (!card) return;
+    const textarea = card.querySelector('.fd-modify-textarea');
+    const text = textarea ? textarea.value.trim() : '';
+    if (!text) { alert('Please enter some text before saving.'); return; }
+    finalDraftDecisions[getFinalDraftKey(tenantIdx, pid)] = {
+        choice: 'custom',
+        text,
+        saved: true
+    };
+    updateFinalDraftBar();
+    // Re-render just this card's buttons to show "Keep Modified ✓"
+    const modifyBtn = card.querySelector('.fd-btn[data-choice="custom"]');
+    if (modifyBtn) modifyBtn.textContent = 'Keep Modified \u2713';
+    card.querySelectorAll('.fd-btn').forEach(btn => {
+        btn.classList.toggle('fd-btn-active', btn.dataset.choice === 'custom');
+    });
+    const saveBtn = card.querySelector('.fd-save-btn');
+    if (saveBtn) { saveBtn.textContent = 'Saved \u2713'; saveBtn.disabled = true; }
+    // Re-enable save on further edits
+    if (textarea) textarea.oninput = () => {
+        if (saveBtn) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; }
+    };
+    if (markResolved) setResolutionStatus(pid, tenantIdx, "resolved");
+    else {
+        const key = `${tenantIdx}:${pid}`;
+        if ((resolutionState[key] || {}).status === "resolved") {
+            setResolutionStatus(pid, tenantIdx, "open");
+        }
+    }
+    refreshDocviewIfActive(tenantIdx);
+}
+
+// Clear button — wipe textarea (does not unsave previous save)
+async function fdSaveAsNote(tenantIdx, pid) {
+    const card = document.getElementById(`dev-${pid}`);
+    if (!card) return;
+    const textarea = card.querySelector('.fd-modify-textarea');
+    const noteBtn = card.querySelector('.fd-note-btn');
+    const draftText = textarea ? textarea.value.trim() : '';
+    let noteText = '';
+    if (draftText) {
+        noteText = `Possible clause language:\n${draftText}`;
+    }
+    if (!noteText) {
+        alert('Add a rough instruction or draft text first.');
+        return;
+    }
+    if (noteBtn) { noteBtn.disabled = true; noteBtn.textContent = 'Saving...'; }
+    const saved = await addResolutionNote(pid, tenantIdx, noteText);
+    if (noteBtn) noteBtn.textContent = saved ? 'Saved to Notes' : 'Save as Note';
+}
+
+function fdClear(tenantIdx, pid) {
+    const card = document.getElementById(`dev-${pid}`);
+    if (!card) return;
+    const textarea = card.querySelector('.fd-modify-textarea');
+    if (textarea) { textarea.value = ''; textarea.focus(); }
+    const saveBtn = card.querySelector('.fd-save-btn');
+    if (saveBtn) { saveBtn.textContent = 'Save'; saveBtn.disabled = false; }
+}
+
+async function generateFinalDraft() {
+    const { ready, total } = countFinalDraftDecisions();
+    if (ready < total) return;
+
+    const btn = $('#fd-generate-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Generating\u2026'; }
+
+    // Build decisions payload
+    const decisions = {};
+    if (currentResults) {
+        getFinalDraftTenantIndices().forEach(i => {
+            const t = currentResults.tenants[i];
+            (t.results?.provisions || []).forEach(p => {
+                const key = getFinalDraftKey(i, p.provision_id);
+                const dec = finalDraftDecisions[key];
+                if (dec) {
+                    decisions[p.provision_id] = {
+                        choice: dec.choice,
+                        text: dec.choice === 'template' ? (p.template_text || '')
+                            : dec.choice === 'tenant'   ? (p.tenant_text || '')
+                            : dec.text,
+                        provision_name: p.provision_name || '',
+                        final_verdict: p.final_verdict,
+                        severity: p.severity || '',
+                    };
+                } else if (p.final_verdict === 'CONFORMS') {
+                    decisions[p.provision_id] = {
+                        choice: 'tenant',
+                        text: p.tenant_text || '',
+                        provision_name: p.provision_name || '',
+                        final_verdict: 'CONFORMS',
+                        severity: '',
+                    };
+                }
+            });
+        });
+    }
+
+    try {
+        const resp = await fetch('/api/final-draft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: currentJobId, decisions }),
+        });
+        if (!resp.ok) throw new Error('Server error');
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `final_draft_${currentJobId || 'lease'}.docx`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch(e) {
+        alert('Failed to generate final draft. Please try again.');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Generate Final Draft \u2193'; }
+        updateFinalDraftBar();
+    }
+}
+
+function injectFinalDraftBar() {
+    const existing = $('#final-draft-bar');
+    if (existing) existing.remove();
+    updateFinalDraftBar();
+}
+
+// Step 186: Jump to audit trail provision row
+function jumpToAuditProvision(tenantIdx, pid) {
+    switchResultsTab('audittrail');
+    setTimeout(() => {
+        const row = document.querySelector(`.audit-provision-row[data-pid="${pid}"][data-tenant="${tenantIdx}"]`) ||
+                    document.querySelector(`.audit-provision-row[data-pid="${pid}"]`);
+        if (row) {
+            // Open the detail panel if it's currently closed
+            const idx = row.dataset.idx;
+            const detail = idx ? document.getElementById(`audit-detail-${idx}`) : null;
+            if (detail && detail.classList.contains('hidden')) {
+                toggleAuditRow(idx);
+            }
+            // Scroll and flash after a brief moment to let the detail expand
+            setTimeout(() => {
+                row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                row.classList.add('highlight-flash');
+                setTimeout(() => row.classList.remove('highlight-flash'), 2000);
+            }, 100);
+        }
+    }, 400);
+}
+
+// Step 183: Open About CAM modal, optionally scroll to a section
+function showAboutModal(scrollToId) {
+    const modal = $("#about-cam-modal");
+    if (modal) modal.classList.add("open");
+    if (scrollToId) {
+        setTimeout(() => {
+            const el = document.getElementById(scrollToId);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+    }
+}
+
+// ── Notable clauses sub-section (Step 207) ──
+
+function buildNotableClausesHtml(discs, pid, modelsUsed, provision) {
+    if (!discs || discs.length === 0) return '';
+
+    // Suppress if the provision was fully challenged — challenge output already
+    // articulates the specific clause-level findings. Notable clauses only add
+    // value when the provision wasn't challenged (WITHHOLD, triage-skipped).
+    const challengeDetails = (provision && provision.challenge_details) || '';
+    const challengeFinding = (provision && provision.challenge_finding) || '';
+    const wasFullyChallenged = challengeDetails.length > 50 ||
+                               (challengeFinding && challengeFinding !== 'NO_ISSUE');
+    if (wasFullyChallenged) return '';
+
+    const evalNames = modelsUsed ? getEvaluatorNames(modelsUsed) : {};
+
+    const items = discs.map(d => {
+        const name = esc(d.clause_name || 'Unnamed Clause');
+        const secRef = d.tenant_section_ref ? `<span class="notable-section-ref">${esc(d.tenant_section_ref)}</span>` : '';
+        const text = d.clause_text || '';
+        const displayText = text.length > 200 ? text.substring(0, 200) + '...' : text;
+
+        // Per-model reasoning
+        let reasoningHtml = '';
+        if (d.evaluator_details && Object.keys(d.evaluator_details).length > 0) {
+            const details = Object.entries(d.evaluator_details).map(([key, det]) => {
+                const modelName = evalNames[key] ? evalNames[key].name : `Model ${key}`;
+                return `<div><strong>${esc(modelName)}:</strong> ${esc(det.reasoning || '')}</div>`;
+            }).join('');
+            reasoningHtml = `<details class="notable-reasoning"><summary>Model reasoning</summary><div class="notable-reasoning-body">${details}</div></details>`;
+        }
+
+        return `<div class="notable-clause-item">
+            <div class="notable-clause-header">
+                <span class="notable-clause-name">${name}</span>
+                ${secRef}
+            </div>
+            <div class="notable-clause-text">${esc(displayText)}</div>
+            ${reasoningHtml}
+        </div>`;
+    }).join('');
+
+    const label = discs.length === 1
+        ? '1 notable clause identified within this provision'
+        : `${discs.length} notable clauses identified within this provision`;
+
+    const subId = `notable-${esc(pid)}`;
+
+    return `<div class="notable-clauses-section">
+        <button class="notable-clauses-toggle" onclick="window.CAM.toggleNotableClauses('${subId}'); event.stopPropagation();">
+            &#9656; ${label}
+        </button>
+        <div class="notable-clauses-body hidden" id="${subId}">
+            ${items}
+        </div>
+    </div>`;
+}
+
+function toggleNotableClauses(subId) {
+    const body = document.getElementById(subId);
+    const btn = body && body.previousElementSibling;
+    if (!body) return;
+    const isOpen = !body.classList.contains('hidden');
+    body.classList.toggle('hidden', isOpen);
+    if (btn) {
+        btn.innerHTML = btn.innerHTML.replace(
+            isOpen ? '&#9662;' : '&#9656;',
+            isOpen ? '&#9656;' : '&#9662;'
+        );
+    }
+}
+
+// ── Demo file library (Step 206) ──
+
+async function loadDemoTemplate() {
+    // Only load if no template is already set
+    if (templateFile) return;
+
+    try {
+        const resp = await fetch('/static/demo/template.txt');
+        if (!resp.ok) return; // demo files not present — silently skip
+        const blob = await resp.blob();
+        const file = new File([blob], 'Meridian Standard Template (demo).txt',
+                              { type: 'text/plain' });
+        handleTemplateFiles([file]);
+    } catch (e) {
+        // Demo files unavailable — fail silently, don't block normal use
+        console.warn('Demo template not available:', e);
+    }
+}
+
+function toggleDemoTenantPicker() {
+    const picker = $('#demo-tenant-picker');
+    const arrow  = $('#demo-toggle-arrow');
+    if (!picker) return;
+    const isOpen = !picker.classList.contains('hidden');
+    picker.classList.toggle('hidden', isOpen);
+    if (arrow) arrow.innerHTML = isOpen ? '&#9660;' : '&#9650;';
+}
+
+function updateDemoLoadBtn() {
+    const btn = $('#demo-load-btn');
+    if (!btn) return;
+    const anyChecked = document.querySelectorAll('.demo-tenant-check:checked').length > 0;
+    btn.disabled = !anyChecked;
+}
+
+async function loadDemoTenants() {
+    const checked = [...document.querySelectorAll('.demo-tenant-check:checked')];
+    if (checked.length === 0) return;
+
+    const btn = $('#demo-load-btn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Loading...'; }
+
+    const files = [];
+    for (const cb of checked) {
+        try {
+            const resp = await fetch(`/static/demo/${cb.value}`);
+            if (!resp.ok) continue;
+            const blob = await resp.blob();
+            const nameMap = {
+                'T-01_clean.txt':        'Demo — Clean Lease.txt',
+                'T-03_obvious.txt':      'Demo — Obvious Changes.txt',
+                'T-07_aggressive.txt':   'Demo — Aggressive Counsel.txt',
+                'T-10_sophisticated.txt':'Demo — Sophisticated Counsel.txt',
+            };
+            const displayName = nameMap[cb.value] || cb.value;
+            files.push(new File([blob], displayName, { type: 'text/plain' }));
+        } catch (e) {
+            console.warn('Failed to load demo file:', cb.value, e);
+        }
+    }
+
+    if (files.length > 0) {
+        handleTenantFiles(files);
+    }
+
+    // Collapse picker after loading
+    const picker = $('#demo-tenant-picker');
+    if (picker) picker.classList.add('hidden');
+    const arrow = $('#demo-toggle-arrow');
+    if (arrow) arrow.innerHTML = '&#9660;';
+    if (btn) { btn.textContent = 'Load Selected'; }
+}
+
+window.CAM = {
+    showAboutModal,
+    jumpToDocview,
+    jumpToAuditProvision,
+    submitFeedback,
+    downloadFile,
+    exportTenantJSON,
+    askAboutFinding,
+    jumpToProvision,
+    searchInDoc,
+    toggleFilterDropdown,
+    clearFilters,
+    resetChatScope,
+    toggleTechDetails,
+    downloadSynopsis,
+    exportJSON,
+    checkAllProvisions: () => toggleAllProvisions(true),
+    uncheckAllProvisions: () => toggleAllProvisions(false),
+    resetApp,
+    toggleEmailAccordion,
+    toggleSecurityAccordion,
+    askHelpQuestion,
+    askAnalysisQuestion,
+    handleBackToResults,
+    cancelAddMore,
+    toggleAuditRow,
+    expandAllAuditRows,
+    collapseAllConforming,
+    collapseAllAuditRows,
+    exportAuditJSON,
+    exportAuditText,
+    setResolutionStatus,
+    toggleResolutionNotes,
+    openResolutionAdvisor,
+    saveResolutionNote,
+    deleteResolutionNote,
+    askResolution,
+    submitProcessingEmail,
+    carouselNext,
+    carouselPrev,
+    askProcessingQuestion,
+    markContractResolved,
+    reopenContract,
+    toggleNoted,
+    closeContractDetail,
+    showRuleCreationDialog,
+    saveRule,
+    closeRuleDialog,
+    showRulesPanel,
+    deleteRule,
+    setFinalDraftDecision,
+    finalDraftModify,
+    fdChooseSimple,
+    fdOpenChatDraft,
+    fdAiDraft,
+    fdSave,
+    fdSaveAsNote,
+    fdClear,
+    generateFinalDraft,
+    openDocviewSummary,
+    openDocviewModify,
+    toggleDocviewResolutionNotes,
+    saveDocviewResolutionNote,
+    deleteDocviewResolutionNote,
+    handleConformingConcernAction,
+    toggleDocviewAnalysis,
+    toggleContractSummaryCollapse,
+    toggleSection,
+    switchToDocview: function() { switchResultsTab("docview"); },
+    viewCancelledResults: async function() {
+        try {
+            await loadResults();
+            showState("results");
+        } catch (err) {
+            console.error("Error loading cancelled results:", err);
+        }
+    },
+    toggleNotableClauses,
+    loadDemoTemplate,
+    toggleDemoTenantPicker,
+    loadDemoTenants,
+};
+
+// ── Boot ──
+document.addEventListener("DOMContentLoaded", init);
+
+})();

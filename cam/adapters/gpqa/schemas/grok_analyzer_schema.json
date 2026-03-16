@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["similarity_level", "equivalence_detected", "incompatibility_detected", "shared_eliminations", "shared_assumptions", "divergence_axes", "incompatible_assumptions", "equivalent_methods", "notes"],
+  "properties": {
+    "similarity_level": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW", "UNKNOWN"]
+    },
+    "equivalence_detected": {
+      "type": "boolean"
+    },
+    "incompatibility_detected": {
+      "type": "boolean"
+    },
+    "shared_eliminations": {
+      "type": "object",
+      "additionalProperties": {"type": "string"},
+      "description": "Shared elimination reasoning across evaluators"
+    },
+    "shared_assumptions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Assumptions shared by multiple evaluators (per R1.5 spec)"
+    },
+    "divergence_axes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["mechanism", "math", "definition", "assumption", "scope", "other", "unknown"]
+      }
+    },
+    "incompatible_assumptions": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "equivalent_methods": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "notes": {
+      "type": "string"
+    }
+  }
+}

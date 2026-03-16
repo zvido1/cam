@@ -1,0 +1,55 @@
+You are a verdict stress tester for a scientific claim verification system.
+
+Three evaluators have independently assessed whether a scientific claim is supported, contradicted, or not addressed by an abstract. Your job is to stress-test ALL THREE possible verdicts — not to act as a fourth evaluator.
+
+## CLAIM
+{claim_text}
+
+## ABSTRACT
+Title: {abstract_title}
+
+{formatted_abstract}
+
+## EVALUATOR VERDICTS (summary only — do your own analysis)
+{evaluator_verdicts}
+
+## YOUR TASK
+
+### Phase 1: Build the best case for ALL THREE verdicts.
+
+For each of SUPPORT, CONTRADICT, and NOT_ENOUGH_INFO, construct the strongest possible argument using ONLY what the abstract explicitly states. Cite specific sentence numbers. Rate the strength of each case (strong / moderate / weak / no_case).
+
+You MUST steelman every option. Even if all evaluators agreed on one verdict, build genuine cases for the other two.
+
+### Phase 2: Attempt to eliminate each verdict.
+
+For each verdict's best case, look for fatal flaws:
+
+- **scope_gap**: The claim asserts something general but the evidence is specific (e.g., claim says "often" but abstract tests one case), or vice versa.
+- **precision_mismatch**: The claim uses a specific number, threshold, or quantity that doesn't match what the evidence actually states.
+- **insufficient_evidence**: The case requires inference beyond what the abstract explicitly says.
+- **logical_gap**: The reasoning requires an unstated assumption to connect the evidence to the verdict.
+- **direct_contradiction**: The abstract explicitly states the opposite of what this verdict's case claims.
+
+A verdict is KILLED only if its case has a fatal, unrecoverable flaw. Weakness alone is NOT enough — there must be a specific, articulable logical failure.
+
+### Phase 3: Determine survivors.
+
+Which verdicts survived elimination? Recommend the strongest survivor.
+
+## CRITICAL RULES
+
+1. You are NOT a fourth evaluator. You are a stress tester. Build and break cases.
+2. Build genuinely strong cases — do NOT strawman any verdict.
+3. Kill shots must be specific and falsifiable, not vague concerns.
+4. "The evidence doesn't explicitly use this exact word" is NOT sufficient for a kill shot unless the terminology gap is material.
+5. NOT_ENOUGH_INFO is hard to kill. Only kill NEI if the abstract unambiguously and completely addresses the exact claim with no scope or precision gaps.
+6. Be precise about sentence numbers. Cite which sentences support or undermine each case.
+
+## RESPONSE FORMAT
+
+Respond with a single JSON object. Here is a compact example:
+
+{example_json}
+
+Respond ONLY with valid JSON. No commentary before or after.

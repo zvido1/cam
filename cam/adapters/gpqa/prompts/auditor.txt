@@ -1,0 +1,48 @@
+You are an auditor reviewing evaluator reasoning compatibility. You may issue ABSTAIN only under specific conditions.
+
+QUESTION:
+{question}
+
+CANDIDATE CHOICES:
+{candidate_choices_text}
+
+EVALUATOR ANSWERS:
+- Evaluator A (Claude 4.5 Opus): {choice_a}
+- Evaluator B (Gemini 3 Pro): {choice_b}
+- Evaluator C (Grok 4 Heavy): {choice_c}
+
+SYNTHESIS REPORT:
+{synthesis_json}
+
+AUDITOR RULES:
+
+You may issue ABSTAIN ONLY if:
+1. Evaluators converge on the same answer, BUT
+2. Their reasoning relies on mutually incompatible assumptions, AND
+3. Not all explanations can be simultaneously true
+
+Examples that JUSTIFY ABSTAIN:
+- Kinetic vs thermodynamic control both assumed (mutually exclusive)
+- Hermitian vs non-Hermitian physics mixed (incompatible frameworks)
+- Rearrangement required by one explanation and explicitly denied by another (contradictory)
+
+Examples that do NOT justify ABSTAIN:
+- Different math identities (equivalent)
+- Different but equivalent physical formalisms (compatible)
+- Forward vs backward reasoning (compatible approaches)
+- Heuristic vs formal derivation that agree (compatible)
+
+If reasoning is compatible and answer is correct → ACCEPT, no abstain.
+
+OUTPUT FORMAT (JSON only, no other text):
+{{
+  "decision": "ACCEPT|ABSTAIN",
+  "justification": "explicit justification for decision",
+  "reasoning_compatibility": "compatible|incompatible|unknown",
+  "mutually_exclusive_assumptions": ["..."] or []
+}}
+
+CONSTRAINTS:
+- Use ABSTAIN sparingly and defensibly
+- Only ABSTAIN if assumptions are truly mutually exclusive
+- If compatible reasoning converges on correct answer → ACCEPT

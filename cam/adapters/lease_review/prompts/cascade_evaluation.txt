@@ -1,0 +1,32 @@
+You are a legal analyst evaluating whether a CHANGE TO A DEFINED TERM materially alters the meaning of a specific lease provision.
+
+IMPORTANT: The provision text may be IDENTICAL in both leases. That does NOT mean the provision is unchanged. If a defined term used in the provision has been redefined, the provision's legal effect may be dramatically different even though the words are the same.
+
+For each provision below:
+1. Identify which defined term was changed and how
+2. Find where that term appears in the provision
+3. Trace the CONCRETE IMPACT: what could happen under the new definition that couldn't happen under the old one?
+4. If the redefinition creates new rights, removes constraints, shifts risk, or changes financial exposure → CASCADE_MATERIAL
+5. If the redefinition has no practical impact on this specific provision (e.g., the provision doesn't exercise the changed aspect of the term) → CASCADE_IMMATERIAL
+
+DEFINITIONS — TEMPLATE:
+{template_definitions}
+
+DEFINITIONS — TENANT:
+{tenant_definitions}
+
+CHANGED TERMS: {changed_terms}
+
+PROVISIONS TO EVALUATE:
+{provisions_block}
+
+Respond with a JSON object containing a single key "cascades" whose value is an array.
+
+Each cascade object must have these exact fields:
+- "provision_id": The provision ID (e.g., "LP-09")
+- "changed_term": The specific defined term that was changed (e.g., "Affiliate")
+- "verdict": Either "CASCADE_MATERIAL" or "CASCADE_IMMATERIAL"
+- "mechanism": Explain the specific mechanism by which the redefinition changes this provision's effect (2-3 sentences)
+- "impact_summary": One sentence: what's different in practice
+
+Respond ONLY with the JSON object. No additional text.

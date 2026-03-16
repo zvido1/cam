@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lease Evaluation Output",
+  "type": "object",
+  "required": ["evaluations"],
+  "properties": {
+    "evaluations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["provision_id", "verdict", "confidence", "reasoning", "evidence_basis", "key_differences", "risk_assessment"],
+        "properties": {
+          "provision_id": {"type": "string"},
+          "verdict": {"type": "string", "enum": ["CONFORMS", "DEVIATES", "UNCLEAR"]},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "reasoning": {"type": "string"},
+          "evidence_basis": {"type": "string", "enum": ["explicit_text", "structural_inference", "absence", "ambiguous"]},
+          "key_differences": {"type": "array", "items": {"type": "string"}},
+          "risk_assessment": {"type": "string"}
+        }
+      },
+      "minItems": 1
+    },
+    "discovered_clauses": {
+      "type": "array",
+      "description": "Clauses found in the tenant lease outside the selected provisions",
+      "items": {
+        "type": "object",
+        "required": ["clause_name", "clause_text", "reasoning"],
+        "properties": {
+          "clause_name":       { "type": "string" },
+          "clause_text":       { "type": "string" },
+          "tenant_section_ref":{ "type": "string" },
+          "suggested_lp":      { "type": ["string", "null"] },
+          "reasoning":         { "type": "string" }
+        }
+      },
+      "default": []
+    }
+  }
+}

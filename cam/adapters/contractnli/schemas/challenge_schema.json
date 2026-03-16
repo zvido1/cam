@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["challenges", "overall_grounding_assessment", "reasoning"],
+  "properties": {
+    "challenges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["challenge_type", "severity", "affected_evaluators", "description"],
+        "properties": {
+          "challenge_type": {
+            "type": "string",
+            "enum": ["negation_resolution", "definition_resolution", "span_completeness", "cross_reference"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "affected_evaluators": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Evaluator labels affected by this challenge (e.g., ['A', 'C'])"
+          },
+          "description": {
+            "type": "string",
+            "description": "What the grounding gap is"
+          },
+          "missing_spans": {
+            "type": "array",
+            "items": {"type": "integer"},
+            "description": "Span indices that may be relevant but were not cited"
+          }
+        }
+      }
+    },
+    "overall_grounding_assessment": {
+      "type": "string",
+      "enum": ["strong", "adequate", "weak"],
+      "description": "Overall assessment of evaluator grounding quality"
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Brief explanation of the overall grounding assessment"
+    }
+  },
+  "additionalProperties": false
+}

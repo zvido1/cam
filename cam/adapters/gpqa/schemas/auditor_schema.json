@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["decision", "justification", "reasoning_compatibility", "mutually_exclusive_assumptions"],
+  "properties": {
+    "decision": {
+      "type": "string",
+      "enum": ["ACCEPT", "ABSTAIN"]
+    },
+    "justification": {
+      "type": "string"
+    },
+    "reasoning_compatibility": {
+      "type": "string",
+      "enum": ["compatible", "incompatible", "unknown"]
+    },
+    "mutually_exclusive_assumptions": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  }
+}

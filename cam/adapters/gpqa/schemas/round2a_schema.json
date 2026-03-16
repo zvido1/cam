@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Round 2a: Representation Check",
+  "description": "Each evaluator validates that the synthesis accurately represents their Round 1 argument",
+  "type": "object",
+  "required": ["representation_ok", "missing_points", "mischaracterizations", "required_corrections", "severity"],
+  "properties": {
+    "representation_ok": {
+      "type": "boolean",
+      "description": "Whether the reconstruction accurately represents the evaluator's argument"
+    },
+    "missing_points": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Any points missing from the reconstruction"
+    },
+    "mischaracterizations": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Any ways the reconstruction mischaracterizes the argument"
+    },
+    "required_corrections": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Specific corrections needed to make the reconstruction accurate"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["minor", "major", "none"],
+      "description": "Severity of representation issues: none (if representation_ok=true), minor (fixable without changing conclusion), major (changes core argument)"
+    }
+  },
+  "additionalProperties": false
+}

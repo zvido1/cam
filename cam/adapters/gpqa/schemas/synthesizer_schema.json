@@ -1,0 +1,155 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["candidate_options", "argument_reconstructions", "proof_ledger", "equivalence_detected", "incompatibility_detected", "synthesis_notes", "abstain", "cross_candidate_incompatibility"],
+  "properties": {
+    "candidate_options": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["A", "B", "C", "D"]
+      },
+      "minItems": 1
+    },
+    "argument_reconstructions": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["necessary_commitments", "argument_for", "argument_against", "conflict_points"],
+        "properties": {
+          "necessary_commitments": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "description": "Minimal factual and logical assumptions required for the candidate to be true"
+          },
+          "argument_for": {
+            "type": "object",
+            "required": ["premises", "inference_steps", "conclusion"],
+            "properties": {
+              "premises": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "Explicit premises, one per line, no compression"
+              },
+              "inference_steps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "How premises connect, what rule is applied, no skipped steps"
+              },
+              "conclusion": {
+                "type": "string",
+                "description": "Why this chain implies the candidate and excludes alternatives"
+              }
+            }
+          },
+          "argument_against": {
+            "type": "object",
+            "required": ["premises", "inference_steps", "conclusion"],
+            "properties": {
+              "premises": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "Explicit premises that oppose the candidate, one per line"
+              },
+              "inference_steps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "How premises lead to rejection, no skipped steps"
+              },
+              "conclusion": {
+                "type": "string",
+                "description": "Why this chain excludes the candidate"
+              }
+            }
+          },
+          "conflict_points": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Points of direct logical conflict: premise conflicts, inference conflicts, assumption conflicts"
+          }
+        }
+      }
+    },
+    "cross_candidate_incompatibility": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Explicit statements of incompatibility between candidate pairs: 'If X is true, Y must be false because...'"
+    },
+    "proof_ledger": {
+      "type": "object",
+      "description": "Proof ledger tracking kill-shots, unfalsified claims, and status for each candidate",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["kill_shots_against", "unfalsified_claims", "status"],
+        "properties": {
+          "kill_shots_against": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of valid contradictions/impossibilities/forced_implications against this candidate"
+          },
+          "unfalsified_claims": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of claims that reject this candidate but lack kill-shots"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["killed", "unfalsified", "supported", "unknown"],
+            "description": "killed = at least one valid kill-shot exists; unfalsified = rejected but no kill-shot; supported = chosen answer with positive proof"
+          }
+        }
+      }
+    },
+    "equivalence_detected": {
+      "type": "boolean"
+    },
+    "incompatibility_detected": {
+      "type": "boolean"
+    },
+    "synthesis_notes": {
+      "type": "string"
+    },
+    "abstain": {
+      "type": "boolean",
+      "description": "True only if all evaluators agree but reasoning is logically incompatible with no shared valid justification"
+    },
+    "abstain_justification": {
+      "type": "string",
+      "description": "Required if abstain=true, explaining why agreement exists without justification integrity"
+    }
+  },
+  "if": {
+    "properties": {
+      "abstain": {
+        "const": true
+      }
+    },
+    "required": ["abstain"]
+  },
+  "then": {
+    "required": ["abstain_justification"]
+  }
+}

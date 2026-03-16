@@ -1,0 +1,174 @@
+"""
+CAM Lease Review — PDF Annotator
+
+Adds highlights and sticky note annotations on deviating/unclear provisions
+in a tenant PDF file. Uses PyMuPDF (fitz) for PDF manipulation.
+"""
+
+from pathlib import Path
+from typing import List, Optional
+
+import fitz  # PyMuPDF
+
+from cam.adapters.lease_review.lease_report_generator import _sanitize_for_pdf
+
+
+def _format_annotation_text(provision: dict) -> str:
+    """Format the annotation text for a provision finding."""
+    pid = provision.get("provision_id", "?")
+    pname = provision.get("provision_name", "")
+    verdict = provision.get("final_verdict", "?")
+    severity = provision.get("severity", "")
+    pattern = provision.get("agreement_pattern", "")
+
+    lines = [f"[CAM \u2014 {pid} {pname}]"]
+    lines.append(f"Status: {verdict} ({severity})")
+    lines.append(f"Agreement: {pattern}")
+    lines.append("")
+
+    # Challenge details or cascade mechanism
+    if provision.get("cascade_verdict") == "CASCADE_MATERIAL":
+        lines.append(f"Definition cascade: {provision.get('cascade_mechanism', '')}")
+        lines.append(f"Impact: {provision.get('cascade_impact', '')}")
+    elif provision.get("challenge_details"):
+        lines.append(provision["challenge_details"])
+    elif provision.get("severity_reasoning"):
+        lines.append(provision["severity_reasoning"])
+
+    lines.append("")
+
+    # Fragility signals
+    frag = provision.get("fragility", {})
+    if frag.get("signals"):
+        lines.append(f"Fragility: {', '.join(frag['signals'])}")
+
+    # Recommended action
+    action = provision.get("recommended_action", "")
+    if action and action != "no_action":
+        action_labels = {
+            "note_for_awareness": "Note for awareness",
+            "attorney_review_recommended": "Attorney review recommended",
+            "attorney_review_required": "Attorney review required",
+        }
+        lines.append(f"\u2192 {action_labels.get(action, action)}")
+
+    return "\n".join(lines)
+
+
+def _severity_color(severity: str) -> tuple:
+    """Return highlight color based on severity."""
+    colors = {
+        "CRITICAL": (1.0, 0.7, 0.7),    # Light red
+        "HIGH": (1.0, 0.85, 0.6),        # Light orange
+        "MEDIUM": (1.0, 0.95, 0.6),      # Yellow
+        "LOW": (0.9, 1.0, 0.8),          # Light green-yellow
+        "REVIEW": (0.8, 0.9, 1.0),       # Light blue
+    }
+    return colors.get(severity, (1.0, 0.9, 0.0))  # Default yellow
+
+
+def annotate_pdf(
+    original_pdf_path: str,
+    results: dict,
+    output_path: str,
+) -> str:
+    """Add highlights and sticky notes on deviating provisions in tenant PDF.
+
+    Args:
+        original_pdf_path: Path to the original tenant PDF file.
+        results: Pipeline results dict (with "provisions" list).
+        output_path: Path for the annotated output PDF.
+
+    Returns:
+        Path to the annotated PDF file.
+    """
+    doc = fitz.open(original_pdf_path)
+
+    annotations_added = 0
+    text_not_found = 0
+
+    for provision in results.get("provisions", []):
+        if provision.get("final_verdict") not in ("DEVIATES", "UNCLEAR"):
+            continue
+
+        pid = provision.get("provision_id", "?")
+        severity = provision.get("severity", "MEDIUM")
+        comment_text = _sanitize_for_pdf(_format_annotation_text(provision))
+        highlight_color = _severity_color(severity)
+
+        # Build search text — use first ~80 chars of tenant text
+        search_text = provision.get("tenant_text", "").strip()
+        if not search_text:
+            search_text = provision.get("provision_name", "")
+
+        # Try progressively shorter search strings
+        found = False
+        for search_len in [80, 50, 30]:
+            if found:
+                break
+            search_key = search_text[:search_len].strip()
+            if not search_key or len(search_key) < 10:
+                continue
+
+            for page in doc:
+                text_instances = page.search_for(search_key)
+                if text_instances:
+                    # Highlight the found text
+                    highlight = page.add_highlight_annot(text_instances)
+                    highlight.set_colors(stroke=highlight_color)
+                    highlight.update()
+
+                    # Add sticky note near the highlight
+                    note_point = fitz.Point(
+                        text_instances[0].x0,
+                        max(0, text_instances[0].y0 - 5),
+                    )
+                    annot = page.add_text_annot(note_point, comment_text)
+                    annot.set_info(title="CAM Lease Analyzer")
+                    annot.update()
+
+                    annotations_added += 1
+                    found = True
+                    break
+
+        if not found:
+            # Fallback: try section reference
+            section_ref = provision.get("tenant_section_ref", "")
+            if section_ref:
+                # Try to find the section reference text
+                for ref_len in [30, 15]:
+                    if found:
+                        break
+                    ref_key = section_ref[:ref_len].strip()
+                    if not ref_key:
+                        continue
+                    for page in doc:
+                        text_instances = page.search_for(ref_key)
+                        if text_instances:
+                            note_point = fitz.Point(
+                                text_instances[0].x0,
+                                max(0, text_instances[0].y0 - 5),
+                            )
+                            fallback_text = _sanitize_for_pdf(
+                                f"CAM could not locate exact text \u2014 "
+                                f"finding applies to {section_ref}.\n\n{comment_text}"
+                            )
+                            annot = page.add_text_annot(note_point, fallback_text)
+                            annot.set_info(title="CAM Lease Analyzer")
+                            annot.update()
+                            annotations_added += 1
+                            found = True
+                            break
+
+            if not found:
+                text_not_found += 1
+                print(f"[pdf_annotator] Could not locate text for {pid}", flush=True)
+
+    # Save annotated PDF
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    doc.save(output_path)
+    doc.close()
+
+    print(f"[pdf_annotator] Saved {output_path} ({annotations_added} annotations, {text_not_found} not found)", flush=True)
+
+    return output_path

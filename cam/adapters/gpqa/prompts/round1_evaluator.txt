@@ -1,0 +1,63 @@
+You are evaluating a graduate-level multiple-choice question. You must provide a reasoned choice with full explanations and proof-level reasoning.
+
+QUESTION:
+{question}
+
+CHOICES:
+A: {choice_a}
+B: {choice_b}
+C: {choice_c}
+D: {choice_d}
+
+INSTRUCTIONS:
+1. Select your final answer (A, B, C, or D) - ABSTAIN is NOT allowed
+2. Explain why your chosen answer is correct
+3. Explain why each of the other three options is wrong (must address all four choices)
+4. CRITICAL: For each option (including your chosen one), provide a proof_attempt:
+   - For options you REJECT: You MUST provide a kill-shot (contradiction, impossibility, or forced_implication)
+   - The proof must be concrete and falsifiable, not a hand-wave summary
+   - Examples of valid kill-shots:
+     * "If B were true, conservation of X would be violated because..."
+     * "B implies Y, but the prompt states not-Y..."
+     * "B requires assumption A, but A contradicts premise P..."
+   - If you truly cannot falsify an option with given info, use type "cannot_falsify" and state "cannot falsify with given info"
+   - For your CHOSEN option: Provide positive proof support (forced_implication showing why it must be true)
+5. List key assumptions you made (explicit, listed)
+6. Provide confidence (0-100)
+7. Identify the weakest link in your reasoning
+8. Provide jb score (0-3): 0=very confident, 1=some uncertainty, 2=significant uncertainty, 3=high uncertainty
+
+OUTPUT FORMAT (JSON only, no other text):
+{{
+  "final_choice": "A|B|C|D",
+  "final_choice_text": "<EXACT TEXT of your chosen option from the CHOICES above>",
+  "confidence": 0-100,
+  "why_correct": "explanation for why your chosen answer is correct",
+  "why_others_wrong": {{
+    "A": "explanation or 'chosen' if A is your answer",
+    "B": "explanation or 'chosen' if B is your answer",
+    "C": "explanation or 'chosen' if C is your answer",
+    "D": "explanation or 'chosen' if D is your answer"
+  }},
+  "proof_attempt": {{
+    "A": {{"type": "contradiction|impossibility|forced_implication|cannot_falsify", "text": "concrete kill-shot or positive proof"}},
+    "B": {{"type": "contradiction|impossibility|forced_implication|cannot_falsify", "text": "concrete kill-shot or positive proof"}},
+    "C": {{"type": "contradiction|impossibility|forced_implication|cannot_falsify", "text": "concrete kill-shot or positive proof"}},
+    "D": {{"type": "contradiction|impossibility|forced_implication|cannot_falsify", "text": "concrete kill-shot or positive proof"}}
+  }},
+  "assumptions": ["assumption 1", "assumption 2"],
+  "jb": 0|1|2|3,
+  "weakest_link": "description of weakest link in your reasoning"
+}}
+
+CONSTRAINTS:
+- Do not skip any choice explanation
+- ABSTAIN is NOT allowed - you must choose A, B, C, or D
+- Always include A, B, C, D keys in why_others_wrong
+- For your chosen option, set value to exactly "chosen"
+- Be explicit about your reasoning path and assumptions
+- PROOF_ATTEMPT is REQUIRED for all four options:
+  * For rejected options: type must NOT be "cannot_falsify" unless you explicitly state "cannot falsify with given info"
+  * Proof text must be concrete kill-shot, not hand-wave summary
+  * For your chosen option: Provide positive proof support (forced_implication)
+- No proof attempt = no acceptance. This is a design invariant.

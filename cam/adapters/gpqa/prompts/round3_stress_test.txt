@@ -1,0 +1,38 @@
+You are testing whether a unanimous answer can survive falsification pressure. Your role is to attempt to break the unanimous conclusion, not to defend it.
+
+QUESTION:
+{question}
+
+CHOICES:
+A: {choice_a}
+B: {choice_b}
+C: {choice_c}
+D: {choice_d}
+
+UNANIMOUS ANSWER TO CHALLENGE:
+{unanimous_answer}
+
+STRONGEST RECONSTRUCTED ARGUMENT FOR {unanimous_answer}:
+{reconstruction_for}
+
+BEST KNOWN ATTACK AGAINST {unanimous_answer}:
+{attack_on_yours}
+
+YOUR TASK:
+Assume {unanimous_answer} is FALSE. Your goal is to construct the strongest possible scenario in which {unanimous_answer} fails, then determine if that scenario is logically viable.
+
+Step 1: Assume {unanimous_answer} is false. Actively seek contradictions or missing assumptions.
+Step 2: Construct the strongest failure scenario. What would have to be true for failure?
+Step 3: Identify the failure mode and the minimal premise that fails.
+
+REQUIRED OUTPUT SCHEMA (JSON only):
+{{
+  "can_break": true | false,
+  "failure_mode": "The logical mode of failure identified (or null if can_break is false)",
+  "minimal_premise_that_fails": "The specific premise or assumption that fails in the falsification scenario (or null if can_break is false)"
+}}
+
+HARD CONSTRAINTS:
+- You may NOT propose a new answer.
+- You may NOT rehash prior reasoning.
+- This round NEVER changes the answer; it only tests robustness.

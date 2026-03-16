@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Final Commit Phase: Post-Defense Commitment",
+  "description": "Only after surviving attack and defense. An answer is only accepted after it survives representation, attack, and defense.",
+  "type": "object",
+  "required": [
+    "final_choice",
+    "confidence",
+    "choice_changed_after_defense",
+    "why_this_choice",
+    "why_not_the_other",
+    "defense_summary"
+  ],
+  "properties": {
+    "final_choice": {
+      "type": "string",
+      "enum": ["A", "B", "C", "D"],
+      "description": "The evaluator's final answer AFTER confrontation"
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Confidence level after seeing attacks and making defense"
+    },
+    "choice_changed_after_defense": {
+      "type": "boolean",
+      "description": "Did this evaluator change their answer after the defense phase?"
+    },
+    "why_this_choice": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Positive case for chosen answer"
+    },
+    "why_not_the_other": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why the strongest alternative was rejected"
+    },
+    "defense_summary": {
+      "type": "object",
+      "required": ["attack_survived", "weakness_acknowledged"],
+      "properties": {
+        "attack_survived": {
+          "type": "boolean",
+          "description": "Did the evaluator believe their defense was successful?"
+        },
+        "weakness_acknowledged": {
+          "type": "string",
+          "description": "Any weakness the evaluator concedes in their position"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

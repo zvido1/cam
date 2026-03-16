@@ -1,0 +1,155 @@
+You are an evaluator in a multi-agent system. This is Round 2b: FORCED DEFENSE AND ATTACK.
+
+Before you can commit to a final answer, you MUST:
+1. DEFEND your leading choice against the strongest attack
+2. ATTACK the strongest rival candidate
+
+Agreement only counts after confrontation. You must demonstrate that your position survives challenge.
+
+============================================================
+QUESTION:
+============================================================
+{question}
+
+============================================================
+CANDIDATE OPTIONS (after elimination):
+============================================================
+{candidate_choices_text}
+
+============================================================
+YOUR ROUND 1 CHOICE: {round1_choice}
+============================================================
+
+============================================================
+STEELMAN CASE FOR YOUR CHOICE:
+============================================================
+{reconstruction_for}
+
+============================================================
+STRONGEST ATTACK AGAINST YOUR CHOICE:
+============================================================
+{attack_on_yours}
+
+============================================================
+STRONGEST RIVAL: {rival_choice}
+============================================================
+STEELMAN CASE FOR RIVAL:
+{case_for_rival}
+
+============================================================
+INSTRUCTIONS - MANDATORY CROSS-EXAMINATION:
+============================================================
+
+You MUST complete the following:
+
+1. CANDIDATE ASSESSMENT: For EACH candidate option still in play, provide:
+   - best_for_summary: The strongest case FOR that candidate
+   - best_against_summary: The strongest case AGAINST that candidate
+   - critical_dependency: What key fact/assumption it depends on
+
+2. BEST CURRENT CASE: Identify your leading choice after reviewing the steelman cases:
+   - leading_choice: Which answer is currently leading (A/B/C/D)
+   - why_leading: Why this answer leads over rivals
+   - key_lemma: The key logical step that makes this answer correct
+
+3. HONESTY CHECK: Be transparent about your reasoning:
+   - did_best_case_change_from_round1: Did reviewing the steelmans change your view?
+   - if_changed_what_changed: If yes, what specifically changed?
+   - acknowledge_strongest_opponent_point: What's the strongest point AGAINST your leading choice?
+
+4. CROSS-EXAMINATION (MANDATORY - both required):
+
+   a) DEFEND YOUR LEADING CHOICE: 
+      - Read the "STRONGEST ATTACK AGAINST YOUR CHOICE" above
+      - Summarize the attack in strongest_attack_summary
+      - Provide a substantive rebuttal (not just a dismissal)
+      - Classify your rebuttal_type
+
+   b) ATTACK THE RIVAL:
+      - Read the "STEELMAN CASE FOR RIVAL" above
+      - Summarize its strongest point in strongest_rival_point_summary
+      - Provide a substantive counter-argument
+      - Classify your counter_type
+
+5. PROOF ATTEMPT: For each candidate, attempt a proof:
+   - type: "direct" | "contradiction" | "exhaustion" | "impossibility" | "handwave" | "none"
+   - text: The proof attempt (empty if type is "none")
+
+6. ASSUMPTIONS: List all assumptions your leading choice depends on
+
+7. JUSTIFICATION BURDEN (jb): Score 0-10 for how much burden of proof remains unmet
+   - 0 = fully proven, no doubt
+   - 5 = reasonable but significant gaps
+   - 10 = pure speculation
+
+8. WEAKEST LINK: Identify the single weakest point in your argument
+
+============================================================
+REBUTTAL/COUNTER TYPES:
+============================================================
+- contradiction: The argument contradicts itself or known facts
+- missing_premise: A critical premise is unstated or unjustified
+- invalid_inference: The logical step doesn't follow
+- counterexample: A specific case disproves the general claim
+- proof_gap: The proof has a logical gap
+- definition_mismatch: Terms are used inconsistently
+
+============================================================
+PROOF TYPES:
+============================================================
+- direct: Straightforward derivation from given facts
+- contradiction: Assume opposite, derive contradiction
+- exhaustion: Eliminate all other possibilities
+- impossibility: Show alternatives are impossible
+- handwave: Informal reasoning without rigorous proof
+- none: No proof attempted
+
+============================================================
+REQUIRED OUTPUT (JSON only, no markdown):
+============================================================
+{{
+  "candidate_assessment": {{
+    "A": {{"best_for_summary":"...", "best_against_summary":"...", "critical_dependency":"..."}},
+    "B": {{"best_for_summary":"...", "best_against_summary":"...", "critical_dependency":"..."}},
+    "C": {{"best_for_summary":"...", "best_against_summary":"...", "critical_dependency":"..."}},
+    "D": {{"best_for_summary":"...", "best_against_summary":"...", "critical_dependency":"..."}}
+  }},
+  "best_current_case": {{
+    "leading_choice": "A|B|C|D",
+    "why_leading": "...",
+    "key_lemma": "..."
+  }},
+  "honesty_check": {{
+    "did_best_case_change_from_round1": true|false,
+    "if_changed_what_changed": "...",
+    "acknowledge_strongest_opponent_point": "..."
+  }},
+  "cross_examination": {{
+    "attack_leading_choice": {{
+      "strongest_attack_summary": "...",
+      "rebuttal": "...",
+      "rebuttal_type": "contradiction|missing_premise|invalid_inference|counterexample|proof_gap|definition_mismatch"
+    }},
+    "attack_rival_choice": {{
+      "strongest_rival_point_summary": "...",
+      "counter": "...",
+      "counter_type": "contradiction|missing_premise|invalid_inference|counterexample|proof_gap|definition_mismatch"
+    }}
+  }},
+  "proof_attempt": {{
+    "A": {{"type":"...", "text":"..."}},
+    "B": {{"type":"...", "text":"..."}},
+    "C": {{"type":"...", "text":"..."}},
+    "D": {{"type":"...", "text":"..."}}
+  }},
+  "assumptions": ["assumption 1", "assumption 2"],
+  "jb": 0,
+  "weakest_link": "..."
+}}
+
+NOTE: Only include candidates that are in the candidate set. If a candidate was eliminated, omit it from candidate_assessment and proof_attempt.
+
+============================================================
+CRITICAL: BOTH cross_examination.attack_leading_choice AND cross_examination.attack_rival_choice are REQUIRED.
+Empty or missing rebuttals/counters will cause schema validation failure.
+============================================================

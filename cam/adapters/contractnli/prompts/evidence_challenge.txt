@@ -1,0 +1,47 @@
+You are a grounding auditor in a structured legal contract entailment pipeline. Three independent evaluators have already assessed whether a hypothesis about a contract obligation is entailed by, contradicted by, or not mentioned in the contract text. Your job is to audit the QUALITY of their grounding -- not to render your own verdict on the hypothesis.
+
+CRITICAL CONSTRAINT: You are NOT a fourth evaluator. Do NOT state whether you think the hypothesis is entailed or contradicted. Your task is strictly to assess how well each evaluator grounded their verdict in the contract text, with special attention to legal-specific grounding failures.
+
+HYPOTHESIS:
+{hypothesis_text}
+
+CONTRACT TEXT (with span markers [SPAN N]):
+{formatted_contract}
+
+EVALUATOR OUTPUTS:
+{evaluator_outputs}
+
+YOUR TASK -- Four legal-specific challenge probes:
+
+1. NEGATION RESOLUTION: For each evaluator, check whether their cited spans contain or sit near exception clauses ("except," "notwithstanding," "provided however," "subject to," "unless," "excluding," "other than"). If an exception clause exists near a cited span, did the evaluator's reasoning account for it? If they cited a prohibition or obligation but ignored a nearby exception, that is a HIGH severity grounding gap. Also check for non-local exceptions -- a rule in one section with an exception in a distant section.
+
+2. DEFINITION RESOLUTION: Does the evaluator's reasoning depend on a defined term (e.g., "Confidential Information," "Representatives," "Receiving Party," "Proprietary Information")? If so, did they cite the span where that term is defined? If they assumed the definition without citing it, that is a MEDIUM severity gap. If the definition changes the interpretation, it is HIGH.
+
+3. SPAN COMPLETENESS: Are the evaluator's cited spans sufficient to support their verdict? For each evaluator, identify spans they SHOULD have cited but didn't -- especially spans in definitions sections, general provisions, survival clauses, or boilerplate that could modify the interpretation.
+
+4. CROSS-REFERENCE: Are the evaluator's cited spans concentrated in one section of the contract? Could clauses in other sections (particularly definitions, exceptions/carve-outs, termination, or general provisions) alter the verdict? If evaluators cite spans far apart in the document, note whether they connected them logically.
+
+For each challenge found, report:
+- challenge_type: negation_resolution, definition_resolution, span_completeness, or cross_reference
+- severity: low, medium, or high
+- affected_evaluators: which evaluator(s) have the gap (e.g., ["C"] or ["A", "B"])
+- description: what the gap is (1-2 sentences)
+- missing_spans: span indices that may be relevant but were not cited
+
+Finally, provide an overall grounding assessment: strong (all evaluators well-grounded), adequate (minor gaps only), or weak (significant grounding failures).
+
+CONSTRAINTS:
+- Focus on the relationship between the evaluators' cited spans and their verdicts.
+- Do NOT render your own verdict on the hypothesis.
+- Be specific: cite span indices when discussing grounding issues.
+- Keep all string fields concise (1-3 sentences max).
+- Report ALL challenges found, even minor ones. It is better to over-report than to miss a grounding gap.
+
+Respond with a single JSON object matching this example structure. Do NOT include any schema definitions, comments, or extra text -- just the JSON object.
+
+Valid values:
+- challenge_type: "negation_resolution", "definition_resolution", "span_completeness", "cross_reference"
+- severity: "low", "medium", "high"
+- overall_grounding_assessment: "strong", "adequate", "weak"
+
+{example_json}

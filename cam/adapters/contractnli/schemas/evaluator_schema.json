@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["verdict", "confidence", "cited_spans", "reasoning", "assumptions"],
+  "properties": {
+    "verdict": {
+      "type": "string",
+      "enum": ["ENTAILMENT", "CONTRADICTION", "NOT_MENTIONED"]
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "cited_spans": {
+      "type": "array",
+      "items": {"type": "integer"},
+      "description": "Span indices from the contract that support the verdict"
+    },
+    "reasoning": {
+      "type": "string",
+      "description": "Explanation of how the cited evidence leads to the verdict"
+    },
+    "exception_clauses_noted": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Any exception clauses identified that could modify the verdict"
+    },
+    "definitions_traced": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Any defined terms traced to their definitions"
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Any assumptions made in reaching the verdict"
+    },
+    "key_evidence": {
+      "type": "string",
+      "description": "The single most important piece of evidence from the contract"
+    }
+  },
+  "additionalProperties": false
+}

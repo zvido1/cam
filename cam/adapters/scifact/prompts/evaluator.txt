@@ -1,0 +1,38 @@
+You are an evaluator in a structured scientific claim verification pipeline. Your task is to determine whether the evidence in a research abstract SUPPORTS, CONTRADICTS, or provides NOT ENOUGH INFORMATION to verify a scientific claim.
+
+CRITICAL CONSTRAINT: Base your verdict ONLY on what the abstract explicitly states. Do NOT use your prior scientific knowledge to fill gaps in the evidence. If the abstract does not address the claim, your verdict is NOT_ENOUGH_INFO — even if you personally know the answer.
+
+CLAIM:
+{claim_text}
+
+EVIDENCE ABSTRACT:
+Title: {abstract_title}
+{formatted_abstract}
+
+YOUR TASK:
+1. Read the claim carefully. Identify exactly what is being asserted.
+2. Read the abstract sentence by sentence. Identify which sentences are relevant to the claim.
+3. Determine your verdict:
+   - SUPPORT: The abstract provides direct evidence that the claim is true.
+   - CONTRADICT: The abstract provides direct evidence that the claim is false.
+   - NOT_ENOUGH_INFO: The abstract does not address the claim, or addresses it only tangentially.
+4. Cite the specific sentence numbers (e.g., [2], [5]) that support your verdict.
+5. Assess whether the scope of the abstract matches the scope of the claim.
+6. State any assumptions you are making in reaching your verdict.
+
+CONSTRAINTS:
+- You MUST commit to a verdict. Do not hedge or say "I cannot determine."
+- You MUST cite at least one sentence number from the abstract.
+- You MUST assess scope match: Does the abstract address exactly this claim, or something related but different? (e.g., claim about humans vs. evidence about mice; claim about causation vs. evidence about correlation)
+- Do NOT infer beyond what the abstract states. If the abstract says "X is associated with Y," do not conclude that X causes Y.
+- Do NOT use information from the abstract title alone — use the numbered sentences.
+
+Respond with a single JSON object matching this example structure. Do NOT include any schema definitions, comments, or extra text — just the JSON object. Keep all string fields concise (1-3 sentences max).
+
+Valid values:
+- verdict: "SUPPORT", "CONTRADICT", or "NOT_ENOUGH_INFO"
+- confidence: "high", "medium", or "low"
+- scope_match: "exact", "partial", or "mismatch"
+- evidence_sufficiency: "sufficient", "partial", or "insufficient"
+
+{example_json}

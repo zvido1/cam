@@ -1,0 +1,120 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Lease Provision Extraction Output",
+  "description": "Stage 1 output: extracted and aligned provisions from template and tenant lease, plus contract metadata and deal overview",
+  "type": "object",
+  "required": ["provisions"],
+  "properties": {
+    "contract_metadata": {
+      "type": "object",
+      "properties": {
+        "landlord": {"type": "string"},
+        "tenant": {"type": "string"},
+        "property_description": {"type": "string"},
+        "effective_date": {"type": "string"},
+        "term_length": {"type": "string"},
+        "expiration_date": {"type": "string"},
+        "governing_law": {"type": "string"},
+        "base_rent": {"type": "string"},
+        "permitted_use": {"type": "string"}
+      }
+    },
+    "deal_overview": {
+      "type": "object",
+      "description": "Structured deal summary extracted from lease preamble, recitals, and key provisions",
+      "properties": {
+        "landlord_name": {"type": "string", "description": "Full legal name of landlord/lessor"},
+        "tenant_name": {"type": "string", "description": "Full legal name of tenant/lessee"},
+        "property_address": {"type": "string", "description": "Full property address including suite/unit"},
+        "property_type": {"type": "string", "description": "e.g. Retail, Office, Industrial, Mixed-Use"},
+        "lease_term_years": {"type": "number", "description": "Lease term duration in years"},
+        "commencement_date": {"type": "string", "description": "Lease commencement/effective date"},
+        "expiration_date": {"type": "string", "description": "Lease expiration date"},
+        "renewal_options": {"type": "string", "description": "Renewal option terms (e.g. 'Two 5-year options')"},
+        "base_rent_monthly": {"type": "string", "description": "Base rent amount and frequency"},
+        "escalation": {"type": "string", "description": "Rent escalation rate or method"},
+        "security_deposit": {"type": "string", "description": "Security deposit amount"},
+        "cam_structure": {"type": "string", "description": "CAM/operating expense structure (e.g. triple-net, gross, modified gross)"},
+        "permitted_use": {"type": "string", "description": "Permitted use description"},
+        "key_terms_summary": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "3-6 bullet points of the most important business terms (TI allowance, assignment rights, cure periods, maintenance, etc.)"
+        }
+      }
+    },
+    "provisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "provision_id",
+          "provision_name",
+          "template_text",
+          "tenant_text",
+          "template_section_ref",
+          "tenant_section_ref",
+          "status",
+          "alignment_notes"
+        ],
+        "properties": {
+          "provision_id": {
+            "type": "string",
+            "description": "Provision identifier (e.g., LP-01)"
+          },
+          "provision_name": {
+            "type": "string",
+            "description": "Human-readable provision name"
+          },
+          "template_text": {
+            "type": "string",
+            "description": "Full extracted clause text from the standard template"
+          },
+          "tenant_text": {
+            "type": "string",
+            "description": "Full extracted clause text from the tenant lease"
+          },
+          "template_section_ref": {
+            "type": "string",
+            "description": "Section reference in template document"
+          },
+          "tenant_section_ref": {
+            "type": "string",
+            "description": "Section reference in tenant document"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["FOUND_BOTH", "TEMPLATE_ONLY", "TENANT_ONLY", "AMBIGUOUS"],
+            "description": "Alignment status"
+          },
+          "alignment_notes": {
+            "type": "string",
+            "description": "Notes on differences or confirmation of equivalence"
+          },
+          "definition_changes": {
+            "type": "string",
+            "description": "Relevant definition changes affecting this provision"
+          }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "discovered_provisions": {
+      "type": "array",
+      "description": "Non-standard articles found in the tenant lease not covered by LP-01 through LP-18",
+      "items": {
+        "type": "object",
+        "properties": {
+          "article_label": {"type": "string"},
+          "clause_name": {"type": "string"},
+          "clause_text": {"type": "string"},
+          "tenant_section_ref": {"type": "string"}
+        },
+        "additionalProperties": true
+      },
+      "default": []
+    }
+  },
+  "additionalProperties": true
+}

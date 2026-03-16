@@ -1,0 +1,312 @@
+CAM KNOWLEDGE BASE
+==================
+This file is the single source of truth for explaining CAM to users.
+It is loaded at startup and injected into all chat system prompts.
+To update any explanation, edit this file only.
+Last updated: 2026-03-15
+
+
+WHAT IS CAM
+-----------
+CAM stands for Constrained Assertion Method. It is the AI framework underlying this
+lease analysis tool. Most AI tools produce a single confident answer even when the
+evidence is weak or models disagree — they are architected to always give you something.
+CAM is built differently.
+
+CAM's core principle: before asserting a conclusion, the system evaluates whether
+that conclusion is epistemically justified. If it isn't, CAM says so — either by
+qualifying the finding, flagging it for human review, or withholding it entirely.
+
+CAM's core approach:
+1. Multiple independent AI models (Gemini, Claude, GPT, Grok) each evaluate every
+   provision separately, without seeing each other's answers.
+2. CAM preserves disagreement rather than hiding it. If models split on whether a
+   clause is a deviation, that split is surfaced — not collapsed into a majority vote.
+3. CAM withholds assertions when confidence is insufficient. If the evidence does not
+   support a clear finding, CAM says so rather than guessing.
+4. Every finding is backed by a structured reasoning chain — you can see why a
+   deviation was flagged, not just that it was flagged.
+5. Severity (Critical, High, Medium, Low) is assessed separately from detection — a
+   provision can be flagged as a deviation but assessed as low risk in context.
+
+CAM has been validated across scientific fact verification, legal contract entailment,
+and commercial lease analysis — the same multi-model disagreement framework runs
+underneath all of them. It is patent-pending technology developed by Tzvi Daum.
+
+
+CAM SCORE FORMULA
+-----------------
+The CAM score is a 0-100 confidence number computed as:
+
+    CAM = 100 × (A × E × R × F)
+
+A — Agreement
+    How much the evaluator models agreed with each other.
+    1.00 = unanimous (3-0, all models agree)
+    0.75 = majority (2-1, one model dissents)
+    0.50 = split (1-1, models evenly divided)
+
+E — Evidence Alignment
+    How well each model anchored its reasoning in actual document text.
+    The score is a weighted average across all evaluators:
+    1.00 = explicit text cited (model quoted or directly referenced specific language)
+    0.93 = structural inference (model reasoned from overall structure and context)
+    0.90 = absence-based (model identified what is missing rather than what is present)
+    0.82 = ambiguous (model was uncertain about what textual basis it was relying on)
+    0.78 = unverified citation (model cited a section that could not be verified in the text)
+
+R — Reasoning Completeness
+    How fully the pipeline ran for this provision.
+    1.00 = all stages completed (extraction, evaluation, challenge, severity)
+    Lower values if challenge or severity stages were skipped (e.g. unanimous CONFORMS
+    provisions skip challenge — this is by design and expected, not a problem)
+
+F — Fragility Penalty
+    How much automated rules discount the finding.
+    1.00 = no fragility rules fired
+    Lower values mean one or more fragility signals were detected, such as:
+    - Exception clauses added (RULE-LS-001)
+    - Defined term redefinition with cascade effect (RULE-LS-002)
+    - Qualifier shift (e.g. "shall" → "may") (RULE-LS-003)
+    - Quantitative deviation (amounts, percentages, time periods) (RULE-LS-004)
+    - Negation pattern added or removed (RULE-LS-005)
+    - Cross-reference dependency (RULE-LS-006)
+    - Omission (provision missing from tenant lease) (RULE-LS-007)
+    - Obligation direction swap (landlord/tenant responsibility reversed) (RULE-LS-008)
+
+
+CAM SCORE VARIANTS
+------------------
+CAM (permissive): Score computed under standard evaluation rules — the default view.
+CAM (strict): Score computed under stricter evidentiary thresholds. Models must cite
+    more explicit textual support; structural inference and absence-based reasoning
+    carry less weight.
+
+A high permissive score with a low strict score means the finding is real but
+somewhat dependent on interpretation — the models agree something changed, but
+they're relying partly on inference rather than a clean textual anchor.
+
+
+ASG — ASSERTION SENSITIVITY GAP
+--------------------------------
+ASG = CAM (permissive) minus CAM (strict).
+
+A large ASG (e.g. 40+) means the finding is highly sensitive to interpretation —
+the confidence gap between a lenient and strict reading is wide. This is the most
+important signal for deciding whether a lawyer needs to personally review a provision.
+
+    ASG < 15:  Low sensitivity. Finding holds under both interpretations. High confidence.
+    ASG 15-35: Moderate sensitivity. Worth a second look but likely solid.
+    ASG 35-55: High sensitivity. Human review recommended before acting.
+    ASG 55+:   Very high sensitivity. The finding may be correct but the evidence
+               base is weak. Do not rely on this finding without independent review.
+
+
+GOVERNANCE SIGNALS
+------------------
+The governance signal is CAM's final assertion decision for a provision.
+
+ASSERT_SIGNAL
+    High confidence. The finding is solid enough to act on. All evaluators agreed,
+    evidence is well-grounded, fragility is low, and both permissive and strict
+    scores are strong.
+
+REVIEW_SIGNAL
+    Moderate confidence. A human should verify before acting. Models agreed but
+    evidence grounding was imperfect, or fragility signals were detected, or the
+    ASG is large. The finding is probably real but warrants attorney review.
+
+WITHHOLD_SIGNAL
+    Low confidence. CAM declines to assert this finding. Either models significantly
+    disagreed, evidence was too weak, or fragility signals made the conclusion
+    unreliable. This provision may still warrant review, but CAM cannot responsibly
+    assert a deviation.
+
+Note: WITHHOLD does not mean "no deviation." It means "CAM cannot confidently assert
+a deviation." A withheld provision should be reviewed by a lawyer if it is material.
+
+
+EVIDENCE BASIS LABELS (shown in the Audit Trail)
+-------------------------------------------------
+These labels appear next to each evaluator's verdict in Stage 3 of the Audit Trail.
+They show how each model justified its conclusion.
+
+Explicit text
+    The model cited a specific clause, section number, or quoted language directly
+    from the document. Highest epistemic quality — the reasoning is traceable to
+    an exact location in the text. E multiplier = 1.00.
+
+Structural inference
+    The model reasoned from the overall structure and context of the provision rather
+    than quoting a specific phrase. Valid reasoning but slightly less verifiable.
+    E multiplier = 0.93.
+
+Absence
+    The model identified that something required by the template is missing from the
+    tenant lease. Reasoning from absence is legitimate but inherently harder to pin
+    to a specific line. E multiplier = 0.90.
+
+Ambiguous
+    The model was uncertain about what textual basis it was relying on, or gave
+    mixed signals about its grounding. E multiplier = 0.82.
+
+Unverified citation
+    The model cited a section reference that could not be confirmed to exist in
+    the extracted text. May indicate extraction gaps or hallucination.
+    E multiplier = 0.78.
+
+
+PIPELINE STAGES (shown in the Audit Trail)
+------------------------------------------
+Each provision goes through up to 7 stages. The Audit Trail shows exactly what
+happened at each stage.
+
+Stage 1 — Extraction (Gemini)
+    One Gemini API call extracts and aligns the relevant clause text from both
+    the template and tenant lease. This is the raw material for all subsequent
+    stages. If extraction is imperfect (truncated, paraphrased, or missing sections),
+    integrity flags are shown.
+
+Stage 2 — Rules Check (automated, 0 API calls)
+    Eight Python rules scan the extracted text for structural risk patterns:
+    exception language, defined term overrides, qualifier shifts, quantitative
+    deviations, negation patterns, cross-reference dependencies, omissions, and
+    obligation direction swaps. Provisions that trigger no rules and have clean
+    text pass triage and skip the expensive later stages.
+
+Stage 3 — Independent Evaluation (3 models in parallel)
+    Three AI models (Claude, GPT, Grok) each evaluate the provision independently
+    without seeing each other's answers. Each produces a verdict (DEVIATES /
+    CONFORMS / UNCLEAR), confidence score, reasoning, key differences, and
+    evidence basis label. This is the core of the CAM multi-model architecture.
+
+Stage 4 — Targeted Challenge (GPT, reasoning_effort=high)
+    For flagged provisions only. GPT challenges the evaluators' findings, looking
+    for hidden dependencies, cascade effects through defined terms, and whether
+    the deviation is substantive or merely cosmetic. Returns SUBSTANTIVE_DEVIATION,
+    COSMETIC_ONLY, or NEEDS_EXPERT.
+
+Stage 5 — Severity Assessment (GPT)
+    For confirmed deviations only. Rates the deviation as CRITICAL, HIGH, MEDIUM,
+    or LOW based on legal risk, financial exposure, and practical impact. Includes
+    financial impact estimate and recommended action.
+
+Stage 6 — Fragility Scoring (computed, 0 API calls)
+    Applies the A × E × R × F formula to produce the CAM score. Computes both
+    permissive and strict variants and the ASG. Assigns the governance signal.
+
+Stage 7 — Report Generation
+    Produces the annotated DOCX (callout blocks) or PDF (highlights + sticky notes),
+    the findings dashboard, and the full audit trail.
+
+
+PROVISION REFERENCE — THE 18 STANDARD PROVISIONS
+-------------------------------------------------
+LP-01  Rent & Escalation
+       Base rent amount, escalation schedule, CPI adjustments, percentage rent.
+       Key risk: changes to escalation caps or base amount.
+
+LP-02  Security Deposit
+       Amount, form (cash/LC), conditions for draw, return timeline.
+       Key risk: reduced deposit, easier draw conditions, non-standard return terms.
+
+LP-03  Lease Term & Options
+       Commencement, expiration, renewal options, extension rights.
+       Key risk: shortened notice windows, changed option exercise conditions.
+
+LP-04  Permitted Use
+       What the tenant is allowed to use the space for.
+       Key risk: broadened use clause, exclusivity conflicts with other tenants.
+
+LP-05  Assignment & Subletting
+       Whether tenant can assign the lease or sublet space, under what conditions.
+       Key risk: removed landlord consent requirements, changed profit-sharing terms.
+
+LP-06  Maintenance & Repairs
+       Who is responsible for what maintenance and repairs.
+       Key risk: shifted obligations onto landlord, reduced tenant responsibilities.
+
+LP-07  Alterations
+       Tenant's right to make alterations, approval process, restoration obligations.
+       Key risk: expanded alteration rights without consent, waived restoration.
+
+LP-08  Insurance
+       Required coverage types and amounts for both parties.
+       Key risk: reduced coverage requirements, changed additional insured terms.
+
+LP-09  Indemnification
+       Who indemnifies whom for what losses and liabilities.
+       Key risk: narrowed indemnification scope, added carve-outs, mutual vs. one-way.
+
+LP-10  Default & Remedies
+       What constitutes default, cure periods, landlord remedies.
+       Key risk: extended cure periods, restricted remedies, added notice requirements.
+
+LP-11  Damage & Destruction
+       What happens if the premises are damaged or destroyed.
+       Key risk: expanded tenant termination rights, changed rebuild obligations.
+
+LP-12  Condemnation
+       What happens if the premises are taken by eminent domain.
+       Key risk: changed award-sharing, expanded tenant termination rights.
+
+LP-13  CAM Charges (Common Area Maintenance)
+       Calculation of operating expenses passed through to tenant, caps, exclusions.
+       Key risk: expanded inclusions, removed caps, changed audit rights.
+
+LP-14  Subordination & Attornment
+       Tenant's obligations regarding superior mortgages and new landlords.
+       Key risk: weakened non-disturbance protections.
+
+LP-15  Estoppel Certificates
+       Tenant's obligation to provide estoppel certificates on request.
+       Key risk: shortened response windows, expanded scope of certifications.
+
+LP-16  Holdover
+       What happens if tenant stays beyond lease expiration.
+       Key risk: reduced holdover rent penalty, converted to month-to-month.
+
+LP-17  Notices
+       How official notices must be delivered between parties.
+       Key risk: changed addresses, removed certified mail requirements.
+
+LP-18  Governing Law & Dispute Resolution
+       Which state's law governs, arbitration vs. litigation, venue.
+       Key risk: changed jurisdiction, added mandatory arbitration, fee-shifting changes.
+
+
+SEVERITY LEVELS
+---------------
+CRITICAL
+    The deviation fundamentally alters the lease economics, transfers major risk to
+    the landlord, or could result in significant financial exposure. Requires
+    immediate attorney review and likely renegotiation before signing.
+
+HIGH
+    The deviation meaningfully changes rights or obligations in a way that could
+    have material legal or financial consequences. Should be reviewed and addressed
+    before signing.
+
+MEDIUM
+    The deviation changes the lease terms in a notable way but the immediate risk
+    is limited. Worth discussing with an attorney; may be acceptable depending on
+    context and negotiating position.
+
+LOW
+    The deviation is minor or cosmetic. The legal and financial impact is minimal.
+    Note it for the record but likely acceptable without further negotiation.
+
+
+WHAT CAM CANNOT DO
+------------------
+- CAM is not a licensed attorney and does not provide legal advice.
+- CAM does not know the negotiating history, business context, or strategic
+  priorities behind any specific lease. A deviation flagged as HIGH risk may be
+  acceptable given specific circumstances only a lawyer can evaluate.
+- CAM cannot guarantee it found every deviation. Provisions that were not selected,
+  or that fall outside the standard taxonomy, may contain issues CAM did not review.
+- CAM's findings are inputs to attorney review, not substitutes for it. The purpose
+  of CAM is to surface what matters and explain the confidence level — the final
+  judgment belongs to the lawyer.
+- CAM does not access the internet, case law databases, or real-time legal information.
+  Its analysis is based solely on comparing the uploaded documents against each other.

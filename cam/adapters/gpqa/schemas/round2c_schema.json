@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Round 2b: Forced Defense & Attack Before Commit",
+  "description": "Evaluator must engage the strongest attack and attack the strongest rival case before final choice",
+  "type": "object",
+  "required": [
+    "candidate_assessment",
+    "best_current_case",
+    "honesty_check",
+    "cross_examination",
+    "proof_attempt",
+    "assumptions",
+    "jb",
+    "weakest_link"
+  ],
+  "properties": {
+    "candidate_assessment": {
+      "type": "object",
+      "description": "Assessment of each candidate answer (only for candidates in the candidate set)",
+      "patternProperties": {
+        "^[A-D]$": {
+          "type": "object",
+          "required": ["best_for_summary", "best_against_summary", "critical_dependency"],
+          "properties": {
+            "best_for_summary": { 
+              "type": "string",
+              "minLength": 1,
+              "description": "Summary of the strongest case FOR this candidate"
+            },
+            "best_against_summary": { 
+              "type": "string",
+              "minLength": 1,
+              "description": "Summary of the strongest case AGAINST this candidate"
+            },
+            "critical_dependency": { 
+              "type": "string",
+              "minLength": 1,
+              "description": "The critical assumption or fact this candidate depends on"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "best_current_case": {
+      "type": "object",
+      "required": ["leading_choice", "why_leading", "key_lemma"],
+      "properties": {
+        "leading_choice": { 
+          "type": "string", 
+          "enum": ["A", "B", "C", "D"],
+          "description": "The candidate currently leading in evaluator's assessment"
+        },
+        "why_leading": { 
+          "type": "string",
+          "minLength": 1,
+          "description": "Why this candidate is currently leading"
+        },
+        "key_lemma": { 
+          "type": "string",
+          "minLength": 1,
+          "description": "The key logical lemma or inference that makes this candidate lead"
+        }
+      },
+      "additionalProperties": false
+    },
+    "honesty_check": {
+      "type": "object",
+      "required": ["did_best_case_change_from_round1", "if_changed_what_changed", "acknowledge_strongest_opponent_point"],
+      "properties": {
+        "did_best_case_change_from_round1": { 
+          "type": "boolean",
+          "description": "Whether the evaluator's best case changed from Round 1"
+        },
+        "if_changed_what_changed": { 
+          "type": "string",
+          "description": "If changed, what specifically changed (empty string if not changed)"
+        },
+        "acknowledge_strongest_opponent_point": { 
+          "type": "string",
+          "minLength": 1,
+          "description": "Acknowledgment of the strongest point against your leading choice"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cross_examination": {
+      "type": "object",
+      "description": "Mandatory attack and defense cross-examination",
+      "required": ["attack_leading_choice", "attack_rival_choice"],
+      "properties": {
+        "attack_leading_choice": {
+          "type": "object",
+          "description": "Defense: Respond to the strongest attack on your leading choice",
+          "required": ["strongest_attack_summary", "rebuttal", "rebuttal_type"],
+          "properties": {
+            "strongest_attack_summary": { 
+              "type": "string",
+              "minLength": 1,
+              "description": "Summary of the strongest attack on your leading choice"
+            },
+            "rebuttal": { 
+              "type": "string",
+              "minLength": 1,
+              "description": "Your rebuttal to this attack"
+            },
+            "rebuttal_type": {
+              "type": "string",
+              "enum": ["contradiction", "missing_premise", "invalid_inference", "counterexample", "proof_gap", "definition_mismatch"],
+              "description": "Type of rebuttal"
+            }
+          },
+          "additionalProperties": false
+        },
+        "attack_rival_choice": {
+          "type": "object",
+          "description": "Attack: Attack the strongest rival candidate",
+          "required": ["strongest_rival_point_summary", "counter", "counter_type"],
+          "properties": {
+            "strongest_rival_point_summary": { 
+              "type": "string",
+              "minLength": 1,
+              "description": "Summary of the strongest point for the rival candidate"
+            },
+            "counter": { 
+              "type": "string",
+              "minLength": 1,
+              "description": "Your counter-argument against the rival"
+            },
+            "counter_type": {
+              "type": "string",
+              "enum": ["contradiction", "missing_premise", "invalid_inference", "counterexample", "proof_gap", "definition_mismatch"],
+              "description": "Type of counter-argument"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "proof_attempt": {
+      "type": "object",
+      "description": "Proof attempt for each candidate in the candidate set",
+      "patternProperties": {
+        "^[A-D]$": {
+          "type": "object",
+          "required": ["type", "text"],
+          "properties": {
+            "type": { 
+              "type": "string",
+              "enum": ["direct", "contradiction", "exhaustion", "impossibility", "handwave", "none"],
+              "description": "Type of proof attempt"
+            },
+            "text": { 
+              "type": "string",
+              "description": "The proof attempt text (empty if type is none)"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "assumptions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "List of assumptions required for your leading choice to be correct"
+    },
+    "jb": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10,
+      "description": "Justification Burden score (0-10): how much burden of proof remains unmet"
+    },
+    "weakest_link": {
+      "type": "string",
+      "description": "The single weakest point in your argument for the leading choice"
+    }
+  },
+  "additionalProperties": false
+}

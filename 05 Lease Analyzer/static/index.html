@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAM - Contract Analysis</title>
+    <link rel="stylesheet" href="/static/style.css?v=225">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-wrapper">
+
+    <!-- ═══ HEADER ═══ -->
+    <header class="app-header" id="app-header">
+        <span class="logo" id="logo-home" onclick="window.CAM.resetApp(); return false;" style="cursor:pointer;" title="Back to home">CAM&#8482;</span>
+        <span class="tagline" id="header-tagline">AI-Powered Contract Analysis</span>
+        <span id="expiry-notice" class="expiry-notice hidden">&#128274; <span id="expiry-countdown"></span> to deletion</span>
+        <a class="privacy-link" id="about-cam-toggle">About CAM's Analysis</a>
+        <a class="privacy-link" id="privacy-toggle">Privacy &amp; Data</a>
+    </header>
+
+    <!-- ═══ MAIN CONTENT ═══ -->
+    <main class="app-main">
+
+        <!-- ══ STATE 1: Access Gate ══ -->
+        <section id="state-gate">
+            <div class="gate-card">
+                <div class="logo">CAM&#8482;</div>
+                <div class="subtitle">AI-Powered Contract Analysis</div>
+                <div id="gate-error" class="alert alert-error hidden"></div>
+                <input
+                    type="password"
+                    id="gate-code"
+                    class="input-field"
+                    placeholder="Enter access code"
+                    autocomplete="off"
+                >
+                <button class="btn btn-primary mt-2" id="gate-submit">Enter</button>
+                <div class="gate-footer">
+                    Need access? Contact the administrator.
+                </div>
+            </div>
+        </section>
+
+        <!-- ══ STATE 2: Analysis Type Selection (hidden when single type) ══ -->
+        <section id="state-select" class="hidden">
+            <h2 class="mb-2">Select Analysis Type</h2>
+            <div id="analysis-types-container"></div>
+        </section>
+
+        <!-- ══ STATE 3: Upload & Configure ══ -->
+        <section id="state-upload" class="hidden">
+            <div class="upload-layout">
+                <!-- Wrapper: upload columns 1+2 + email at bottom -->
+                <div class="upload-columns-wrapper">
+                    <div class="upload-cols-grid">
+                        <div class="upload-main">
+                            <!-- Step 1: Upload Reference Lease -->
+                            <div class="card">
+                                <div class="card-header upload-card-header">
+                                    <a href="#" id="addmore-back-link" class="hidden addmore-back-link"
+                                       onclick="window.CAM.cancelAddMore(); return false;">
+                                        &larr; Back to results
+                                    </a>
+                                    <span id="upload-step-label">Step 1: Upload your reference lease</span>
+                                </div>
+                                <p class="upload-card-subtitle" id="upload-subtitle">Upload your reference lease (standard template or prior executed lease).</p>
+                                <div id="submit-error" class="alert alert-error hidden mt-2"></div>
+                                <div id="template-gate-error" class="alert alert-error hidden mt-2"></div>
+                                <div id="template-loading" class="hidden mt-2" style="text-align:center;color:var(--text-muted);font-size:0.875rem;padding:1rem 0;">
+                                    <span class="spinner"></span> Reading reference document...
+                                </div>
+
+                                <div class="upload-col">
+                                    <div class="upload-col-header">
+                                        <div>
+                                            <span class="upload-col-title">Reference Contract</span>
+                                            <span class="upload-col-subtitle">(single file)</span>
+                                        </div>
+                                        <button class="upload-clear-btn hidden" id="template-clear-btn">Clear</button>
+                                    </div>
+                                    <div class="drop-zone" id="template-drop" tabindex="0">
+                                        <div class="drop-icon">&#128196;</div>
+                                        <div class="drop-text">Drop your reference lease here or click to browse</div>
+                                        <div class="drop-formats">PDF, DOCX, or TXT</div>
+                                        <input type="file" id="template-input" accept=".pdf,.docx,.txt" class="hidden">
+                                        <ul class="file-list hidden" id="template-file-list"></ul>
+                                    </div>
+                                    <!-- Demo template link (shown when no template loaded) -->
+                                    <div id="demo-template-section" class="demo-tenant-section">
+                                        <button class="demo-toggle-btn" id="demo-template-btn"
+                                                onclick="window.CAM.loadDemoTemplate(); return false;">
+                                            &#128462; Or use a sample lease
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Contracts to Compare Column -->
+                        <div class="contracts-column step2-inactive" id="contracts-column">
+                            <div class="card">
+                                <div class="card-header">
+                                    <span>Step 2: Upload Tenant Leases</span>
+                                </div>
+                                <div class="upload-col">
+                                    <div class="upload-col-header">
+                                        <div>
+                                            <span class="upload-col-title">Tenant Leases</span>
+                                            <span class="upload-col-subtitle">(one file per tenant)</span>
+                                        </div>
+                                        <button class="upload-clear-btn hidden" id="tenant-clear-btn">Clear All</button>
+                                    </div>
+                                    <div class="drop-zone" id="tenant-drop" tabindex="0">
+                                        <div class="drop-icon">&#128196;</div>
+                                        <div class="drop-text">Drop tenant leases here or click to browse</div>
+                                        <div class="drop-formats">PDF, DOCX, TXT, or ZIP &mdash; one file per lease</div>
+                                        <input type="file" id="tenant-input" accept=".pdf,.docx,.txt,.zip" multiple class="hidden">
+                                        <ul class="file-list hidden" id="tenant-file-list"></ul>
+                                    </div>
+                                    <!-- Demo tenant picker (shown when no tenant files loaded) -->
+                                    <div id="demo-tenant-section" class="demo-tenant-section">
+                                        <button class="demo-toggle-btn" id="demo-tenant-toggle"
+                                                onclick="window.CAM.toggleDemoTenantPicker(); return false;">
+                                            &#128462; Try with sample tenant leases
+                                            <span class="demo-toggle-arrow" id="demo-toggle-arrow">&#9660;</span>
+                                        </button>
+                                        <div id="demo-tenant-picker" class="demo-tenant-picker hidden">
+                                            <div class="demo-tenant-list">
+                                                <label class="demo-tenant-option">
+                                                    <input type="checkbox" class="demo-tenant-check" value="T-01_clean.txt">
+                                                    <div class="demo-tenant-info">
+                                                        <span class="demo-tenant-name">Clean lease</span>
+                                                        <span class="demo-tenant-desc">No deviations — see what a fully conforming lease looks like</span>
+                                                    </div>
+                                                </label>
+                                                <label class="demo-tenant-option">
+                                                    <input type="checkbox" class="demo-tenant-check" value="T-03_obvious.txt">
+                                                    <div class="demo-tenant-info">
+                                                        <span class="demo-tenant-name">Obvious changes</span>
+                                                        <span class="demo-tenant-desc">Clear deviations, easy to spot. Good for a first walkthrough.</span>
+                                                    </div>
+                                                </label>
+                                                <label class="demo-tenant-option">
+                                                    <input type="checkbox" class="demo-tenant-check" value="T-07_aggressive.txt">
+                                                    <div class="demo-tenant-info">
+                                                        <span class="demo-tenant-name">Aggressive counsel</span>
+                                                        <span class="demo-tenant-desc">Heavily modified by tenant's attorney. Multiple critical findings.</span>
+                                                    </div>
+                                                </label>
+                                                <label class="demo-tenant-option">
+                                                    <input type="checkbox" class="demo-tenant-check" value="T-10_sophisticated.txt">
+                                                    <div class="demo-tenant-info">
+                                                        <span class="demo-tenant-name">Sophisticated counsel</span>
+                                                        <span class="demo-tenant-desc">Subtle high-risk changes that test CAM's detection on nuanced edits.</span>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                            <button class="btn btn-primary btn-sm demo-load-btn"
+                                                    id="demo-load-btn" disabled
+                                                    onclick="window.CAM.loadDemoTenants(); return false;">
+                                                Load Selected
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Template Summary Card (full width, injected by JS after gate pass) -->
+                    <div id="template-summary-container"></div>
+
+                    <!-- Email at bottom of upload columns -->
+                    <div class="email-section" id="email-row">
+                        <div class="card email-accordion-card">
+                            <div class="email-open-label">Email me when analysis is complete <span class="email-accordion-optional">(optional)</span></div>
+                            <div id="email-accordion-body" class="email-accordion-body">
+                                <label class="input-label" for="email-input">Email address</label>
+                                <input
+                                    type="email"
+                                    id="email-input"
+                                    class="input-field"
+                                    placeholder="you@lawfirm.com"
+                                    autocomplete="off"
+                                >
+                                <label class="input-label mt-2" for="email-confirm-input">Confirm email</label>
+                                <input
+                                    type="email"
+                                    id="email-confirm-input"
+                                    class="input-field"
+                                    placeholder="Retype your email"
+                                    autocomplete="off"
+                                >
+                                <div id="email-mismatch-error" class="email-mismatch-error hidden">Email addresses don't match</div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /upload-columns-wrapper -->
+
+                <!-- Provisions Sidebar (078 redesign) -->
+                <div class="provisions-sidebar step2-inactive" id="provisions-sidebar">
+                    <div class="card">
+                        <div class="provisions-panel" id="provisions-panel">
+                            <div class="provisions-panel-header">
+                                <div class="provisions-panel-title-row">
+                                    <span class="provisions-panel-title">Provisions to Check</span>
+                                    <div class="provisions-title-actions">
+                                        <button class="btn btn-ghost btn-sm" id="reset-btn" onclick="window.CAM.resetApp(); return false;">
+                                            ↺ Reset All
+                                        </button>
+                                        <button class="btn btn-primary btn-sm" id="analyze-btn" disabled>
+                                            Analyze Leases
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="provisions-subtitle">Select provisions to check, then click Analyze Leases. CAM also discovers additional clauses automatically.</div>
+                                <div class="provisions-panel-controls">
+                                    <a href="#" id="check-all-provisions" onclick="window.CAM.checkAllProvisions(); return false;">Check All</a>
+                                    <a href="#" id="uncheck-all-provisions" onclick="window.CAM.uncheckAllProvisions(); return false;">Uncheck All</a>
+                                </div>
+                            </div>
+                            <div class="estimate-text" id="estimate-text"></div>
+                            <!-- Provisions list -->
+                            <div class="provisions-col-standard">
+                                <div class="provisions-tier-label">Standard Provisions to Check</div>
+                                <ul id="provision-list" class="provision-list"></ul>
+                            </div>
+
+                            <!-- Full-width custom provision row -->
+                            <div class="custom-provision-add full-width">
+                                <input type="text" id="custom-provision-input" placeholder="Add custom provision...">
+                                <button class="btn btn-sm btn-secondary" id="add-custom-provision">+ Add</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Help Chat Column (permanent, right of provisions) -->
+                <div id="help-chat-panel" class="help-chat-column">
+                    <div class="card help-chat-card">
+                        <div class="chat-panel-header">
+                            <span class="chat-panel-title">CAM Lease Analysis Help</span>
+                        </div>
+                        <div class="help-chat-input-area">
+                            <div class="chat-input-row">
+                                <input type="text" id="help-chat-input" class="chat-input"
+                                       placeholder="Ask about provisions, leases...">
+                                <button class="btn btn-primary btn-sm" id="help-chat-send-btn">Ask</button>
+                            </div>
+                        </div>
+                        <div id="help-chat-messages" class="chat-messages"></div>
+                        <div class="chat-disclaimer">AI-generated guidance &mdash; not legal advice.</div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ══ STATE 4: Processing ══ -->
+        <section id="state-processing" class="hidden">
+            <div class="processing-layout">
+              <div class="processing-top-shell">
+                  <!-- Left column: email + bookmark -->
+                  <div class="processing-content">
+                    <div class="processing-return-panel">
+                        <!-- Email capture -->
+                        <div id="processing-email-capture" class="processing-email-card hidden">
+                            <div class="processing-email-title">&#128231; Get notified when done <span style="font-size:0.75rem; font-weight:400; color:var(--text-muted);">(optional)</span></div>
+                            <div class="processing-email-subtitle">Analysis takes a few minutes. Enter your email and we'll send you this same return link when it's ready.</div>
+                            <div class="processing-email-fields">
+                                <input type="email" id="processing-email-input" class="chat-input"
+                                       placeholder="you@lawfirm.com">
+                                <input type="email" id="processing-email-confirm" class="chat-input mt-1"
+                                       placeholder="Confirm email">
+                                <div id="processing-email-mismatch" class="email-mismatch-error hidden">Email addresses don't match</div>
+                            </div>
+                            <div class="processing-email-row">
+                                <button class="btn btn-primary btn-sm" id="processing-email-btn" style="margin-top:0.5rem;"
+                                        onclick="window.CAM.submitProcessingEmail(); return false;">
+                                    Notify Me
+                                </button>
+                            </div>
+                            <div id="processing-email-status" class="processing-email-status hidden"></div>
+                        </div>
+
+                        <!-- Bookmark link -->
+                        <div class="processing-info" id="processing-info">
+                            <div class="email-notice" id="email-notice"></div>
+                            <div class="processing-info-body">You can wait here and watch progress update, or safely close this page and come back using the link below.</div>
+                            <div class="copy-link-area mt-1">
+                                <input type="text" id="results-link-input" readonly>
+                                <button class="btn btn-sm btn-secondary" id="copy-link-btn">Copy Link</button>
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+
+                  <!-- Centre column: progress -->
+                  <div class="processing-carousel-col">
+                    <div class="processing-status-card">
+                        <div class="processing-kicker">Live analysis</div>
+                        <div class="processing-title">Contract progress</div>
+                        <div class="processing-subtitle">Each lease moves through the same six-stage review pipeline. This section expands naturally as more contracts are analyzed.</div>
+                        <div id="tenant-progress-list"></div>
+                        <div id="estimate-remaining" class="estimate-text mt-2"></div>
+
+                        <div class="cancel-area mt-2">
+                            <button class="btn btn-cancel" id="cancel-btn">Cancel Analysis</button>
+                            <a href="#" id="processing-back-link" class="hidden processing-back-link"
+                               onclick="window.CAM.handleBackToResults(); return false;">
+                                &larr; Back to current results
+                            </a>
+                        </div>
+                    </div>
+                  </div>
+
+                  <!-- Right column: chat -->
+                  <div class="processing-sidebar">
+                    <div class="processing-chat-panel" id="processing-chat-panel">
+                        <div class="chat-panel-header">
+                            <span class="chat-panel-title">Ask while you wait</span>
+                        </div>
+                        <div class="processing-chat-input-area">
+                            <div class="chat-input-row">
+                                <input type="text" id="processing-chat-input" class="chat-input"
+                                       placeholder="Ask about CAM, leases, provisions...">
+                                <button class="btn btn-primary btn-sm" id="processing-chat-send-btn">Ask</button>
+                            </div>
+                        </div>
+                        <div id="processing-chat-messages" class="chat-messages"></div>
+                        <div class="chat-disclaimer">AI-generated guidance &mdash; not legal advice.</div>
+                    </div>
+                  </div>
+              </div>
+
+              <div class="cam-carousel processing-knowledge-band" id="cam-carousel">
+                    <div class="cam-carousel-track" id="cam-carousel-track">
+
+                        <div class="cam-slide">
+                            <div class="cam-slide-icon">🧠</div>
+                            <div class="cam-slide-title">CAM&#8482; — a new way to govern AI</div>
+                            <div class="cam-slide-body">Most AI systems are built to produce an answer — even when the evidence is weak, ambiguous, or contested. The Constrained Assertion Method (CAM) is a patent-pending framework that changes this: instead of optimizing for output, CAM governs <em>when</em> an AI is permitted to assert a conclusion, and <em>how confident</em> it should be when it does.</div>
+                        </div>
+
+                        <div class="cam-slide">
+                            <div class="cam-slide-icon">⚠️</div>
+                            <div class="cam-slide-title">The problem with AI confidence</div>
+                            <div class="cam-slide-body">AI models are architected to always give you something. When models disagree or evidence is thin, that uncertainty gets collapsed into a single confident answer — and the disagreement disappears. In any domain where the output informs a real decision, that hidden uncertainty is a structural risk.</div>
+                        </div>
+
+                        <div class="cam-slide">
+                            <div class="cam-slide-icon">⚖️</div>
+                            <div class="cam-slide-title">What CAM actually does</div>
+                            <div class="cam-slide-body">CAM runs multiple independent AI models on the same input — each reasoning without seeing the others' answers. Disagreement is preserved, not averaged away. A rule-based governance layer then decides whether the system has earned the right to assert a conclusion, qualify it, or withhold it entirely. Abstention is a valid outcome.</div>
+                        </div>
+
+                        <div class="cam-slide">
+                            <div class="cam-slide-icon">🎯</div>
+                            <div class="cam-slide-title">Applied here: commercial lease analysis</div>
+                            <div class="cam-slide-body">This tool applies CAM to lease deviation analysis — one of the highest-stakes document review tasks in commercial real estate. Every provision is evaluated by three independent AI models. Where they agree, confidence is high. Where they split, that disagreement is surfaced directly to the reviewer. Nothing is hidden behind a blended result.</div>
+                        </div>
+
+                        <div class="cam-slide">
+                            <div class="cam-slide-icon">🔍</div>
+                            <div class="cam-slide-title">What's happening right now</div>
+                            <div class="cam-slide-body">Each lease moves through a multi-stage pipeline: text extraction with integrity verification, an automated rules check for exception clauses and qualifier shifts, parallel evaluation by three independent AI models, an adversarial challenge round, severity assessment, and document annotation. Each step is logged — nothing is a black box.</div>
+                        </div>
+
+                        <div class="cam-slide">
+                            <div class="cam-slide-icon">📋</div>
+                            <div class="cam-slide-title">What you'll see in results</div>
+                            <div class="cam-slide-body">Each deviation card shows severity, what changed and why it matters, which models agreed or disagreed, a recommended action, and side-by-side clause text with word-level redlining. Conforming provisions are also reviewable — with full clause text and the ability to flag anything worth renegotiating.</div>
+                        </div>
+
+                        <div class="cam-slide">
+                            <div class="cam-slide-icon">🔎</div>
+                            <div class="cam-slide-title">Full transparency, every step</div>
+                            <div class="cam-slide-body">The CAM&#8482; Audit Trail shows exactly how every conclusion was reached — the extracted clause text, which rules fired, each model's independent reasoning, the challenge outcome, and the final confidence score. If a finding seems wrong, you can trace it back to the moment it was made.</div>
+                        </div>
+
+                        <div class="cam-slide">
+                            <div class="cam-slide-icon">🎚️</div>
+                            <div class="cam-slide-title">Calibrated confidence, not noise</div>
+                            <div class="cam-slide-body">Every finding carries a CAM score — a structured confidence metric built from model agreement, evidence quality, reasoning completeness, and fragility signals. The Assertion Sensitivity Gap shows how much the conclusion depends on interpretation. Reviewers know exactly how much weight to give each finding.</div>
+                        </div>
+
+                        <div class="cam-slide">
+                            <div class="cam-slide-icon">💬</div>
+                            <div class="cam-slide-title">Have additional questions?</div>
+                            <div class="cam-slide-body">While your analysis runs, you can ask questions below about CAM, how the scoring works, lease provisions, or anything else. We're here to help while you wait.</div>
+                        </div>
+
+                    </div>
+
+                    <!-- Carousel controls -->
+                    <div class="cam-carousel-nav">
+                        <button class="cam-carousel-btn" id="carousel-prev"
+                                onclick="window.CAM.carouselPrev(); return false;">&#8592;</button>
+                        <div class="cam-carousel-dots" id="cam-carousel-dots"></div>
+                        <button class="cam-carousel-btn" id="carousel-next"
+                                onclick="window.CAM.carouselNext(); return false;">&#8594;</button>
+                    </div>
+            </div>
+        </section>
+
+        <!-- ══ STATE 5: Results Dashboard ══ -->
+        <section id="state-results" class="hidden">
+
+            <!-- Three-column layout: nav (left) + results (center) + chat panel (right) -->
+            <div id="results-layout" class="results-layout">
+
+                <!-- Top-level tab bar (Step 116) — spans full width via grid -->
+                <div class="top-tab-bar" id="top-tab-bar">
+                    <div class="top-tab-nav" id="top-tab-nav">
+                        <button class="top-tab active" data-top-tab="overview">Run Synopsis</button>
+                        <button class="top-tab" data-top-tab="contracts" id="top-tab-contracts">Contracts</button>
+                        <div class="top-tab-divider" id="contract-tab-divider"></div>
+                        <button class="top-tab" data-tab="findings" id="contract-tab-findings">Contract Summary</button>
+                        <button class="top-tab" data-tab="docview" id="contract-tab-docview">Document Comparison</button>
+                        <button class="top-tab" data-tab="audittrail" id="contract-tab-audittrail">CAM Audit Trail</button>
+                    </div>
+                    <div class="top-tab-actions" id="top-tab-actions">
+                        <button class="tab-action-btn" id="new-analysis-btn" title="Start New Analysis">&#128196;</button>
+                        <button class="tab-action-btn" id="add-more-btn" title="Add More Contracts">&#10133;</button>
+                        <button class="tab-action-btn" id="my-rules-btn" title="My Rules" onclick="window.CAM.showRulesPanel()">&#9881;&#65039;</button>
+                        <div class="tab-action-divider"></div>
+                        <button class="tab-action-btn tab-action-btn--danger" id="delete-job-btn" title="Delete All Data — permanently removes all uploaded documents and results">&#128465;</button>
+                    </div>
+                </div>
+
+                <!-- Persistent sub-header bar (always visible, updates per tab) — spans full width via grid -->
+                <div id="tab-subheader" class="tab-subheader">Run Synopsis</div>
+
+                <div id="nav-sidebar" class="nav-sidebar">
+                    <div class="nav-sidebar-header">Open Issues</div>
+                    <div id="nav-sidebar-content" class="nav-sidebar-content">
+                        <!-- Populated by JS when results render -->
+                    </div>
+                </div>
+                <div id="results-content" class="results-content">
+
+                    <!-- ═══ ANALYSIS OVERVIEW TAB (Step 116) ═══ -->
+                    <div id="overview-tab-content">
+
+
+
+
+
+                    <!-- Deal Brief Banner (Step 132) -->
+                    <div id="deal-brief-banner" class="deal-brief-banner hidden"></div>
+
+                    <!-- Deal Overview Panel (above tabs, rendered from deal_overview data) -->
+                    <div id="deal-overview-panel" class="hidden"></div>
+
+                    <!-- ═══ AI SUMMARY BAR (048) — right after Base Lease Terms ═══ -->
+                    <div id="ai-summary-bar" class="ai-summary-bar hidden">
+                        <!-- AI paragraph -->
+                        <div id="ai-summary-paragraph" class="ai-summary-paragraph">
+                            <span class="ai-summary-loading">Generating portfolio summary&hellip;</span>
+                        </div>
+                        <!-- Compact stats + downloads row -->
+                        <div class="ai-summary-footer">
+                            <span id="ai-summary-stats" class="ai-summary-stats"></span>
+                            <div class="ai-summary-actions">
+                                <button class="btn btn-outline btn-sm" id="download-synopsis-btn"
+                                        onclick="window.CAM.downloadSynopsis()">
+                                    &#128196; Download Synopsis (PDF)
+                                </button>
+                                <button class="btn btn-outline btn-sm" id="export-json-btn"
+                                        onclick="window.CAM.exportJSON()">
+                                    &#128196; Export All Results (JSON)
+                                </button>
+                                <span class="tech-details-toggle" id="tech-details-toggle"
+                                      onclick="window.CAM.toggleTechDetails()">
+                                    &#9658; Technical Details
+                                </span>
+                            </div>
+                        </div>
+                        <!-- Technical details (collapsible) -->
+                        <div id="tech-details-content" class="tech-details-content hidden"></div>
+                    </div>
+
+                    <!-- Provisions Checklist (compact grid of analyzed provisions) -->
+                    <div id="provisions-checklist" class="hidden"></div>
+                    <div id="results-legend" class="results-legend hidden">
+                        <span class="legend-item"><span class="legend-dot legend-critical"></span> Critical &mdash; Immediate action required</span>
+                        <span class="legend-item"><span class="legend-dot legend-high"></span> High &mdash; Significant deviation, review recommended</span>
+                        <span class="legend-item"><span class="legend-dot legend-medium"></span> Medium &mdash; Moderate deviation, monitor</span>
+                        <span class="legend-item"><span class="legend-dot legend-low"></span> Low &mdash; Minor deviation, informational</span>
+                        <span class="legend-item"><span class="legend-dot legend-conforms"></span> Conforms &mdash; Aligns with standard template</span>
+                    </div>
+
+                    <!-- ═══ FILTER BAR (048+049) ═══ -->
+                    <div id="filter-bar" class="filter-bar-inline hidden">
+                        <div class="filter-dropdown" id="filter-contract-dropdown">
+                            <button class="btn btn-outline filter-dropdown-trigger" id="filter-contract-trigger"
+                                    onclick="window.CAM.toggleFilterDropdown('contract')">
+                                &#9662; Contracts: <span id="filter-contract-label">All</span>
+                            </button>
+                            <div class="filter-dropdown-panel hidden" id="filter-contract-panel">
+                                <label class="filter-option filter-option-all">
+                                    <input type="checkbox" value="" id="filter-contract-all" checked>
+                                    <span>All Contracts</span>
+                                </label>
+                                <div id="filter-contract-options"></div>
+                            </div>
+                        </div>
+
+                        <div class="filter-dropdown" id="filter-severity-dropdown">
+                            <button class="btn btn-outline filter-dropdown-trigger" id="filter-severity-trigger"
+                                    onclick="window.CAM.toggleFilterDropdown('severity')">
+                                &#9662; Severity: <span id="filter-severity-label">All</span>
+                            </button>
+                            <div class="filter-dropdown-panel hidden" id="filter-severity-panel">
+                                <label class="filter-option filter-option-all">
+                                    <input type="checkbox" value="" id="filter-severity-all" checked>
+                                    <span>All Severities</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="CRITICAL" class="filter-sev-cb">
+                                    <span class="sev-dot sev-dot-critical"></span><span>CRITICAL</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="HIGH" class="filter-sev-cb">
+                                    <span class="sev-dot sev-dot-high"></span><span>HIGH</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="MEDIUM" class="filter-sev-cb">
+                                    <span class="sev-dot sev-dot-medium"></span><span>MEDIUM</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="LOW" class="filter-sev-cb">
+                                    <span class="sev-dot sev-dot-low"></span><span>LOW</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- AI Confidence filter — Step 184 -->
+                        <div class="filter-dropdown" id="filter-confidence-dropdown">
+                            <button class="btn btn-outline filter-dropdown-trigger" id="filter-confidence-trigger"
+                                    onclick="window.CAM.toggleFilterDropdown('confidence')">
+                                &#9662; AI Confidence: <span id="filter-confidence-label">All</span>
+                            </button>
+                            <div class="filter-dropdown-panel hidden" id="filter-confidence-panel">
+                                <label class="filter-option filter-option-all">
+                                    <input type="checkbox" value="" id="filter-confidence-all" checked>
+                                    <span>All</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="NEEDS_REVIEW" class="filter-conf-cb">
+                                    <span>&#9888; Needs Review</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="HIGH" class="filter-conf-cb">
+                                    <span>&#10003; High Confidence</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="filter-dropdown" id="filter-provision-dropdown">
+                            <button class="btn btn-outline filter-dropdown-trigger" id="filter-provision-trigger"
+                                    onclick="window.CAM.toggleFilterDropdown('provision')">
+                                &#9662; Provision: <span id="filter-provision-label">All</span>
+                            </button>
+                            <div class="filter-dropdown-panel hidden" id="filter-provision-panel">
+                                <label class="filter-option filter-option-all">
+                                    <input type="checkbox" value="" id="filter-provision-all" checked>
+                                    <span>All Provisions</span>
+                                </label>
+                                <div id="filter-provision-options"></div>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-outline filter-clear-btn hidden" id="filter-clear-btn"
+                                onclick="window.CAM.clearFilters()">&#10005; Clear</button>
+                        <span class="filter-active-count hidden" id="filter-active-count"></span>
+                    </div>
+
+                    <!-- Provisions Scope Card (Step 131) -->
+                    <div id="provisions-scope-card" class="provisions-scope-card hidden"></div>
+
+                    <!-- ═══ CONTRACT STATUS PANEL (047) ═══ -->
+                    <div id="contract-status-panel" class="hidden"></div>
+
+                    <!-- Review completion banner (Step 116) -->
+                    <div id="review-completion-banner" class="review-completion-banner hidden"></div>
+
+                    </div><!-- /overview-tab-content -->
+
+                    <!-- ═══ CONTRACTS TAB ═══ -->
+                    <div id="contracts-tab-content" class="hidden">
+                        <div id="snapshot-toolbar-bar"></div>
+                        <div id="snapshot-tab-content">
+                            <div id="snapshot-cards"></div>
+                        </div>
+                    </div><!-- /contracts-tab-content -->
+
+                    <!-- ═══ CONTRACT DETAIL VIEW (Step 116) ═══ -->
+                    <div id="contract-detail-view" class="hidden">
+                        <div class="contract-detail-sticky-shell">
+                            <div id="contract-detail-header" class="contract-detail-header"></div>
+
+                        <!-- Step 129: Contract selector dropdown -->
+                        <div id="contract-selector-bar" class="contract-selector-bar hidden">
+                            <select id="contract-selector-dropdown" class="contract-selector-select"></select>
+                            <div id="contract-clause-filter-bar" class="contract-clause-filter-bar hidden"></div>
+                        </div>
+                        <div id="docview-sticky-controls" class="docview-sticky-controls hidden">
+                            <div class="docview-toolbar">
+                                <div class="docview-mode-toggle">
+                                    <button class="docview-mode-btn" data-mode="full">Full Document</button>
+                                    <button class="docview-mode-btn active" data-mode="sidebyside">Side-by-Side</button>
+                                </div>
+                                <div class="docview-sort-group">
+                                    <div class="docview-sort-label">Primary Order:</div>
+                                    <div class="docview-sort-toggle">
+                                        <button class="docview-sort-btn active" data-sort="contract">Tenant-Led</button>
+                                        <button class="docview-sort-btn" data-sort="reference">Reference-Led</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="docview-search-bar" id="docview-search-bar">
+                                <input type="text" id="docview-search-input" class="docview-search-input" placeholder="Search lease text...">
+                                <span class="docview-search-count" id="docview-search-count"></span>
+                                <button class="docview-search-nav" id="docview-search-prev" title="Previous match">&#9650;</button>
+                                <button class="docview-search-nav" id="docview-search-next" title="Next match">&#9660;</button>
+                                <button class="docview-search-clear" id="docview-search-clear" title="Clear search">&times;</button>
+                            </div>
+                        </div>
+                        </div>
+
+                    <!-- Hidden tenant selector (used by JS internally) -->
+                    <select id="tenant-select" class="hidden"></select>
+
+
+                    <!-- ═══ FINDINGS TAB (existing card-based view) ═══ -->
+                    <div id="findings-tab">
+
+                        <!-- Contract metadata -->
+                        <div id="contract-summary-section" class="card mb-2">
+                        <div class="section-header">Contract Summary</div>
+                        <div class="contract-summary" id="contract-summary"></div>
+                            <div id="contract-ai-comment" class="contract-ai-comment hidden"></div>
+                         </div>
+
+                        <!-- Deviations -->
+                        <div id="deviations-section">
+                            <div class="section-header" id="deviations-header">Deviations (Review Recommended)</div>
+                            <div id="deviations-list"></div>
+                        </div>
+
+                        <!-- Additional Findings (112 — in-pipeline discovery) -->
+                        <div id="additional-findings-section" class="additional-findings-wrapper" style="display:none;">
+                            <h3 class="section-title">Additional Clauses</h3>
+                            <p class="section-subtitle">
+                                Clauses identified outside the evaluated provision scope with no standard provision match.
+                            </p>
+                            <div id="additional-findings-list"></div>
+                        </div>
+
+                        <!-- Conforming -->
+                        <div id="conforming-section">
+                            <div class="section-header">
+                                <button class="expandable-toggle" id="conforming-toggle" style="font-size:1.0625rem; font-weight:600; color:var(--primary);">
+                                    &#9654; Conforming Provisions (no action needed)
+                                </button>
+                            </div>
+                            <ul class="conforming-list hidden" id="conforming-list"></ul>
+                        </div>
+
+                    </div>
+
+                    <!-- ═══ DOCUMENT COMPARISON TAB ═══ -->
+                    <div id="docview-tab" class="hidden">
+                        <!-- Full Document View (default) -->
+                        <div id="docview-full" class="docview-full-layout">
+                            <div class="docview-sidebar" id="docview-sidebar"></div>
+                            <div class="docview-main" id="docview-main"></div>
+                        </div>
+                        <!-- Side-by-Side View -->
+                        <div id="docview-sidebyside-wrapper" class="docview-full-layout hidden">
+                            <div class="docview-sidebar" id="docview-sidebar-sbs"></div>
+                            <div class="docview-main-sbs">
+                                <div id="docview-container" class="docview-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ═══ AUDIT TRAIL TAB ═══ -->
+                    <div id="audittrail-tab" class="hidden">
+                        <div class="audit-export-bar">
+                            <span class="audit-export-label">Export audit trail:</span>
+                            <button class="btn btn-outline btn-sm" onclick="window.CAM.exportAuditJSON()">
+                                &#128190; Raw JSON
+                            </button>
+                            <button class="btn btn-outline btn-sm" onclick="window.CAM.exportAuditText()">
+                                &#128196; Formatted Report (TXT)
+                            </button>
+                        </div>
+                        <!-- content rendered by renderAuditTrail() -->
+                    </div>
+
+                    </div><!-- /contract-detail-view -->
+
+                </div>
+
+                <!-- ═══ ALWAYS-ON CHAT PANEL (right column) ═══ -->
+                <div id="chat-panel" class="chat-panel">
+                    <div class="chat-panel-resize" id="chat-panel-resize"></div>
+                    <div class="chat-panel-header">
+                        <span class="chat-panel-title">Ask About This Analysis</span>
+                        <div class="chat-header-actions">
+                            <button id="chat-export-btn" class="chat-header-btn" title="Download conversation">&#11015;</button>
+                            <button id="chat-close-btn" class="chat-close-btn" title="Close">&#10005;</button>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <!-- Chat Scope Selector (044) -->
+                        <div class="chat-scope-bar" id="chat-scope-bar">
+                            <span class="chat-scope-label">Scope</span>
+
+                            <div class="chat-scope-dropdown" id="chat-scope-contract-wrap">
+                                <select id="chat-scope-contract" class="chat-scope-select">
+                                    <option value="">All Contracts</option>
+                                </select>
+                            </div>
+
+                            <div class="chat-scope-dropdown" id="chat-scope-provision-wrap">
+                                <select id="chat-scope-provision" class="chat-scope-select">
+                                    <option value="">All Provisions</option>
+                                </select>
+                            </div>
+
+                            <button class="chat-scope-reset hidden" id="chat-scope-reset"
+                                    onclick="window.CAM.resetChatScope()">&#10005; Reset</button>
+                        </div>
+
+                        <!-- Scope active indicator -->
+                        <div class="chat-scope-indicator hidden" id="chat-scope-indicator"></div>
+                        <div class="chat-advisor-prompts hidden" id="chat-advisor-prompts"></div>
+
+                        <div class="chat-input-row">
+                            <input type="text" id="chat-input" class="chat-input" placeholder="Ask a question about the analysis...">
+                            <button class="btn btn-primary btn-sm" id="chat-send-btn">Ask</button>
+                        </div>
+                        <div class="chat-controls-row">
+                            <select id="chat-mode-select" class="chat-mode-select">
+                                <option value="claude">Claude</option>
+                                <option value="gpt">GPT-5.2</option>
+                                <option value="grok">Grok</option>
+                                <option value="gemini" selected>Gemini</option>
+                                <option value="multi">Ask multiple models</option>
+                            </select>
+                        </div>
+                        <!-- Multi-model options — shown only when "Ask multiple models" is selected -->
+                        <div id="chat-multi-options" class="chat-multi-options hidden">
+                            <div class="chat-multi-label">Models:</div>
+                            <div id="chat-model-options" class="chat-model-options">
+                                <label><input type="checkbox" value="claude" checked> Claude</label>
+                                <label><input type="checkbox" value="gpt" checked> GPT-5.2</label>
+                                <label><input type="checkbox" value="grok"> Grok</label>
+                                <label><input type="checkbox" value="gemini" checked> Gemini</label>
+                            </div>
+                            <div class="chat-multi-divider"></div>
+                            <div class="chat-synth-row">
+                                <div class="chat-multi-label">Response:</div>
+                                <div id="chat-synthesis-toggle" class="chat-synthesis-toggle">
+                                    <label class="synth-option">
+                                        <input type="radio" name="synth-mode" value="synthesized" checked>
+                                        <span>Synthesized</span>
+                                    </label>
+                                    <label class="synth-option">
+                                        <input type="radio" name="synth-mode" value="individual">
+                                        <span>Individual responses</span>
+                                    </label>
+                                    <span id="chat-synth-hint" class="chat-synth-hint hidden"></span>
+                                </div>
+                            </div>
+                            <div class="chat-synth-row" id="chat-synthesizer-row">
+                                <div class="chat-multi-label">Synthesized by:</div>
+                                <select id="chat-synthesizer-select" class="chat-mode-select">
+                                    <option value="claude">Claude</option>
+                                    <option value="gpt">GPT-5.2</option>
+                                    <option value="grok">Grok</option>
+                                    <option value="gemini">Gemini</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chat-messages" class="chat-messages"></div>
+                    <div class="chat-disclaimer">AI-generated analysis &mdash; not legal advice.</div>
+                </div>
+            </div>
+
+            <!-- Chat FAB (mobile only, hidden on wide screens) -->
+            <button id="chat-fab-mobile" class="chat-fab-mobile hidden" title="Ask about this analysis">&#128172;</button>
+
+        </section>
+
+    </main>
+
+    <!-- ═══ FOOTER ═══ -->
+    <footer class="app-footer">
+        CAM&#8482; &middot; Patent Pending &middot; &copy; 2026
+    </footer>
+
+    <!-- ═══ ABOUT CAM MODAL (1G) ═══ -->
+    <div class="modal-overlay" id="about-cam-modal">
+        <div class="modal-content">
+            <h2>How CAM Analyzes Your Lease</h2>
+            <p>Unlike single-AI tools, CAM uses a multi-stage evaluation pipeline designed for accuracy and transparency:</p>
+            <ol class="numbered-list">
+                <li><strong>Three AI models from different providers</strong> (Anthropic, OpenAI, xAI) independently analyze each provision without seeing each other's work.</li>
+                <li><strong>An automated rules engine</strong> checks for 8 specific deviation patterns (exception clauses, definition changes, numerical differences, obligation shifts, and more).</li>
+                <li><strong>A challenger AI</strong> probes flagged findings to verify accuracy and catch false positives.</li>
+                <li><strong>Severity is assessed</strong> based on legal and financial impact to prioritize what matters most.</li>
+            </ol>
+            <p>Each finding shows you exactly what each evaluator concluded, which rules triggered, and how the final verdict was reached. <strong>Full transparency, not a black box.</strong></p>
+            <p style="color:var(--text-muted); font-size:0.8125rem;">Click any finding card to expand it and see the full AI analysis, evaluator reasoning, and detection rules.</p>
+            <hr style="margin: 1.25rem 0; border: none; border-top: 1px solid #e2e8f0;">
+            <h3 id="cam-confidence-explainer" style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">What the confidence indicators mean</h3>
+            <p>After evaluating each clause, CAM assesses how certain the analysis is. These indicators appear in the sidebar and on individual findings:</p>
+            <ul>
+                <li><strong>&#10003; Verified</strong> &mdash; All AI evaluators agreed. The finding is reliable.</li>
+                <li><strong>&#9888; Complex</strong> &mdash; A conclusion was reached, but evaluators had differing interpretations. Worth a careful read.</li>
+                <li><strong>&#9675; Review</strong> &mdash; AI confidence was moderate on this clause. Consider checking it manually.</li>
+                <li><strong>&#9888; Uncertain</strong> &mdash; Evaluators could not reach confident agreement. Manual review is recommended.</li>
+            </ul>
+            <p style="margin-top: 0.75rem; font-size: 0.875rem; color: #64748b;">The &ldquo;Analysis confidence&rdquo; line at the top of each contract summary shows what percentage of clauses were evaluated with high confidence. Clauses flagged as Uncertain or Review are not necessarily errors &mdash; they indicate the AI found the clause more difficult to assess definitively.</p>
+            <button class="btn btn-secondary modal-close" id="about-cam-close">Close</button>
+        </div>
+    </div>
+
+    <!-- ═══ PRIVACY MODAL ═══ -->
+    <div class="modal-overlay" id="privacy-modal">
+        <div class="modal-content">
+            <h2>Privacy &amp; Data Handling</h2>
+            <p><strong>AI Providers:</strong> Document text is processed by the following AI providers for analysis:</p>
+            <ul>
+                <li><strong>Anthropic (Claude)</strong> &mdash; API data never used for training. 7-day abuse monitoring retention.</li>
+                <li><strong>OpenAI (GPT)</strong> &mdash; Opted out of training by default. 30-day retention.</li>
+                <li><strong>Google (Gemini)</strong> &mdash; Opt-in only for data sharing. 55-day retention.</li>
+                <li><strong>xAI (Grok)</strong> &mdash; API data siloed from training.</li>
+            </ul>
+            <p><strong>None of these providers train their models on data submitted through their APIs.</strong></p>
+            <p><strong>App-Level Retention:</strong></p>
+            <ul>
+                <li><strong>Uploaded documents:</strong> Retained for 24 hours to support adding provisions or leases. Immediately deleted on user request or after 24-hour expiry.</li>
+                <li><strong>Analysis results:</strong> Retained for 24 hours via your unique link. Immediately deleted on user request or after 24-hour expiry.</li>
+                <li><strong>Anonymized metadata:</strong> Provision types analyzed, severity distributions, and processing metrics are retained (with no client content) to improve detection accuracy.</li>
+            </ul>
+            <button class="btn btn-secondary modal-close" id="privacy-close">Close</button>
+        </div>
+    </div>
+
+<!-- ═══ RULE CREATION DIALOG (Step 140) ═══ -->
+<div class="modal-overlay" id="rules-dialog-modal">
+    <div class="modal-content">
+        <h2>Create an Evaluation Rule</h2>
+        <p style="color:var(--text-muted);font-size:0.875rem;">
+            This rule will be applied to future runs. Edit the suggestion below to be as specific as helpful.
+        </p>
+        <input type="hidden" id="rules-dialog-provision-hint">
+        <textarea id="rules-dialog-text" class="rules-dialog-textarea" rows="4" maxlength="500"
+                  placeholder="Describe when this type of finding should NOT be flagged..."></textarea>
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="window.CAM.closeRuleDialog()">Cancel</button>
+            <button class="btn btn-primary" id="rules-dialog-save" onclick="window.CAM.saveRule()">Save Rule</button>
+        </div>
+        <div id="rules-dialog-status" class="rules-dialog-status hidden"></div>
+    </div>
+</div>
+
+<!-- ═══ RULES PANEL MODAL (Step 140) ═══ -->
+<div class="modal-overlay" id="rules-panel-modal">
+    <div class="modal-content">
+        <h2>My Evaluation Rules</h2>
+        <p style="color:var(--text-muted);font-size:0.875rem;">
+            These rules are injected into the AI evaluation prompt on future runs. Rules apply to all future analyses using this access code.
+        </p>
+        <div id="rules-panel-list"></div>
+        <div class="modal-actions" style="margin-top:1.5rem;">
+            <button class="btn btn-secondary" onclick="document.getElementById('rules-panel-modal').classList.remove('open')">Close</button>
+        </div>
+    </div>
+</div>
+
+</div>
+
+<script src="/static/app.js?v=227"></script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environments ──
+venv/
+.venv/
+env/
+.env
+
+# ── Environment / secrets ──
+.env
+*.env
+!.env.example
+
+# ── App runtime directories (not deployed — Railway uses ephemeral storage) ──
+05 Lease Analyzer/uploads/
+05 Lease Analyzer/results/
+05 Lease Analyzer/Runs/
+05 Lease Analyzer/data/
+
+# ── Research / validation scripts (not needed for deployment) ──
+01 FEVER Data and Runs/
+02 GPQA/
+03 SciFact/
+04 ContractNLI/
+build_log/
+Docs/
+scripts/
+
+# ── IDE / OS ──
+.vscode/
+.claude/
+.idea/
+*.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs ──
+*.log
+logs/
+
+# ── Test data (keep out of public repo) ──
+05 Lease Analyzer/test_data/
+
+# ── Analysis / research scripts in root ──
+analyze_disagreements.py
+analyze_disagreements_v2.py
+analyze_per_provision_timing.py
+analyze_provision_timing.py
+disagreement_report.txt
+disagreement_report_v2.txt
+per_provision_timing.txt
+run_timing.bat
+timing_report.txt
+_edit_appjs.py
+_edit_css.py
+_edit_html.py
+
+# ── Adapter analysis scripts ──
+05 Lease Analyzer/analyze_reorder_results.py
+05 Lease Analyzer/asg_population_compare.py
+05 Lease Analyzer/asg_quantization_check.py
+05 Lease Analyzer/cam_scorer.py
+05 Lease Analyzer/check_other_patterns.py
+05 Lease Analyzer/compute_fragility_rates.py
+05 Lease Analyzer/create_reordered_lease.py
+05 Lease Analyzer/dependency_depth_asg.py
+05 Lease Analyzer/evaluator_disagreement_gradient.py
+05 Lease Analyzer/fragility_asg_stats.py
+05 Lease Analyzer/run_reorder_comparison.py
+05 Lease Analyzer/run_t15_validation.py
+05 Lease Analyzer/text_topology_predict.py
+05 Lease Analyzer/tier2_accuracy_check.py
+05 Lease Analyzer/tier2_subclusters.py
+05 Lease Analyzer/tier_transition_analysis.py
+05 Lease Analyzer/verify_reorder.py
+05 Lease Analyzer/xref_determinism_check.py
+05 Lease Analyzer/zero_ref_tier2_check.py

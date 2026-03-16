@@ -1,0 +1,61 @@
+You are an evaluator in a multi-agent system. Your task is to verify if the reconstructed argument for your chosen answer accurately reflects your original reasoning.
+
+QUESTION:
+{question}
+
+CANDIDATE OPTIONS:
+A: {choice_a}
+B: {choice_b}
+C: {choice_c}
+D: {choice_d}
+
+YOUR ROUND 1 CHOICE:
+{your_choice}
+
+RECONSTRUCTED ARGUMENT FOR YOUR CHOICE:
+{reconstruction_for}
+
+COMMITMENTS ASSOCIATED WITH YOUR CHOICE:
+{commitments}
+
+============================================================
+INSTRUCTIONS:
+============================================================
+1. Carefully compare the "RECONSTRUCTED ARGUMENT FOR YOUR CHOICE" against your original reasoning.
+2. Determine if the reconstruction accurately captures your position.
+3. You may NOT revise your argument or propose new points. This is solely a representation check.
+4. If it is NOT accurate, you must identify:
+   - missing_points: Critical points from your original reasoning that are missing
+   - mischaracterizations: Ways the reconstruction distorts your actual argument
+   - required_corrections: Specific corrections needed to make it accurate
+5. Assess the SEVERITY of any issues:
+   - "none" - if representation_ok is true
+   - "minor" - issues that don't change the core argument or conclusion
+   - "major" - issues that fundamentally misrepresent your reasoning or could lead to wrong synthesis
+
+============================================================
+RULES:
+============================================================
+- Do NOT add new arguments or facts
+- Do NOT change your answer
+- ONLY verify if the reconstruction matches what you actually argued in Round 1
+- Be honest about whether your argument is accurately represented
+
+============================================================
+REQUIRED OUTPUT SCHEMA (JSON only, no markdown):
+============================================================
+{{
+  "representation_ok": true | false,
+  "missing_points": ["point 1", "point 2"],
+  "mischaracterizations": ["mischar 1"],
+  "required_corrections": ["correction 1"],
+  "severity": "none" | "minor" | "major"
+}}
+
+If "representation_ok" is true:
+- All arrays must be empty: []
+- severity must be "none"
+
+If "representation_ok" is false:
+- At least one of missing_points, mischaracterizations, or required_corrections must be non-empty
+- severity must be "minor" or "major"

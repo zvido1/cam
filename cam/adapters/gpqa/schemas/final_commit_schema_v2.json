@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Final Commit v2 Response",
+  "description": "Schema for Final Commit v2 with ladder of commitment and referent anchoring",
+  "type": "object",
+  "required": ["final_choice", "final_choice_text", "ladder_determination", "epistemic_status"],
+  "additionalProperties": true,
+  "properties": {
+    "final_choice": {
+      "type": ["string", "null"],
+      "enum": ["A", "B", "C", "D", null],
+      "description": "Final answer choice letter (A/B/C/D), or null if abstaining"
+    },
+    "final_choice_text": {
+      "type": ["string", "null"],
+      "description": "REQUIRED: The exact or near-exact text of the chosen option. Used to verify letter-to-referent consistency."
+    },
+    "ladder_determination": {
+      "type": "object",
+      "required": ["level", "level_name", "level_justification"],
+      "additionalProperties": true,
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4,
+          "description": "0=full_assert, 1=assert_by_elimination, 2=conditional_set, 3=partial_elimination, 4=invalid_question"
+        },
+        "level_name": {
+          "enum": ["full_assert", "assert_by_elimination", "conditional_set", "partial_elimination", "invalid_question", "domain_restricted"]
+        },
+        "justification": {
+          "type": ["string", "null"],
+          "minLength": 0
+        },
+        "level_justification": {
+          "type": ["string", "null"],
+          "minLength": 0
+        },
+        "confirmed_kills_acknowledged": {
+          "type": "array",
+          "items": {"enum": ["A", "B", "C", "D"]}
+        },
+        "survivors_acknowledged": {
+          "type": "array",
+          "items": {"enum": ["A", "B", "C", "D"]}
+        }
+      }
+    },
+    "confidence_statement": {
+      "type": "string",
+      "description": "Optional - models often use epistemic_status.confidence instead"
+    },
+    "epistemic_status": {
+      "type": "object",
+      "required": ["confidence"],
+      "additionalProperties": true,
+      "properties": {
+        "confidence": {
+          "type": "string"
+        },
+        "remaining_uncertainty": {
+          "type": "string"
+        },
+        "would_change_if": {
+          "type": "string"
+        }
+      }
+    },
+    "final_commitment": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "commitment_type": {
+          "type": "string"
+        },
+        "primary_answer": {
+          "type": ["string", "null"]
+        },
+        "killed_options": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "conditional_answers": {
+          "type": "array"
+        },
+        "assertion_statement": {
+          "type": "string"
+        }
+      }
+    },
+    "conditions_if_any": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Conditions under which the answer holds"
+    },
+    "would_change_if": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "What would falsify this answer"
+    },
+    "why_this_choice": {
+      "type": "string"
+    },
+    "why_not_the_other": {
+      "type": "string"
+    },
+    "defense_summary": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "_schema_validation_failed": {
+      "type": "boolean"
+    }
+  }
+}

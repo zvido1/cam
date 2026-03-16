@@ -1,0 +1,435 @@
+"""
+CAM Lease Review — Report Generator / Output Coordinator
+
+Coordinates all output generation after pipeline completes:
+- Always: results JSON (for dashboard)
+- DOCX input: annotated DOCX with Word comments
+- PDF input: annotated PDF with highlights + sticky notes
+- TXT input: converted to PDF, then annotated with highlights + sticky notes
+"""
+
+import json
+import os
+from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Optional
+
+import fitz  # PyMuPDF
+
+
+def _sanitize_for_pdf(text: str) -> str:
+    """Replace Unicode characters unsupported by base-14 PDF fonts."""
+    replacements = {
+        '\u2014': '--',   # em-dash
+        '\u2013': '-',    # en-dash
+        '\u2018': "'",    # left single quote
+        '\u2019': "'",    # right single quote
+        '\u201c': '"',    # left double quote
+        '\u201d': '"',    # right double quote
+        '\u2026': '...',  # ellipsis
+        '\u00a0': ' ',    # non-breaking space
+        '\u2022': '*',    # bullet
+        '\u00b7': '*',    # middle dot
+        '\u2010': '-',    # hyphen
+        '\u2011': '-',    # non-breaking hyphen
+        '\u2012': '-',    # figure dash
+        '\u00ae': '(R)',  # registered sign
+        '\u00a9': '(c)',  # copyright sign
+        '\u2122': '(TM)', # trademark
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    return text
+
+
+def _convert_txt_to_pdf(text_content: str, output_dir: str, base_filename: str) -> Optional[Path]:
+    """Convert plain text to a clean, readable PDF for annotation.
+
+    Returns path to the generated PDF, or None on failure.
+    """
+    try:
+        text_content = _sanitize_for_pdf(text_content)
+        doc = fitz.open()  # new empty PDF
+
+        # Page setup — Letter size
+        page_width = 612
+        page_height = 792
+        margin = 72  # 1 inch
+        font_size = 10
+        line_height = 14
+        usable_width = page_width - 2 * margin
+
+        page = doc.new_page(width=page_width, height=page_height)
+        y = margin
+
+        for line in text_content.split("\n"):
+            # Estimate lines this text will take (word-wrapped)
+            if line.strip():
+                # Approximate character width for Helvetica at 10pt
+                chars_per_line = int(usable_width / (font_size * 0.5))
+                wrapped_lines = max(1, (len(line) + chars_per_line - 1) // chars_per_line)
+                needed_height = line_height * (wrapped_lines + 0.5)
+            else:
+                needed_height = line_height
+
+            # New page if needed
+            if y + needed_height > page_height - margin:
+                page = doc.new_page(width=page_width, height=page_height)
+                y = margin
+
+            if line.strip():
+                rect = fitz.Rect(margin, y, page_width - margin, y + needed_height + line_height)
+                rc = page.insert_textbox(
+                    rect, line,
+                    fontsize=font_size,
+                    fontname="helv",
+                    align=0,
+                )
+                # rc < 0 means text didn't fit; use estimated height regardless
+                y += needed_height
+            else:
+                y += line_height  # blank line
+
+        # Save
+        stem = Path(base_filename).stem
+        pdf_path = Path(output_dir) / f"{stem}_converted.pdf"
+        doc.save(str(pdf_path))
+        doc.close()
+
+        print(f"[report_generator] Converted TXT to PDF: {pdf_path}", flush=True)
+        return pdf_path
+
+    except Exception as e:
+        print(f"[report_generator] TXT→PDF conversion failed: {e}", flush=True)
+        return None
+
+
+def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
+    """Build PDF summary cover page(s) with structured findings.
+
+    Returns path to a temporary PDF with summary pages, or None on failure.
+    """
+    try:
+        # Page setup
+        W, H = 612, 792
+        M = 60  # margin
+        UW = W - 2 * M
+        doc = fitz.open()
+
+        page = doc.new_page(width=W, height=H)
+        y = M
+
+        def s(text):
+            return _sanitize_for_pdf(text)
+
+        def add_text(pg, x, cy, text, size=10, bold=False, color=(0, 0, 0)):
+            fn = "hebo" if bold else "helv"
+            rect = fitz.Rect(x, cy, W - M, cy + size * 2.5)
+            chars_per_line = max(1, int(UW / (size * 0.5)))
+            lines_needed = max(1, (len(text) + chars_per_line - 1) // chars_per_line)
+            rect = fitz.Rect(x, cy, W - M, cy + size * 1.4 * lines_needed + 4)
+            pg.insert_textbox(rect, s(text), fontsize=size, fontname=fn, color=color, align=0)
+            return cy + size * 1.4 * lines_needed + 4
+
+        def new_page_if_needed(cy, needed=60):
+            nonlocal page
+            if cy + needed > H - M:
+                page = doc.new_page(width=W, height=H)
+                return M
+            return cy
+
+        # -- Header --
+        y = add_text(page, M, y, "CAM Lease Analysis Report", size=18, bold=True, color=(0.1, 0.2, 0.36))
+        y += 4
+        tenant_file = results.get("tenant_file", "")
+        date_str = datetime.now().strftime("%B %d, %Y")
+        y = add_text(page, M, y, f"{date_str}  |  {tenant_file}", size=9, color=(0.4, 0.45, 0.55))
+        y += 12
+
+        # -- Contract Summary --
+        meta = results.get("contract_metadata", {})
+        fields = []
+        for label, key in [("Landlord", "landlord"), ("Property", "property_description"),
+                           ("Term", "term_length"), ("Base Rent", "base_rent"),
+                           ("Tenant", "tenant"), ("Governing Law", "governing_law")]:
+            val = meta.get(key, "")
+            if val and len(str(val).replace("_", "").replace("TBD", "").strip()) >= 5:
+                fields.append((label, str(val)))
+
+        if fields:
+            y = add_text(page, M, y, "Contract Summary", size=13, bold=True, color=(0.1, 0.2, 0.36))
+            y += 2
+            for label, val in fields:
+                y = new_page_if_needed(y, 20)
+                y = add_text(page, M, y, f"{label}: {val}", size=9)
+            y += 10
+
+        # -- Provisions Traffic Light --
+        provisions = results.get("provisions", [])
+        if provisions:
+            y = new_page_if_needed(y, 40)
+            y = add_text(page, M, y, "Provisions Analyzed", size=13, bold=True, color=(0.1, 0.2, 0.36))
+            y += 4
+
+            # Group by severity (traffic light style)
+            sev_groups = {"CRITICAL": [], "HIGH": [], "MEDIUM": [], "LOW": [], "CONFORMS": []}
+            for p in provisions:
+                if p.get("final_verdict") == "DEVIATES":
+                    sev = p.get("severity", "MEDIUM")
+                    if sev in sev_groups:
+                        sev_groups[sev].append(p)
+                    else:
+                        sev_groups["MEDIUM"].append(p)
+                else:
+                    sev_groups["CONFORMS"].append(p)
+
+            sev_colors = {
+                "CRITICAL": (0.86, 0.15, 0.15),
+                "HIGH": (0.76, 0.27, 0.05),
+                "MEDIUM": (0.65, 0.47, 0.02),
+                "LOW": (0.4, 0.45, 0.55),
+                "CONFORMS": (0.09, 0.64, 0.29),
+            }
+            sev_labels = {
+                "CRITICAL": "[!] CRITICAL",
+                "HIGH": "[!] HIGH",
+                "MEDIUM": "[*] MEDIUM",
+                "LOW": "[-] LOW",
+                "CONFORMS": "[OK] CONFORMS",
+            }
+
+            for sev_key in ["CRITICAL", "HIGH", "MEDIUM", "LOW", "CONFORMS"]:
+                items = sev_groups[sev_key]
+                if not items:
+                    continue
+                y = new_page_if_needed(y, 22)
+                clr = sev_colors[sev_key]
+                label = sev_labels[sev_key]
+                names = ", ".join(f"{p.get('provision_id', '')} {p.get('provision_name', '').split(' ', 1)[-1] if p.get('provision_name') else ''}" for p in items)
+                y = add_text(page, M, y, f"  {label}: {names}", size=8.5, color=clr)
+
+                # Cross-reference warnings for CONFORMS provisions (Step 115)
+                if sev_key == "CONFORMS":
+                    for p in items:
+                        xref = p.get("cross_reference_links")
+                        if xref and xref.get("linked_deviations"):
+                            for ld in xref["linked_deviations"]:
+                                y = new_page_if_needed(y, 14)
+                                xref_text = (
+                                    f"    \u26A0 {p.get('provision_id', '')} depends on "
+                                    f"[{ld.get('defined_term', '')}] -- see "
+                                    f"{ld.get('deviating_provision', '')} "
+                                    f"({ld.get('severity', '')}): {ld.get('summary', '')[:80]}"
+                                )
+                                y = add_text(page, M + 10, y, xref_text, size=7.5, color=(0.76, 0.27, 0.05))
+            y += 10
+
+        # -- Findings --
+        deviations = [p for p in provisions if p.get("final_verdict") == "DEVIATES"]
+        sev_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
+        deviations.sort(key=lambda d: sev_order.get(d.get("severity", "LOW"), 99))
+
+        if deviations:
+            y = new_page_if_needed(y, 60)
+            y = add_text(page, M, y, "Findings", size=13, bold=True, color=(0.1, 0.2, 0.36))
+            y += 4
+
+            for d in deviations:
+                y = new_page_if_needed(y, 80)
+                pid = d.get("provision_id", "")
+                pname = d.get("provision_name", "")
+                sev = d.get("severity", "")
+                headline = d.get("risk_headline", "")
+                what_changed = d.get("challenge_details", d.get("what_changed", ""))
+                impact = d.get("severity_reasoning", "")
+                financial = d.get("financial_impact", "")
+                action = d.get("recommended_action", "")
+                cascade_src = d.get("cascade_source")
+                action_labels = {
+                    "note_for_awareness": "Note for awareness",
+                    "attorney_review_recommended": "Attorney review recommended",
+                    "attorney_review_required": "Attorney review required",
+                }
+                action_text = action_labels.get(action, action)
+
+                # Agreement line
+                verdicts = d.get("evaluator_verdicts", {})
+                agreeing = sum(1 for v in verdicts.values() if v == "DEVIATES")
+                total = len(verdicts) or 3
+                agreement = f"{agreeing}/{total} evaluators agree"
+
+                # Severity color
+                sev_clr = (0.86, 0.15, 0.15) if sev == "CRITICAL" else (0.76, 0.27, 0.05) if sev == "HIGH" else (0.65, 0.47, 0.02) if sev == "MEDIUM" else (0.4, 0.45, 0.55)
+
+                # Render finding block
+                y = add_text(page, M, y, f"{pid} {pname}  [{sev}]  ({agreement})", size=10, bold=True, color=sev_clr)
+
+                # Cascade source (if present)
+                if cascade_src and cascade_src.get("term"):
+                    y = new_page_if_needed(y, 18)
+                    cs_text = f"Definition cascade from: \"{cascade_src['term']}\""
+                    if cascade_src.get("defined_in"):
+                        cs_text += f" -- {cascade_src['defined_in']}"
+                    y = add_text(page, M + 10, y, cs_text, size=8.5, color=(0.65, 0.47, 0.02))
+
+                if headline:
+                    y = new_page_if_needed(y, 20)
+                    y = add_text(page, M + 10, y, headline, size=9, bold=True, color=sev_clr)
+                if what_changed:
+                    y = new_page_if_needed(y, 30)
+                    y = add_text(page, M + 10, y, f"What Changed: {what_changed}", size=9)
+                if impact:
+                    y = new_page_if_needed(y, 30)
+                    y = add_text(page, M + 10, y, f"Impact: {impact}", size=9)
+                if financial:
+                    y = new_page_if_needed(y, 30)
+                    y = add_text(page, M + 10, y, f"Financial Impact: {financial}", size=9)
+                if action_text and action_text != "no_action":
+                    y = new_page_if_needed(y, 20)
+                    y = add_text(page, M + 10, y, f"Recommended Action: {action_text}", size=9, color=(0.1, 0.2, 0.36))
+                y += 8
+
+        # -- Disclaimer --
+        y = new_page_if_needed(y, 60)
+        y += 10
+        page.draw_line(fitz.Point(M, y), fitz.Point(W - M, y), color=(0.8, 0.82, 0.85))
+        y += 8
+        disclaimer = (
+            "This analysis was generated by the CAM (Constrained Assertion Method) system using multiple "
+            "independent AI evaluators. It is intended as a review aid, not legal advice. All findings should "
+            "be verified by qualified legal counsel before any action is taken."
+        )
+        y = add_text(page, M, y, disclaimer, size=7.5, color=(0.55, 0.58, 0.62))
+
+        # Save temporary PDF
+        cover_path = Path(output_dir) / "_summary_cover.pdf"
+        doc.save(str(cover_path))
+        doc.close()
+        print(f"[report_generator] Summary cover page built: {cover_path}", flush=True)
+        return cover_path
+
+    except Exception as e:
+        print(f"[report_generator] Summary cover page failed: {e}", flush=True)
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def _prepend_cover_to_pdf(cover_path: str, annotated_path: str):
+    """Prepend summary cover pages to the annotated PDF in-place."""
+    try:
+        cover_doc = fitz.open(cover_path)
+        main_doc = fitz.open(annotated_path)
+        cover_page_count = cover_doc.page_count
+
+        # Insert cover pages at the beginning (start_at=0 means before page 0)
+        main_doc.insert_pdf(cover_doc, start_at=0)
+
+        main_doc.saveIncr()
+        main_doc.close()
+        cover_doc.close()
+        print(f"[report_generator] Prepended {cover_page_count} cover page(s) to {annotated_path}", flush=True)
+    except Exception as e:
+        print(f"[report_generator] Failed to prepend cover: {e}", flush=True)
+
+
+def generate_outputs(
+    tenant_file_path: str,
+    results: dict,
+    output_dir: str,
+) -> dict:
+    """Generate all output files for a completed analysis.
+
+    Args:
+        tenant_file_path: Path to the original uploaded tenant file.
+        results: Full pipeline results dict.
+        output_dir: Directory to write output files into.
+
+    Returns:
+        Dict with paths and summary:
+        {
+            "dashboard_json": "path/to/results.json",
+            "annotated_document": "path/to/annotated.docx or .pdf" or None,
+            "annotation_method": "docx_comments" | "pdf_highlights" | "none",
+            "summary": { ... summary stats ... }
+        }
+    """
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Always produce the dashboard JSON
+    json_path = os.path.join(output_dir, "pipeline_results.json")
+    # (JSON is already saved by lease_adapter.py, but we track the path)
+
+    output_info = {
+        "dashboard_json": json_path,
+        "annotated_document": None,
+        "annotation_method": "none",
+        "summary": results.get("summary", {}),
+    }
+
+    # Detect input format
+    ext = Path(tenant_file_path).suffix.lower()
+
+    if ext == ".docx":
+        try:
+            from cam.adapters.lease_review.lease_docx_annotator import annotate_docx
+            annotated_name = Path(tenant_file_path).stem + "_annotated.docx"
+            annotated_path = os.path.join(output_dir, annotated_name)
+            annotate_docx(tenant_file_path, results, annotated_path)
+            output_info["annotated_document"] = annotated_path
+            output_info["annotation_method"] = "docx_comments"
+        except Exception as e:
+            print(f"[report_generator] DOCX annotation failed: {e}", flush=True)
+            output_info["annotation_error"] = str(e)
+
+    elif ext == ".pdf":
+        try:
+            from cam.adapters.lease_review.lease_pdf_annotator import annotate_pdf
+            annotated_name = Path(tenant_file_path).stem + "_annotated.pdf"
+            annotated_path = os.path.join(output_dir, annotated_name)
+            annotate_pdf(tenant_file_path, results, annotated_path)
+            output_info["annotated_document"] = annotated_path
+            output_info["annotation_method"] = "pdf_highlights"
+        except Exception as e:
+            print(f"[report_generator] PDF annotation failed: {e}", flush=True)
+            output_info["annotation_error"] = str(e)
+
+    elif ext == ".txt":
+        try:
+            print("[report_generator] TXT input — converting to PDF for annotation...", flush=True)
+            # Read the original text
+            txt_content = Path(tenant_file_path).read_text(encoding="utf-8", errors="replace")
+            # Convert to a clean PDF
+            converted_pdf = _convert_txt_to_pdf(txt_content, output_dir, Path(tenant_file_path).name)
+            if converted_pdf:
+                # Annotate the converted PDF using existing PDF annotator
+                from cam.adapters.lease_review.lease_pdf_annotator import annotate_pdf
+                annotated_name = Path(tenant_file_path).stem + "_annotated.pdf"
+                annotated_path = os.path.join(output_dir, annotated_name)
+                annotate_pdf(str(converted_pdf), results, annotated_path)
+                output_info["annotated_document"] = annotated_path
+                output_info["annotation_method"] = "pdf_highlights"
+                # Clean up intermediate converted PDF
+                try:
+                    converted_pdf.unlink()
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"[report_generator] TXT→PDF annotation failed: {e}", flush=True)
+            output_info["annotation_error"] = str(e)
+
+    else:
+        print(f"[report_generator] Unsupported format '{ext}' — no document annotation", flush=True)
+
+    # Prepend summary cover page(s) to PDF outputs
+    annotated = output_info.get("annotated_document")
+    if annotated and annotated.endswith(".pdf"):
+        cover_path = _build_summary_cover_pdf(results, output_dir)
+        if cover_path:
+            _prepend_cover_to_pdf(str(cover_path), annotated)
+            try:
+                cover_path.unlink()
+            except Exception:
+                pass
+
+    return output_info

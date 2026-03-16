@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "required": ["enrichment_performed", "concepts_searched", "enrichment_summary"],
+  "properties": {
+    "enrichment_performed": {
+      "type": "boolean",
+      "description": "Whether enrichment was actually performed (false if no concepts found)"
+    },
+    "concepts_searched": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["concept", "query", "relevance_to_disagreement"],
+        "properties": {
+          "concept": {
+            "type": "string",
+            "description": "The legal term or concept searched"
+          },
+          "query": {
+            "type": "string",
+            "description": "The query sent to the search API"
+          },
+          "context_found": {
+            "type": ["string", "null"],
+            "description": "The interpretive context returned (null if lookup failed)"
+          },
+          "source_summary": {
+            "type": ["string", "null"],
+            "description": "Brief description of the source"
+          },
+          "relevance_to_disagreement": {
+            "type": "string",
+            "description": "Why this concept is relevant to the evaluator disagreement"
+          },
+          "error": {
+            "type": ["string", "null"],
+            "description": "Error message if lookup failed (null if successful)"
+          }
+        }
+      }
+    },
+    "enrichment_summary": {
+      "type": "string",
+      "description": "Human-readable summary of enrichment results"
+    },
+    "total_usage": {
+      "type": "object",
+      "properties": {
+        "input_tokens": {"type": "integer"},
+        "output_tokens": {"type": "integer"},
+        "calls": {"type": "integer"}
+      },
+      "description": "Aggregate API usage for all enrichment calls"
+    }
+  },
+  "additionalProperties": false
+}
