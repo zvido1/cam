@@ -8481,8 +8481,6 @@ textarea.input-field {
     color: var(--text, #1e293b);
     white-space: pre-wrap;
     word-wrap: break-word;
-    max-height: 160px;
-    overflow-y: auto;
     padding: 0.5rem 0.625rem;
     background: var(--bg, #ffffff);
     border: 1px solid var(--border, #e2e8f0);

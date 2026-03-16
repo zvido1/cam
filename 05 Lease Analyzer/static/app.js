@@ -2118,8 +2118,7 @@ function renderNavSidebar() {
                     `<span class="nav-issue-name">${esc(cleanName)}</span>`;
                 item.title = pid + " — " + sev;
                 item.onclick = function() {
-                    scrollToTenant(i);
-                    setTimeout(function() { jumpToFinding(pid); }, 100);
+                    jumpToProvisionFromSidebar(pid, i);
                 };
                 issuesList.appendChild(item);
             });
@@ -2157,6 +2156,7 @@ function renderNavSidebar() {
             const verdict = p.final_verdict || "";
             const sev = (p.severity || "").toLowerCase();
             const cleanName = (p.provision_name || pid).replace(/^LP-\d{2}\s+/, "").replace(/^CUSTOM-\d+\s+/, "");
+            const displayName = pid ? `${pid} ${cleanName}` : cleanName;
             const concern = getConformingConcernState(pid);
             const resolution = (resolutionState[`${i}:${pid}`] || {}).status || "open";
             const isResolved = resolution === "resolved";
@@ -2182,15 +2182,11 @@ function renderNavSidebar() {
             }
 
             item.innerHTML = iconHtml +
-                `<span class="nav-all-name">${esc(cleanName)}</span>` +
+                `<span class="nav-all-name">${esc(displayName)}</span>` +
                 (isResolved ? `<span class="nav-all-resolved-label">Resolved</span>` : (isNotDeviation ? `<span class="nav-all-resolved-label">Not a Deviation</span>` : ""));
             item.title = pid;
             item.onclick = function() {
-                scrollToTenant(i);
-                setTimeout(function() {
-                    if (isWorkflowDeviation) jumpToFinding(pid);
-                    else jumpToProvision(pid);
-                }, 100);
+                jumpToProvisionFromSidebar(pid, i);
             };
             allProvsList.appendChild(item);
         });
@@ -3567,14 +3563,39 @@ function renderProvisionsChecklist(provisions) {
 function jumpToFinding(pid) {
     // Ensure we're on the findings tab
     if (activeResultsTab !== "findings") switchResultsTab("findings");
-    const card = document.getElementById(`dev-${pid}`);
-    if (card) {
-        setTimeout(() => {
-            card.scrollIntoView({ behavior: "smooth", block: "center" });
-            card.classList.add("highlight-flash");
-            setTimeout(() => card.classList.remove("highlight-flash"), 1500);
-        }, activeResultsTab !== "findings" ? 150 : 0);
-    }
+    setTimeout(() => {
+        let card = document.getElementById(`dev-${pid}`);
+        if (!card) {
+            const conformingList = document.getElementById("conforming-list");
+            const conformingToggle = document.getElementById("conforming-toggle");
+            if (conformingList && conformingList.classList.contains("hidden")) {
+                conformingList.classList.remove("hidden");
+                if (conformingToggle) conformingToggle.innerHTML = "&#9660; Conforming Provisions (no action needed)";
+            }
+            const conformingItem = document.querySelector(`.conforming-item[data-pid="${CSS.escape(pid)}"]`);
+            if (conformingItem) {
+                const detail = conformingItem.querySelector(".conforming-detail");
+                const chevron = conformingItem.querySelector(".conforming-chevron");
+                if (detail && detail.classList.contains("hidden")) detail.classList.remove("hidden");
+                if (chevron) chevron.innerHTML = "&#9652;";
+                card = conformingItem;
+            }
+        }
+        if (!card) return;
+        const resultsContent = document.querySelector(".results-content");
+        const stickyShell = document.querySelector(".contract-detail-sticky-shell");
+        const stickyHeight = stickyShell ? stickyShell.getBoundingClientRect().height : 0;
+        if (resultsContent) {
+            const panelRect = resultsContent.getBoundingClientRect();
+            const targetRect = card.getBoundingClientRect();
+            const nextTop = resultsContent.scrollTop + (targetRect.top - panelRect.top) - stickyHeight - 12;
+            resultsContent.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
+        } else {
+            card.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+        card.classList.add("highlight-flash");
+        setTimeout(() => card.classList.remove("highlight-flash"), 1500);
+    }, activeResultsTab !== "findings" ? 150 : 0);
 }
 
 async function loadResolutions() {
@@ -3718,6 +3739,9 @@ function renderContractPickerFilterBar() {
 
 function getAvailableClauseFilterValues(provisions) {
     const deviations = getDeviationWorkflowProvisions(provisions);
+    const conforming = (provisions || []).filter(function(p) {
+        return p && p.provision_id !== "LP-00" && p.final_verdict === "CONFORMS" && !isManualEscalatedProvision(p);
+    });
     const severitySet = new Set();
     const statusSet = new Set();
     let hasRead = false;
@@ -3737,6 +3761,15 @@ function getAvailableClauseFilterValues(provisions) {
         else hasNoNotes = true;
         if (isNoted(currentTenantIndex, pid)) hasRead = true;
         else hasUnread = true;
+    });
+
+    conforming.forEach(function(p) {
+        const pid = p.provision_id || "";
+        statusSet.add('conforming');
+        if (isNoted(currentTenantIndex, pid)) hasRead = true;
+        else hasUnread = true;
+        if (getConformingConcernState(pid) === 'concern') hasNotes = true;
+        else hasNoNotes = true;
     });
 
     return {
@@ -3805,6 +3838,7 @@ function renderContractClauseFilterBar(provisions) {
         { value: 'LOW', label: 'Low' }
     ];
     const statusDefs = [
+        { value: 'conforming', label: 'Conforming' },
         { value: 'open', label: 'Open' },
         { value: 'in_review', label: 'In Review' },
         { value: 'escalated', label: 'Escalated' },
@@ -3900,6 +3934,7 @@ function renderContractClauseFilterBar(provisions) {
 
 function applyContractClauseFilters() {
     const cards = Array.from(document.querySelectorAll("#deviations-list .finding-card"));
+    const conformingItems = Array.from(document.querySelectorAll("#conforming-list .conforming-item"));
     const header = $("#deviations-header");
     const total = cards.length;
     let visible = 0;
@@ -3925,6 +3960,21 @@ function applyContractClauseFilters() {
         const show = severityOk && statusOk && readOk && notesOk;
         card.classList.toggle("hidden", !show);
         if (show) visible++;
+    });
+
+    conformingItems.forEach(item => {
+        const pid = item.dataset.pid || "";
+        const isRead = isNoted(currentTenantIndex, pid);
+        const hasNotes = getConformingConcernState(pid) === 'concern';
+        const statusOk = contractClauseStatusFilter === 'all' || contractClauseStatusFilter === 'conforming';
+        const readOk = contractClauseReadFilter === 'all'
+            || (contractClauseReadFilter === 'read' && isRead)
+            || (contractClauseReadFilter === 'unread' && !isRead);
+        const notesOk = contractClauseNotesFilter === 'all'
+            || (contractClauseNotesFilter === 'has_notes' && hasNotes)
+            || (contractClauseNotesFilter === 'no_notes' && !hasNotes);
+        const severityOk = contractClauseSeverityFilter === 'all';
+        item.classList.toggle("hidden", !(severityOk && statusOk && readOk && notesOk));
     });
 
     if (header) header.textContent = "Deviations";
@@ -5213,6 +5263,31 @@ function jumpToDocview(pid) {
             setTimeout(() => target.classList.remove("highlight-flash"), 1500);
         }
     }, 180);
+}
+
+function jumpToProvisionOnActivePage(pid, tenantIdx) {
+    const activeTenantIdx = typeof tenantIdx === "number" ? tenantIdx : currentTenantIndex;
+    if (activeResultsTab === "docview") {
+        jumpToDocview(pid);
+        return;
+    }
+    if (activeResultsTab === "audittrail") {
+        jumpToAuditProvision(activeTenantIdx, pid);
+        return;
+    }
+    jumpToFinding(pid);
+}
+
+function jumpToProvisionFromSidebar(pid, tenantIdx) {
+    const activeTenantIdx = typeof tenantIdx === "number" ? tenantIdx : currentTenantIndex;
+    const needsTenantSwitch = !contractDetailOpen || currentTenantIndex !== activeTenantIdx;
+    if (needsTenantSwitch) {
+        scrollToTenant(activeTenantIdx);
+    }
+    const delay = needsTenantSwitch ? 260 : 80;
+    setTimeout(() => {
+        jumpToProvisionOnActivePage(pid, activeTenantIdx);
+    }, delay);
 }
 
 // Show a "no contract selected" placeholder in the detail area
@@ -7372,21 +7447,7 @@ function linkifyChatProvisions(html) {
 }
 
 function jumpToProvision(pid) {
-    // Switch to findings tab
-    switchResultsTab("findings");
-
-    // Find the finding card
-    const card = document.querySelector(`.finding-card[data-provision="${pid}"]`);
-    if (card) {
-        // Scroll into view within the results content area
-        const resultsContent = $("#results-content");
-        if (resultsContent) {
-            card.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-        // Flash highlight
-        card.classList.add("highlight-flash");
-        setTimeout(() => card.classList.remove("highlight-flash"), 2000);
-    }
+    jumpToFinding(pid);
 }
 
 function searchInDoc(text) {
@@ -10918,7 +10979,17 @@ function jumpToAuditProvision(tenantIdx, pid) {
             }
             // Scroll and flash after a brief moment to let the detail expand
             setTimeout(() => {
-                row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                const resultsContent = document.querySelector(".results-content");
+                const stickyShell = document.querySelector(".contract-detail-sticky-shell");
+                const stickyHeight = stickyShell ? stickyShell.getBoundingClientRect().height : 0;
+                if (resultsContent) {
+                    const panelRect = resultsContent.getBoundingClientRect();
+                    const targetRect = row.getBoundingClientRect();
+                    const nextTop = resultsContent.scrollTop + (targetRect.top - panelRect.top) - stickyHeight - 8;
+                    resultsContent.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+                } else {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
                 row.classList.add('highlight-flash');
                 setTimeout(() => row.classList.remove('highlight-flash'), 2000);
             }, 100);
