@@ -50,6 +50,148 @@ const MODEL_DISPLAY_NAMES = {
 };
 
 // ── Evaluator Color Classes ──
+const CAMShared = window.CAMShared || {};
+const calcEstimate = CAMShared.calcEstimate || function() { return { mins: 1, detail: "", secsPerLease: 60, parsingSecs: 0, provisionSecs: 0, bufferSecs: 0 }; };
+const formatDurationShort = CAMShared.formatDurationShort || function(totalSecs) { return `${Math.max(0, Math.round(totalSecs || 0))}s`; };
+const formatDurationApprox = CAMShared.formatDurationApprox || function(totalSecs) { return `~${Math.max(1, Math.round((totalSecs || 0) / 60))} minutes`; };
+const getProcessingStageCopy = CAMShared.getProcessingStageCopy || function(stage, detail) { return { headline: `Stage ${stage || 0}`, detail: detail || "" }; };
+const getTenantProgressFraction = CAMShared.getTenantProgressFraction || function() { return 0; };
+const getResultsScrollContainer = CAMShared.getResultsScrollContainer || function() { return document.getElementById("results-content") || document.querySelector(".results-content"); };
+const getContractDetailStickyHeight = CAMShared.getContractDetailStickyHeight || function() { return 0; };
+const scrollResultsTargetIntoView = CAMShared.scrollResultsTargetIntoView || function(target) { if (target) target.scrollIntoView({ behavior: "smooth", block: "start" }); };
+const flashResultsTarget = CAMShared.flashResultsTarget || function(target, duration) { if (target) { target.classList.add("highlight-flash"); setTimeout(() => target.classList.remove("highlight-flash"), duration || 1500); } };
+const waitForResultsTarget = CAMShared.waitForResultsTarget || function(findFn) { return Promise.resolve(findFn()); };
+const CAMAuditShared = window.CAMAuditShared || {};
+const getAuditGovernanceLabel = CAMAuditShared.getAuditGovernanceLabel || function(signal) { return signal || "—"; };
+const getAuditPatternLabel = CAMAuditShared.getAuditPatternLabel || function(pattern) { return pattern || "—"; };
+const getAuditAsgTone = CAMAuditShared.getAuditAsgTone || function() { return { label: "Unknown", tone: "neutral", width: 0 }; };
+const getAuditConfidenceTone = CAMAuditShared.getAuditConfidenceTone || function() { return { label: "Unknown", tone: "neutral", width: 0 }; };
+const getAuditFragilityTone = CAMAuditShared.getAuditFragilityTone || function() { return { label: "No fragility score", tone: "neutral", width: 0 }; };
+const getAuditAgreementSummary = CAMAuditShared.getAuditAgreementSummary || function(pattern) { return pattern || "Evaluator agreement was not available."; };
+const getAuditEvidenceSummary = CAMAuditShared.getAuditEvidenceSummary || function() { return "CAM reviewed the clause text but the evidence basis was not explicitly labeled."; };
+const getAuditReasoningSummary = CAMAuditShared.getAuditReasoningSummary || function() { return "This clause did not move through the full reasoning chain."; };
+const getAuditFragilitySummary = CAMAuditShared.getAuditFragilitySummary
+    ? function(fragilityRaw) { return CAMAuditShared.getAuditFragilitySummary(fragilityRaw, FRAGILITY_TRANSLATIONS); }
+    : function() { return "No structural fragility signals were detected."; };
+const renderAuditScoreBar = CAMAuditShared.renderAuditScoreBar
+    ? function(label, value, helper, toneInfo) { return CAMAuditShared.renderAuditScoreBar(label, value, helper, toneInfo, esc); }
+    : function() { return ""; };
+const renderAuditRawRecord = CAMAuditShared.renderAuditRawRecord
+    ? function(title, record) { return CAMAuditShared.renderAuditRawRecord(title, record, esc); }
+    : function() { return ""; };
+const renderAuditPromptBlock = CAMAuditShared.renderAuditPromptBlock
+    ? function(title, text) { return CAMAuditShared.renderAuditPromptBlock(title, text, esc); }
+    : function() { return ""; };
+const renderAuditTechnicalGroup = CAMAuditShared.renderAuditTechnicalGroup
+    ? function(title, innerHtml) { return CAMAuditShared.renderAuditTechnicalGroup(title, innerHtml, esc); }
+    : function() { return ""; };
+const CAMWorkflowShared = window.CAMWorkflowShared || {};
+const isManualEscalatedProvision = CAMWorkflowShared.isManualEscalatedProvision
+    ? function(p, tenantIdx = currentTenantIndex) { return CAMWorkflowShared.isManualEscalatedProvision(p, getConformingConcernState(tenantIdx, p && p.provision_id)); }
+    : function() { return false; };
+const isDeviationWorkflowProvision = CAMWorkflowShared.isDeviationWorkflowProvision
+    ? function(p, tenantIdx = currentTenantIndex) { return CAMWorkflowShared.isDeviationWorkflowProvision(p, getConformingConcernState(tenantIdx, p && p.provision_id)); }
+    : function(p) { return !!(p && p.final_verdict === "DEVIATES"); };
+const buildManualEscalatedProvision = CAMWorkflowShared.buildManualEscalatedProvision
+    ? function(p, tenantIdx = currentTenantIndex) { return CAMWorkflowShared.buildManualEscalatedProvision(p, getConformingConcernReason(tenantIdx, p && p.provision_id)); }
+    : function(p) { return p; };
+const getDeviationWorkflowProvisions = CAMWorkflowShared.getDeviationWorkflowProvisions
+    ? function(provisions, tenantIdx = currentTenantIndex) {
+        return CAMWorkflowShared.getDeviationWorkflowProvisions(provisions, tenantIdx, {
+            getConcernState: getConformingConcernState,
+            getConcernReason: getConformingConcernReason,
+        });
+    }
+    : function(provisions) { return provisions || []; };
+const getDocviewWorkflowProvisions = CAMWorkflowShared.getDocviewWorkflowProvisions
+    ? function(provisions, tenantIdx = currentTenantIndex) {
+        return CAMWorkflowShared.getDocviewWorkflowProvisions(provisions, tenantIdx, {
+            getConcernState: getConformingConcernState,
+            getConcernReason: getConformingConcernReason,
+        });
+    }
+    : function(provisions) { return provisions || []; };
+const getContractResolutionKey = CAMWorkflowShared.getContractResolutionKey
+    ? function(tenantIdx) {
+        const tenant = currentResults && currentResults.tenants && currentResults.tenants[tenantIdx];
+        return CAMWorkflowShared.getContractResolutionKey(currentJobId, tenant, tenantIdx);
+    }
+    : function(tenantIdx) { return `cam_res_${currentJobId}_tenant_${tenantIdx}`; };
+const getContractResolution = CAMWorkflowShared.getContractResolution
+    ? function(tenantIdx) {
+        const tenant = currentResults && currentResults.tenants && currentResults.tenants[tenantIdx];
+        const workflowProvisions = getDeviationWorkflowProvisions(((tenant && tenant.results && tenant.results.provisions) || []), tenantIdx);
+        return CAMWorkflowShared.getContractResolution(currentJobId, tenant, tenantIdx, workflowProvisions, resolutionState, localStorage);
+    }
+    : function() { return "unreviewed"; };
+const CAMDocviewShared = window.CAMDocviewShared || {};
+const buildDocviewDraftDecisionControls = CAMDocviewShared.buildDocviewDraftDecisionControls
+    ? function(provision, tenantIdx) {
+        return CAMDocviewShared.buildDocviewDraftDecisionControls(provision, tenantIdx, {
+            esc,
+            getFinalDraftDecision,
+        });
+    }
+    : function() { return ""; };
+const buildDocviewDeviationControls = CAMDocviewShared.buildDocviewDeviationControls
+    ? function(provision, tenantIdx) {
+        return CAMDocviewShared.buildDocviewDeviationControls(provision, tenantIdx, {
+            esc,
+            resolutionState,
+            getDocviewDomIdSuffix,
+            buildDraftDecisionControls: buildDocviewDraftDecisionControls,
+            formatResTimestamp,
+        });
+    }
+    : function() { return ""; };
+const buildDocviewConformingControls = CAMDocviewShared.buildDocviewConformingControls
+    ? function(provision, tenantIdx) {
+        return CAMDocviewShared.buildDocviewConformingControls(provision, tenantIdx, {
+            esc,
+            getConformingConcernState,
+        });
+    }
+    : function() { return ""; };
+const buildTocSeverityMaps = CAMDocviewShared.buildTocSeverityMaps
+    ? function(provisions, primarySide = "tenant") {
+        return CAMDocviewShared.buildTocSeverityMaps(provisions, primarySide, {
+            isDeviationWorkflowProvision: function(p) { return isDeviationWorkflowProvision(p, currentTenantIndex); }
+        });
+    }
+    : function() { return { sectionMap: new Map(), articleMap: new Map() }; };
+const parseSidebarTocOutline = CAMDocviewShared.parseSidebarTocOutline || function() { return { articles: [], sections: [], outline: [] }; };
+const buildSidebarArticleGroups = CAMDocviewShared.buildSidebarArticleGroups || function() { return []; };
+const CAMDocviewRenderShared = window.CAMDocviewRenderShared || {};
+const buildSideBySideDocviewMarkup = CAMDocviewRenderShared.buildSideBySideDocviewMarkup
+    ? function(provisions, options) {
+        return CAMDocviewRenderShared.buildSideBySideDocviewMarkup(provisions, options, {
+            esc,
+            computeWordDiff,
+            renderCredibilityLine,
+            isDeviationWorkflowProvision,
+            isNoted,
+            buildDocviewDeviationControls,
+            buildDocviewConformingControls,
+            SEVERITY_ICONS,
+        });
+    }
+    : function() { return ""; };
+const CAMSummaryShared = window.CAMSummaryShared || {};
+const buildConformingItem = CAMSummaryShared.buildConformingItem
+    ? function(provision, options) {
+        return CAMSummaryShared.buildConformingItem(provision, options, {
+            esc,
+            isNoted,
+            getDissentingEvaluators,
+        });
+    }
+    : function() { return ""; };
+const CAMNotesShared = window.CAMNotesShared || {};
+const buildNotesToggleHtml = CAMNotesShared.buildNotesToggleHtml || function(label) { return label || "Notes"; };
+const renderNotesPanelEntries = CAMNotesShared.renderNotesPanelEntries
+    ? function(panel, notes, inputRow, helpers) { return CAMNotesShared.renderNotesPanelEntries(panel, notes, inputRow, helpers); }
+    : function() {};
+
 const EVALUATOR_COLORS = {
     A: "eval-blue",
     B: "eval-green",
@@ -137,6 +279,8 @@ let contractClauseStatusFilter = 'all';
 let contractClauseReadFilter = 'all';
 let contractClauseNotesFilter = 'all';
 let contractPickerSeverityFilter = 'all';
+let contractDetailRenderPromise = Promise.resolve();
+let contractDetailRenderSeq = 0;
 
 function getResultsViewStateKey() {
     return currentJobId ? `cam:view-state:${currentJobId}` : "";
@@ -940,17 +1084,25 @@ function renderTenantFileList() {
 //   LP-00 included in fixed base
 //
 // Flag rates from 108-run empirical analysis:
-const PROVISION_FLAG_RATES = {
+const LEGACY_PROVISION_FLAG_RATES = {
     "LP-01": 0.26, "LP-02": 0.11, "LP-03": 0.33, "LP-04": 0.09,
     "LP-05": 0.41, "LP-06": 0.27, "LP-07": 0.31, "LP-08": 0.30,
     "LP-09": 0.62, "LP-10": 0.38, "LP-11": 0.60, "LP-12": 0.46,
     "LP-13": 0.60, "LP-14": 0.26, "LP-15": 0.14, "LP-16": 0.32,
     "LP-17": 0.05, "LP-18": 0.22,
 };
-const VARIABLE_COST_PER_FLAGGED = 29; // seconds
-const EXTRACTION_BASE_SECS = 90;      // seconds
+const LEGACY_VARIABLE_COST_PER_FLAGGED = 29; // seconds
+const LEGACY_EXTRACTION_BASE_SECS = 90;      // seconds
+const LEGACY_PROCESSING_STAGE_WEIGHTS = {
+    1: 0.46, // extraction + alignment
+    2: 0.08, // rules / detections
+    3: 0.22, // multi-evaluator review
+    4: 0.08, // challenge / agreement analysis
+    5: 0.10, // severity assessment
+    6: 0.06, // finalization / outputs
+};
 
-function calcEstimate(provCount, idChecks, numLeases, selectedIds) {
+function legacyCalcEstimate(provCount, idChecks, numLeases, selectedIds) {
     const idCheckCount = idChecks
         ? [idChecks.landlord, idChecks.property, idChecks.tenant].filter(Boolean).length
         : 0;
@@ -959,23 +1111,25 @@ function calcEstimate(provCount, idChecks, numLeases, selectedIds) {
     if (selectedIds && selectedIds.length > 0) {
         // Weighted sum: each provision contributes flag_rate × 29s
         selectedIds.forEach(pid => {
-            const rate = PROVISION_FLAG_RATES[pid] !== undefined
-                ? PROVISION_FLAG_RATES[pid]
+            const rate = LEGACY_PROVISION_FLAG_RATES[pid] !== undefined
+                ? LEGACY_PROVISION_FLAG_RATES[pid]
                 : 0.85; // CUSTOM/ADDED provisions: assume high flag rate
-            variableSecs += rate * VARIABLE_COST_PER_FLAGGED;
+            variableSecs += rate * LEGACY_VARIABLE_COST_PER_FLAGGED;
         });
     } else {
         // Fallback: no IDs known, use count × median flag rate (~0.35)
-        variableSecs = provCount * 0.35 * VARIABLE_COST_PER_FLAGGED;
+        variableSecs = provCount * 0.35 * LEGACY_VARIABLE_COST_PER_FLAGGED;
     }
 
     // Gap repair buffer: when Gemini misses subsections, it runs sequential re-extraction
     // calls (one per missed section, ~15s each). Complex leases commonly trigger 10-15 repairs.
     // Add 120s buffer for full provision set, 60s for smaller selections.
+    const identitySecs = idCheckCount * 10;
     const gapRepairBuffer = provCount >= 12 ? 120 : 60;
-    const secsPerLease = Math.max(60,
-        EXTRACTION_BASE_SECS + variableSecs + (idCheckCount * 10) + gapRepairBuffer
-    );
+    const parsingSecs = LEGACY_EXTRACTION_BASE_SECS + identitySecs;
+    const provisionSecs = variableSecs;
+    const bufferSecs = gapRepairBuffer;
+    const secsPerLease = Math.max(60, parsingSecs + provisionSecs + bufferSecs);
     const minsPerLease = Math.ceil(secsPerLease / 60);
     const totalMins = Math.max(1, numLeases * minsPerLease);
 
@@ -984,19 +1138,102 @@ function calcEstimate(provCount, idChecks, numLeases, selectedIds) {
     const leaseLabel = `${numLeases} lease${numLeases > 1 ? "s" : ""}`;
     const detail = `${leaseLabel} \u00d7 ${provLabel}${idLabel}`;
 
-    return { mins: totalMins, detail, secsPerLease };
+    return { mins: totalMins, detail, secsPerLease, parsingSecs, provisionSecs, bufferSecs };
 }
 
-function formatDurationShort(totalSecs) {
+function legacyFormatDurationShort(totalSecs) {
     const secs = Math.max(0, Math.round(totalSecs || 0));
     const mins = Math.floor(secs / 60);
     const remSecs = secs % 60;
     return mins > 0 ? `${mins}m ${remSecs}s` : `${remSecs}s`;
 }
 
-function formatDurationApprox(totalSecs) {
+function legacyFormatDurationApprox(totalSecs) {
     const mins = Math.max(1, Math.round((totalSecs || 0) / 60));
     return mins === 1 ? "~1 minute" : `~${mins} minutes`;
+}
+
+function legacyGetProcessingStageCopy(stage, detail) {
+    const fallbackDetail = detail || "";
+    switch (Number(stage) || 0) {
+        case 1:
+            return {
+                headline: "Parsing and mapping the lease documents",
+                detail: fallbackDetail || "CAM is extracting the clause structure, including LP-00, and aligning the tenant lease to the standard form."
+            };
+        case 2:
+            return {
+                headline: "Checking clause patterns and rule triggers",
+                detail: fallbackDetail || "CAM is looking for structured signals that suggest a provision may deviate from the standard lease."
+            };
+        case 3:
+            return {
+                headline: "Reviewing provisions with multiple AI evaluators",
+                detail: fallbackDetail || "CAM is asking separate evaluators to compare provisions independently and explain what changed."
+            };
+        case 4:
+            return {
+                headline: "Testing evaluator agreement and challenge paths",
+                detail: fallbackDetail || "CAM is checking whether the finding holds up when evaluator conclusions are challenged."
+            };
+        case 5:
+            return {
+                headline: "Assessing business risk and severity",
+                detail: fallbackDetail || "CAM is turning the confirmed clause changes into practical risk levels and attorney action signals."
+            };
+        case 6:
+            return {
+                headline: "Finalizing findings and generating outputs",
+                detail: fallbackDetail || "CAM is locking in final verdicts, summaries, and deliverables."
+            };
+        default:
+            return {
+                headline: "Preparing the analysis",
+                detail: fallbackDetail || "CAM is starting the lease review workflow."
+            };
+    }
+}
+
+function renderProcessingOverview(job, tenants) {
+    const panel = $("#processing-overview-status");
+    if (!panel) return;
+
+    if (!job || !tenants || tenants.length === 0) {
+        panel.classList.add("hidden");
+        panel.innerHTML = "";
+        return;
+    }
+
+    const processingTenants = tenants.filter((t) => {
+        const effectiveStatus = (t.status === "queued" && job.status === "processing") ? "processing" : t.status;
+        return effectiveStatus === "processing";
+    });
+
+    if (processingTenants.length === 0) {
+        panel.classList.remove("hidden");
+        panel.innerHTML = `
+            <div class="processing-overview-kicker">Current step</div>
+            <div class="processing-overview-headline">Wrapping up the analysis</div>
+            <div class="processing-overview-detail">CAM is finalizing results and preparing the review workspace.</div>
+        `;
+        return;
+    }
+
+    const leadTenant = processingTenants
+        .slice()
+        .sort((a, b) => (Number(b.current_stage) || 0) - (Number(a.current_stage) || 0))[0];
+    const stageCopy = getProcessingStageCopy(leadTenant.current_stage, leadTenant.stage_detail);
+    const activeCount = processingTenants.length;
+    const detailPrefix = activeCount > 1
+        ? `${activeCount} contracts are in flight. `
+        : `${leadTenant.filename || "Current lease"} is in flight. `;
+
+    panel.classList.remove("hidden");
+    panel.innerHTML = `
+        <div class="processing-overview-kicker">Current step</div>
+        <div class="processing-overview-headline">${esc(stageCopy.headline)}</div>
+        <div class="processing-overview-detail">${esc(detailPrefix + stageCopy.detail)}</div>
+    `;
 }
 
 function updateEstimateDisplay() {
@@ -1004,11 +1241,10 @@ function updateEstimateDisplay() {
     if (!estimateEl) return;
 
     const elapsedSecs = jobStartTime ? Math.max(0, (Date.now() - jobStartTime) / 1000) : 0;
-    const pct = Math.round(Math.max(0, Math.min(1, estimateProgressFraction || 0)) * 100);
-    const parts = [`${pct}% of workflow complete`];
+    const parts = [];
 
     if (estimateTotalSecs > 0) {
-        parts.push(`Initial estimate ${formatDurationApprox(estimateTotalSecs)}`);
+        parts.push(`Estimated analysis time ${formatDurationApprox(estimateTotalSecs)}`);
     }
 
     parts.push(`Elapsed ${formatDurationShort(elapsedSecs)}`);
@@ -1041,7 +1277,7 @@ function stopEstimateCountdown() {
     }
 }
 
-function getTenantProgressFraction(tenant, jobStatus = "") {
+function legacyGetTenantProgressFraction(tenant, jobStatus = "") {
     const effectiveStatus = (tenant.status === "queued" && jobStatus === "processing")
         ? "processing"
         : tenant.status;
@@ -1051,7 +1287,23 @@ function getTenantProgressFraction(tenant, jobStatus = "") {
     }
 
     if (effectiveStatus === "processing" && tenant.current_stage && tenant.total_stages) {
-        return Math.max(0, Math.min(1, tenant.current_stage / tenant.total_stages));
+        const stage = Number(tenant.current_stage) || 0;
+        const orderedStages = Object.keys(LEGACY_PROCESSING_STAGE_WEIGHTS)
+            .map(Number)
+            .sort((a, b) => a - b);
+        let completedWeight = 0;
+        orderedStages.forEach((s) => {
+            if (s < stage) completedWeight += LEGACY_PROCESSING_STAGE_WEIGHTS[s] || 0;
+        });
+        const currentWeight = LEGACY_PROCESSING_STAGE_WEIGHTS[stage] || 0.08;
+        // We do not have within-stage telemetry, so place active work roughly
+        // around the midpoint of the current stage instead of treating every
+        // stage as an equal 1/6 step.
+        return Math.max(0, Math.min(1, completedWeight + (currentWeight * 0.5)));
+    }
+
+    if (effectiveStatus === "processing") {
+        return 0.08;
     }
 
     return 0;
@@ -1114,7 +1366,7 @@ function updateSubmitState() {
         est.textContent = "Select at least one provision to analyze";
     } else if (filesReady) {
         const { mins, detail } = calcEstimate(checkedCount, identityChecks, tenantFiles.length, getSelectedProvisionIds());
-        est.textContent = `Estimated time: ~${mins} minute${mins !== 1 ? "s" : ""} (${detail})`;
+        est.textContent = `Estimated analysis time: ~${mins} minute${mins !== 1 ? "s" : ""} (${detail}; includes document parsing, LP-00 baseline review, provision analysis, and discovery buffer)`;
     } else if (!templateFile && tenantFiles.length === 0) {
         est.textContent = "";
     } else if (!templateFile) {
@@ -1467,8 +1719,9 @@ function initProcessingView(jobData) {
         </div>`).join("");
         // Step 196: start stable whole-job progress tracking from the initial estimate
         const _provIds = (jobData && jobData.input_config && jobData.input_config.provisions) || [];
-        const _provCount = _provIds.length || document.querySelectorAll("#provision-list input[type=checkbox]:checked").length || 18;
-        const { secsPerLease, mins } = calcEstimate(_provCount, identityChecks, names.length, _provIds);
+        const _customProvisions = (jobData && jobData.input_config && jobData.input_config.custom_provisions) || [];
+        const _provCount = (_provIds.length + _customProvisions.length) || document.querySelectorAll("#provision-list input[type=checkbox]:checked").length || 18;
+        const { secsPerLease, mins } = calcEstimate(_provCount, identityChecks, names.length, [..._provIds, ..._customProvisions.map((p) => p.id || p.provision_id || "CUSTOM")]);
         currentSecsPerLease = secsPerLease;
         const estimateMinutesFromJob = Number(jobData && jobData.estimated_minutes);
         const _totalSecs = Number.isFinite(estimateMinutesFromJob) && estimateMinutesFromJob > 0
@@ -1479,9 +1732,11 @@ function initProcessingView(jobData) {
             ? Math.max(0, (Date.now() - new Date(startedAt).getTime()) / 1000)
             : 0;
         startEstimateCountdown(_totalSecs, { alreadyElapsedSecs: _alreadyElapsed, initialProgressFraction: 0 });
+        renderProcessingOverview(jobData, (jobData.input_config || {}).tenants || []);
     } else {
         container.innerHTML = '<div style="text-align:center; padding:2rem;"><span class="spinner"></span> Starting analysis...</div>';
         estimateEl.textContent = "";
+        renderProcessingOverview(jobData, []);
     }
 }
 
@@ -1537,6 +1792,7 @@ function renderProgress(job) {
     if (!job) {
         container.innerHTML = '<div style="text-align:center; padding:2rem;"><span class="spinner"></span> Starting analysis...</div>';
         estimateEl.textContent = "";
+        renderProcessingOverview(job, []);
         return;
     }
 
@@ -1555,9 +1811,10 @@ function renderProgress(job) {
     const pct = totalCount > 0 ? Math.round((overallFraction / totalCount) * 100) : 0;
     estimateProgressFraction = totalCount > 0 ? (overallFraction / totalCount) : 0;
     updateEstimateDisplay();
+    renderProcessingOverview(job, tenants);
     const overallBarHtml = totalCount > 0 ? `
         <div class="job-progress-overall">
-            <div class="job-progress-label">${completedPre} of ${totalCount} contracts complete | ${pct}% overall progress</div>
+            <div class="job-progress-label">${pct}% complete across ${totalCount} contract${totalCount !== 1 ? "s" : ""} | ${completedPre} finished</div>
             <div class="job-progress-bar">
                 <div class="job-progress-fill" style="width:${pct}%"></div>
             </div>
@@ -1581,11 +1838,11 @@ function renderProgress(job) {
             completedCount++;
         } else if (effectiveStatus === "processing") {
             if (t.current_stage && t.total_stages) {
-                statusLabel = `Stage ${t.current_stage} of ${t.total_stages}`;
+                statusLabel = getProcessingStageCopy(t.current_stage, "").headline;
                 width = `${Math.round((t.current_stage / t.total_stages) * 100)}%`;
                 stageDetail = t.stage_detail || "";
             } else {
-                statusLabel = t.stage || "Processing...";
+                statusLabel = "Preparing analysis";
                 width = "10%";
             }
             fillClass = "processing";
@@ -1970,7 +2227,7 @@ function renderNavSidebar() {
     if (header) {
         const totalIssues = tenants.reduce((sum, tenant, tenantIdx) => {
             const provisions = (tenant.results && tenant.results.provisions) || [];
-            const unresolved = getDeviationWorkflowProvisions(provisions).filter((p) => {
+            const unresolved = getDeviationWorkflowProvisions(provisions, tenantIdx).filter((p) => {
                 const key = `${tenantIdx}:${p.provision_id}`;
                 const status = (resolutionState[key] || {}).status || "open";
                 return status !== "resolved" && status !== "not_a_deviation";
@@ -2013,7 +2270,7 @@ function renderNavSidebar() {
 
         const tenantName = formatTenantName(tenant.filename) || ("Tenant " + (i + 1));
         const s121 = tenant.results && tenant.results.summary ? tenant.results.summary : null;
-        const unresolvedDeviations = getDeviationWorkflowProvisions(provisions).filter(function(p) {
+        const unresolvedDeviations = getDeviationWorkflowProvisions(provisions, i).filter(function(p) {
             const key = `${i}:${p.provision_id}`;
             const status = (resolutionState[key] || {}).status || "open";
             return status !== "resolved" && status !== "not_a_deviation";
@@ -2109,7 +2366,7 @@ function renderNavSidebar() {
                 const sevLow = sev.toLowerCase();
                 // Strip LP-XX prefix from provision name for display
                 const cleanName = (p.provision_name || pid).replace(/^LP-\d{2}\s+/, "").replace(/^CUSTOM-\d+\s+/, "");
-                const concern = getConformingConcernState(pid);
+                const concern = getConformingConcernState(i, pid);
 
                 const item = document.createElement("div");
                 item.className = "nav-issue-item nav-issue-" + sevLow;
@@ -2157,11 +2414,11 @@ function renderNavSidebar() {
             const sev = (p.severity || "").toLowerCase();
             const cleanName = (p.provision_name || pid).replace(/^LP-\d{2}\s+/, "").replace(/^CUSTOM-\d+\s+/, "");
             const displayName = pid ? `${pid} ${cleanName}` : cleanName;
-            const concern = getConformingConcernState(pid);
+            const concern = getConformingConcernState(i, pid);
             const resolution = (resolutionState[`${i}:${pid}`] || {}).status || "open";
             const isResolved = resolution === "resolved";
             const isNotDeviation = resolution === "not_a_deviation";
-            const isWorkflowDeviation = isDeviationWorkflowProvision(p);
+            const isWorkflowDeviation = isDeviationWorkflowProvision(p, i);
 
             const item = document.createElement("div");
             item.className = "nav-all-item" + (isWorkflowDeviation ? " nav-all-deviates" : " nav-all-conforms") + ((isResolved || isNotDeviation) ? " nav-all-resolved" : "");
@@ -2198,9 +2455,20 @@ function renderNavSidebar() {
     updateNavActive(currentTenantIndex);
 }
 
-function getConformingConcernEntry(pid) {
+function getConformingConcernCompositeKey(tenantIdx, pid) {
+    return `${tenantIdx}:${pid}`;
+}
+
+function getConformingConcernEntry(tenantIdx, pid) {
+    const resEntry = resolutionState[`${tenantIdx}:${pid}`];
+    if (resEntry && (resEntry.concern_state || resEntry.concern_reason)) {
+        return {
+            state: resEntry.concern_state || "none",
+            reason: (resEntry.concern_reason || "").trim(),
+        };
+    }
     ensureConformingConcernsLoaded();
-    return window._conformingConcerns[pid] || null;
+    return window._conformingConcerns[getConformingConcernCompositeKey(tenantIdx, pid)] || null;
 }
 
 function getConformingConcernStoreKey() {
@@ -2239,48 +2507,54 @@ function persistConformingConcerns() {
     }
 }
 
-function getConformingConcernState(pid) {
-    const entry = getConformingConcernEntry(pid);
+function getConformingConcernState(tenantIdx, pid) {
+    const entry = getConformingConcernEntry(tenantIdx, pid);
     if (!entry) return "none";
     if (typeof entry === "string") return entry;
     return entry.state || "none";
 }
 
-function getConformingConcernReason(pid) {
-    const entry = getConformingConcernEntry(pid);
+function getConformingConcernReason(tenantIdx, pid) {
+    const entry = getConformingConcernEntry(tenantIdx, pid);
     if (!entry || typeof entry === "string") return "";
     return (entry.reason || "").trim();
 }
 
-function setConformingConcernEntry(pid, state, reason) {
+function setConformingConcernEntry(tenantIdx, pid, state, reason) {
     ensureConformingConcernsLoaded();
+    const key = getConformingConcernCompositeKey(tenantIdx, pid);
+    const resKey = `${tenantIdx}:${pid}`;
+    if (!resolutionState[resKey]) resolutionState[resKey] = { status: "open", notes: [] };
+    resolutionState[resKey].concern_state = state || "none";
+    resolutionState[resKey].concern_reason = "";
     if (!state || state === "none") {
-        window._conformingConcerns[pid] = "none";
+        window._conformingConcerns[key] = "none";
         persistConformingConcerns();
         return;
     }
     if (state === "concern") {
-        window._conformingConcerns[pid] = { state: "concern", reason: "" };
+        window._conformingConcerns[key] = { state: "concern", reason: "" };
         persistConformingConcerns();
         return;
     }
-    window._conformingConcerns[pid] = { state, reason: (reason || "").trim() };
+    resolutionState[resKey].concern_reason = (reason || "").trim();
+    window._conformingConcerns[key] = { state, reason: (reason || "").trim() };
     persistConformingConcerns();
 }
 
-function isManualEscalatedProvision(p) {
+function legacyIsManualEscalatedProvision(p, tenantIdx = currentTenantIndex) {
     if (!p || p.provision_id === "LP-00" || p.final_verdict !== "CONFORMS") return false;
-    return getConformingConcernState(p.provision_id) === "flag";
+    return getConformingConcernState(tenantIdx, p.provision_id) === "flag";
 }
 
-function isDeviationWorkflowProvision(p) {
+function legacyIsDeviationWorkflowProvision(p, tenantIdx = currentTenantIndex) {
     if (!p || p.provision_id === "LP-00") return false;
-    return p.final_verdict === "DEVIATES" || p.final_verdict === "UNCLEAR" || isManualEscalatedProvision(p);
+    return p.final_verdict === "DEVIATES" || p.final_verdict === "UNCLEAR" || isManualEscalatedProvision(p, tenantIdx);
 }
 
-function buildManualEscalatedProvision(p) {
+function legacyBuildManualEscalatedProvision(p, tenantIdx = currentTenantIndex) {
     const pid = p.provision_id || "";
-    const reason = getConformingConcernReason(pid);
+    const reason = getConformingConcernReason(tenantIdx, pid);
     return {
         ...p,
         final_verdict: "DEVIATES",
@@ -2292,7 +2566,7 @@ function buildManualEscalatedProvision(p) {
     };
 }
 
-function getDeviationWorkflowProvisions(provisions) {
+function legacyGetDeviationWorkflowProvisions(provisions, tenantIdx = currentTenantIndex) {
     const base = [];
     (provisions || []).forEach((p) => {
         if (!p || p.provision_id === "LP-00") return;
@@ -2300,16 +2574,16 @@ function getDeviationWorkflowProvisions(provisions) {
             base.push(p);
             return;
         }
-        if (isManualEscalatedProvision(p)) {
-            base.push(buildManualEscalatedProvision(p));
+        if (isManualEscalatedProvision(p, tenantIdx)) {
+            base.push(buildManualEscalatedProvision(p, tenantIdx));
         }
     });
     return base;
 }
 
-function getDocviewWorkflowProvisions(provisions) {
+function legacyGetDocviewWorkflowProvisions(provisions, tenantIdx = currentTenantIndex) {
     return (provisions || []).map((p) => {
-        if (isManualEscalatedProvision(p)) return buildManualEscalatedProvision(p);
+        if (isManualEscalatedProvision(p, tenantIdx)) return buildManualEscalatedProvision(p, tenantIdx);
         return p;
     });
 }
@@ -2318,7 +2592,145 @@ function getDocviewDomIdSuffix(pid, tenantIdx) {
     return `${tenantIdx}-${String(pid || "").replace(/[^a-zA-Z0-9_-]/g, "_")}`;
 }
 
-function buildDocviewDraftDecisionControls(provision, tenantIdx) {
+function getTenantData(tenantIdx = currentTenantIndex) {
+    return currentResults && currentResults.tenants ? currentResults.tenants[tenantIdx] : null;
+}
+
+function getTenantResultsData(tenantIdx = currentTenantIndex) {
+    const tenant = getTenantData(tenantIdx);
+    return tenant && tenant.results ? tenant.results : null;
+}
+
+function getTenantRawProvisions(tenantIdx = currentTenantIndex) {
+    const results = getTenantResultsData(tenantIdx);
+    return (results && results.provisions) || [];
+}
+
+function getTenantWorkflowProvisions(tenantIdx = currentTenantIndex) {
+    return getDocviewWorkflowProvisions(getTenantRawProvisions(tenantIdx), tenantIdx);
+}
+
+function getTenantDeviationWorkflowItems(tenantIdx = currentTenantIndex) {
+    return getDeviationWorkflowProvisions(getTenantRawProvisions(tenantIdx), tenantIdx);
+}
+
+function legacyGetResultsScrollContainer() {
+    return document.getElementById("results-content") || document.querySelector(".results-content");
+}
+
+function legacyGetContractDetailStickyHeight() {
+    const stickyShell = document.querySelector(".contract-detail-sticky-shell");
+    return stickyShell ? stickyShell.getBoundingClientRect().height : 0;
+}
+
+function legacyScrollResultsTargetIntoView(target, extraOffset = 12) {
+    if (!target) return;
+    const resultsContent = legacyGetResultsScrollContainer();
+    const stickyHeight = legacyGetContractDetailStickyHeight();
+    if (resultsContent) {
+        const panelRect = resultsContent.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const nextTop = resultsContent.scrollTop + (targetRect.top - panelRect.top) - stickyHeight - extraOffset;
+        resultsContent.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
+        return;
+    }
+    const top = window.scrollY + target.getBoundingClientRect().top - stickyHeight - extraOffset;
+    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+}
+
+function legacyFlashResultsTarget(target, duration = 1500) {
+    if (!target) return;
+    target.classList.add("highlight-flash");
+    setTimeout(() => target.classList.remove("highlight-flash"), duration);
+}
+
+function legacyWaitForResultsTarget(findFn, options) {
+    const opts = options || {};
+    const attempts = opts.attempts || 14;
+    const delay = opts.delay || 80;
+    return new Promise((resolve) => {
+        let remaining = attempts;
+        const tick = () => {
+            const target = findFn();
+            if (target || remaining <= 0) {
+                resolve(target || null);
+                return;
+            }
+            remaining -= 1;
+            setTimeout(tick, delay);
+        };
+        tick();
+    });
+}
+
+function ensureSummaryProvisionVisible(pid) {
+    let targetCard = document.getElementById(`dev-${pid}`);
+    if (targetCard) return targetCard;
+
+    const conformingList = document.getElementById("conforming-list");
+    const conformingToggle = document.getElementById("conforming-toggle");
+    if (conformingList && conformingList.classList.contains("hidden")) {
+        conformingList.classList.remove("hidden");
+        if (conformingToggle) {
+            conformingToggle.innerHTML = "&#9660; Conforming Provisions (no action needed)";
+        }
+    }
+
+    const conformingItem = document.querySelector(`.conforming-item[data-pid="${CSS.escape(pid)}"]`);
+    if (!conformingItem) return null;
+    const detail = conformingItem.querySelector(".conforming-detail");
+    const chevron = conformingItem.querySelector(".conforming-chevron");
+    if (detail && detail.classList.contains("hidden")) {
+        detail.classList.remove("hidden");
+    }
+    if (chevron) chevron.innerHTML = "&#9652;";
+    return conformingItem;
+}
+
+function getProvisionWorkflowExportState(tenantIdx, pid) {
+    const resKey = `${tenantIdx}:${pid}`;
+    const entry = resolutionState[resKey] || {};
+    return {
+        status: entry.status || "open",
+        notes: entry.notes || [],
+        read: isNoted(tenantIdx, pid),
+        concern_state: entry.concern_state || "none",
+        concern_reason: entry.concern_reason || "",
+    };
+}
+
+function serializeProvisionForAuditExport(p, tenantIdx) {
+    const pid = p.provision_id || "";
+    const workflow = getProvisionWorkflowExportState(tenantIdx, pid);
+    return {
+        provision_id: pid,
+        provision_name: p.provision_name,
+        final_verdict: p.final_verdict,
+        severity: p.severity,
+        severity_floor_applied: p.severity_floor_applied,
+        agreement_pattern: p.agreement_pattern,
+        evaluator_verdicts: p.evaluator_verdicts,
+        evaluator_reasoning: p.evaluator_reasoning,
+        evaluator_confidences: p.evaluator_confidences,
+        challenge_finding: p.challenge_finding,
+        challenge_details: p.challenge_details,
+        fragility: p.fragility,
+        cam_metadata: p.cam_metadata,
+        cam_score: p.cam_score,
+        risk_headline: p.risk_headline,
+        severity_reasoning: p.severity_reasoning,
+        financial_impact: p.financial_impact,
+        recommended_action: p.recommended_action,
+        manual_escalation: !!p.manual_escalation,
+        workflow_status: workflow.status,
+        read: workflow.read,
+        notes: workflow.notes,
+        concern_state: workflow.concern_state,
+        concern_reason: workflow.concern_reason,
+    };
+}
+
+function legacyBuildDocviewDraftDecisionControls(provision, tenantIdx) {
     if (!provision || provision.final_verdict !== "DEVIATES") return "";
     const pid = provision.provision_id || "";
     const dec = getFinalDraftDecision(tenantIdx, pid);
@@ -2342,7 +2754,7 @@ function buildDocviewDraftDecisionControls(provision, tenantIdx) {
     `;
 }
 
-function buildDocviewDeviationControls(provision, tenantIdx) {
+function legacyBuildDocviewDeviationControls(provision, tenantIdx) {
     if (!provision) return "";
     const pid = provision.provision_id || "";
     const suffix = getDocviewDomIdSuffix(pid, tenantIdx);
@@ -2422,10 +2834,10 @@ function buildDocviewDeviationControls(provision, tenantIdx) {
     `;
 }
 
-function buildDocviewConformingControls(provision, tenantIdx) {
+function legacyBuildDocviewConformingControls(provision, tenantIdx) {
     if (!provision || !provision.provision_id || provision.provision_id === "LP-00") return "";
     const pid = provision.provision_id;
-    const concernState = getConformingConcernState(pid);
+    const concernState = getConformingConcernState(tenantIdx, pid);
     return `
         <div class="conforming-concern-bar docview-concern-bar">
             <span class="conforming-concern-label">Mark:</span>
@@ -2456,12 +2868,12 @@ function buildDocviewConformingControls(provision, tenantIdx) {
     `;
 }
 
-function scrollToTenant(index) {
+async function scrollToTenant(index) {
     // Step 116: Navigate to contract detail via Contracts tab
     if (activeTopTab !== "contracts") {
         switchTopTab("contracts");
     }
-    openContractDetail(index);
+    return await openContractDetail(index);
 }
 
 function refreshDocviewIfActive(tenantIdx) {
@@ -2487,51 +2899,14 @@ function openDocviewModify(tenantIdx, pid) {
 
 function openDocviewSummary(tenantIdx, pid) {
     switchResultsTab("findings");
-    setTimeout(() => {
-        let targetCard = document.getElementById(`dev-${pid}`);
-
-        if (!targetCard) {
-            const conformingList = document.getElementById("conforming-list");
-            const conformingToggle = document.getElementById("conforming-toggle");
-            if (conformingList && conformingList.classList.contains("hidden")) {
-                conformingList.classList.remove("hidden");
-                if (conformingToggle) {
-                    conformingToggle.innerHTML = `&#9660; Conforming Provisions (no action needed)`;
-                }
-            }
-
-            const conformingItem = document.querySelector(`.conforming-item[data-pid="${CSS.escape(pid)}"]`);
-            if (conformingItem) {
-                const detail = conformingItem.querySelector(".conforming-detail");
-                const chevron = conformingItem.querySelector(".conforming-chevron");
-                if (detail && detail.classList.contains("hidden")) {
-                    detail.classList.remove("hidden");
-                }
-                if (chevron) chevron.innerHTML = "&#9652;";
-                targetCard = conformingItem;
-            }
-        }
-
+    waitForResultsTarget(() => ensureSummaryProvisionVisible(pid), { attempts: 16, delay: 90 }).then((targetCard) => {
         if (!targetCard) return;
-
-        const stickyShell = document.querySelector(".contract-detail-sticky-shell");
-        const stickyHeight = stickyShell ? stickyShell.getBoundingClientRect().height : 0;
-        const resultsContent = document.querySelector(".results-content");
-        if (resultsContent) {
-            const panelRect = resultsContent.getBoundingClientRect();
-            const targetRect = targetCard.getBoundingClientRect();
-            const nextTop = resultsContent.scrollTop + (targetRect.top - panelRect.top) - stickyHeight - 12;
-            resultsContent.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
-        } else {
-            const top = window.scrollY + targetCard.getBoundingClientRect().top - stickyHeight - 12;
-            window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-        }
-        targetCard.classList.add("highlight-flash");
-        setTimeout(() => targetCard.classList.remove("highlight-flash"), 1500);
-    }, 100);
+        scrollResultsTargetIntoView(targetCard, 12);
+        flashResultsTarget(targetCard, 1500);
+    });
 }
 
-function updateDocviewResolutionNoteCount(pid, tenantIdx) {
+function legacyUpdateDocviewResolutionNoteCount(pid, tenantIdx) {
     const key = `${tenantIdx}:${pid}`;
     const count = ((resolutionState[key] || {}).notes || []).length;
     const toggleBtn = document.querySelector(`.docview-resolution-bar .res-notes-toggle[data-pid="${pid}"][data-tenant-idx="${tenantIdx}"]`);
@@ -2543,7 +2918,7 @@ function updateDocviewResolutionNoteCount(pid, tenantIdx) {
     }
 }
 
-function renderDocviewResolutionNotesPanel(pid, tenantIdx) {
+function legacyRenderDocviewResolutionNotesPanel(pid, tenantIdx) {
     const suffix = getDocviewDomIdSuffix(pid, tenantIdx);
     const panel = document.getElementById(`docview-res-notes-${suffix}`);
     if (!panel) return;
@@ -2557,6 +2932,28 @@ function renderDocviewResolutionNotesPanel(pid, tenantIdx) {
         noteDiv.innerHTML = `<span class="res-note-ts">${formatResTimestamp(note.timestamp)}</span><span class="res-note-text">${esc(note.text)}</span><button class="res-note-delete" onclick="window.CAM.deleteDocviewResolutionNote('${esc(pid)}', ${tenantIdx}, ${noteIdx}); event.stopPropagation();">Delete</button>`;
         if (inputRow) panel.insertBefore(noteDiv, inputRow);
         else panel.appendChild(noteDiv);
+    });
+}
+
+function updateDocviewResolutionNoteCount(pid, tenantIdx) {
+    const key = `${tenantIdx}:${pid}`;
+    const count = ((resolutionState[key] || {}).notes || []).length;
+    const toggleBtn = document.querySelector(`.docview-resolution-bar .res-notes-toggle[data-pid="${pid}"][data-tenant-idx="${tenantIdx}"]`);
+    if (!toggleBtn) return;
+    toggleBtn.innerHTML = buildNotesToggleHtml("Notes", count);
+}
+
+function renderDocviewResolutionNotesPanel(pid, tenantIdx) {
+    const suffix = getDocviewDomIdSuffix(pid, tenantIdx);
+    const panel = document.getElementById(`docview-res-notes-${suffix}`);
+    if (!panel) return;
+    const key = `${tenantIdx}:${pid}`;
+    const notes = ((resolutionState[key] || {}).notes || []);
+    const inputRow = panel.querySelector(".res-note-input-row");
+    renderNotesPanelEntries(panel, notes, inputRow, {
+        esc,
+        formatResTimestamp,
+        buildDeleteButtonHtml: (noteIdx) => `<button class="res-note-delete" onclick="window.CAM.deleteDocviewResolutionNote('${esc(pid)}', ${tenantIdx}, ${noteIdx}); event.stopPropagation();">Delete</button>`,
     });
 }
 
@@ -2593,30 +2990,51 @@ async function deleteDocviewResolutionNote(pid, tenantIdx, noteIdx) {
     }
 }
 
-function handleConformingConcernAction(pid, action) {
+async function persistConformingConcernState(pid, tenantIdx) {
+    const key = `${tenantIdx}:${pid}`;
+    const entry = resolutionState[key] || {};
+    try {
+        await fetch(`/api/jobs/${currentJobId}/resolution`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                tenant_idx: tenantIdx,
+                provision_id: pid,
+                concern_state: entry.concern_state || "none",
+                concern_reason: entry.concern_reason || "",
+            }),
+        });
+    } catch (err) {
+        console.error("Conforming concern save failed", err);
+    }
+}
+
+async function handleConformingConcernAction(pid, action) {
     const tenant = currentResults && currentResults.tenants ? currentResults.tenants[currentTenantIndex] : null;
     const provisions = (tenant && tenant.results && tenant.results.provisions) || [];
     const modelsUsed = (tenant && tenant.results && tenant.results.models_used) || {};
     const provision = provisions.find((entry) => entry.provision_id === pid);
-    const current = getConformingConcernState(pid);
+    const current = getConformingConcernState(currentTenantIndex, pid);
 
     if (action === "clear") {
-        setConformingConcernEntry(pid, "none");
+        setConformingConcernEntry(currentTenantIndex, pid, "none");
     } else if (action === current) {
-        setConformingConcernEntry(pid, "none");
+        setConformingConcernEntry(currentTenantIndex, pid, "none");
     } else if (action === "flag") {
         const reason = window.prompt(
             "Optional reason for escalating this clause as a deviation:",
-            getConformingConcernReason(pid)
+            getConformingConcernReason(currentTenantIndex, pid)
         );
         if (reason === null) return;
-        setConformingConcernEntry(pid, "flag", reason);
+        setConformingConcernEntry(currentTenantIndex, pid, "flag", reason);
         if (confirm("Create a rule so this is flagged automatically next time?")) {
             window.CAM.showRuleCreationDialog(pid, (provision && provision.provision_name) || pid);
         }
     } else {
-        setConformingConcernEntry(pid, action);
+        setConformingConcernEntry(currentTenantIndex, pid, action);
     }
+
+    await persistConformingConcernState(pid, currentTenantIndex);
 
     renderConforming(provisions, modelsUsed);
     renderDeviations(provisions, modelsUsed, currentTenantIndex, currentDiscoveries || {});
@@ -3070,12 +3488,12 @@ function renderCrossTenantMatrix() {
 
     // Wire up tenant chip clicks
     container.querySelectorAll(".xtenant-chip").forEach(chip => {
-        chip.addEventListener("click", () => {
+        chip.addEventListener("click", async () => {
         const tenantIdx = parseInt(chip.dataset.tenant, 10);
         const pid = chip.dataset.pid;
         switchTopTab("contracts");
-            openContractDetail(tenantIdx);
-            setTimeout(() => jumpToFinding(pid), 200);
+            await openContractDetail(tenantIdx);
+            jumpToFinding(pid);
         });
     });
 }
@@ -3563,39 +3981,14 @@ function renderProvisionsChecklist(provisions) {
 function jumpToFinding(pid) {
     // Ensure we're on the findings tab
     if (activeResultsTab !== "findings") switchResultsTab("findings");
-    setTimeout(() => {
-        let card = document.getElementById(`dev-${pid}`);
-        if (!card) {
-            const conformingList = document.getElementById("conforming-list");
-            const conformingToggle = document.getElementById("conforming-toggle");
-            if (conformingList && conformingList.classList.contains("hidden")) {
-                conformingList.classList.remove("hidden");
-                if (conformingToggle) conformingToggle.innerHTML = "&#9660; Conforming Provisions (no action needed)";
-            }
-            const conformingItem = document.querySelector(`.conforming-item[data-pid="${CSS.escape(pid)}"]`);
-            if (conformingItem) {
-                const detail = conformingItem.querySelector(".conforming-detail");
-                const chevron = conformingItem.querySelector(".conforming-chevron");
-                if (detail && detail.classList.contains("hidden")) detail.classList.remove("hidden");
-                if (chevron) chevron.innerHTML = "&#9652;";
-                card = conformingItem;
-            }
-        }
+    waitForResultsTarget(() => ensureSummaryProvisionVisible(pid), {
+        attempts: activeResultsTab !== "findings" ? 18 : 14,
+        delay: 90
+    }).then((card) => {
         if (!card) return;
-        const resultsContent = document.querySelector(".results-content");
-        const stickyShell = document.querySelector(".contract-detail-sticky-shell");
-        const stickyHeight = stickyShell ? stickyShell.getBoundingClientRect().height : 0;
-        if (resultsContent) {
-            const panelRect = resultsContent.getBoundingClientRect();
-            const targetRect = card.getBoundingClientRect();
-            const nextTop = resultsContent.scrollTop + (targetRect.top - panelRect.top) - stickyHeight - 12;
-            resultsContent.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
-        } else {
-            card.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-        card.classList.add("highlight-flash");
-        setTimeout(() => card.classList.remove("highlight-flash"), 1500);
-    }, activeResultsTab !== "findings" ? 150 : 0);
+        scrollResultsTargetIntoView(card, 12);
+        flashResultsTarget(card, 1500);
+    });
 }
 
 async function loadResolutions() {
@@ -3644,9 +4037,7 @@ function updateContractDetailHeader(tenantIdx) {
 
     var name = formatTenantName(tenant.filename || "");
     var provisions = tenant.results && tenant.results.provisions ? tenant.results.provisions : [];
-    var deviationCount = provisions.filter(function(p) {
-        return p.final_verdict === "DEVIATES" || p.final_verdict === "UNCLEAR";
-    }).length;
+    var deviationCount = getDeviationWorkflowProvisions(provisions, tenantIdx).length;
     var s = tenant.results && tenant.results.summary;
     var sevCounts = {};
     if (s) {
@@ -3738,9 +4129,9 @@ function renderContractPickerFilterBar() {
 }
 
 function getAvailableClauseFilterValues(provisions) {
-    const deviations = getDeviationWorkflowProvisions(provisions);
+    const deviations = getDeviationWorkflowProvisions(provisions, currentTenantIndex);
     const conforming = (provisions || []).filter(function(p) {
-        return p && p.provision_id !== "LP-00" && p.final_verdict === "CONFORMS" && !isManualEscalatedProvision(p);
+        return p && p.provision_id !== "LP-00" && p.final_verdict === "CONFORMS" && !isManualEscalatedProvision(p, currentTenantIndex);
     });
     const severitySet = new Set();
     const statusSet = new Set();
@@ -3768,7 +4159,7 @@ function getAvailableClauseFilterValues(provisions) {
         statusSet.add('conforming');
         if (isNoted(currentTenantIndex, pid)) hasRead = true;
         else hasUnread = true;
-        if (getConformingConcernState(pid) === 'concern') hasNotes = true;
+        if (getConformingConcernState(currentTenantIndex, pid) === 'concern') hasNotes = true;
         else hasNoNotes = true;
     });
 
@@ -3965,7 +4356,7 @@ function applyContractClauseFilters() {
     conformingItems.forEach(item => {
         const pid = item.dataset.pid || "";
         const isRead = isNoted(currentTenantIndex, pid);
-        const hasNotes = getConformingConcernState(pid) === 'concern';
+        const hasNotes = getConformingConcernState(currentTenantIndex, pid) === 'concern';
         const statusOk = contractClauseStatusFilter === 'all' || contractClauseStatusFilter === 'conforming';
         const readOk = contractClauseReadFilter === 'all'
             || (contractClauseReadFilter === 'read' && isRead)
@@ -4429,7 +4820,7 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
     }
 
     const container = $("#deviations-list");
-    const deviations = getDeviationWorkflowProvisions(provisions)
+    const deviations = getDeviationWorkflowProvisions(provisions, tenantIdx)
         .sort((a, b) => {
             const ai = SEVERITY_ORDER.indexOf(a.severity);
             const bi = SEVERITY_ORDER.indexOf(b.severity);
@@ -5040,7 +5431,7 @@ function getDissentingEvaluators(provision, evalNames) {
 
 function renderConforming(provisions, modelsUsed) {
     const list = $("#conforming-list");
-    const conforming = provisions.filter(p => p.provision_id !== "LP-00" && p.final_verdict === "CONFORMS" && !isManualEscalatedProvision(p));
+    const conforming = provisions.filter(p => p.provision_id !== "LP-00" && p.final_verdict === "CONFORMS" && !isManualEscalatedProvision(p, currentTenantIndex));
     list.classList.add("hidden");
     $("#conforming-toggle").innerHTML = `&#9654; Conforming Provisions (${conforming.length})`;
 
@@ -5052,7 +5443,7 @@ function renderConforming(provisions, modelsUsed) {
     list.innerHTML = conforming.map(c => {
         const pid = c.provision_id || "";
         const detailId = `conf-detail-${pid}`;
-        const concernState = getConformingConcernState(pid);
+        const concernState = getConformingConcernState(currentTenantIndex, pid);
 
         const discoveredTag = c.discovered
             ? ` <span class="discovered-inline">\uD83D\uDD0D</span>`
@@ -5111,59 +5502,12 @@ function renderConforming(provisions, modelsUsed) {
                 </div>`;
         }
 
-        // Concern bar
-        const concernBar = `
-            <div class="conforming-concern-bar">
-                <span class="conforming-concern-label">Mark:</span>
-                <button class="conforming-concern-btn${concernState === 'concern' ? ' concern-active' : ''}"
-                    data-pid="${esc(pid)}" data-action="concern">
-                    \uD83D\uDCCB Note a concern
-                </button>
-                <button class="conforming-concern-btn${concernState === 'flag' ? ' flag-active' : ''}"
-                    data-pid="${esc(pid)}" data-action="flag">
-                    \u26A0 Escalate as Deviation
-                </button>
-                ${concernState !== 'none' ? `<button class="conforming-concern-btn" data-pid="${esc(pid)}" data-action="clear" style="color:var(--text-muted);">\u2715 Clear</button>` : ""}
-                <div class="workflow-open-actions workflow-group">
-                    <a class="card-docview-link card-docview-link--btn"
-                       href="#"
-                       onclick="window.CAM.jumpToDocview('${esc(pid)}'); return false;"
-                       title="Open this clause in Document Comparison">
-                        Open Document Comparison
-                    </a>
-                    <a class="card-audit-link card-audit-link--btn"
-                       href="#"
-                       onclick="window.CAM.jumpToAuditProvision(${currentTenantIndex}, '${esc(pid)}'); return false;"
-                       title="View full CAM analysis in Audit Trail">
-                        Open CAM Audit Trail
-                    </a>
-                </div>
-            </div>`;
-
-        return `<li class="conforming-item${dissenters.length > 0 ? " has-dissent" : ""}" data-pid="${esc(pid)}">
-            <div class="conforming-main" data-detail-id="${detailId}">
-                <div class="conforming-main-left">
-                    <div class="conforming-summary-title-row">
-                        <span class="conforming-summary-title">${esc(pid)} ${esc(c.provision_name)}</span>${discoveredTag}${concernBadge}
-                    </div>
-                    ${summaryMeta ? `<div class="conforming-summary-meta">${esc(summaryMeta)}</div>` : ""}
-                </div>
-                <div class="conforming-main-right">
-                    ${sectionRef ? `<span class="section-ref">${esc(sectionRef)}</span>` : ""}
-                    <button class="finding-read-toggle${isNoted(currentTenantIndex, pid) ? " noted-active" : ""}"
-                        title="Mark this provision as read"
-                        onclick="window.CAM.toggleNoted(${currentTenantIndex}, '${esc(pid)}', this); event.stopPropagation();">
-                        ${isNoted(currentTenantIndex, pid) ? "Read" : "Mark as Read"}
-                    </button>
-                    <span class="conforming-chevron">&#9652;</span>
-                </div>
-            </div>
-            <div class="conforming-detail" id="${detailId}">
-                ${clausePairHtml}
-                ${dissentHtml}
-                ${concernBar}
-            </div>
-        </li>`;
+        return buildConformingItem(c, {
+            tenantIdx: currentTenantIndex,
+            concernState,
+            evalNames,
+            summaryMeta,
+        });
     }).join("") + `<li class="conforming-close-row">
         <button class="conforming-close-all-btn" onclick="window.CAM.collapseAllConforming(); return false;">&#9660; Close all</button>
     </li>`;
@@ -5188,24 +5532,24 @@ function renderConforming(provisions, modelsUsed) {
             e.stopPropagation();
             const pid = btn.dataset.pid;
             const action = btn.dataset.action;
-            const current = getConformingConcernState(pid);
+            const current = getConformingConcernState(currentTenantIndex, pid);
             if (action === "clear") {
-                setConformingConcernEntry(pid, "none");
+                setConformingConcernEntry(currentTenantIndex, pid, "none");
             } else if (action === current) {
-                setConformingConcernEntry(pid, "none"); // toggle off
+                setConformingConcernEntry(currentTenantIndex, pid, "none"); // toggle off
             } else if (action === "flag") {
                 const provision = conforming.find(entry => entry.provision_id === pid);
                 const reason = window.prompt(
                     "Optional reason for escalating this clause as a deviation:",
-                    getConformingConcernReason(pid)
+                    getConformingConcernReason(currentTenantIndex, pid)
                 );
                 if (reason === null) return;
-                setConformingConcernEntry(pid, "flag", reason);
+                setConformingConcernEntry(currentTenantIndex, pid, "flag", reason);
                 if (confirm("Create a rule so this is flagged automatically next time?")) {
                     window.CAM.showRuleCreationDialog(pid, (provision && provision.provision_name) || pid);
                 }
             } else {
-                setConformingConcernEntry(pid, action);
+                setConformingConcernEntry(currentTenantIndex, pid, action);
             }
             // Re-render just this item's concern bar + badge
             // Full re-render is cleanest — re-call with same args
@@ -5254,15 +5598,14 @@ function renderTenantDownloads(idx, filename) {
 function jumpToDocview(pid) {
     docviewReturnTarget = pid;
     switchResultsTab("docview");
-    setTimeout(() => {
-        let target = document.getElementById(`fulldoc-${pid}`);
-        if (!target) target = document.querySelector(`.docview-provision-header[data-pid="${pid}"]`);
-        if (target) {
-            scrollDocviewTargetIntoView(target);
-            target.classList.add("highlight-flash");
-            setTimeout(() => target.classList.remove("highlight-flash"), 1500);
-        }
-    }, 180);
+    waitForResultsTarget(() => {
+        return document.getElementById(`fulldoc-${pid}`) ||
+               document.querySelector(`.docview-provision-header[data-pid="${CSS.escape(pid)}"]`);
+    }, { attempts: 18, delay: 90 }).then((target) => {
+        if (!target) return;
+        scrollDocviewTargetIntoView(target);
+        flashResultsTarget(target, 1500);
+    });
 }
 
 function jumpToProvisionOnActivePage(pid, tenantIdx) {
@@ -5278,16 +5621,13 @@ function jumpToProvisionOnActivePage(pid, tenantIdx) {
     jumpToFinding(pid);
 }
 
-function jumpToProvisionFromSidebar(pid, tenantIdx) {
+async function jumpToProvisionFromSidebar(pid, tenantIdx) {
     const activeTenantIdx = typeof tenantIdx === "number" ? tenantIdx : currentTenantIndex;
     const needsTenantSwitch = !contractDetailOpen || currentTenantIndex !== activeTenantIdx;
     if (needsTenantSwitch) {
-        scrollToTenant(activeTenantIdx);
+        await scrollToTenant(activeTenantIdx);
     }
-    const delay = needsTenantSwitch ? 260 : 80;
-    setTimeout(() => {
-        jumpToProvisionOnActivePage(pid, activeTenantIdx);
-    }, delay);
+    jumpToProvisionOnActivePage(pid, activeTenantIdx);
 }
 
 // Show a "no contract selected" placeholder in the detail area
@@ -5466,13 +5806,11 @@ function switchResultsTab(tab) {
         renderDocumentView();
     }
 
-    // Scroll contract detail view to top so nav buttons stay visible
+    // Scroll the actual results pane to the top so sticky controls stay aligned.
     var detail = document.getElementById('contract-detail-view');
     if (detail) detail.scrollTo({ top: 0, behavior: 'instant' });
-    // Also scroll the main content area to top
-    var mainContent = document.getElementById('main-content') || document.querySelector('.results-content');
-    if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'instant' });
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    var resultsPane = document.getElementById('results-content') || document.querySelector('.results-content');
+    if (resultsPane) resultsPane.scrollTo({ top: 0, behavior: 'instant' });
     persistResultsViewState();
 }
 
@@ -5773,7 +6111,7 @@ function renderFullDocumentView() {
     }
 }
 
-function buildTocSeverityMaps(provisions, primarySide = "tenant") {
+function legacyBuildTocSeverityMaps(provisions, primarySide = "tenant") {
     const sectionMap = new Map();
     const articleMap = new Map();
     const severityRank = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
@@ -5808,7 +6146,7 @@ function renderFullDocSidebar(provisions, matches) {
     renderSidebarTOC(sidebar, fullText, "fulldoc", { provisions, primarySide: "tenant" });
 }
 
-function renderSidebarTOC(sidebar, fullText, scrollTargetPrefix, options = {}) {
+function legacyRenderSidebarTOC(sidebar, fullText, scrollTargetPrefix, options = {}) {
     if (!fullText) return;
     const { provisions = [], primarySide = "tenant" } = options;
     const { sectionMap, articleMap } = buildTocSeverityMaps(provisions, primarySide);
@@ -6108,6 +6446,150 @@ function renderSidebarTOC(sidebar, fullText, scrollTargetPrefix, options = {}) {
     });
 }
 
+function renderSidebarTOC(sidebar, fullText, scrollTargetPrefix, options = {}) {
+    if (!fullText) return;
+    const { provisions = [], primarySide = "tenant" } = options;
+    const { sectionMap, articleMap } = buildTocSeverityMaps(provisions, primarySide);
+    const { articles, sections, outline } = parseSidebarTocOutline(fullText);
+    if (outline.length === 0) return;
+
+    const articleGroups = buildSidebarArticleGroups(articles, sections, outline);
+
+    let tocHtml = `<div class="fulldoc-sidebar-divider"></div>
+        <div class="sidebar-toc-toggle" id="toc-toggle-${scrollTargetPrefix}">
+            <span class="toc-arrow">&#9654;</span> TABLE OF CONTENTS
+        </div>
+        <div class="sidebar-toc-content hidden" id="toc-content-${scrollTargetPrefix}">`;
+
+    if (articleGroups.some((group) => group.sections.length > 0)) {
+        tocHtml += `<button type="button" class="sidebar-toc-expand-all" data-expanded="false">Expand All Sections</button>`;
+    }
+
+    articleGroups.forEach((group, articleIdx) => {
+        const articleSeverity = group.articleToken ? (articleMap.get(group.articleToken) || "") : "";
+        const articleSeverityDot = articleSeverity ? `<span class="sidebar-toc-severity sidebar-toc-severity-${articleSeverity}"></span>` : "";
+        const hasSections = group.sections.length > 0;
+        const firstSectionAttr = hasSections ? ` data-first-section-number="${esc(group.sections[0].sectionNumber)}"` : "";
+        tocHtml += `<div class="sidebar-toc-group" data-article-group="${articleIdx}">
+            <div class="sidebar-toc-item sidebar-toc-item-article" data-toc-idx="${group.outlineIndex}" data-toc-text="${esc(group.title)}"${firstSectionAttr}>
+                <button type="button" class="sidebar-toc-group-toggle${hasSections ? "" : " sidebar-toc-group-toggle-hidden"}" data-article-group-toggle="${articleIdx}" aria-label="Toggle sections">${hasSections ? "&#9654;" : ""}</button>
+                ${articleSeverityDot}
+                <span>${esc(group.title)}</span>
+            </div>`;
+
+        if (hasSections) {
+            tocHtml += `<div class="sidebar-toc-sections hidden" data-article-sections="${articleIdx}">`;
+            group.sections.forEach((section) => {
+                const sectionSeverity = sectionMap.get(section.sectionNumber || "") || "";
+                const sectionSeverityDot = sectionSeverity ? `<span class="sidebar-toc-severity sidebar-toc-severity-${sectionSeverity}"></span>` : "";
+                tocHtml += `<div class="sidebar-toc-item sidebar-toc-item-section" data-toc-idx="${section.outlineIndex}" data-toc-text="${esc(section.title)}" data-section-number="${esc(section.sectionNumber)}">${sectionSeverityDot}<span>${esc(section.title)}</span></div>`;
+            });
+            tocHtml += `</div>`;
+        }
+
+        tocHtml += `</div>`;
+    });
+    tocHtml += `</div>`;
+
+    sidebar.insertAdjacentHTML("beforeend", tocHtml);
+
+    const toggle = sidebar.querySelector(`#toc-toggle-${scrollTargetPrefix}`);
+    const content = sidebar.querySelector(`#toc-content-${scrollTargetPrefix}`);
+    if (toggle && content) {
+        toggle.addEventListener("click", () => {
+            const isOpen = !content.classList.contains("hidden");
+            content.classList.toggle("hidden");
+            const arrow = toggle.querySelector(".toc-arrow");
+            if (arrow) arrow.innerHTML = isOpen ? "&#9654;" : "&#9660;";
+        });
+    }
+
+    const navigateToTocEntry = (item) => {
+        const entry = outline[parseInt(item.dataset.tocIdx, 10)];
+        if (!entry) return;
+        const searchText = entry.title;
+        if (scrollTargetPrefix === "sbs") {
+            const articleMatch = searchText.match(/ARTICLE\s+([IVXLC\d]+)/i);
+            const sectionNumber = item.dataset.sectionNumber || item.dataset.firstSectionNumber || "";
+            const primaryAttr = docviewSort === "reference" ? "data-template-ref" : "data-tenant-ref";
+            const headers = Array.from(document.querySelectorAll(".docview-provision-header"));
+
+            let target = null;
+            if (sectionNumber) {
+                const escapedSection = sectionNumber.replace(".", "\\.");
+                target = headers.find((header) => {
+                    const ref = header.getAttribute(primaryAttr) || "";
+                    return new RegExp(`Sections?\\s+${escapedSection}\\b|Section\\s+${escapedSection}\\b`, "i").test(ref);
+                }) || null;
+            }
+            if (articleMatch) {
+                const articleToken = articleMatch[1].toUpperCase();
+                target = target || headers.find((header) => {
+                    const ref = header.getAttribute(primaryAttr) || "";
+                    return new RegExp(`Article\\s+${articleToken}\\b`, "i").test(ref);
+                }) || null;
+            }
+            if (target) {
+                const mainPanel = $(".docview-main-sbs");
+                scrollElementIntoPanelView(target, mainPanel, getDocviewJumpOffset(mainPanel));
+                target.classList.add("highlight-flash");
+                setTimeout(() => target.classList.remove("highlight-flash"), 1500);
+                return;
+            }
+        }
+
+        const mainPanel = scrollTargetPrefix === "fulldoc" ? $("#docview-main") : $(".docview-main-sbs");
+        if (!mainPanel) return;
+        const walker = document.createTreeWalker(mainPanel, NodeFilter.SHOW_TEXT, null);
+        while (walker.nextNode()) {
+            const idx = walker.currentNode.textContent.indexOf(searchText.substring(0, 30));
+            if (idx !== -1) {
+                const parent = walker.currentNode.parentElement;
+                scrollElementIntoPanelView(parent, mainPanel, getDocviewJumpOffset(mainPanel));
+                parent.classList.add("highlight-flash");
+                setTimeout(() => parent.classList.remove("highlight-flash"), 1500);
+                break;
+            }
+        }
+    };
+
+    sidebar.querySelectorAll(".sidebar-toc-group-toggle[data-article-group-toggle]").forEach((toggleBtn) => {
+        toggleBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            const groupId = toggleBtn.dataset.articleGroupToggle;
+            const sectionBlock = sidebar.querySelector(`[data-article-sections="${groupId}"]`);
+            if (!sectionBlock) return;
+            const isOpen = !sectionBlock.classList.contains("hidden");
+            sectionBlock.classList.toggle("hidden");
+            toggleBtn.innerHTML = isOpen ? "&#9654;" : "&#9660;";
+        });
+    });
+
+    const expandAllBtn = sidebar.querySelector(".sidebar-toc-expand-all");
+    if (expandAllBtn) {
+        expandAllBtn.addEventListener("click", () => {
+            const expand = expandAllBtn.dataset.expanded !== "true";
+            sidebar.querySelectorAll(".sidebar-toc-sections").forEach((sectionBlock) => {
+                sectionBlock.classList.toggle("hidden", !expand);
+            });
+            sidebar.querySelectorAll(".sidebar-toc-group-toggle[data-article-group-toggle]").forEach((toggleBtn) => {
+                if (!toggleBtn.classList.contains("sidebar-toc-group-toggle-hidden")) {
+                    toggleBtn.innerHTML = expand ? "&#9660;" : "&#9654;";
+                }
+            });
+            expandAllBtn.dataset.expanded = expand ? "true" : "false";
+            expandAllBtn.textContent = expand ? "Collapse All Sections" : "Expand All Sections";
+        });
+    }
+
+    sidebar.querySelectorAll(".sidebar-toc-item").forEach((item) => {
+        item.addEventListener("click", (event) => {
+            if (event.target.closest(".sidebar-toc-group-toggle")) return;
+            navigateToTocEntry(item);
+        });
+    });
+}
+
 function scrollElementIntoPanelView(target, panel, topOffset = 72) {
     if (!target || !panel) return;
     const panelRect = panel.getBoundingClientRect();
@@ -6135,7 +6617,7 @@ function scrollDocviewTargetIntoView(target) {
 
 // ── Side-by-Side View (original) ──
 
-function renderSideBySideView() {
+function legacyRenderSideBySideView() {
     const tenant = currentResults.tenants[currentTenantIndex];
     if (!tenant || !tenant.results) {
         $("#docview-container").innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-muted);">No results available for this tenant.</div>';
@@ -6183,7 +6665,7 @@ function renderSideBySideView() {
         const templateSectionRef = p.template_section_ref || "";
         const tenantSectionRef = p.tenant_section_ref || "";
         const status = (p.cam_metadata || {}).extraction_status || "";
-        const credibilityLine = isDeviationWorkflowProvision(p)
+        const credibilityLine = isDeviationWorkflowProvision(p, currentTenantIndex)
             ? renderCredibilityLine(p, r.models_used || {}, currentTenantIndex, pid, severity)
             : "";
 
@@ -6211,7 +6693,7 @@ function renderSideBySideView() {
         }
 
         // Provision header (spans full width via grid-column)
-        const analysisToggle = isDeviationWorkflowProvision(p)
+        const analysisToggle = isDeviationWorkflowProvision(p, currentTenantIndex)
             ? `<button class="docview-header-toggle${openDocviewProvision === pid ? " open" : ""}"
                     data-pid="${esc(pid)}"
                     title="${openDocviewProvision === pid ? "Hide analysis" : "Show analysis"}"
@@ -6253,7 +6735,7 @@ function renderSideBySideView() {
 
         const whatChanged = (p.challenge_details || "").trim();
         const recommendedAction = (p.recommended_action || "").trim();
-        if (isDeviationWorkflowProvision(p) && (whatChanged || recommendedAction)) {
+        if (isDeviationWorkflowProvision(p, currentTenantIndex) && (whatChanged || recommendedAction)) {
             html += `<div class="docview-clause-summary" style="grid-column: 1 / -1;">`;
             if (whatChanged) {
                 html += `<div class="detail-section">
@@ -6270,7 +6752,7 @@ function renderSideBySideView() {
             html += `</div>`;
         }
 
-        if (isDeviationWorkflowProvision(p)) {
+        if (isDeviationWorkflowProvision(p, currentTenantIndex)) {
             html += `<div class="docview-row-controls" style="grid-column: 1 / -1;">${buildDocviewDeviationControls(p, currentTenantIndex)}</div>`;
         } else {
             html += `<div class="docview-row-controls" style="grid-column: 1 / -1;">${buildDocviewConformingControls(p, currentTenantIndex)}</div>`;
@@ -6306,6 +6788,57 @@ function renderSideBySideView() {
     }
 
     // Populate side-by-side sidebar
+    renderSbsSidebar(provisions, tenantLeads, r);
+}
+
+function renderSideBySideView() {
+    const tenant = currentResults.tenants[currentTenantIndex];
+    if (!tenant || !tenant.results) {
+        $("#docview-container").innerHTML = '<div style="padding:2rem; text-align:center; color:var(--text-muted);">No results available for this tenant.</div>';
+        $("#docview-sidebar-sbs").innerHTML = "";
+        return;
+    }
+
+    const r = tenant.results;
+    const provisions = sortProvisionsForDocviewTenantLed(getDocviewWorkflowProvisions(r.provisions || []));
+    const templateFile = r.template_file || "Standard Template";
+    const tenantFile = r.tenant_file || tenant.filename || "Tenant Lease";
+    const tenantLeads = docviewSort === "contract";
+
+    const html = buildSideBySideDocviewMarkup(provisions, {
+        tenantLeads,
+        templateFile,
+        tenantFile,
+        tenantIdx: currentTenantIndex,
+        modelsUsed: r.models_used || {},
+        docviewSort,
+        openDocviewProvision,
+    });
+
+    const container = $("#docview-container");
+    container.className = "docview-container docview-container-sbs";
+    container.innerHTML = html;
+
+    function handleBackToSummary() {
+        switchResultsTab("findings");
+        if (docviewReturnTarget) {
+            const targetCard = document.getElementById(`dev-${docviewReturnTarget}`);
+            if (targetCard) {
+                setTimeout(() => {
+                    targetCard.scrollIntoView({ behavior: "smooth", block: "center" });
+                    targetCard.classList.add("highlight-flash");
+                    setTimeout(() => targetCard.classList.remove("highlight-flash"), 1500);
+                }, 100);
+            }
+            docviewReturnTarget = null;
+        }
+    }
+
+    const backLink = container.querySelector(".docview-back-link");
+    if (backLink) {
+        backLink.addEventListener("click", handleBackToSummary);
+    }
+
     renderSbsSidebar(provisions, tenantLeads, r);
 }
 
@@ -6653,35 +7186,21 @@ function exportAuditJSON(singleContract) {
         export_type: singleContract ? "CAM Audit Trail (Single Contract)" : "CAM Audit Trail (All Contracts)",
         exported_at: new Date().toISOString(),
         job_id: jobId,
-        tenants: tenantsToExport.map(t => ({
-            filename: t.filename,
-            pipeline_version: t.results && t.results.pipeline_version,
-            pipeline_domain_label: t.results && t.results.pipeline_domain_label,
-            timestamp: t.results && t.results.timestamp,
-            models_used: t.results && t.results.models_used,
-            api_calls_total: t.results && t.results.api_calls_total,
-            elapsed_sec: t.results && t.results.elapsed_sec,
-            summary: t.results && t.results.summary,
-            provisions: t.results && (t.results.provisions || []).map(p => ({
-                provision_id: p.provision_id,
-                provision_name: p.provision_name,
-                final_verdict: p.final_verdict,
-                severity: p.severity,
-                severity_floor_applied: p.severity_floor_applied,
-                agreement_pattern: p.agreement_pattern,
-                evaluator_verdicts: p.evaluator_verdicts,
-                evaluator_reasoning: p.evaluator_reasoning,
-                evaluator_confidences: p.evaluator_confidences,
-                challenge_finding: p.challenge_finding,
-                challenge_details: p.challenge_details,
-                fragility: p.fragility,
-                cam_metadata: p.cam_metadata,
-                risk_headline: p.risk_headline,
-                severity_reasoning: p.severity_reasoning,
-                financial_impact: p.financial_impact,
-                recommended_action: p.recommended_action,
-            })),
-        })),
+        tenants: tenantsToExport.map((t) => {
+            const tenantIdx = allTenants.indexOf(t);
+            const workflowProvisions = getTenantWorkflowProvisions(tenantIdx);
+            return {
+                filename: t.filename,
+                pipeline_version: t.results && t.results.pipeline_version,
+                pipeline_domain_label: t.results && t.results.pipeline_domain_label,
+                timestamp: t.results && t.results.timestamp,
+                models_used: t.results && t.results.models_used,
+                api_calls_total: t.results && t.results.api_calls_total,
+                elapsed_sec: t.results && t.results.elapsed_sec,
+                summary: t.results && t.results.summary,
+                provisions: workflowProvisions.map((p) => serializeProvisionForAuditExport(p, tenantIdx)),
+            };
+        }),
     };
 
     const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: "application/json" });
@@ -6711,8 +7230,10 @@ function exportAuditText(singleContract) {
     lines.push("");
 
     tenantsToExport.forEach((tenant, ti) => {
+        const tenantIdx = allTenants.indexOf(tenant);
         const r = tenant.results || {};
         const m = r.models_used || {};
+        const workflowProvisions = getTenantWorkflowProvisions(tenantIdx);
         lines.push(hr("\u2550"));
         lines.push(`TENANT ${ti + 1}: ${tenant.filename || "Unknown"}`);
         lines.push(hr("\u2550"));
@@ -6725,6 +7246,7 @@ function exportAuditText(singleContract) {
         lines.push(`Timestamp:  ${r.timestamp || "\u2014"}`);
         lines.push(`Template:   ${r.template_file || "\u2014"}`);
         lines.push(`API calls:  ${r.api_calls_total || "\u2014"}  |  Elapsed: ${r.elapsed_sec ? fmtDuration(r.elapsed_sec) : "\u2014"}`);
+        lines.push(`Workflow clauses: ${workflowProvisions.length}`);
         lines.push("");
 
         lines.push("MODELS USED");
@@ -6742,14 +7264,17 @@ function exportAuditText(singleContract) {
         lines.push(sep());
         lines.push("");
 
-        (r.provisions || []).forEach(p => {
+        workflowProvisions.forEach(p => {
             const meta = p.cam_metadata || {};
             const stagesRun = new Set(meta.stages_run || []);
             const rulesFired = meta.rules_fired || [];
             const frag = p.fragility || {};
+            const workflow = getProvisionWorkflowExportState(tenantIdx, p.provision_id || "");
 
             lines.push(`[${p.provision_id || ""}] ${p.provision_name || ""}`);
             lines.push(`  Final Verdict: ${p.final_verdict || "\u2014"}  |  Severity: ${p.severity || "\u2014"}${p.severity_floor_applied ? " (floor applied)" : ""}`);
+            lines.push(`  Workflow: ${workflow.status || "open"}${p.manual_escalation ? "  |  Manual escalation: yes" : ""}${workflow.read ? "  |  Read: yes" : ""}`);
+            if ((workflow.notes || []).length > 0) lines.push(`  Notes: ${workflow.notes.length}`);
             lines.push(`  Agreement: ${p.agreement_pattern || "\u2014"}`);
             lines.push("");
 
@@ -8626,6 +9151,125 @@ function askAnalysisQuestion(question) {
 
 // ── Audit Trail ──
 
+function legacyGetAuditGovernanceLabel(signal) {
+    const map = {
+        ASSERT_SIGNAL: "Assert",
+        ASSERT_REVIEW_SIGNAL: "Assert, but review carefully",
+        REVIEW_SIGNAL: "Review recommended",
+        WITHHOLD_SIGNAL: "Withhold",
+    };
+    return map[signal] || signal || "—";
+}
+
+function legacyGetAuditPatternLabel(pattern) {
+    const map = {
+        PATTERN_1_RELIABLE: "Reliable",
+        PATTERN_2_FRAGILE_PERSUASIVE: "Fragile Persuasive",
+        PATTERN_3_WEAK: "Weak",
+        PATTERN_3_WEAK_UNCLEAR: "Weak / Unclear",
+        PATTERN_4_MISSED_WEAKNESS: "Missed Weakness",
+    };
+    return map[pattern] || pattern || "—";
+}
+
+function legacyGetAuditAsgTone(asg) {
+    if (asg == null || isNaN(asg)) return { label: "Unknown", tone: "neutral", width: 0 };
+    if (asg < 15) return { label: "Low sensitivity", tone: "good", width: 18 };
+    if (asg < 35) return { label: "Moderate sensitivity", tone: "caution", width: 46 };
+    if (asg < 55) return { label: "High sensitivity", tone: "warning", width: 74 };
+    return { label: "Very high sensitivity", tone: "danger", width: 100 };
+}
+
+function legacyGetAuditConfidenceTone(camPerm) {
+    if (camPerm == null || isNaN(camPerm)) return { label: "Unknown", tone: "neutral", width: 0 };
+    if (camPerm >= 85) return { label: "High confidence", tone: "good", width: camPerm };
+    if (camPerm >= 70) return { label: "Strong confidence", tone: "good", width: camPerm };
+    if (camPerm >= 50) return { label: "Moderate confidence", tone: "caution", width: camPerm };
+    return { label: "Low confidence", tone: "danger", width: Math.max(18, camPerm) };
+}
+
+function legacyGetAuditFragilityTone(fragilityRaw) {
+    const score = fragilityRaw && fragilityRaw.fragility_score != null ? Number(fragilityRaw.fragility_score) : null;
+    if (score == null || isNaN(score)) return { label: "No fragility score", tone: "neutral", width: 0 };
+    const pct = Math.max(0, Math.min(100, Math.round(score * 100)));
+    if (pct < 15) return { label: "Low structural fragility", tone: "good", width: pct };
+    if (pct < 35) return { label: "Moderate structural fragility", tone: "caution", width: pct };
+    if (pct < 60) return { label: "High structural fragility", tone: "warning", width: pct };
+    return { label: "Very high structural fragility", tone: "danger", width: pct };
+}
+
+function legacyGetAuditAgreementSummary(pattern) {
+    if (!pattern) return "Evaluator agreement was not available.";
+    if (pattern.includes("3/3")) return "All three evaluators reached the same conclusion.";
+    if (pattern.includes("2/3")) return "Two of the three evaluators agreed on the outcome.";
+    return `Evaluator agreement pattern: ${pattern}.`;
+}
+
+function legacyGetAuditEvidenceSummary(provision, challengeRaw) {
+    const basis = ((provision.cam_score || {}).evidence_basis || "").toLowerCase();
+    if (basis === "explicit_text") return "The conclusion is tied to direct contract text.";
+    if (basis === "structural_inference") return "The conclusion depends partly on structural inference rather than only explicit text.";
+    if (basis === "absence") return "The conclusion is based on missing language in one of the documents.";
+    if (basis === "ambiguous") return "The available text supports multiple readings, so the evidence is ambiguous.";
+    if (basis === "unverified_citation") return "The evidence chain contains citations that could not be fully verified.";
+    if (challengeRaw && challengeRaw.substantive_finding) return "The challenger found a substantive issue in the text comparison.";
+    return "CAM reviewed the clause text but the evidence basis was not explicitly labeled.";
+}
+
+function legacyGetAuditReasoningSummary(provision, stagesRun, challengeRaw) {
+    if (stagesRun.has(4) && challengeRaw) {
+        return "This clause went through the full review chain, including a challenge step.";
+    }
+    if (stagesRun.has(3)) {
+        return "This clause reached evaluator review, but the challenge stage was skipped.";
+    }
+    return "This clause did not move through the full reasoning chain.";
+}
+
+function legacyGetAuditFragilitySummary(fragilityRaw) {
+    const rules = (fragilityRaw && fragilityRaw.rules_fired) || [];
+    if (!rules.length) return "No structural fragility signals were detected.";
+    const translated = rules.map(r => FRAGILITY_TRANSLATIONS[r.signal] || r.signal || r.rule_id).filter(Boolean);
+    return `Structural fragility was detected because of ${translated.join(", ")}.`;
+}
+
+function legacyRenderAuditScoreBar(label, value, helper, toneInfo) {
+    const tone = toneInfo && toneInfo.tone ? toneInfo.tone : "neutral";
+    const width = toneInfo && toneInfo.width != null ? toneInfo.width : 0;
+    return `<div class="audit-score-card audit-score-${tone}">
+        <div class="audit-score-head">
+            <span class="audit-score-label">${esc(label)}</span>
+            <span class="audit-score-value">${esc(value)}</span>
+        </div>
+        <div class="audit-score-track"><span class="audit-score-fill audit-score-fill-${tone}" style="width:${Math.max(0, Math.min(100, width))}%"></span></div>
+        <div class="audit-score-helper">${esc(helper)}</div>
+    </div>`;
+}
+
+function legacyRenderAuditRawRecord(title, record) {
+    if (!record) return "";
+    return `<details class="audit-raw-record">
+        <summary>${esc(title)}</summary>
+        <pre>${esc(JSON.stringify(record, null, 2))}</pre>
+    </details>`;
+}
+
+function legacyRenderAuditPromptBlock(title, text) {
+    if (!text) return "";
+    return `<details class="audit-raw-record">
+        <summary>${esc(title)}</summary>
+        <pre>${esc(text)}</pre>
+    </details>`;
+}
+
+function legacyRenderAuditTechnicalGroup(title, innerHtml) {
+    if (!innerHtml) return "";
+    return `<div class="audit-technical-group">
+        <div class="audit-technical-group-title">${esc(title)}</div>
+        ${innerHtml}
+    </div>`;
+}
+
 function renderAuditTrail(allTenants) {
     const tab = $("#audittrail-tab");
     if (!tab || !currentResults) return;
@@ -8654,7 +9298,7 @@ function renderAuditTrail(allTenants) {
         return;
     }
     const r = tenant.results;
-    const provisions = r.provisions || [];
+    const provisions = getTenantWorkflowProvisions(currentTenantIndex);
     const modelsUsed = r.models_used || {};
 
     // Run metadata block
@@ -8665,39 +9309,50 @@ function renderAuditTrail(allTenants) {
         modelsUsed.evaluator_c
     ].filter(Boolean).join(" · ");
 
+    const readableEvalModels = [
+        modelsUsed.evaluator_a,
+        modelsUsed.evaluator_b,
+        modelsUsed.evaluator_c
+    ].filter(Boolean).map(getModelDisplayName).join(" · ");
+
     let html = `<div class="audit-export-bar">
         <span class="audit-export-label">This contract:</span>
         <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditJSON(true)">
-            ⬇ JSON
+            Download JSON
         </button>
         <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditText(true)">
-            ⬇ Text Report
+            Download Audit Report
         </button>
         <span class="audit-export-label audit-export-label-sep">All contracts:</span>
         <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditJSON(false)">
-            ⬇ JSON
+            Download JSON
         </button>
         <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditText(false)">
-            ⬇ Text Report
+            Download Audit Report
         </button>
     </div>
     <div class="audit-run-meta">
         <div class="audit-meta-section">
-            <div class="audit-meta-label">ANALYSIS RUN</div>
-            <div>Pipeline: ${esc(r.pipeline_version || "—")} &middot; ${esc(r.pipeline_domain_label || "")}</div>
-            <div>Timestamp: ${esc(ts)}</div>
-            <div>Template: ${esc(r.template_file || "—")}</div>
+            <div class="audit-meta-label">REVIEW CONTEXT</div>
+            <div>Tenant lease: ${esc(tenant.filename || r.tenant_file || "—")}</div>
+            <div>Run time: ${esc(ts)}</div>
+            <div>Standard lease: ${esc(r.template_file || "—")}</div>
         </div>
         <div class="audit-meta-section">
-            <div class="audit-meta-label">MODELS USED</div>
-            <div>Extractor: ${esc(modelsUsed.extractor || "—")} (${esc(modelsUsed.extractor_provider || "")})</div>
-            <div>Evaluators: ${esc(evalModels || "—")}</div>
-            <div>Challenger: ${esc(modelsUsed.challenger || "—")}</div>
-            <div>Severity: ${esc(modelsUsed.severity_assessor || "—")}</div>
+            <div class="audit-meta-label">CAM REVIEWERS</div>
+            <div>Clause comparison: ${esc(readableEvalModels || "—")}</div>
+            <div>Challenge review: ${esc(getModelDisplayName(modelsUsed.challenger || "—"))}</div>
+            <div>Severity review: ${esc(getModelDisplayName(modelsUsed.severity_assessor || "—"))}</div>
         </div>
         <div class="audit-meta-section">
-            <div class="audit-meta-label">PERFORMANCE</div>
-            <div>${provisions.length} provisions &middot; ${r.api_calls_total || "—"} API calls &middot; ${r.elapsed_sec ? fmtDuration(r.elapsed_sec) + " elapsed" : ""}</div>
+            <div class="audit-meta-label">RUN STATS</div>
+            <div>${provisions.length} provision${provisions.length !== 1 ? "s" : ""} reviewed</div>
+            <div>${r.api_calls_total || "—"} model calls &middot; ${r.elapsed_sec ? fmtDuration(r.elapsed_sec) + " total" : "Unknown duration"}</div>
+            <details class="audit-meta-tech">
+                <summary>Technical run details</summary>
+                <div>Pipeline: ${esc(r.pipeline_version || "—")} &middot; ${esc(r.pipeline_domain_label || "")}</div>
+                <div>Extractor: ${esc(getModelDisplayName(modelsUsed.extractor || "—"))}${modelsUsed.extractor_provider ? ` (${esc(modelsUsed.extractor_provider)})` : ""}</div>
+            </details>
         </div>
     </div>`;
 
@@ -8722,7 +9377,6 @@ function renderAuditTrail(allTenants) {
         const verdict = p.final_verdict || "";
         const sev = p.severity || "";
         const meta = p.cam_metadata || {};
-        const stagesRun = (meta.stages_run || []).join(",");
         const rulesFired = (meta.rules_fired || []);
         const agPattern = p.agreement_pattern || "—";
         const fragile = p.fragility && p.fragility.fragile;
@@ -8746,19 +9400,228 @@ function renderAuditTrail(allTenants) {
                 <span class="audit-pid">${esc(pid)}</span>
                 <span class="audit-pname">${esc(pname)}</span>
                 ${verdictBadge}
-                <span class="audit-stages">Stages: ${esc(stagesRun)}</span>
+                <span class="audit-agreement">${esc(getAuditGovernanceLabel((p.cam_score || {}).governance_signal))}</span>
+                <span class="audit-agreement">${esc(getAuditPatternLabel((p.cam_score || {}).pattern))}</span>
                 ${rulesBadge}
                 <span class="audit-agreement">${esc(agPattern)}</span>
                 ${fragBadge}
                 <span class="audit-chevron">&#9662;</span>
             </div>
             <div class="audit-provision-detail hidden" id="audit-detail-${idx}">
-                ${buildAuditDetail(p, modelsUsed, stageData)}
+                ${buildAuditDetailV2(p, modelsUsed, stageData)}
             </div>
         </div>`;
     });
     html += `</div>`;
     tab.innerHTML = html;
+}
+
+function buildAuditDetailV2(p, modelsUsed, stageData) {
+    stageData = stageData || {};
+    const pid = p.provision_id || "";
+    const meta = p.cam_metadata || {};
+    const stagesRun = new Set(meta.stages_run || []);
+    const rulesFired = meta.rules_fired || [];
+    const evalRaw = stageData.evaluator_raw || {};
+    const evalPrompts = stageData.evaluator_prompts || {};
+    const challengeRaw = (stageData.challenge_raw || []).find(x => x.provision_id === pid) || null;
+    const challengePrompts = stageData.challenge_prompts || {};
+    const severityRaw = (stageData.severity_raw || []).find(x => x.provision_id === pid) || null;
+    const severityPrompts = stageData.severity_prompts || {};
+    const fragilityRaw = (stageData.fragility || []).find(x => x.provision_id === pid) || null;
+    const triage = stageData.triage || {};
+    const wasFlagged = (triage.flagged || []).includes(pid);
+    const camScore = p.cam_score || {};
+    const governanceLabel = getAuditGovernanceLabel(camScore.governance_signal);
+    const patternLabel = getAuditPatternLabel(camScore.pattern);
+    const confidenceTone = getAuditConfidenceTone(camScore.CAM_perm);
+    const asgTone = getAuditAsgTone(camScore.ASG);
+    const fragilityTone = getAuditFragilityTone(fragilityRaw);
+    const challengeModel = modelsUsed.challenger || "—";
+    const evalMeta = stageData.evaluation_meta || {};
+    const evalModelMap = {
+        A: modelsUsed.evaluator_a || "Evaluator A",
+        B: modelsUsed.evaluator_b || "Evaluator B",
+        C: modelsUsed.evaluator_c || "Evaluator C",
+    };
+
+    let html = `<div class="audit-narrative audit-proof-card">`;
+
+    html += `<div class="audit-proof-overview">
+        <div class="audit-proof-topline">
+            <div class="audit-proof-outcome">
+                <span class="audit-proof-kicker">Final outcome</span>
+                <div class="audit-proof-headline">${esc((p.severity || p.final_verdict || "Review") + (p.final_verdict === "DEVIATES" ? " deviation" : p.final_verdict === "CONFORMS" ? " conforming clause" : ""))}</div>
+                <div class="audit-proof-subline">
+                    <span class="audit-proof-chip">${esc(governanceLabel)}</span>
+                    <span class="audit-proof-chip">${esc(patternLabel)}</span>
+                    <span class="audit-proof-chip">${esc(p.agreement_pattern || "Agreement unavailable")}</span>
+                </div>
+            </div>
+            <div class="audit-proof-summary">
+                <div class="audit-proof-summary-title">What CAM concluded</div>
+                <div class="audit-proof-summary-text">${esc((p.risk_headline || p.challenge_details || p.severity_reasoning || "CAM completed a full review of this provision.").trim())}</div>
+            </div>
+        </div>
+        <div class="audit-proof-text-pair">
+            <div class="audit-proof-text-col">
+                <div class="audit-proof-text-label">Standard clause</div>
+                <div class="audit-text-content">${esc(p.template_text || "(not present in template)")}</div>
+            </div>
+            <div class="audit-proof-text-col">
+                <div class="audit-proof-text-label">Tenant clause</div>
+                <div class="audit-text-content">${esc(p.tenant_text || "(not found in tenant lease)")}</div>
+            </div>
+        </div>
+        <div class="audit-proof-explainer-grid">
+            ${p.challenge_details ? `<div class="audit-proof-explainer">
+                <div class="audit-proof-explainer-label">What changed</div>
+                <div class="audit-proof-explainer-text">${esc(p.challenge_details)}</div>
+            </div>` : ""}
+            ${p.recommended_action ? `<div class="audit-proof-explainer">
+                <div class="audit-proof-explainer-label">Why it matters</div>
+                <div class="audit-proof-explainer-text">${esc(p.recommended_action)}</div>
+            </div>` : ""}
+        </div>
+    </div>`;
+
+    html += `<div class="audit-proof-section">
+        <div class="audit-proof-section-title">Confidence and stability</div>
+        <div class="audit-score-grid">
+            ${renderAuditScoreBar("CAM confidence", camScore.CAM_perm != null ? String(camScore.CAM_perm) : "—", confidenceTone.label, confidenceTone)}
+            ${renderAuditScoreBar("Strict review sensitivity (ASG)", camScore.ASG != null ? String(camScore.ASG) : "—", asgTone.label, asgTone)}
+            ${renderAuditScoreBar("Structural fragility", fragilityRaw && fragilityRaw.fragility_score != null ? String(Math.round(fragilityRaw.fragility_score * 100)) + "%" : "—", fragilityTone.label, fragilityTone)}
+        </div>
+        <div class="audit-proof-microcopy">CAM separates strong findings that survive stricter review from findings that look persuasive but weaken under scrutiny.</div>
+    </div>`;
+
+    html += `<div class="audit-proof-section">
+        <div class="audit-proof-section-title">How CAM reached this</div>
+        <div class="audit-dimension-grid">
+            <div class="audit-dimension-card">
+                <div class="audit-dimension-title">Agreement</div>
+                <div class="audit-dimension-text">${esc(getAuditAgreementSummary(p.agreement_pattern || ""))}</div>
+            </div>
+            <div class="audit-dimension-card">
+                <div class="audit-dimension-title">Evidence support</div>
+                <div class="audit-dimension-text">${esc(getAuditEvidenceSummary(p, challengeRaw))}</div>
+            </div>
+            <div class="audit-dimension-card">
+                <div class="audit-dimension-title">Reasoning strength</div>
+                <div class="audit-dimension-text">${esc(getAuditReasoningSummary(p, stagesRun, challengeRaw))}</div>
+            </div>
+            <div class="audit-dimension-card">
+                <div class="audit-dimension-title">Structural fragility</div>
+                <div class="audit-dimension-text">${esc(getAuditFragilitySummary(fragilityRaw))}</div>
+            </div>
+        </div>
+    </div>`;
+
+    if (stagesRun.has(3)) {
+        html += `<div class="audit-proof-section">
+            <div class="audit-proof-section-title">Evaluator views</div>
+            <div class="audit-evaluators">`;
+        ["A", "B", "C"].forEach(key => {
+            const items = evalRaw[key] || [];
+            const ev = items.find(x => x.provision_id === pid);
+            if (!ev) return;
+            const verdict = ev.verdict || "—";
+            const conf = ev.confidence != null ? (ev.confidence * 100).toFixed(0) + "%" : "";
+            const verdClass = verdict === "DEVIATES" ? "audit-eval-deviates" : verdict === "CONFORMS" ? "audit-eval-conforms" : "audit-eval-na";
+            const basisMap = {
+                explicit_text: "Directly grounded in the clause text.",
+                structural_inference: "Partly dependent on structural inference.",
+                absence: "Based on language that is missing from one side.",
+                ambiguous: "The evidence allows multiple readings.",
+                unverified_citation: "Some cited support could not be fully verified.",
+            };
+            html += `<div class="audit-eval-card">
+                <div class="audit-eval-header2">
+                    <span class="audit-eval-key">${esc(key)}</span>
+                    <span class="audit-eval-model-name">${esc(evalModelMap[key])}</span>
+                    <span class="audit-eval-verdict2 ${verdClass}">${esc(verdict)}</span>
+                    ${conf ? `<span class="audit-eval-conf2">${conf}</span>` : ""}
+                </div>
+                ${ev.reasoning ? `<div class="audit-eval-reasoning2">${esc(ev.reasoning)}</div>` : ""}
+                ${ev.evidence_basis ? `<div class="audit-eval-basis-plain">${esc(basisMap[ev.evidence_basis] || ev.evidence_basis)}</div>` : ""}
+                ${(ev.key_differences || []).length ? `<ul class="audit-eval-diffs">${ev.key_differences.map(d => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
+            </div>`;
+        });
+        html += `</div></div>`;
+    }
+
+    html += `<div class="audit-proof-section">
+        <div class="audit-proof-section-title">Challenge round</div>`;
+    if (stagesRun.has(4) && challengeRaw) {
+        const cv = challengeRaw.challenge_verdict || "—";
+        const cvClass = cv === "SUBSTANTIVE_DEVIATION" ? "audit-challenge-sub"
+            : cv === "COSMETIC_ONLY" ? "audit-challenge-cos"
+            : cv === "NEEDS_EXPERT" ? "audit-challenge-exp"
+            : "";
+        html += `<div class="audit-challenge-summary-card">
+            <div class="audit-challenge-summary-head">
+                <span class="audit-challenge-verdict ${cvClass}">${esc(cv)}</span>
+                <span class="audit-stage-model">${esc(challengeModel)}</span>
+            </div>
+            <div class="audit-challenge-finding">${esc(challengeRaw.substantive_finding || p.challenge_details || "CAM challenged this provision to test whether the difference was substantive or cosmetic.")}</div>
+            ${(challengeRaw.hidden_dependencies || []).length > 0 ? `<div class="audit-hidden-deps">
+                <div class="audit-detail-label">Hidden dependencies considered</div>
+                <ul>${challengeRaw.hidden_dependencies.map(d => `<li>${esc(d)}</li>`).join("")}</ul>
+            </div>` : ""}
+        </div>`;
+    } else {
+        html += `<div class="audit-stage-skipped-label">Challenge was skipped because the evaluator outcome did not require a separate challenge step.</div>`;
+    }
+    html += `</div>`;
+
+    html += `<details class="audit-technical-block">
+        <summary>Exact prompts, responses, and scoring</summary>
+        <div class="audit-technical-grid">`;
+    ["A", "B", "C"].forEach(key => {
+        const prompts = evalPrompts[key] || {};
+        const items = evalRaw[key] || [];
+        const ev = items.find(x => x.provision_id === pid);
+        if (!ev && !prompts.system_prompt && !prompts.user_prompt) return;
+        html += renderAuditTechnicalGroup(`Evaluator ${key}`, [
+            renderAuditPromptBlock("Question CAM asked", prompts.user_prompt),
+            renderAuditPromptBlock("System instructions", prompts.system_prompt),
+            renderAuditRawRecord("Response", ev),
+        ].join(""));
+    });
+    html += renderAuditTechnicalGroup("Challenge review", [
+        renderAuditPromptBlock("Question CAM asked", challengePrompts.user_prompt),
+        renderAuditPromptBlock("System instructions", challengePrompts.system_prompt),
+        renderAuditRawRecord("Response", challengeRaw),
+    ].join(""));
+    html += renderAuditTechnicalGroup("Severity review", [
+        renderAuditPromptBlock("Question CAM asked", severityPrompts.user_prompt),
+        renderAuditPromptBlock("System instructions", severityPrompts.system_prompt),
+        renderAuditRawRecord("Response", severityRaw),
+    ].join(""));
+    html += renderAuditTechnicalGroup("Structural fragility signals", renderAuditRawRecord("Fragility record", fragilityRaw));
+    html += `<details class="audit-raw-record">
+        <summary>Score details</summary>
+        <pre>${esc(JSON.stringify({
+            CAM_perm: camScore.CAM_perm,
+            CAM_strict: camScore.CAM_strict,
+            ASG: camScore.ASG,
+            governance_signal: camScore.governance_signal,
+            pattern: camScore.pattern,
+            A: camScore.A,
+            E_perm: camScore.E_perm,
+            R_perm: camScore.R_perm,
+            F_perm: camScore.F_perm,
+            evidence_basis: camScore.evidence_basis,
+            stages_run: Array.from(stagesRun),
+            rules_fired: rulesFired,
+            flagged_for_evaluation: wasFlagged,
+            evaluator_count: evalMeta.evaluator_count || 3,
+        }, null, 2))}</pre>
+    </details>`;
+    html += `</div></details>`;
+
+    html += `</div>`;
+    return html;
 }
 
 function buildAuditDetail(p, modelsUsed, stageData) {
@@ -9239,7 +10102,7 @@ async function saveResolutionNote(pid, tenantIdx) {
     if (saved) input.value = "";
 }
 
-function updateResolutionNoteCount(pid, tenantIdx) {
+function legacyUpdateResolutionNoteCount(pid, tenantIdx) {
     const key = `${tenantIdx}:${pid}`;
     const count = ((resolutionState[key] || {}).notes || []).length;
     const toggleBtn = document.querySelector(`.res-notes-toggle[data-pid="${pid}"][data-tenant-idx="${tenantIdx}"]`);
@@ -9251,7 +10114,7 @@ function updateResolutionNoteCount(pid, tenantIdx) {
     }
 }
 
-function renderResolutionNotesPanel(pid, tenantIdx) {
+function legacyRenderResolutionNotesPanel(pid, tenantIdx) {
     const key = `${tenantIdx}:${pid}`;
     const panel = document.getElementById(`res-notes-${pid}-${tenantIdx}`);
     if (!panel) return;
@@ -9264,6 +10127,27 @@ function renderResolutionNotesPanel(pid, tenantIdx) {
         noteDiv.innerHTML = `<span class="res-note-ts">${formatResTimestamp(note.timestamp)}</span><span class="res-note-text">${esc(note.text)}</span><button class="res-note-delete" onclick="window.CAM.deleteResolutionNote('${esc(pid)}', ${tenantIdx}, ${noteIdx}); event.stopPropagation();">Delete</button>`;
         if (inputRow) panel.insertBefore(noteDiv, inputRow);
         else panel.appendChild(noteDiv);
+    });
+}
+
+function updateResolutionNoteCount(pid, tenantIdx) {
+    const key = `${tenantIdx}:${pid}`;
+    const count = ((resolutionState[key] || {}).notes || []).length;
+    const toggleBtn = document.querySelector(`.res-notes-toggle[data-pid="${pid}"][data-tenant-idx="${tenantIdx}"]`);
+    if (!toggleBtn) return;
+    toggleBtn.innerHTML = buildNotesToggleHtml("Notes", count);
+}
+
+function renderResolutionNotesPanel(pid, tenantIdx) {
+    const key = `${tenantIdx}:${pid}`;
+    const panel = document.getElementById(`res-notes-${pid}-${tenantIdx}`);
+    if (!panel) return;
+    const notes = ((resolutionState[key] || {}).notes || []);
+    const inputRow = panel.querySelector(".res-note-input-row");
+    renderNotesPanelEntries(panel, notes, inputRow, {
+        esc,
+        formatResTimestamp,
+        buildDeleteButtonHtml: (noteIdx) => `<button class="res-note-delete" onclick="window.CAM.deleteResolutionNote('${esc(pid)}', ${tenantIdx}, ${noteIdx}); event.stopPropagation();">Delete</button>`,
     });
 }
 
@@ -9372,19 +10256,25 @@ function refreshResolutionProgress(tenantIdx) {
 
 // ── Contract Resolution (localStorage) ──
 
-function getContractResolutionKey(tenantIdx) {
+function legacyGetContractResolutionKey(tenantIdx) {
     const tenant = currentResults && currentResults.tenants && currentResults.tenants[tenantIdx];
     const name = tenant ? (tenant.filename || "tenant_" + tenantIdx) : "tenant_" + tenantIdx;
     return "cam_res_" + currentJobId + "_" + name;
 }
 
-function getContractResolution(tenantIdx) {
+function legacyGetContractResolution(tenantIdx) {
     if (!currentResults || !currentResults.tenants || !currentResults.tenants[tenantIdx]) return "unreviewed";
     const tenant = currentResults.tenants[tenantIdx];
     if (!tenant.results) return "unreviewed";
-    const deviations = (tenant.results.provisions || []).filter(function(p) { return p.final_verdict === "DEVIATES"; });
-    if (deviations.length === 0) return "clean";
-    const key = getContractResolutionKey(tenantIdx);
+    const workflowProvisions = getDeviationWorkflowProvisions((tenant.results.provisions || []), tenantIdx);
+    if (workflowProvisions.length === 0) return "clean";
+    const allClosed = workflowProvisions.every(function(p) {
+        const key = `${tenantIdx}:${p.provision_id}`;
+        const status = (resolutionState[key] || {}).status || "open";
+        return status === "resolved" || status === "not_a_deviation";
+    });
+    if (allClosed) return "resolved";
+    const key = legacyGetContractResolutionKey(tenantIdx);
     try { return localStorage.getItem(key) || "unreviewed"; } catch(e) { return "unreviewed"; }
 }
 
@@ -9536,8 +10426,14 @@ function buildContractFilterDropdown() {
     tenants.forEach(function(t, i) {
         var s = t.results && t.results.summary ? t.results.summary : null;
         var provisions = t.results && t.results.provisions ? t.results.provisions : [];
-        var deviations = provisions.filter(function(p) { return p.final_verdict === 'DEVIATES'; });
+        var deviations = getDeviationWorkflowProvisions(provisions, i);
         var highestSev = s ? getHighestSeverity(s) : null;
+        if (deviations.length > 0) {
+            highestSev = deviations.reduce(function(best, p) {
+                if (!best) return p.severity || 'MEDIUM';
+                return SEVERITY_ORDER.indexOf(p.severity || 'LOW') <= SEVERITY_ORDER.indexOf(best) ? (p.severity || best) : best;
+            }, highestSev);
+        }
         var isClean = deviations.length === 0 && s;
         var resolution = getContractResolution(i);
 
@@ -9665,8 +10561,14 @@ function renderRunSnapshot() {
     var allCards = tenants.map(function(t, i) {
         var s = t.results && t.results.summary ? t.results.summary : null;
         var provisions = t.results && t.results.provisions ? t.results.provisions : [];
-        var deviations = provisions.filter(function(p) { return p.final_verdict === "DEVIATES"; });
+        var deviations = getDeviationWorkflowProvisions(provisions, i);
         var highestSev = s ? getHighestSeverity(s) : null;
+        if (deviations.length > 0) {
+            highestSev = deviations.reduce(function(best, p) {
+                if (!best) return p.severity || "MEDIUM";
+                return SEVERITY_ORDER.indexOf(p.severity || "LOW") <= SEVERITY_ORDER.indexOf(best) ? (p.severity || best) : best;
+            }, highestSev);
+        }
         var sevScore = highestSev ? (SEVERITY_ORDER.indexOf(highestSev) + 1 || 99) : 99;
         var isClean = deviations.length === 0 && s;
         var resolution = getContractResolution(i);
@@ -9676,7 +10578,7 @@ function renderRunSnapshot() {
         var propertyDesc = (meta.property_description || '').trim();
         // Severity counts
         var sevCounts = {};
-        deviations.forEach(function(d) { var sv = d.severity || "MEDIUM"; sevCounts[sv] = (sevCounts[sv] || 0) + 1; });
+        deviations.forEach(function(d) { var sv = (d.severity || "MEDIUM").toUpperCase(); sevCounts[sv] = (sevCounts[sv] || 0) + 1; });
         return {
             t: t, i: i, s: s, provisions: provisions, deviations: deviations,
             highestSev: highestSev, sevScore: sevScore, isClean: isClean,
@@ -9938,19 +10840,20 @@ function renderRunSnapshot() {
 
     // Wire chip clicks → open Contract Detail + jump to provision in findings
     container.querySelectorAll('.chip-jumpable[data-pid]').forEach(function(chip) {
-        chip.addEventListener('click', function(e) {
+        chip.addEventListener('click', async function(e) {
             e.stopPropagation();
             var idx = parseInt(chip.dataset.tenant, 10);
             var pid = chip.dataset.pid;
-            openContractDetail(idx);
-            setTimeout(function() { jumpToFinding(pid); }, 300);
+            await openContractDetail(idx);
+            jumpToFinding(pid);
         });
     });
 }
 
 // ── Contract Detail ──
 
-function openContractDetail(tenantIdx) {
+async function openContractDetail(tenantIdx) {
+    const renderSeq = ++contractDetailRenderSeq;
     contractDetailOpen = true;
     contractDetailIdx = tenantIdx;
     currentTenantIndex = tenantIdx;
@@ -9994,21 +10897,23 @@ function openContractDetail(tenantIdx) {
     var ts = document.getElementById("tenant-select");
     if (ts) ts.value = tenantIdx;
 
-    // Render tenant content
-    renderTenantResults();
+    const desiredResultsTab = activeResultsTab || "findings";
+    contractDetailRenderPromise = Promise.resolve(contractDetailRenderPromise).catch(() => {}).then(async () => {
+        if (renderSeq !== contractDetailRenderSeq) return;
+        await renderTenantResults();
 
-    // Render resolution controls
-    renderContractResolutionControls(tenantIdx);
+        // Bail if another tenant was opened while this one was rendering.
+        if (!contractDetailOpen || currentTenantIndex !== tenantIdx || renderSeq !== contractDetailRenderSeq) return;
 
-    // Stay on whichever sub-tab was already active (or default to findings)
-    switchResultsTab(activeResultsTab || "findings");
-    persistResultsViewState();
+        renderContractResolutionControls(tenantIdx);
+        switchResultsTab(desiredResultsTab);
+        persistResultsViewState();
+        updateNavActive(tenantIdx);
+        const resultsPane = document.getElementById('results-content') || document.querySelector('.results-content');
+        if (resultsPane) resultsPane.scrollTo({ top: 0, behavior: 'instant' });
+    });
 
-    // Update nav
-    updateNavActive(tenantIdx);
-
-    // Scroll to top of page so nav tabs stay visible
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    await contractDetailRenderPromise;
 }
 
 function closeContractDetail() {
@@ -10683,7 +11588,7 @@ function countFinalDraftDecisions() {
     let total = 0, decided = 0, resolved = 0, ready = 0;
     getFinalDraftTenantIndices().forEach(i => {
         const t = currentResults.tenants[i];
-        getDeviationWorkflowProvisions((t.results?.provisions || [])).forEach(p => {
+        getDeviationWorkflowProvisions((t.results?.provisions || []), i).forEach(p => {
                 total++;
                 const dec = finalDraftDecisions[getFinalDraftKey(i, p.provision_id)];
                 const status = (resolutionState[`${i}:${p.provision_id}`] || {}).status || 'open';
@@ -10967,34 +11872,21 @@ function injectFinalDraftBar() {
 // Step 186: Jump to audit trail provision row
 function jumpToAuditProvision(tenantIdx, pid) {
     switchResultsTab('audittrail');
-    setTimeout(() => {
-        const row = document.querySelector(`.audit-provision-row[data-pid="${pid}"][data-tenant="${tenantIdx}"]`) ||
-                    document.querySelector(`.audit-provision-row[data-pid="${pid}"]`);
-        if (row) {
-            // Open the detail panel if it's currently closed
-            const idx = row.dataset.idx;
-            const detail = idx ? document.getElementById(`audit-detail-${idx}`) : null;
-            if (detail && detail.classList.contains('hidden')) {
-                toggleAuditRow(idx);
-            }
-            // Scroll and flash after a brief moment to let the detail expand
-            setTimeout(() => {
-                const resultsContent = document.querySelector(".results-content");
-                const stickyShell = document.querySelector(".contract-detail-sticky-shell");
-                const stickyHeight = stickyShell ? stickyShell.getBoundingClientRect().height : 0;
-                if (resultsContent) {
-                    const panelRect = resultsContent.getBoundingClientRect();
-                    const targetRect = row.getBoundingClientRect();
-                    const nextTop = resultsContent.scrollTop + (targetRect.top - panelRect.top) - stickyHeight - 8;
-                    resultsContent.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
-                } else {
-                    row.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-                row.classList.add('highlight-flash');
-                setTimeout(() => row.classList.remove('highlight-flash'), 2000);
-            }, 100);
+    waitForResultsTarget(() => {
+        return document.querySelector(`.audit-provision-row[data-pid="${CSS.escape(pid)}"][data-tenant="${tenantIdx}"]`) ||
+               document.querySelector(`.audit-provision-row[data-pid="${CSS.escape(pid)}"]`);
+    }, { attempts: 18, delay: 90 }).then((row) => {
+        if (!row) return;
+        const idx = row.dataset.idx;
+        const detail = idx ? document.getElementById(`audit-detail-${idx}`) : null;
+        if (detail && detail.classList.contains('hidden')) {
+            toggleAuditRow(idx);
         }
-    }, 400);
+        setTimeout(() => {
+            scrollResultsTargetIntoView(row, 8);
+            flashResultsTarget(row, 2000);
+        }, 100);
+    });
 }
 
 // Step 183: Open About CAM modal, optionally scroll to a section

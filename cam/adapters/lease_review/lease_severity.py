@@ -141,6 +141,10 @@ def assess_severity(
     return {
         "severities": severities,
         "raw_severities": obj.get("severities", []),
+        "prompts": {
+            "system_prompt": system_prompt,
+            "user_prompt": user_prompt,
+        },
         "meta": {
             "model": meta.get("model", "unknown"),
             "provider": meta.get("provider", "unknown"),

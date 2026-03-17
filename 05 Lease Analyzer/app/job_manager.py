@@ -26,7 +26,7 @@ _jobs: dict = {}
 _jobs_lock = threading.Lock()
 
 PROVISION_FLAG_RATES = {
-    "LP-01": 0.12, "LP-02": 0.45, "LP-03": 0.56, "LP-04": 0.22,
+    "LP-01": 0.26, "LP-02": 0.11, "LP-03": 0.33, "LP-04": 0.09,
     "LP-05": 0.41, "LP-06": 0.27, "LP-07": 0.31, "LP-08": 0.30,
     "LP-09": 0.62, "LP-10": 0.38, "LP-11": 0.60, "LP-12": 0.46,
     "LP-13": 0.60, "LP-14": 0.26, "LP-15": 0.14, "LP-16": 0.32,
@@ -95,6 +95,7 @@ def create_job(domain: str, email: str, input_config: dict, job_id: str = None) 
         "domain": domain,
         "status": "queued",
         "created_at": datetime.now(timezone.utc).isoformat(),
+        "started_at": None,
         "completed_at": None,
         "email": email,
         "estimated_minutes": estimated_minutes,
@@ -185,10 +186,25 @@ def update_tenant_status(
                 tenants[tenant_index]["error"] = error
 
 
+def mark_job_started(job_id: str) -> Optional[str]:
+    """Set job status to processing and stamp a true processing start time."""
+    started_at = datetime.now(timezone.utc).isoformat()
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if not job:
+            return None
+        job["status"] = "processing"
+        job["started_at"] = started_at
+        job["completed_at"] = None
+        job.pop("cancelled_at", None)
+        job.pop("expires_at", None)
+        return started_at
+
+
 def mark_job_completed(job_id: str) -> None:
     """Set job status to completed. Expiry starts immediately (15 min)."""
     config = get_config()
-    expiry_minutes = config.get("JOB_EXPIRY_MINUTES", 15)
+    expiry_minutes = config.get("JOB_EXPIRY_MINUTES", 1440)
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(minutes=expiry_minutes)
 
@@ -233,7 +249,7 @@ def is_cancel_requested(job_id: str) -> bool:
 def mark_job_cancelled(job_id: str) -> None:
     """Set job status to cancelled. Expiry starts immediately."""
     config = get_config()
-    expiry_minutes = config.get("JOB_EXPIRY_MINUTES", 15)
+    expiry_minutes = config.get("JOB_EXPIRY_MINUTES", 1440)
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(minutes=expiry_minutes)
 
@@ -255,6 +271,7 @@ def append_tenants(job_id: str, new_tenants: list) -> None:
             return
         job["input_config"]["tenants"].extend(new_tenants)
         job["status"] = "processing"
+        job["started_at"] = None
         job["cancel_requested"] = False
     logger.info(f"Appended {len(new_tenants)} tenant(s) to job {job_id}")
 
@@ -268,12 +285,14 @@ def append_provisions(job_id: str, new_provision_ids: list) -> None:
         existing = job["input_config"].get("provisions") or []
         job["input_config"]["provisions"] = existing + new_provision_ids
         job["status"] = "processing"
+        job["started_at"] = None
         job["cancel_requested"] = False
     logger.info(f"Appended {len(new_provision_ids)} provision(s) to job {job_id}")
 
 
 def start_incremental_processing(job_id: str, start_index: int) -> None:
     """Process only new tenants (from start_index onward) in a background thread."""
+    mark_job_started(job_id)
     thread = threading.Thread(
         target=_run_incremental_tenants,
         args=(job_id, start_index),
@@ -391,6 +410,7 @@ def _run_incremental_tenants(job_id: str, start_index: int) -> None:
 
 def start_provision_processing(job_id: str, new_provision_ids: list) -> None:
     """Re-run analysis with new provisions for all tenants in background."""
+    mark_job_started(job_id)
     thread = threading.Thread(
         target=_run_provision_processing,
         args=(job_id, new_provision_ids),
@@ -720,6 +740,7 @@ def delete_job(job_id: str):
 
 def start_processing(job_id: str) -> None:
     """Start processing a job in a background thread."""
+    mark_job_started(job_id)
     thread = threading.Thread(
         target=_run_job_processing,
         args=(job_id,),
@@ -994,8 +1015,16 @@ def get_resolutions(job_id: str) -> dict:
         return dict(job.get("resolutions", {}))
 
 
-def set_resolution(job_id: str, tenant_idx: int, provision_id: str,
-                   status: str = None, note: str = None, notes: list | None = None) -> dict | None:
+def set_resolution(
+    job_id: str,
+    tenant_idx: int,
+    provision_id: str,
+    status: str = None,
+    note: str = None,
+    notes: list | None = None,
+    concern_state: str | None = None,
+    concern_reason: str | None = None,
+) -> dict | None:
     """
     Update resolution status and/or append a note for a provision.
     Returns the updated resolution entry, or None if job not found.
@@ -1013,10 +1042,21 @@ def set_resolution(job_id: str, tenant_idx: int, provision_id: str,
         entry = job["resolutions"].setdefault(key, {
             "status": "open",
             "notes": [],
+            "concern_state": "none",
+            "concern_reason": "",
             "updated_at": now,
         })
         if status is not None:
             entry["status"] = status
+            entry["updated_at"] = now
+        if concern_state is not None:
+            entry["concern_state"] = str(concern_state or "none").strip() or "none"
+            if entry["concern_state"] == "concern":
+                entry["concern_reason"] = ""
+            elif entry["concern_state"] == "none":
+                entry["concern_reason"] = ""
+            else:
+                entry["concern_reason"] = str(concern_reason or "").strip()
             entry["updated_at"] = now
         if notes is not None:
             normalized_notes = []

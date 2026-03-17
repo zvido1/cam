@@ -139,7 +139,14 @@ def _challenge_batch(
     from cam.adapters.lease_review.lease_adapter import _check_cancel
     _check_cancel(config)
 
-    return {ch["provision_id"]: ch for ch in obj.get("challenges", [])}, obj.get("challenges", [])
+    return (
+        {ch["provision_id"]: ch for ch in obj.get("challenges", [])},
+        obj.get("challenges", []),
+        {
+            "system_prompt": system_prompt,
+            "user_prompt": user_prompt,
+        },
+    )
 
 
 def challenge_provisions(
@@ -169,6 +176,7 @@ def challenge_provisions(
     all_challenges = {}
     all_raw = []
     api_calls = 0
+    challenge_prompts = {"system_prompt": None, "user_prompt": None}
 
     # Chunk into batches if needed
     for i in range(0, len(flagged), MAX_PROVISIONS_PER_CHALLENGE):
@@ -176,16 +184,19 @@ def challenge_provisions(
         batch_num = (i // MAX_PROVISIONS_PER_CHALLENGE) + 1
         if len(flagged) > MAX_PROVISIONS_PER_CHALLENGE:
             print(f"[lease_challenge] Batch {batch_num}: {len(batch)} provisions", flush=True)
-        challenges, raw = _challenge_batch(batch, extraction_map, evaluation_agg, config)
+        challenges, raw, prompts = _challenge_batch(batch, extraction_map, evaluation_agg, config)
         all_challenges.update(challenges)
         all_raw.extend(raw)
         api_calls += 1
+        if batch_num == 1:
+            challenge_prompts = prompts
 
     elapsed = time.time() - start_time
 
     return {
         "challenges": all_challenges,
         "raw_challenges": all_raw,
+        "prompts": challenge_prompts if flagged else {"system_prompt": None, "user_prompt": None},
         "meta": {
             "elapsed_sec": round(elapsed, 2),
             "provisions_challenged": len(flagged),

@@ -340,11 +340,22 @@ async def update_resolution(job_id: str, request: Request):
     status = body.get("status")          # optional
     note = body.get("note")              # optional
     notes = body.get("notes")            # optional full note list
+    concern_state = body.get("concern_state")
+    concern_reason = body.get("concern_reason")
 
     if tenant_idx is None or not provision_id:
         raise HTTPException(status_code=400, detail="tenant_idx and provision_id required")
 
-    result = job_manager.set_resolution(job_id, int(tenant_idx), provision_id, status, note, notes)
+    result = job_manager.set_resolution(
+        job_id,
+        int(tenant_idx),
+        provision_id,
+        status,
+        note,
+        notes,
+        concern_state,
+        concern_reason,
+    )
     if result is None:
         raise HTTPException(status_code=404, detail="Job not found")
     return {"ok": True, "resolution": result}
@@ -541,8 +552,7 @@ async def ai_summary(request_body: dict):
 # FINAL DRAFT ENDPOINT (144)
 # ══════════════════════════════════════════════════════════════════════════════
 
-@app.post("/api/final-draft")
-async def final_draft(request_body: dict):
+async def _deprecated_final_draft(request_body: dict):
     """Generate a Final Draft DOCX from per-provision decisions."""
     import io
     from docx import Document
@@ -940,11 +950,14 @@ async def create_lease_job(
 
     # Start background processing
     job_manager.start_processing(job_id)
+    started_job = job_manager.get_job(job_id) or job
 
     return {
         "job_id": job_id,
-        "status": "queued",
+        "status": "processing",
         "estimated_minutes": job["estimated_minutes"],
+        "started_at": started_job.get("started_at"),
+        "created_at": started_job.get("created_at"),
         "results_url": f"{config['APP_BASE_URL']}/results/{job_id}",
     }
 
@@ -1089,6 +1102,7 @@ async def add_tenants_to_job(
     return {
         "job_id": job_id,
         "status": "processing",
+        "started_at": (job_manager.get_job(job_id) or {}).get("started_at"),
         "new_tenants": len(new_tenants),
         "new_provisions_added": new_provision_ids,
         "total_tenants": len(input_cfg["tenants"]),
@@ -1145,6 +1159,7 @@ async def add_provisions_to_job(
     return {
         "job_id": job_id,
         "status": "processing",
+        "started_at": (job_manager.get_job(job_id) or {}).get("started_at"),
         "new_provisions": truly_new,
         "total_provisions": len(existing_ids | set(truly_new)),
     }

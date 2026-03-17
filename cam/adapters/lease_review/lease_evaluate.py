@@ -340,6 +340,10 @@ def _call_evaluator(
                 "label": label,
                 "model": model_name,
                 "provider": provider,
+                "prompts": {
+                    "system_prompt": system_prompt,
+                    "user_prompt": user_prompt,
+                },
                 "evaluations": {ev["provision_id"]: ev for ev in obj.get("evaluations", [])},
                 "raw_evaluations": obj.get("evaluations", []),
                 "discovered_clauses": obj.get("discovered_clauses", []),
@@ -458,6 +462,10 @@ def evaluate_provisions(
                     "label": EVALUATORS[key]["label"],
                     "model": EVALUATORS[key]["model"],
                     "provider": EVALUATORS[key]["provider"],
+                    "prompts": {
+                        "system_prompt": None,
+                        "user_prompt": None,
+                    },
                     "evaluations": {},
                     "raw_evaluations": [],
                     "elapsed_sec": 0,
