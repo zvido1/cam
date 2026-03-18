@@ -19,6 +19,13 @@
         <a class="privacy-link" id="about-cam-toggle">About CAM's Analysis</a>
         <a class="privacy-link" id="privacy-toggle">Privacy &amp; Data</a>
     </header>
+    <nav id="workflow-nav" class="workflow-nav hidden" aria-label="Workflow navigation">
+        <div class="workflow-nav-inner">
+            <button class="workflow-nav-tab" id="workflow-tab-upload" data-workflow-state="upload">Upload</button>
+            <button class="workflow-nav-tab" id="workflow-tab-processing" data-workflow-state="processing">Processing</button>
+            <button class="workflow-nav-tab" id="workflow-tab-results" data-workflow-state="results">Results</button>
+        </div>
+    </nav>
 
     <!-- ═══ MAIN CONTENT ═══ -->
     <main class="app-main">
@@ -262,11 +269,29 @@
         <!-- ══ STATE 4: Processing ══ -->
         <section id="state-processing" class="hidden">
             <div class="processing-layout">
-              <div class="processing-top-shell">
-                  <!-- Left column: email + bookmark -->
-                  <div class="processing-content">
+              <div class="processing-hero-shell">
+                <div class="processing-status-card">
+                    <div class="processing-kicker">Live analysis</div>
+                    <div class="processing-title">CAM is reviewing your leases</div>
+                    <div class="processing-subtitle">Completed contracts unlock as soon as they finish, so you can begin reviewing while CAM continues processing the remaining leases.</div>
+                    <div id="processing-overview-status" class="processing-overview-status hidden"></div>
+                    <div id="estimate-remaining" class="estimate-text mt-2"></div>
+
+                    <div class="cancel-area mt-2">
+                        <button class="btn btn-cancel" id="cancel-btn">Cancel Analysis</button>
+                        <a href="#" id="processing-back-link" class="hidden processing-back-link"
+                           onclick="window.CAM.handleBackToResults(); return false;">
+                            &larr; Back to current results
+                        </a>
+                    </div>
+                </div>
+              </div>
+
+              <div class="processing-secondary-grid">
+                  <div class="processing-left-stack">
+                    <div id="processing-carousel-slot"></div>
+                    <div id="processing-status-slot"></div>
                     <div class="processing-return-panel">
-                        <!-- Email capture -->
                         <div id="processing-email-capture" class="processing-email-card hidden">
                             <div class="processing-email-title">&#128231; Get notified when done <span style="font-size:0.75rem; font-weight:400; color:var(--text-muted);">(optional)</span></div>
                             <div class="processing-email-subtitle">Analysis takes a few minutes. Enter your email and we'll send you this same return link when it's ready.</div>
@@ -286,7 +311,6 @@
                             <div id="processing-email-status" class="processing-email-status hidden"></div>
                         </div>
 
-                        <!-- Bookmark link -->
                         <div class="processing-info" id="processing-info">
                             <div class="email-notice" id="email-notice"></div>
                             <div class="processing-info-body">You can wait here and watch progress update, or safely close this page and come back using the link below.</div>
@@ -296,29 +320,28 @@
                             </div>
                         </div>
                     </div>
-                  </div>
 
-                  <!-- Centre column: progress -->
-                  <div class="processing-carousel-col">
-                    <div class="processing-status-card">
-                        <div class="processing-kicker">Live analysis</div>
-                        <div class="processing-title">Contract progress</div>
-                        <div class="processing-subtitle">Each lease moves through the same six-stage review pipeline. This section expands naturally as more contracts are analyzed.</div>
-                        <div id="processing-overview-status" class="processing-overview-status hidden"></div>
-                        <div id="tenant-progress-list"></div>
-                        <div id="estimate-remaining" class="estimate-text mt-2"></div>
+                    <div id="processing-ready-card" class="processing-ready-card hidden">
+                        <div class="processing-side-kicker">Ready now</div>
+                        <div class="processing-side-title">Contracts ready to review</div>
+                        <div class="processing-side-subtitle">Open completed contracts immediately while CAM continues processing the rest.</div>
+                        <div id="processing-ready-list" class="processing-ready-list"></div>
+                    </div>
 
-                        <div class="cancel-area mt-2">
-                            <button class="btn btn-cancel" id="cancel-btn">Cancel Analysis</button>
-                            <a href="#" id="processing-back-link" class="hidden processing-back-link"
-                               onclick="window.CAM.handleBackToResults(); return false;">
-                                &larr; Back to current results
-                            </a>
+                    <div class="processing-detail-card">
+                        <div class="processing-detail-header">
+                            <div>
+                                <div class="processing-side-kicker">Stage-by-stage progress</div>
+                                <div class="processing-side-title">Contract status by stage</div>
+                            </div>
+                            <button class="btn btn-ghost btn-sm" id="processing-detail-toggle" type="button" aria-expanded="false">
+                                Show details
+                            </button>
                         </div>
+                        <div id="tenant-progress-list" class="processing-detail-list hidden"></div>
                     </div>
                   </div>
 
-                  <!-- Right column: chat -->
                   <div class="processing-sidebar">
                     <div class="processing-chat-panel" id="processing-chat-panel">
                         <div class="chat-panel-header">
@@ -342,56 +365,50 @@
 
                         <div class="cam-slide">
                             <div class="cam-slide-icon">🧠</div>
-                            <div class="cam-slide-title">CAM&#8482; — a new way to govern AI</div>
-                            <div class="cam-slide-body">Most AI systems are built to produce an answer — even when the evidence is weak, ambiguous, or contested. The Constrained Assertion Method (CAM) is a patent-pending framework that changes this: instead of optimizing for output, CAM governs <em>when</em> an AI is permitted to assert a conclusion, and <em>how confident</em> it should be when it does.</div>
-                        </div>
-
-                        <div class="cam-slide">
-                            <div class="cam-slide-icon">⚠️</div>
-                            <div class="cam-slide-title">The problem with AI confidence</div>
-                            <div class="cam-slide-body">AI models are architected to always give you something. When models disagree or evidence is thin, that uncertainty gets collapsed into a single confident answer — and the disagreement disappears. In any domain where the output informs a real decision, that hidden uncertainty is a structural risk.</div>
+                            <div class="cam-slide-title">Why CAM exists</div>
+                            <div class="cam-slide-body">Most AI systems are built to produce an answer — even when the evidence is weak, ambiguous, or contested. In document review, that creates a real risk: hidden uncertainty gets packaged as confidence. CAM&#8482; was built to ask a harder question first: <em>has this conclusion actually earned the right to be asserted?</em></div>
                         </div>
 
                         <div class="cam-slide">
                             <div class="cam-slide-icon">⚖️</div>
-                            <div class="cam-slide-title">What CAM actually does</div>
-                            <div class="cam-slide-body">CAM runs multiple independent AI models on the same input — each reasoning without seeing the others' answers. Disagreement is preserved, not averaged away. A rule-based governance layer then decides whether the system has earned the right to assert a conclusion, qualify it, or withhold it entirely. Abstention is a valid outcome.</div>
+                            <div class="cam-slide-title">What CAM does differently</div>
+                            <div class="cam-slide-body">CAM runs multiple independent AI evaluators on the same clause comparison, preserves disagreement instead of averaging it away, and then uses a governance layer to decide whether the system should assert, qualify, challenge, or withhold a conclusion. Abstention is a valid outcome.</div>
                         </div>
 
                         <div class="cam-slide">
                             <div class="cam-slide-icon">🎯</div>
-                            <div class="cam-slide-title">Applied here: commercial lease analysis</div>
-                            <div class="cam-slide-body">This tool applies CAM to lease deviation analysis — one of the highest-stakes document review tasks in commercial real estate. Every provision is evaluated by three independent AI models. Where they agree, confidence is high. Where they split, that disagreement is surfaced directly to the reviewer. Nothing is hidden behind a blended result.</div>
+                            <div class="cam-slide-title">Applied here: lease deviation analysis</div>
+                            <div class="cam-slide-body">This tool applies CAM to one of the most consequential review tasks in commercial real estate: comparing a tenant lease against a reference form and surfacing what materially changed. CAM is not just looking for differences — it is judging whether those differences are important enough, stable enough, and well-supported enough to matter.</div>
                         </div>
 
                         <div class="cam-slide">
                             <div class="cam-slide-icon">🔍</div>
-                            <div class="cam-slide-title">What's happening right now</div>
-                            <div class="cam-slide-body">Each lease moves through a multi-stage pipeline: text extraction with integrity verification, an automated rules check for exception clauses and qualifier shifts, parallel evaluation by three independent AI models, an adversarial challenge round, severity assessment, and document annotation. Each step is logged — nothing is a black box.</div>
+                            <div class="cam-slide-title">What CAM is doing right now</div>
+                            <div class="cam-slide-body">Each lease moves through a staged pipeline: document parsing and identity checks, rules-based detection of exception language and qualifier shifts, parallel evaluation by independent models, an adversarial challenge round, severity assessment, and output generation. The goal is not speed alone — it is traceable, defensible review.</div>
                         </div>
 
                         <div class="cam-slide">
                             <div class="cam-slide-icon">📋</div>
-                            <div class="cam-slide-title">What you'll see in results</div>
-                            <div class="cam-slide-body">Each deviation card shows severity, what changed and why it matters, which models agreed or disagreed, a recommended action, and side-by-side clause text with word-level redlining. Conforming provisions are also reviewable — with full clause text and the ability to flag anything worth renegotiating.</div>
+                            <div class="cam-slide-title">What you'll get in results</div>
+                            <div class="cam-slide-body">You’ll get a working review system, not just a list of flags: clause-by-clause summaries, document comparison in lease order, notes and draft decisions, an annotated tenant lease, and contract-level tracking of what is still open, resolved, or no longer a deviation.</div>
                         </div>
 
                         <div class="cam-slide">
                             <div class="cam-slide-icon">🔎</div>
-                            <div class="cam-slide-title">Full transparency, every step</div>
-                            <div class="cam-slide-body">The CAM&#8482; Audit Trail shows exactly how every conclusion was reached — the extracted clause text, which rules fired, each model's independent reasoning, the challenge outcome, and the final confidence score. If a finding seems wrong, you can trace it back to the moment it was made.</div>
+                            <div class="cam-slide-title">Why the audit trail matters</div>
+                            <div class="cam-slide-body">CAM’s differentiator is that it shows its work. For each clause, you can inspect the reference text, tenant text, what changed, what each evaluator concluded, what CAM challenged, and how the final outcome survived stricter review. If a finding seems wrong, you can trace it back to the exact step where it was made.</div>
                         </div>
 
                         <div class="cam-slide">
                             <div class="cam-slide-icon">🎚️</div>
-                            <div class="cam-slide-title">Calibrated confidence, not noise</div>
-                            <div class="cam-slide-body">Every finding carries a CAM score — a structured confidence metric built from model agreement, evidence quality, reasoning completeness, and fragility signals. The Assertion Sensitivity Gap shows how much the conclusion depends on interpretation. Reviewers know exactly how much weight to give each finding.</div>
+                            <div class="cam-slide-title">What the scores are telling you</div>
+                            <div class="cam-slide-body">CAM does not treat confidence as a single number. It looks at agreement, evidence support, reasoning strength, and structural fragility. The Assertion Sensitivity Gap (ASG) shows how much a conclusion depends on interpretation: a low gap suggests the finding survives both permissive and strict review, while a high gap signals that a lawyer should examine it more closely.</div>
                         </div>
 
                         <div class="cam-slide">
                             <div class="cam-slide-icon">💬</div>
-                            <div class="cam-slide-title">Have additional questions?</div>
-                            <div class="cam-slide-body">While your analysis runs, you can ask questions below about CAM, how the scoring works, lease provisions, or anything else. We're here to help while you wait.</div>
+                            <div class="cam-slide-title">Ask questions while CAM works</div>
+                            <div class="cam-slide-body">While processing runs, you can use the chat panel to ask about provisions, scoring, review strategy, or what CAM is checking at each stage. The goal is to make the wait productive — and to make the system easier to understand before you open the results.</div>
                         </div>
 
                     </div>

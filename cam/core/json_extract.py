@@ -7,6 +7,20 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 
+# Priority keys: any object containing these beats all others unconditionally
+PRIORITY_KEYS = {
+    'evaluations', 'discovered_clauses', 'challenges', 'severities',
+    'cascade_results', 'extraction',
+}
+
+# Regular CAM keys for tiebreaking among non-priority objects
+CAM_KEYS = [
+    'final_choice', 'reasoning_similarity', 'candidate_options',
+    'shared_eliminations', 'choice', 'jb', 'assumptions',
+    'eliminate', 'abstain', 'weakest_link', 'confidence',
+]
+
+
 def _fix_latex_escapes(json_str: str) -> str:
     r"""
     Fix invalid JSON escape sequences commonly found in LaTeX.
@@ -179,47 +193,38 @@ def safe_json_extract(text: str) -> Dict[str, Any]:
             except json.JSONDecodeError:
                 pass
 
-    # Known CAM schema keys to prioritize
-    cam_keys = [
-        'final_choice', 'reasoning_similarity', 'candidate_options',
-        'shared_eliminations', 'choice', 'jb', 'assumptions',
-        'eliminate', 'abstain', 'weakest_link', 'confidence'
-    ]
-    
     # Find ALL valid JSON objects in the text
     candidates = _extract_all_json_candidates(normalized)
-    
+
     if candidates:
-        # Score each candidate: prefer larger objects with more CAM keys
         def score_candidate(item):
             start_pos, json_str, parsed = item
-            # Count CAM keys present
-            cam_key_count = sum(1 for k in cam_keys if k in parsed)
-            # Size of the JSON (more fields = likely the main response)
+            # Priority key presence: any priority key wins with score 1000
+            priority_score = 1000 if any(k in parsed for k in PRIORITY_KEYS) else 0
+            cam_key_count = sum(1 for k in CAM_KEYS if k in parsed)
             field_count = len(parsed)
-            # Prefer objects later in the text (JSON response usually at end)
             position_score = start_pos
-            # Combined score: CAM keys most important, then size, then position
-            return (cam_key_count, field_count, position_score)
-        
+            return (priority_score, cam_key_count, field_count, position_score)
+
         # Sort by score descending (best first)
         candidates.sort(key=score_candidate, reverse=True)
-        
+
         # Return the best candidate
         best = candidates[0]
         return best[2]  # Return parsed dict
-    
+
     # Try the original text too (before normalization)
     if text != normalized:
         candidates = _extract_all_json_candidates(text)
         if candidates:
             def score_candidate(item):
                 start_pos, json_str, parsed = item
-                cam_key_count = sum(1 for k in cam_keys if k in parsed)
+                priority_score = 1000 if any(k in parsed for k in PRIORITY_KEYS) else 0
+                cam_key_count = sum(1 for k in CAM_KEYS if k in parsed)
                 field_count = len(parsed)
                 position_score = start_pos
-                return (cam_key_count, field_count, position_score)
-            
+                return (priority_score, cam_key_count, field_count, position_score)
+
             candidates.sort(key=score_candidate, reverse=True)
             return candidates[0][2]
     

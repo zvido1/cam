@@ -26,6 +26,21 @@ def _load_prompt_template() -> str:
         return f.read()
 
 
+def _compact_reasoning(text: str, max_chars: int = 260) -> str:
+    """Prefer a complete first sentence over blunt mid-sentence truncation."""
+    text = " ".join((text or "").split())
+    if not text:
+        return ""
+    for punct in (". ", "! ", "? "):
+        idx = text.find(punct)
+        if 0 < idx + 1 <= max_chars:
+            return text[: idx + 1].strip()
+    if len(text) <= max_chars:
+        return text
+    clipped = text[:max_chars].rsplit(" ", 1)[0].strip()
+    return clipped + "..."
+
+
 def _build_flagged_provisions_text(
     flagged: List[dict],
     extraction_map: Dict[str, dict],
@@ -56,7 +71,7 @@ def _build_flagged_provisions_text(
         evaluator_summary = f"Agreement: {pattern}\n"
         for key in ["A", "B", "C"]:
             v = verdicts.get(key, "?")
-            r = reasoning.get(key, "")[:200]
+            r = _compact_reasoning(reasoning.get(key, ""))
             evaluator_summary += f"  Evaluator {key}: {v} — {r}\n"
 
         part = f"--- {pid}: {f.get('provision_name', pid)} ---\n"

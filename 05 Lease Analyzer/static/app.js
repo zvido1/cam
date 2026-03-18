@@ -235,6 +235,7 @@ let pollTimer = null;
 let expiryTimer = null;
 let templateFile = null;
 let tenantFiles = [];
+let tenantDragIndex = null;
 let provisions = [];
 let customProvisions = [];
 let selectedAnalysisType = ANALYSIS_TYPES[0];
@@ -257,6 +258,7 @@ let chatHistory = [];
 let cancelRequested = false;
 let currentSecsPerLease = 240; // Step 195: per-lease time estimate, updated at submission
 let jobStartTime = null;           // Step 196: wall-clock start of current job
+let processingDetailsExpanded = false;
 let estimateCountdownTimer = null; // Step 196: per-second countdown ticker
 let estimateTotalSecs = 0;         // Step 196: total estimated seconds for this job
 let estimateProgressFraction = 0;  // Step 196: whole-job completion fraction
@@ -399,6 +401,73 @@ function showState(name) {
             deactivateStep2();
         }
     }
+
+    updateWorkflowNav();
+}
+
+function updateWorkflowNav() {
+    const nav = $("#workflow-nav");
+    if (!nav) return;
+
+    const shouldShow = ["upload", "processing", "results"].includes(currentState);
+    nav.classList.toggle("hidden", !shouldShow);
+    if (!shouldShow) return;
+
+    const processingAvailable = !!currentJobId && (
+        currentState === "processing" ||
+        (currentJobData && ["processing", "queued", "failed", "cancelled"].includes(currentJobData.status))
+    );
+    const resultsAvailable = currentState === "results" || !!(currentResults && currentResults.tenants);
+
+    ["upload", "processing", "results"].forEach((stateName) => {
+        const btn = $(`#workflow-tab-${stateName}`);
+        if (!btn) return;
+        btn.classList.toggle("active", currentState === stateName);
+        if (stateName === "upload") {
+            btn.disabled = false;
+        } else if (stateName === "processing") {
+            btn.disabled = !processingAvailable;
+        } else {
+            btn.disabled = !resultsAvailable;
+        }
+    });
+}
+
+async function navigateWorkflowState(targetState) {
+    if (targetState === "upload") {
+        showState("upload");
+        return;
+    }
+
+    if (!currentJobId) return;
+
+    if (targetState === "processing") {
+        if (!(currentJobData && ["processing", "queued", "failed", "cancelled"].includes(currentJobData.status)) && currentState !== "processing") {
+            return;
+        }
+        if (currentJobData) {
+            showState("processing");
+            if (currentJobData.status === "cancelled") {
+                handleCancelledJob(currentJobData);
+            } else {
+                initProcessingView(currentJobData);
+            }
+        }
+        return;
+    }
+
+    if (targetState === "results") {
+        if (!(currentResults && currentResults.tenants)) {
+            if (currentJobData && currentJobData.status === "completed") {
+                await loadResults();
+            } else {
+                return;
+            }
+        }
+        showState("results");
+        renderResults();
+        return;
+    }
 }
 
 function init() {
@@ -444,6 +513,13 @@ function enterApp() {
 // ══════════════════════════════════════════════════════
 
 function setupEventListeners() {
+    $$("#workflow-nav [data-workflow-state]").forEach(btn => {
+        btn.onclick = async () => {
+            if (btn.disabled) return;
+            await navigateWorkflowState(btn.dataset.workflowState);
+        };
+    });
+
     // Gate
     $("#gate-submit").addEventListener("click", handleGateSubmit);
     $("#gate-code").addEventListener("keydown", e => {
@@ -1003,8 +1079,17 @@ function clearTemplateFile() {
 
 function clearAllTenantFiles() {
     tenantFiles = [];
+    tenantDragIndex = null;
     renderTenantFileList();
     updateSubmitState();
+}
+
+function moveTenantFile(fromIndex, toIndex) {
+    if (fromIndex === toIndex) return;
+    if (fromIndex < 0 || toIndex < 0) return;
+    if (fromIndex >= tenantFiles.length || toIndex >= tenantFiles.length) return;
+    const [moved] = tenantFiles.splice(fromIndex, 1);
+    tenantFiles.splice(toIndex, 0, moved);
 }
 
 function renderTemplateFileList() {
@@ -1047,16 +1132,70 @@ function renderTenantFileList() {
         drop.classList.add("has-files");
         list.classList.remove("hidden");
         if (clearBtn) clearBtn.classList.remove("hidden");
-        list.innerHTML = tenantFiles.map((f, i) => `<li>
-            <span class="file-name">\u2705 ${esc(f.name)}</span>
-            <button class="remove-file" data-index="${i}" title="Remove">&times;</button>
+        list.innerHTML = tenantFiles.map((f, i) => `<li class="tenant-file-item" draggable="true" data-index="${i}">
+            <div class="tenant-file-main">
+                <button class="tenant-file-drag" type="button" title="Drag to reorder" aria-label="Drag to reorder">&#9776;</button>
+                <span class="tenant-file-order">${i + 1}.</span>
+                <span class="file-name">\u2705 ${esc(f.name)}</span>
+            </div>
+            <div class="tenant-file-actions">
+                <button class="tenant-file-move" data-index="${i}" data-direction="up" title="Move up"${i === 0 ? " disabled" : ""}>&uarr;</button>
+                <button class="tenant-file-move" data-index="${i}" data-direction="down" title="Move down"${i === tenantFiles.length - 1 ? " disabled" : ""}>&darr;</button>
+                <button class="remove-file" data-index="${i}" title="Remove">&times;</button>
+            </div>
         </li>`).join("");
+
+        list.insertAdjacentHTML("afterbegin", `
+            <li class="tenant-file-order-note">
+                <span class="tenant-file-order-label">Processing order</span>
+            </li>
+        `);
 
         list.querySelectorAll(".remove-file").forEach(btn => {
             btn.addEventListener("click", e => {
                 e.stopPropagation();
                 const idx = parseInt(btn.dataset.index, 10);
                 tenantFiles.splice(idx, 1);
+                tenantDragIndex = null;
+                renderTenantFileList();
+                updateSubmitState();
+            });
+        });
+
+        list.querySelectorAll(".tenant-file-move").forEach(btn => {
+            btn.addEventListener("click", e => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.index, 10);
+                const dir = btn.dataset.direction === "up" ? -1 : 1;
+                moveTenantFile(idx, idx + dir);
+                renderTenantFileList();
+                updateSubmitState();
+            });
+        });
+
+        list.querySelectorAll(".tenant-file-item").forEach(item => {
+            item.addEventListener("dragstart", () => {
+                tenantDragIndex = parseInt(item.dataset.index, 10);
+                item.classList.add("dragging");
+            });
+            item.addEventListener("dragend", () => {
+                tenantDragIndex = null;
+                item.classList.remove("dragging");
+                list.querySelectorAll(".tenant-file-item").forEach(li => li.classList.remove("drag-over"));
+            });
+            item.addEventListener("dragover", e => {
+                e.preventDefault();
+                item.classList.add("drag-over");
+            });
+            item.addEventListener("dragleave", () => {
+                item.classList.remove("drag-over");
+            });
+            item.addEventListener("drop", e => {
+                e.preventDefault();
+                const targetIndex = parseInt(item.dataset.index, 10);
+                if (tenantDragIndex == null || Number.isNaN(targetIndex)) return;
+                moveTenantFile(tenantDragIndex, targetIndex);
+                tenantDragIndex = null;
                 renderTenantFileList();
                 updateSubmitState();
             });
@@ -1204,36 +1343,106 @@ function renderProcessingOverview(job, tenants) {
         return;
     }
 
-    const processingTenants = tenants.filter((t) => {
-        const effectiveStatus = (t.status === "queued" && job.status === "processing") ? "processing" : t.status;
-        return effectiveStatus === "processing";
+    const totalCount = tenants.length;
+    let completedCount = 0;
+    let overallFraction = 0;
+    const processingTenants = [];
+    const completedTenants = [];
+
+    tenants.forEach((tenant) => {
+        const effectiveStatus = (tenant.status === "queued" && job.status === "processing") ? "processing" : tenant.status;
+        if (effectiveStatus === "completed") {
+            completedCount++;
+            completedTenants.push(tenant);
+        }
+        if (effectiveStatus === "processing") processingTenants.push(tenant);
+        overallFraction += getTenantProgressFraction(tenant, job.status || "");
     });
 
-    if (processingTenants.length === 0) {
-        panel.classList.remove("hidden");
-        panel.innerHTML = `
-            <div class="processing-overview-kicker">Current step</div>
-            <div class="processing-overview-headline">Wrapping up the analysis</div>
-            <div class="processing-overview-detail">CAM is finalizing results and preparing the review workspace.</div>
-        `;
-        return;
-    }
-
+    const overallPct = totalCount > 0 ? Math.round((overallFraction / totalCount) * 100) : 0;
     const leadTenant = processingTenants
         .slice()
-        .sort((a, b) => (Number(b.current_stage) || 0) - (Number(a.current_stage) || 0))[0];
-    const stageCopy = getProcessingStageCopy(leadTenant.current_stage, leadTenant.stage_detail);
-    const activeCount = processingTenants.length;
-    const detailPrefix = activeCount > 1
-        ? `${activeCount} contracts are in flight. `
-        : `${leadTenant.filename || "Current lease"} is in flight. `;
+        .sort((a, b) => {
+            const stageDelta = (Number(b.current_stage) || 0) - (Number(a.current_stage) || 0);
+            if (stageDelta !== 0) return stageDelta;
+            return (Number(b.total_stages) || 0) - (Number(a.total_stages) || 0);
+        })[0];
+
+    const stageCopy = leadTenant
+        ? getProcessingStageCopy(leadTenant.current_stage, leadTenant.stage_detail)
+        : {
+            headline: completedCount === totalCount
+                ? "Results are ready"
+                : ((job.status || "") === "queued" ? "Preparing the analysis" : "Wrapping up the analysis"),
+            detail: completedCount === totalCount
+                ? "CAM finished all contract reviews and is preparing the workspace."
+                : (((job.status || "") === "queued")
+                    ? "CAM is loading the uploaded contracts and preparing the review workflow."
+                    : "CAM is finalizing the remaining review steps and preparing the workspace.")
+        };
+
+    const headline = leadTenant
+        ? `Currently reviewing ${leadTenant.filename || "current contract"}`
+        : (completedCount === totalCount ? "All contracts are ready" : "Finalizing the remaining work");
+    const detail = leadTenant
+        ? `${stageCopy.headline}. ${stageCopy.detail}`
+        : stageCopy.detail;
+    const readyText = completedCount === 1
+        ? "1 contract ready now"
+        : `${completedCount} contracts ready now`;
+    const remainingCount = Math.max(0, totalCount - completedCount);
+    const remainingText = remainingCount === 1
+        ? "1 contract still processing"
+        : `${remainingCount} contracts still processing`;
+
+    const currentStageNum = leadTenant
+        ? (Number(leadTenant.current_stage) || 1)
+        : (completedCount === totalCount ? 6 : 1);
+    const totalStageCount = leadTenant
+        ? (Number(leadTenant.total_stages) || 6)
+        : 6;
+    const primaryReadyTenant = completedTenants[0] || null;
 
     panel.classList.remove("hidden");
     panel.innerHTML = `
-        <div class="processing-overview-kicker">Current step</div>
-        <div class="processing-overview-headline">${esc(stageCopy.headline)}</div>
-        <div class="processing-overview-detail">${esc(detailPrefix + stageCopy.detail)}</div>
+        <div class="processing-hero-summary">
+            <div class="processing-hero-copy">
+                <div class="processing-hero-label">Current focus</div>
+                <div class="processing-hero-headline">${esc(headline)}</div>
+                <div class="processing-hero-detail">${esc(detail)}</div>
+            </div>
+            <div class="processing-hero-meta">
+                <div class="processing-hero-percent">${overallPct}%</div>
+                <div class="processing-hero-status">Stage ${currentStageNum} of ${totalStageCount}</div>
+            </div>
+        </div>
+        <div class="processing-hero-bar">
+            <div class="processing-hero-bar-track">
+                <div class="processing-hero-bar-fill" style="width:${overallPct}%"></div>
+            </div>
+        </div>
+        <div class="processing-hero-footer">
+            <span class="processing-hero-pill">${esc(stageCopy.headline)}</span>
+            <span class="processing-hero-pill">${esc(readyText)}</span>
+            <span class="processing-hero-pill">${esc(remainingText)}</span>
+        </div>
+        ${primaryReadyTenant ? `
+        <div class="processing-hero-ready">
+            <div>
+                <div class="processing-hero-ready-title">${esc(primaryReadyTenant.filename || "Completed contract")} is ready to review</div>
+                <div class="processing-hero-ready-meta">Open it now while CAM continues processing the remaining leases.</div>
+            </div>
+            <button class="btn btn-primary" data-hero-ready-open="${tenants.indexOf(primaryReadyTenant)}">Open Contract</button>
+        </div>
+        ` : ""}
     `;
+    panel.querySelectorAll("[data-hero-ready-open]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+            const idx = Number(btn.dataset.heroReadyOpen);
+            if (Number.isNaN(idx)) return;
+            await openReadyContractFromProcessing(idx);
+        });
+    });
 }
 
 function updateEstimateDisplay() {
@@ -1366,7 +1575,7 @@ function updateSubmitState() {
         est.textContent = "Select at least one provision to analyze";
     } else if (filesReady) {
         const { mins, detail } = calcEstimate(checkedCount, identityChecks, tenantFiles.length, getSelectedProvisionIds());
-        est.textContent = `Estimated analysis time: ~${mins} minute${mins !== 1 ? "s" : ""} (${detail}; includes document parsing, LP-00 baseline review, provision analysis, and discovery buffer)`;
+        est.textContent = `Estimated analysis time: ~${mins} minute${mins !== 1 ? "s" : ""} (${detail})`;
     } else if (!templateFile && tenantFiles.length === 0) {
         est.textContent = "";
     } else if (!templateFile) {
@@ -1668,6 +1877,7 @@ async function handleSubmit() {
 // ══════════════════════════════════════════════════════
 
 function initProcessingView(jobData) {
+    processingDetailsExpanded = true;
     const email = $("#email-input").value.trim();
     if (email) {
         $("#email-notice").innerHTML = `&#128231; We'll email you at <strong>${esc(email)}</strong> when results are ready.`;
@@ -1679,6 +1889,8 @@ function initProcessingView(jobData) {
     maybeShowEmailCapture(email);
 
     // Start educational carousel
+    mountProcessingCarousel();
+    mountProcessingHero();
     initCarousel();
 
     // Initialize processing chat
@@ -1699,24 +1911,42 @@ function initProcessingView(jobData) {
         backLink.classList.toggle("hidden", !isAddMoreRun);
     }
 
+    const detailToggle = $("#processing-detail-toggle");
+    if (detailToggle) {
+        detailToggle.onclick = () => {
+            processingDetailsExpanded = !processingDetailsExpanded;
+            const detailList = $("#tenant-progress-list");
+            if (detailList) detailList.classList.toggle("hidden", !processingDetailsExpanded);
+            detailToggle.textContent = processingDetailsExpanded ? "Hide details" : "Show details";
+            detailToggle.setAttribute("aria-expanded", processingDetailsExpanded ? "true" : "false");
+        };
+        detailToggle.textContent = processingDetailsExpanded ? "Hide details" : "Show details";
+        detailToggle.setAttribute("aria-expanded", processingDetailsExpanded ? "true" : "false");
+    }
+
     // Show tenant names immediately with "Queued" status (don't wait for first poll)
     const container = $("#tenant-progress-list");
     const estimateEl = $("#estimate-remaining");
+    const readyCard = $("#processing-ready-card");
+    const readyList = $("#processing-ready-list");
+    if (readyCard) readyCard.classList.add("hidden");
+    if (readyList) readyList.innerHTML = "";
     // Use local tenantFiles if available, else pull filenames from job data
     let names = tenantFiles.map(f => f.name);
     if (names.length === 0 && jobData && jobData.input_config && jobData.input_config.tenants) {
         names = jobData.input_config.tenants.map(t => t.filename || "Lease");
     }
     if (names.length > 0) {
-        container.innerHTML = names.map(name => `<div class="tenant-progress">
-            <div class="tenant-name">
-                <span>${esc(name)}</span>
-                <span class="tenant-status-label">Queued</span>
+        container.innerHTML = names.map(name => `<div class="processing-tenant-card">
+            <div class="processing-tenant-top">
+                <div class="processing-tenant-name">${esc(name)}</div>
+                <div class="processing-tenant-status">Queued</div>
             </div>
             <div class="progress-bar">
                 <div class="progress-fill" style="width:0%"></div>
             </div>
         </div>`).join("");
+        container.classList.toggle("hidden", !processingDetailsExpanded);
         // Step 196: start stable whole-job progress tracking from the initial estimate
         const _provIds = (jobData && jobData.input_config && jobData.input_config.provisions) || [];
         const _customProvisions = (jobData && jobData.input_config && jobData.input_config.custom_provisions) || [];
@@ -1734,9 +1964,32 @@ function initProcessingView(jobData) {
         startEstimateCountdown(_totalSecs, { alreadyElapsedSecs: _alreadyElapsed, initialProgressFraction: 0 });
         renderProcessingOverview(jobData, (jobData.input_config || {}).tenants || []);
     } else {
-        container.innerHTML = '<div style="text-align:center; padding:2rem;"><span class="spinner"></span> Starting analysis...</div>';
+        container.innerHTML = '<div class="processing-ready-empty"><span class="spinner"></span> Starting analysis...</div>';
+        container.classList.toggle("hidden", !processingDetailsExpanded);
         estimateEl.textContent = "";
         renderProcessingOverview(jobData, []);
+    }
+
+    // If this view is initialized mid-run (for example after a frontend reload),
+    // replace placeholder queued rows with the live job state immediately.
+    renderProgress(jobData);
+}
+
+function mountProcessingCarousel() {
+    const slot = $("#processing-carousel-slot");
+    const carousel = $("#cam-carousel");
+    if (!slot || !carousel) return;
+    if (carousel.parentElement !== slot) {
+        slot.appendChild(carousel);
+    }
+}
+
+function mountProcessingHero() {
+    const slot = $("#processing-status-slot");
+    const hero = $$(".processing-hero-shell")[0];
+    if (!slot || !hero) return;
+    if (hero.parentElement !== slot) {
+        slot.appendChild(hero);
     }
 }
 
@@ -1788,9 +2041,14 @@ function showCancellingState() {
 function renderProgress(job) {
     const container = $("#tenant-progress-list");
     const estimateEl = $("#estimate-remaining");
+    const readyCard = $("#processing-ready-card");
+    const readyList = $("#processing-ready-list");
+    const detailToggle = $("#processing-detail-toggle");
 
     if (!job) {
-        container.innerHTML = '<div style="text-align:center; padding:2rem;"><span class="spinner"></span> Starting analysis...</div>';
+        if (container) container.innerHTML = '<div class="processing-ready-empty"><span class="spinner"></span> Starting analysis...</div>';
+        if (readyList) readyList.innerHTML = "";
+        if (readyCard) readyCard.classList.add("hidden");
         estimateEl.textContent = "";
         renderProcessingOverview(job, []);
         return;
@@ -1798,76 +2056,95 @@ function renderProgress(job) {
 
     const tenants = (job.input_config || {}).tenants || [];
     const jobStatus = job.status || "";
-    let completedCount = 0;
-    let failedCount = 0;
-
-    let completedPre = 0;
     let overallFraction = 0;
     tenants.forEach(t => {
-        if (t.status === "completed") completedPre++;
         overallFraction += getTenantProgressFraction(t, jobStatus);
     });
     const totalCount = tenants.length;
-    const pct = totalCount > 0 ? Math.round((overallFraction / totalCount) * 100) : 0;
     estimateProgressFraction = totalCount > 0 ? (overallFraction / totalCount) : 0;
     updateEstimateDisplay();
     renderProcessingOverview(job, tenants);
-    const overallBarHtml = totalCount > 0 ? `
-        <div class="job-progress-overall">
-            <div class="job-progress-label">${pct}% complete across ${totalCount} contract${totalCount !== 1 ? "s" : ""} | ${completedPre} finished</div>
-            <div class="job-progress-bar">
-                <div class="job-progress-fill" style="width:${pct}%"></div>
-            </div>
-        </div>` : '';
+    const completedTenants = [];
 
-    container.innerHTML = overallBarHtml + tenants.map((t, i) => {
-        let statusLabel = "Queued";
-        let stageDetail = "";
-        let fillClass = "";
-        let width = "0%";
+    if (container) {
+        container.innerHTML = tenants.map((t, i) => {
+            let statusLabel = "Queued";
+            let stageDetail = "";
+            let fillClass = "";
+            let width = "0%";
 
-        // If job-level status is "processing" but tenant still shows "queued",
-        // treat it as processing (background thread may not have updated it yet)
-        const effectiveStatus = (t.status === "queued" && jobStatus === "processing")
-            ? "processing" : t.status;
+            const effectiveStatus = (t.status === "queued" && jobStatus === "processing")
+                ? "processing" : t.status;
 
-        if (effectiveStatus === "completed") {
-            statusLabel = "\u2705 Complete";
-            fillClass = "completed";
-            width = "100%";
-            completedCount++;
-        } else if (effectiveStatus === "processing") {
-            if (t.current_stage && t.total_stages) {
-                statusLabel = getProcessingStageCopy(t.current_stage, "").headline;
-                width = `${Math.round((t.current_stage / t.total_stages) * 100)}%`;
-                stageDetail = t.stage_detail || "";
-            } else {
-                statusLabel = "Preparing analysis";
-                width = "10%";
+            if (effectiveStatus === "completed") {
+                statusLabel = "Complete";
+                fillClass = "completed";
+                width = "100%";
+                completedTenants.push({ ...t, tenantIdx: i });
+            } else if (effectiveStatus === "processing") {
+                if (t.current_stage && t.total_stages) {
+                    statusLabel = getProcessingStageCopy(t.current_stage, "").headline;
+                    width = `${Math.round(getTenantProgressFraction(t, jobStatus) * 100)}%`;
+                    stageDetail = t.stage_detail || "";
+                } else {
+                    statusLabel = "Preparing analysis";
+                    width = "8%";
+                }
+                fillClass = "processing";
+            } else if (effectiveStatus === "cancelled") {
+                statusLabel = "Cancelled";
+            } else if (effectiveStatus === "failed") {
+                statusLabel = "Failed";
+                fillClass = "failed";
+                width = "100%";
+                stageDetail = t.error || "";
             }
-            fillClass = "processing";
-        } else if (effectiveStatus === "cancelled") {
-            statusLabel = "Cancelled";
-            fillClass = "";
-            width = "0%";
-        } else if (effectiveStatus === "failed") {
-            statusLabel = "Failed";
-            fillClass = "failed";
-            width = "100%";
-            failedCount++;
-        }
 
-        return `<div class="tenant-progress">
-            <div class="tenant-name">
-                <span>${esc(t.filename)}</span>
-                <span class="tenant-status-label">${statusLabel}</span>
-            </div>
-            <div class="progress-bar">
-                <div class="progress-fill ${fillClass}" style="width:${width}"></div>
-            </div>
-            ${stageDetail ? `<div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">${esc(stageDetail)}</div>` : ""}
-        </div>`;
-    }).join("");
+            return `<div class="processing-tenant-card">
+                <div class="processing-tenant-top">
+                    <div class="processing-tenant-name">${esc(t.filename || `Contract ${i + 1}`)}</div>
+                    <div class="processing-tenant-status">${esc(statusLabel)}</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill ${fillClass}" style="width:${width}"></div>
+                </div>
+                ${stageDetail ? `<div class="processing-tenant-detail">${esc(stageDetail)}</div>` : ""}
+            </div>`;
+        }).join("");
+    }
+
+    if (readyCard && readyList) {
+        if (completedTenants.length > 0) {
+            readyCard.classList.remove("hidden");
+            readyList.innerHTML = completedTenants.map((tenant) => `
+                <div class="processing-ready-item">
+                    <div>
+                        <div class="processing-ready-name">${esc(tenant.filename || `Contract ${tenant.tenantIdx + 1}`)}</div>
+                        <div class="processing-ready-meta">This contract is ready now. You can start reviewing it while CAM continues processing the remaining leases.</div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" data-ready-open="${tenant.tenantIdx}">Open Contract</button>
+                </div>
+            `).join("");
+            readyList.querySelectorAll("[data-ready-open]").forEach((btn) => {
+                btn.addEventListener("click", async () => {
+                    const idx = Number(btn.dataset.readyOpen);
+                    if (Number.isNaN(idx)) return;
+                    await openReadyContractFromProcessing(idx);
+                });
+            });
+        } else {
+            readyCard.classList.add("hidden");
+            readyList.innerHTML = "";
+        }
+    }
+
+    if (detailToggle) {
+        detailToggle.textContent = processingDetailsExpanded ? "Hide details" : "Show details";
+        detailToggle.setAttribute("aria-expanded", processingDetailsExpanded ? "true" : "false");
+    }
+    if (container) {
+        container.classList.toggle("hidden", !processingDetailsExpanded);
+    }
 }
 
 function handleCancelledJob(job) {
@@ -1943,6 +2220,17 @@ function stopPolling() {
     if (pollTimer) {
         clearInterval(pollTimer);
         pollTimer = null;
+    }
+}
+
+async function openReadyContractFromProcessing(tenantIdx) {
+    if (!currentJobId || Number.isNaN(Number(tenantIdx))) return;
+    try {
+        await loadResults();
+        showState("results");
+        await openContractDetail(Number(tenantIdx));
+    } catch (err) {
+        console.error("Error opening ready contract from processing:", err);
     }
 }
 
@@ -9335,7 +9623,7 @@ function renderAuditTrail(allTenants) {
         <div class="audit-meta-section">
             <div class="audit-meta-label">REVIEW CONTEXT</div>
             <div>Tenant lease: ${esc(tenant.filename || r.tenant_file || "—")}</div>
-            <div>Run time: ${esc(ts)}</div>
+            <div>Completed at: ${esc(ts)}</div>
             <div>Standard lease: ${esc(r.template_file || "—")}</div>
         </div>
         <div class="audit-meta-section">
@@ -9347,7 +9635,8 @@ function renderAuditTrail(allTenants) {
         <div class="audit-meta-section">
             <div class="audit-meta-label">RUN STATS</div>
             <div>${provisions.length} provision${provisions.length !== 1 ? "s" : ""} reviewed</div>
-            <div>${r.api_calls_total || "—"} model calls &middot; ${r.elapsed_sec ? fmtDuration(r.elapsed_sec) + " total" : "Unknown duration"}</div>
+            <div>${r.elapsed_sec ? fmtDuration(r.elapsed_sec) + " actual runtime" : "Actual runtime unavailable"}</div>
+            <div>${r.api_calls_total || "—"} model calls</div>
             <details class="audit-meta-tech">
                 <summary>Technical run details</summary>
                 <div>Pipeline: ${esc(r.pipeline_version || "—")} &middot; ${esc(r.pipeline_domain_label || "")}</div>
@@ -9573,52 +9862,6 @@ function buildAuditDetailV2(p, modelsUsed, stageData) {
         html += `<div class="audit-stage-skipped-label">Challenge was skipped because the evaluator outcome did not require a separate challenge step.</div>`;
     }
     html += `</div>`;
-
-    html += `<details class="audit-technical-block">
-        <summary>Exact prompts, responses, and scoring</summary>
-        <div class="audit-technical-grid">`;
-    ["A", "B", "C"].forEach(key => {
-        const prompts = evalPrompts[key] || {};
-        const items = evalRaw[key] || [];
-        const ev = items.find(x => x.provision_id === pid);
-        if (!ev && !prompts.system_prompt && !prompts.user_prompt) return;
-        html += renderAuditTechnicalGroup(`Evaluator ${key}`, [
-            renderAuditPromptBlock("Question CAM asked", prompts.user_prompt),
-            renderAuditPromptBlock("System instructions", prompts.system_prompt),
-            renderAuditRawRecord("Response", ev),
-        ].join(""));
-    });
-    html += renderAuditTechnicalGroup("Challenge review", [
-        renderAuditPromptBlock("Question CAM asked", challengePrompts.user_prompt),
-        renderAuditPromptBlock("System instructions", challengePrompts.system_prompt),
-        renderAuditRawRecord("Response", challengeRaw),
-    ].join(""));
-    html += renderAuditTechnicalGroup("Severity review", [
-        renderAuditPromptBlock("Question CAM asked", severityPrompts.user_prompt),
-        renderAuditPromptBlock("System instructions", severityPrompts.system_prompt),
-        renderAuditRawRecord("Response", severityRaw),
-    ].join(""));
-    html += renderAuditTechnicalGroup("Structural fragility signals", renderAuditRawRecord("Fragility record", fragilityRaw));
-    html += `<details class="audit-raw-record">
-        <summary>Score details</summary>
-        <pre>${esc(JSON.stringify({
-            CAM_perm: camScore.CAM_perm,
-            CAM_strict: camScore.CAM_strict,
-            ASG: camScore.ASG,
-            governance_signal: camScore.governance_signal,
-            pattern: camScore.pattern,
-            A: camScore.A,
-            E_perm: camScore.E_perm,
-            R_perm: camScore.R_perm,
-            F_perm: camScore.F_perm,
-            evidence_basis: camScore.evidence_basis,
-            stages_run: Array.from(stagesRun),
-            rules_fired: rulesFired,
-            flagged_for_evaluation: wasFlagged,
-            evaluator_count: evalMeta.evaluator_count || 3,
-        }, null, 2))}</pre>
-    </details>`;
-    html += `</div></details>`;
 
     html += `</div>`;
     return html;
@@ -11034,7 +11277,7 @@ function renderHelpChatWelcome() {
     const starters = [
         "How do I get started?",
         "Why is CAM unique?",
-        "What does LP-07 (CAM charges) mean?",
+        "What does LP-07 Common Area Maintenance mean?",
         "Ask any lease-related question...",
     ];
 
@@ -11059,7 +11302,7 @@ function refreshHelpChatStarters() {
 
     const starters = [
         "How do I get started?",
-        "What does LP-07 (CAM charges) mean?",
+        "What does LP-07 Common Area Maintenance mean?",
         "Why is CAM unique?",
     ];
 
@@ -11340,7 +11583,7 @@ function renderProcessingChatWelcome() {
 
     const starters = [
         "What makes CAM different?",
-        "What is a CAM charge in a lease?",
+        "What is common area maintenance in a lease?",
         "What provisions matter most?",
         "Ask anything about leases...",
     ];

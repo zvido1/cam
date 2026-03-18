@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 # ── In-memory job store ──
 _jobs: dict = {}
 _jobs_lock = threading.Lock()
+_job_runtime_meta: dict = {}
 
 PROVISION_FLAG_RATES = {
     "LP-01": 0.26, "LP-02": 0.11, "LP-03": 0.33, "LP-04": 0.09,
@@ -34,6 +35,132 @@ PROVISION_FLAG_RATES = {
 }
 VARIABLE_COST_PER_FLAGGED = 29
 EXTRACTION_BASE_SECS = 90
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _parse_iso(ts: Optional[str]) -> Optional[datetime]:
+    if not ts:
+        return None
+    try:
+        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+
+
+def _safe_elapsed_seconds(started_at: Optional[str]) -> Optional[float]:
+    started = _parse_iso(started_at)
+    if not started:
+        return None
+    return max(0.0, (datetime.now(timezone.utc) - started).total_seconds())
+
+
+def _job_events_path(job_id: str) -> Path:
+    config = get_config()
+    job_dir = Path(config["RESULTS_DIR"]) / job_id
+    job_dir.mkdir(parents=True, exist_ok=True)
+    return job_dir / "run_metadata.jsonl"
+
+
+def _append_job_event(job_id: str, event_type: str, **fields) -> None:
+    payload = {
+        "timestamp": _utc_now_iso(),
+        "job_id": job_id,
+        "event_type": event_type,
+        **fields,
+    }
+    path = _job_events_path(job_id)
+    try:
+        with path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+    except OSError as e:
+        logger.warning(f"Could not write run metadata for {job_id}: {e}")
+    logger.info("run_metadata %s", json.dumps(payload, ensure_ascii=False))
+
+
+def _identity_check_count(input_config: dict) -> int:
+    identity_check = input_config.get("identity_check", "landlord_property")
+    return {
+        "clauses_only": 0,
+        "landlord_property": 2,
+        "landlord_tenant": 2,
+    }.get(identity_check, 2)
+
+
+def _selected_provision_count(input_config: dict) -> int:
+    selected_ids = list(input_config.get("provisions") or [])
+    custom_provisions = list(input_config.get("custom_provisions") or [])
+    if selected_ids:
+        return len(selected_ids) + len(custom_provisions)
+    return len(PROVISION_FLAG_RATES) + len(custom_provisions)
+
+
+def _track_stage_transition(job_id: str, tenant_index: int, stage: int, total_stages: int, detail: str) -> None:
+    with _jobs_lock:
+        runtime = _job_runtime_meta.setdefault(job_id, {"tenants": {}})
+        tenant_rt = runtime["tenants"].setdefault(tenant_index, {})
+        previous_stage = tenant_rt.get("last_stage")
+        previous_stage_started_at = tenant_rt.get("last_stage_started_at")
+        tenant_rt["last_stage"] = stage
+        tenant_rt["last_stage_started_at"] = _utc_now_iso()
+
+    stage_changed = previous_stage != stage
+    if not stage_changed:
+        return
+
+    if previous_stage is not None and previous_stage_started_at:
+        _append_job_event(
+            job_id,
+            "tenant_stage_completed",
+            tenant_index=tenant_index,
+            stage=previous_stage,
+            elapsed_seconds=_safe_elapsed_seconds(previous_stage_started_at),
+        )
+
+    _append_job_event(
+        job_id,
+        "tenant_stage_started",
+        tenant_index=tenant_index,
+        stage=stage,
+        total_stages=total_stages,
+        detail=detail,
+    )
+
+
+def _mark_tenant_runtime_start(job_id: str, tenant_index: int) -> str:
+    started_at = _utc_now_iso()
+    with _jobs_lock:
+        runtime = _job_runtime_meta.setdefault(job_id, {"tenants": {}})
+        tenant_rt = runtime["tenants"].setdefault(tenant_index, {})
+        tenant_rt["processing_started_at"] = started_at
+        tenant_rt.pop("last_stage", None)
+        tenant_rt.pop("last_stage_started_at", None)
+    return started_at
+
+
+def _finalize_tenant_runtime(job_id: str, tenant_index: int) -> dict:
+    with _jobs_lock:
+        runtime = _job_runtime_meta.setdefault(job_id, {"tenants": {}})
+        tenant_rt = runtime["tenants"].setdefault(tenant_index, {})
+        previous_stage = tenant_rt.get("last_stage")
+        previous_stage_started_at = tenant_rt.get("last_stage_started_at")
+        processing_started_at = tenant_rt.get("processing_started_at")
+        tenant_rt.pop("last_stage", None)
+        tenant_rt.pop("last_stage_started_at", None)
+    if previous_stage is not None and previous_stage_started_at:
+        _append_job_event(
+            job_id,
+            "tenant_stage_completed",
+            tenant_index=tenant_index,
+            stage=previous_stage,
+            elapsed_seconds=_safe_elapsed_seconds(previous_stage_started_at),
+        )
+    return {
+        "processing_started_at": processing_started_at,
+        "elapsed_seconds": _safe_elapsed_seconds(processing_started_at),
+    }
 
 
 def estimate_job_minutes(input_config: dict) -> int:
@@ -108,6 +235,16 @@ def create_job(domain: str, email: str, input_config: dict, job_id: str = None) 
         _jobs[job_id] = job
 
     logger.info(f"Job created: {job_id} ({domain}, {num_tenants} tenant(s))")
+    _append_job_event(
+        job_id,
+        "job_created",
+        domain=domain,
+        tenant_count=num_tenants,
+        estimated_minutes=estimated_minutes,
+        selected_provision_count=_selected_provision_count(input_config),
+        identity_check_count=_identity_check_count(input_config),
+        identity_check_mode=input_config.get("identity_check", "landlord_property"),
+    )
     return job
 
 
@@ -189,6 +326,8 @@ def update_tenant_status(
 def mark_job_started(job_id: str) -> Optional[str]:
     """Set job status to processing and stamp a true processing start time."""
     started_at = datetime.now(timezone.utc).isoformat()
+    estimated_minutes = None
+    tenant_count = 0
     with _jobs_lock:
         job = _jobs.get(job_id)
         if not job:
@@ -198,7 +337,17 @@ def mark_job_started(job_id: str) -> Optional[str]:
         job["completed_at"] = None
         job.pop("cancelled_at", None)
         job.pop("expires_at", None)
-        return started_at
+        estimated_minutes = job.get("estimated_minutes")
+        tenant_count = len(job.get("input_config", {}).get("tenants", []) or [])
+        _job_runtime_meta[job_id] = {"started_at": started_at, "tenants": {}}
+    _append_job_event(
+        job_id,
+        "job_started",
+        started_at=started_at,
+        estimated_minutes=estimated_minutes,
+        tenant_count=tenant_count,
+    )
+    return started_at
 
 
 def mark_job_completed(job_id: str) -> None:
@@ -214,18 +363,40 @@ def mark_job_completed(job_id: str) -> None:
             job["status"] = "completed"
             job["completed_at"] = now.isoformat()
             job["expires_at"] = expires_at.isoformat()
+        _job_runtime_meta.pop(job_id, None)
     logger.info(f"Job completed: {job_id} (expires at {expires_at.isoformat()})")
+    started_at = get_job(job_id).get("started_at") if get_job(job_id) else None
+    _append_job_event(
+        job_id,
+        "job_completed",
+        completed_at=now.isoformat(),
+        expires_at=expires_at.isoformat(),
+        elapsed_seconds=_safe_elapsed_seconds(started_at),
+    )
 
 
 def mark_job_failed(job_id: str, error: str) -> None:
     """Set job status to failed with error message."""
+    completed_at = datetime.now(timezone.utc).isoformat()
+    started_at = None
     with _jobs_lock:
         job = _jobs.get(job_id)
         if job:
             job["status"] = "failed"
-            job["completed_at"] = datetime.now(timezone.utc).isoformat()
+            job["completed_at"] = completed_at
             job["error"] = error
+            started_at = job.get("started_at")
+        _job_runtime_meta.pop(job_id, None)
     logger.error(f"Job failed: {job_id} — {error}")
+
+
+    _append_job_event(
+        job_id,
+        "job_failed",
+        completed_at=completed_at,
+        elapsed_seconds=_safe_elapsed_seconds(started_at),
+        error=error,
+    )
 
 
 def request_cancel(job_id: str) -> None:
@@ -235,6 +406,7 @@ def request_cancel(job_id: str) -> None:
         if job:
             job["cancel_requested"] = True
     logger.info(f"Cancel requested: {job_id}")
+    _append_job_event(job_id, "job_cancel_requested")
 
 
 def is_cancel_requested(job_id: str) -> bool:
@@ -260,7 +432,16 @@ def mark_job_cancelled(job_id: str) -> None:
             job["cancelled_at"] = now.isoformat()
             job["completed_at"] = now.isoformat()
             job["expires_at"] = expires_at.isoformat()
+        _job_runtime_meta.pop(job_id, None)
     logger.info(f"Job cancelled: {job_id}")
+    started_at = get_job(job_id).get("started_at") if get_job(job_id) else None
+    _append_job_event(
+        job_id,
+        "job_cancelled",
+        cancelled_at=now.isoformat(),
+        expires_at=expires_at.isoformat(),
+        elapsed_seconds=_safe_elapsed_seconds(started_at),
+    )
 
 
 def append_tenants(job_id: str, new_tenants: list) -> None:
@@ -274,6 +455,12 @@ def append_tenants(job_id: str, new_tenants: list) -> None:
         job["started_at"] = None
         job["cancel_requested"] = False
     logger.info(f"Appended {len(new_tenants)} tenant(s) to job {job_id}")
+    _append_job_event(
+        job_id,
+        "tenants_appended",
+        appended_tenant_count=len(new_tenants),
+        total_tenant_count=len(get_job(job_id).get("input_config", {}).get("tenants", []) or []),
+    )
 
 
 def append_provisions(job_id: str, new_provision_ids: list) -> None:
@@ -288,11 +475,18 @@ def append_provisions(job_id: str, new_provision_ids: list) -> None:
         job["started_at"] = None
         job["cancel_requested"] = False
     logger.info(f"Appended {len(new_provision_ids)} provision(s) to job {job_id}")
+    _append_job_event(
+        job_id,
+        "provisions_appended",
+        appended_provision_count=len(new_provision_ids),
+        appended_provisions=new_provision_ids,
+    )
 
 
 def start_incremental_processing(job_id: str, start_index: int) -> None:
     """Process only new tenants (from start_index onward) in a background thread."""
     mark_job_started(job_id)
+    _append_job_event(job_id, "incremental_processing_started", start_index=start_index)
     thread = threading.Thread(
         target=_run_incremental_tenants,
         args=(job_id, start_index),
@@ -341,6 +535,15 @@ def _run_incremental_tenants(job_id: str, start_index: int) -> None:
 
         update_tenant_status(job_id, i, "processing", stage="analysis")
         logger.info(f"Processing (incremental) {job_id} tenant {i}: {tenant_filename}")
+        _mark_tenant_runtime_start(job_id, i)
+        _append_job_event(
+            job_id,
+            "tenant_started",
+            tenant_index=i,
+            tenant_filename=tenant_filename,
+            run_id=run_id,
+            mode="incremental_tenant",
+        )
 
         def _progress_cb(stage, total_stages, detail, _jid=job_id, _idx=i):
             with _jobs_lock:
@@ -350,6 +553,7 @@ def _run_incremental_tenants(job_id: str, start_index: int) -> None:
                     t["current_stage"] = stage
                     t["total_stages"] = total_stages
                     t["stage_detail"] = detail
+            _track_stage_transition(_jid, _idx, stage, total_stages, detail)
 
         try:
             pipeline_config = {
@@ -382,6 +586,16 @@ def _run_incremental_tenants(job_id: str, start_index: int) -> None:
                 t = _jobs[job_id]["input_config"]["tenants"][i]
                 t["result_path"] = result_path
                 t["annotated_path"] = annotated_path
+            timing = _finalize_tenant_runtime(job_id, i)
+            _append_job_event(
+                job_id,
+                "tenant_completed",
+                tenant_index=i,
+                tenant_filename=tenant_filename,
+                run_id=run_id,
+                mode="incremental_tenant",
+                elapsed_seconds=timing["elapsed_seconds"],
+            )
 
         except Exception as e:
             from cam.adapters.lease_review.lease_adapter import GateAbortError
@@ -389,10 +603,32 @@ def _run_incremental_tenants(job_id: str, start_index: int) -> None:
                 update_tenant_status(job_id, i, "failed", error=f"GATE_ABORT: {e.message}")
                 any_failed = True
                 logger.warning(f"Gate abort (incremental) {job_id} tenant {i}: {e.message}")
+                timing = _finalize_tenant_runtime(job_id, i)
+                _append_job_event(
+                    job_id,
+                    "tenant_failed",
+                    tenant_index=i,
+                    tenant_filename=tenant_filename,
+                    run_id=run_id,
+                    mode="incremental_tenant",
+                    failure_type="gate_abort",
+                    error=e.message,
+                    elapsed_seconds=timing["elapsed_seconds"],
+                )
                 continue
 
             from cam.adapters.lease_review.lease_adapter import PipelineCancelledError
             if isinstance(e, PipelineCancelledError):
+                timing = _finalize_tenant_runtime(job_id, i)
+                _append_job_event(
+                    job_id,
+                    "tenant_cancelled",
+                    tenant_index=i,
+                    tenant_filename=tenant_filename,
+                    run_id=run_id,
+                    mode="incremental_tenant",
+                    elapsed_seconds=timing["elapsed_seconds"],
+                )
                 for j in range(i, len(tenants)):
                     update_tenant_status(job_id, j, "cancelled")
                 mark_job_cancelled(job_id)
@@ -403,6 +639,18 @@ def _run_incremental_tenants(job_id: str, start_index: int) -> None:
             update_tenant_status(job_id, i, "failed", error=error_msg)
             any_failed = True
             logger.error(f"Failed (incremental) {job_id} tenant {i}: {error_msg}")
+            timing = _finalize_tenant_runtime(job_id, i)
+            _append_job_event(
+                job_id,
+                "tenant_failed",
+                tenant_index=i,
+                tenant_filename=tenant_filename,
+                run_id=run_id,
+                mode="incremental_tenant",
+                failure_type=type(e).__name__,
+                error=error_msg,
+                elapsed_seconds=timing["elapsed_seconds"],
+            )
 
     mark_job_completed(job_id)
     save_job_results(job_id)
@@ -411,6 +659,12 @@ def _run_incremental_tenants(job_id: str, start_index: int) -> None:
 def start_provision_processing(job_id: str, new_provision_ids: list) -> None:
     """Re-run analysis with new provisions for all tenants in background."""
     mark_job_started(job_id)
+    _append_job_event(
+        job_id,
+        "provision_processing_started",
+        new_provision_count=len(new_provision_ids),
+        new_provisions=new_provision_ids,
+    )
     thread = threading.Thread(
         target=_run_provision_processing,
         args=(job_id, new_provision_ids),
@@ -448,6 +702,17 @@ def _run_provision_processing(job_id: str, new_provision_ids: list) -> None:
 
         update_tenant_status(job_id, i, "processing", stage="re-analysis")
         logger.info(f"Processing new provisions for {job_id} tenant {i}")
+        tenant_filename = tenant["filename"]
+        _mark_tenant_runtime_start(job_id, i)
+        _append_job_event(
+            job_id,
+            "tenant_started",
+            tenant_index=i,
+            tenant_filename=tenant_filename,
+            run_id=f"tenant_{i}_addprov",
+            mode="provision_processing",
+            new_provision_count=len(new_provision_ids),
+        )
 
         def _progress_cb(stage, total_stages, detail, _jid=job_id, _idx=i):
             with _jobs_lock:
@@ -457,6 +722,7 @@ def _run_provision_processing(job_id: str, new_provision_ids: list) -> None:
                     t["current_stage"] = stage
                     t["total_stages"] = total_stages
                     t["stage_detail"] = f"(new provisions) {detail}"
+            _track_stage_transition(_jid, _idx, stage, total_stages, f"(new provisions) {detail}")
 
         try:
             run_id = f"tenant_{i}_addprov"
@@ -508,10 +774,32 @@ def _run_provision_processing(job_id: str, new_provision_ids: list) -> None:
                 )
 
             update_tenant_status(job_id, i, "completed", stage="done")
+            timing = _finalize_tenant_runtime(job_id, i)
+            _append_job_event(
+                job_id,
+                "tenant_completed",
+                tenant_index=i,
+                tenant_filename=tenant_filename,
+                run_id=run_id,
+                mode="provision_processing",
+                new_provision_count=len(new_provision_ids),
+                elapsed_seconds=timing["elapsed_seconds"],
+            )
 
         except Exception as e:
             from cam.adapters.lease_review.lease_adapter import PipelineCancelledError
             if isinstance(e, PipelineCancelledError):
+                timing = _finalize_tenant_runtime(job_id, i)
+                _append_job_event(
+                    job_id,
+                    "tenant_cancelled",
+                    tenant_index=i,
+                    tenant_filename=tenant_filename,
+                    run_id=f"tenant_{i}_addprov",
+                    mode="provision_processing",
+                    new_provision_count=len(new_provision_ids),
+                    elapsed_seconds=timing["elapsed_seconds"],
+                )
                 mark_job_cancelled(job_id)
                 save_job_results(job_id)
                 return
@@ -519,6 +807,19 @@ def _run_provision_processing(job_id: str, new_provision_ids: list) -> None:
             error_msg = f"{type(e).__name__}: {e}"
             update_tenant_status(job_id, i, "completed", stage="done")  # Keep original results
             logger.error(f"Failed provision processing {job_id} tenant {i}: {error_msg}")
+            timing = _finalize_tenant_runtime(job_id, i)
+            _append_job_event(
+                job_id,
+                "tenant_failed",
+                tenant_index=i,
+                tenant_filename=tenant_filename,
+                run_id=f"tenant_{i}_addprov",
+                mode="provision_processing",
+                new_provision_count=len(new_provision_ids),
+                failure_type=type(e).__name__,
+                error=error_msg,
+                elapsed_seconds=timing["elapsed_seconds"],
+            )
 
     mark_job_completed(job_id)
     save_job_results(job_id)
@@ -741,6 +1042,7 @@ def delete_job(job_id: str):
 def start_processing(job_id: str) -> None:
     """Start processing a job in a background thread."""
     mark_job_started(job_id)
+    _append_job_event(job_id, "full_processing_started")
     thread = threading.Thread(
         target=_run_job_processing,
         args=(job_id,),
@@ -812,6 +1114,15 @@ def _process_lease_job(job_id: str, job: dict) -> None:
 
         update_tenant_status(job_id, i, "processing", stage="analysis")
         logger.info(f"Processing {job_id} tenant {i}: {tenant_filename}")
+        _mark_tenant_runtime_start(job_id, i)
+        _append_job_event(
+            job_id,
+            "tenant_started",
+            tenant_index=i,
+            tenant_filename=tenant_filename,
+            run_id=run_id,
+            mode="full_processing",
+        )
 
         # Progress callback — updates tenant status in real time
         # Also checks cancel between stages
@@ -837,13 +1148,17 @@ def _process_lease_job(job_id: str, job: dict) -> None:
                 "access_code": input_cfg.get("access_code", ""),  # Step 140: for user rules
             }
 
+            def _progress_cb_with_tracking(stage, total_stages, detail):
+                _progress_cb(stage, total_stages, detail)
+                _track_stage_transition(job_id, i, stage, total_stages, detail)
+
             result = run_lease_analysis(
                 template_path=template_path,
                 tenant_path=tenant_path,
                 provisions=active_provisions,
                 config=pipeline_config,
                 run_id=run_id,
-                progress_callback=_progress_cb,
+                progress_callback=_progress_cb_with_tracking,
             )
 
             # Store result paths
@@ -861,6 +1176,16 @@ def _process_lease_job(job_id: str, job: dict) -> None:
 
             all_failed = False
             logger.info(f"Completed {job_id} tenant {i}: {tenant_filename}")
+            timing = _finalize_tenant_runtime(job_id, i)
+            _append_job_event(
+                job_id,
+                "tenant_completed",
+                tenant_index=i,
+                tenant_filename=tenant_filename,
+                run_id=run_id,
+                mode="full_processing",
+                elapsed_seconds=timing["elapsed_seconds"],
+            )
 
         except Exception as e:
             # Check gate abort first
@@ -870,6 +1195,18 @@ def _process_lease_job(job_id: str, job: dict) -> None:
                 any_failed = True
                 job_error = e.message
                 logger.warning(f"Gate abort {job_id} tenant {i}: {e.message}")
+                timing = _finalize_tenant_runtime(job_id, i)
+                _append_job_event(
+                    job_id,
+                    "tenant_failed",
+                    tenant_index=i,
+                    tenant_filename=tenant_filename,
+                    run_id=run_id,
+                    mode="full_processing",
+                    failure_type="gate_abort",
+                    error=e.message,
+                    elapsed_seconds=timing["elapsed_seconds"],
+                )
                 continue
 
             # Check if this is a cancel (PipelineCancelledError)
@@ -877,6 +1214,16 @@ def _process_lease_job(job_id: str, job: dict) -> None:
             if isinstance(e, PipelineCancelledError):
                 logger.info(f"[job_manager] Job {job_id} tenant {i} cancelled mid-pipeline")
                 update_tenant_status(job_id, i, "cancelled")
+                timing = _finalize_tenant_runtime(job_id, i)
+                _append_job_event(
+                    job_id,
+                    "tenant_cancelled",
+                    tenant_index=i,
+                    tenant_filename=tenant_filename,
+                    run_id=run_id,
+                    mode="full_processing",
+                    elapsed_seconds=timing["elapsed_seconds"],
+                )
                 # Mark remaining tenants as cancelled
                 for j in range(i + 1, len(tenants)):
                     update_tenant_status(job_id, j, "cancelled")
@@ -888,6 +1235,18 @@ def _process_lease_job(job_id: str, job: dict) -> None:
             any_failed = True
             job_error = error_msg
             logger.error(f"Failed {job_id} tenant {i}: {error_msg}")
+            timing = _finalize_tenant_runtime(job_id, i)
+            _append_job_event(
+                job_id,
+                "tenant_failed",
+                tenant_index=i,
+                tenant_filename=tenant_filename,
+                run_id=run_id,
+                mode="full_processing",
+                failure_type=type(e).__name__,
+                error=error_msg,
+                elapsed_seconds=timing["elapsed_seconds"],
+            )
 
     # Finalize job
     if cancelled:

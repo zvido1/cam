@@ -228,7 +228,7 @@ async def update_job_email(job_id: str, body: dict):
 
 @app.get("/api/jobs/{job_id}/results")
 def get_job_results(job_id: str):
-    """Return full results JSON for all tenants. 404 if not complete/cancelled. 410 if expired."""
+    """Return available results JSON for tenants. 404 only if no tenant results exist yet."""
     job = job_manager.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -241,10 +241,8 @@ def get_job_results(job_id: str):
             content={"detail": "This analysis has expired. Results are no longer available."},
         )
 
-    if job["status"] not in ("completed", "cancelled"):
-        raise HTTPException(status_code=404, detail="Job not yet complete")
-
     tenants = job.get("input_config", {}).get("tenants", [])
+    any_results_available = False
     results = []
     for i, tenant in enumerate(tenants):
         result_path = tenant.get("result_path")
@@ -252,6 +250,7 @@ def get_job_results(job_id: str):
             try:
                 data = json.loads(Path(result_path).read_text(encoding="utf-8"))
                 annotated = tenant.get("annotated_path")
+                any_results_available = True
                 results.append({
                     "tenant_index": i,
                     "filename": tenant["filename"],
@@ -273,6 +272,9 @@ def get_job_results(job_id: str):
                 "status": tenant.get("status", "unknown"),
                 "error": tenant.get("error"),
             })
+
+    if not any_results_available and job["status"] not in ("completed", "cancelled"):
+        raise HTTPException(status_code=404, detail="Job not yet complete")
 
     return {"job_id": job_id, "tenants": results}
 

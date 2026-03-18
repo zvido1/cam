@@ -194,10 +194,17 @@ class OpenAIAdapter(BaseAdapter):
             params["max_tokens"] = target.max_output_tokens
             params["temperature"] = target.temperature
         
-        # Add reasoning_effort for GPT-5.2 models (Chat Completions API)
+        # Add reasoning_effort for reasoning models only (Chat Completions API)
         # Use override if provided, otherwise use target's setting
         effort = effort_override or target.reasoning_effort
-        if effort:
+        # Only reasoning models support reasoning_effort (gpt-5.x and o1/o3/o4 series)
+        _is_reasoning_model = (
+            target.model.startswith("gpt-5") or
+            target.model.startswith("o1") or
+            target.model.startswith("o3") or
+            target.model.startswith("o4")
+        )
+        if effort and _is_reasoning_model:
             params["reasoning_effort"] = effort
         
         # Use Chat Completions API (supports reasoning_effort)
@@ -742,6 +749,14 @@ class ProviderRouter:
                     if schema_validate_fn:
                         ok, why = schema_validate_fn(obj)
                         if not ok:
+                            if trace is not None:
+                                trace["parsed_obj_on_schema_fail"] = obj
+                                trace["schema_fail_top_level_keys"] = list(obj.keys()) if isinstance(obj, dict) else None
+                                try:
+                                    import json as _json
+                                    trace["schema_fail_preview"] = _json.dumps(obj, ensure_ascii=True)[:1000]
+                                except Exception:
+                                    trace["schema_fail_preview"] = str(obj)[:1000]
                             raise ProviderError(f"schema_validation_failed: {why}")
 
                     # Router-level assertion: verify picked target matches allowed providers

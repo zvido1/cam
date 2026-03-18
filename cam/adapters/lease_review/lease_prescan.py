@@ -44,7 +44,6 @@ def _make_dedup_key(name: str) -> str:
 
 # Models to try in order — if one is unavailable or errors, fall through to the next
 _GEMINI_MODELS = [
-    "gemini-2.0-flash",
     "gemini-2.5-flash",
     "gemini-2.5-pro",
 ]
@@ -52,10 +51,6 @@ _GEMINI_MODELS = [
 
 # Per-model generation configs — thinking models need thinking_budget=0 for determinism
 _MODEL_CONFIGS = {
-    "gemini-2.0-flash": {
-        "temperature": 0,
-        "max_output_tokens": 2000,
-    },
     "gemini-2.5-flash": {
         "temperature": 0,
         "max_output_tokens": 2000,

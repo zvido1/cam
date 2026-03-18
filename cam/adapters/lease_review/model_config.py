@@ -32,8 +32,8 @@ EXTRACTION_CHAIN = [
 EVALUATOR_A_PRIMARY  = ("anthropic",  "claude-sonnet-4-6")
 EVALUATOR_A_FALLBACK = ("anthropic",  "claude-sonnet-4-20250514")   # prev Sonnet
 
-EVALUATOR_B_PRIMARY  = ("openai",     "gpt-5.4")
-EVALUATOR_B_FALLBACK = ("openai",     "gpt-5.2")          # prev primary
+EVALUATOR_B_PRIMARY  = ("openai",     "gpt-5.2")
+EVALUATOR_B_FALLBACK = ("openai",     "gpt-4o")
 
 EVALUATOR_C_PRIMARY  = ("xai",        "grok-4")
 EVALUATOR_C_FALLBACK = ("xai",        "grok-3")                     # prev Grok
@@ -43,9 +43,9 @@ EVALUATOR_C_FALLBACK = ("xai",        "grok-3")                     # prev Grok
 # GPT-5.2 retained as first fallback — 30% cheaper, proven performance.
 # Note: mistral omitted — ProviderRouter does not support the 'mistral' provider.
 SINGLE_STAGE_CHAIN = [
-    ("openai",     "gpt-5.4"),
     ("openai",     "gpt-5.2"),
-    ("anthropic",  "claude-sonnet-4-6"),
-    ("google",     "gemini-3.1-pro-preview"),
+    ("openai",     "gpt-4o"),
+    ("anthropic",  "claude-sonnet-4-20250514"),
+    ("google",     "gemini-2.5-pro"),
     ("xai",        "grok-4"),
 ]

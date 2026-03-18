@@ -73,7 +73,7 @@ EVALUATORS = {
         "name": f"{EVALUATOR_B_PRIMARY[0]}:{EVALUATOR_B_PRIMARY[1]}",
         "provider": EVALUATOR_B_PRIMARY[0],
         "model": EVALUATOR_B_PRIMARY[1],
-        "label": "GPT-5.2 (medium)",
+        "label": "GPT-5.2",
         "max_output_tokens": 8000,
         "temperature": 0.0,
         "timeout_sec": EVALUATOR_ATTEMPT_TIMEOUT,
@@ -176,8 +176,24 @@ def _build_provision_pairs(provisions: List[dict]) -> str:
 
 def _validate_evaluation(obj: dict) -> Tuple[bool, Optional[str]]:
     """Basic structural validation."""
+    if isinstance(obj, dict):
+        response_obj = obj.get("response")
+        if isinstance(response_obj, dict) and isinstance(response_obj.get("evaluations"), list):
+            obj.clear()
+            obj.update(response_obj)
+        else:
+            for alt_key in ("provision_evaluations", "results", "assessments"):
+                alt_val = obj.get(alt_key)
+                if isinstance(alt_val, list):
+                    obj["evaluations"] = alt_val
+                    break
     if "evaluations" not in obj:
-        return False, "Missing 'evaluations' key"
+        if isinstance(obj, dict):
+            keys = list(obj.keys())
+            preview = json.dumps(obj, ensure_ascii=True)[:400]
+            print(f"[lease_evaluate] schema_validation_failed: top-level keys={keys}", flush=True)
+            return False, f"Missing 'evaluations' key (top-level keys={keys}; preview={preview})"
+        return False, f"Missing 'evaluations' key (parsed type={type(obj).__name__})"
     if not isinstance(obj["evaluations"], list):
         return False, "'evaluations' must be an array"
     for i, ev in enumerate(obj["evaluations"]):
@@ -324,11 +340,13 @@ def _call_evaluator(
                     reasoning_effort=evaluator_cfg.get("reasoning_effort") if is_own else None,
                 )
                 router = ProviderRouter([target], RouterConfig(per_request_provider_attempt_cap=2))
+                trace = {}
                 obj, meta = router.call_json(
                     system_prompt=system_prompt,
                     user_prompt=user_prompt,
                     schema_validate_fn=_validate_evaluation,
                     allowed_providers={provider},
+                    trace=trace,
                 )
 
             from cam.adapters.lease_review.lease_adapter import _check_cancel
@@ -380,17 +398,27 @@ def _call_evaluator(
     print(f"[lease_evaluate] Evaluator {evaluator_key}: own provider exhausted, claiming from shared pool", flush=True)
 
     # Phase 2: claim from shared fallback pool (first-come-first-served)
+    pool_failures: dict = {}  # provider -> failure count in this evaluator call
     while True:
         pool_entry = _claim_from_shared_pool()
         if pool_entry is None:
             break  # pool exhausted
         provider, model_name, label = pool_entry
+
+        # Hard stop: don't retry same pool provider more than 2 times
+        if pool_failures.get(provider, 0) >= 2:
+            print(f"[lease_evaluate] Evaluator {evaluator_key}: pool provider {provider} "
+                  f"failed {pool_failures[provider]}x, not retrying", flush=True)
+            _release_pool_claim(provider)
+            break
+
         try:
             result = _try_one(provider, model_name, label, is_primary_provider=False)
             print(f"[lease_evaluate] Evaluator {evaluator_key} ({label}) succeeded via pool in "
                   f"{result['elapsed_sec']}s", flush=True)
             return result
         except Exception as e:
+            pool_failures[provider] = pool_failures.get(provider, 0) + 1
             error_str = str(e).lower()
             is_provider_error = any(k in error_str for k in [
                 "503", "connection", "refused", "unavailable", "resource_exhausted",

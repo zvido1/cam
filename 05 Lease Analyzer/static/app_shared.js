@@ -47,10 +47,9 @@ function calcEstimate(provCount, idChecks, numLeases, selectedIds) {
     const minsPerLease = Math.ceil(secsPerLease / 60);
     const totalMins = Math.max(1, numLeases * minsPerLease);
 
-    const provLabel = `${provCount} provision${provCount !== 1 ? "s" : ""}`;
-    const idLabel = idCheckCount > 0 ? ` + ${idCheckCount} identity check${idCheckCount !== 1 ? "s" : ""}` : "";
     const leaseLabel = `${numLeases} lease${numLeases > 1 ? "s" : ""}`;
-    const detail = `${leaseLabel} × ${provLabel}${idLabel}`;
+    const idLabel = idCheckCount > 0 ? `, ${idCheckCount} identity check${idCheckCount !== 1 ? "s" : ""}` : "";
+    const detail = `${leaseLabel}${idLabel}`;
 
     return { mins: totalMins, detail, secsPerLease, parsingSecs, provisionSecs, bufferSecs };
 }
@@ -143,40 +142,45 @@ function getResultsScrollContainer() {
 
 function getContractDetailStickyHeight() {
     const stickyShell = document.querySelector(".contract-detail-sticky-shell");
-    return stickyShell ? stickyShell.getBoundingClientRect().height : 0;
+    if (!stickyShell || stickyShell.classList.contains("hidden")) return 0;
+    return Math.round(stickyShell.getBoundingClientRect().height || 0);
 }
 
 function scrollResultsTargetIntoView(target, extraOffset) {
     if (!target) return;
-    const offset = extraOffset == null ? 12 : extraOffset;
-    const resultsContent = getResultsScrollContainer();
-    const stickyHeight = getContractDetailStickyHeight();
-    if (resultsContent) {
-        const panelRect = resultsContent.getBoundingClientRect();
-        const targetRect = target.getBoundingClientRect();
-        const nextTop = resultsContent.scrollTop + (targetRect.top - panelRect.top) - stickyHeight - offset;
-        resultsContent.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
+    const scrollContainer = getResultsScrollContainer();
+    if (!scrollContainer) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
         return;
     }
-    const top = window.scrollY + target.getBoundingClientRect().top - stickyHeight - offset;
-    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const stickyOffset = getContractDetailStickyHeight();
+    const topOffset = stickyOffset + (extraOffset || 0);
+    const nextTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - topOffset;
+    scrollContainer.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
 }
 
 function flashResultsTarget(target, duration) {
     if (!target) return;
-    const ttl = duration == null ? 1500 : duration;
     target.classList.add("highlight-flash");
-    setTimeout(() => target.classList.remove("highlight-flash"), ttl);
+    setTimeout(() => target.classList.remove("highlight-flash"), duration || 1500);
 }
 
 function waitForResultsTarget(findFn, options) {
-    const opts = options || {};
-    const attempts = opts.attempts || 14;
-    const delay = opts.delay || 80;
+    const attempts = (options && options.attempts) || 12;
+    const delay = (options && options.delay) || 80;
+    let remaining = attempts;
+
     return new Promise((resolve) => {
-        let remaining = attempts;
         const tick = () => {
-            const target = findFn();
+            let target = null;
+            try {
+                target = findFn();
+            } catch (err) {
+                target = null;
+            }
             if (target || remaining <= 0) {
                 resolve(target || null);
                 return;

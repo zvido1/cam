@@ -318,8 +318,13 @@ def run_lease_analysis(
         print(f"[lease_adapter] {format_gap_report(coverage_gaps)}", flush=True)
 
         # Repair extra_subsection gaps: targeted re-extraction
+        repaired_sections = set()  # Track by section ref to avoid double-repair
         for gap in coverage_gaps:
             if gap["gap_type"] != "extra_subsection":
+                continue
+            section_ref = gap.get("section_ref")
+            if section_ref in repaired_sections:
+                print(f"[lease_adapter] Skipping duplicate repair: {section_ref} (already repaired)", flush=True)
                 continue
             pid = gap["claimed_by"]
             if not pid:
@@ -338,6 +343,7 @@ def run_lease_analysis(
                 tenant_text=tenant_text,
                 config=cfg,
             )
+            repaired_sections.add(section_ref)
             if recovered:
                 prov["tenant_text"] = (prov.get("tenant_text", "") or "").rstrip()
                 prov["tenant_text"] += f"\n\n{recovered}"
