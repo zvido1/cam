@@ -155,9 +155,6 @@
 
     function getSidebarExplanationText(provision) {
         if (!provision) return "";
-        // Priority 1: pipeline-generated specific note
-        if (provision.interpretation_note) return provision.interpretation_note;
-        // Priority 2: pattern-matched fallback (existing logic)
         var sig = (provision.cam_score || {}).governance_signal || "";
         var signals = (provision.fragility || {}).signals || [];
         var pattern = provision.agreement_pattern || "";
@@ -221,6 +218,21 @@
         return map[governanceSignal] || "";
     }
 
+    /**
+     * Convert **bold** markdown syntax to <strong> HTML.
+     * Used only for interpretation notes — do NOT use for untrusted content.
+     * Only processes **text** patterns, nothing else.
+     */
+    function boldMarkdown(text) {
+        if (!text) return "";
+        // Escape HTML first, then convert **bold** → <strong>
+        var escaped = text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        return escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    }
+
     window.CAMAuditShared = {
         getAuditGovernanceLabel,
         getAuditPatternLabel,
@@ -239,5 +251,6 @@
         getConfidenceToneText,
         getSidebarConfidenceLabel,
         getSidebarExplanationText,
+        boldMarkdown,
     };
 })();

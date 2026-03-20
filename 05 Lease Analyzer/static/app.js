@@ -5882,14 +5882,30 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
             <div class="card-summary">
                 ${riskHeadline ? `<div class="risk-headline">${esc(riskHeadline)}</div>` : ""}
                 ${languageHtml}
-                ${challenge ? `<div class="detail-section">
-                    <div class="detail-label">What Changed</div>
-                    <div class="detail-text">${lChallenge}</div>
+                ${(challenge || action) ? `<div class="detail-two-col">
+                    ${challenge ? `<div class="detail-section">
+                        <div class="detail-label">What Changed</div>
+                        <div class="detail-text">${lChallenge}</div>
+                    </div>` : ""}
+                    ${action ? `<div class="detail-section">
+                        <div class="detail-label">Why It Matters</div>
+                        <div class="detail-text">${lAction}</div>
+                    </div>` : ""}
                 </div>` : ""}
-                ${action ? `<div class="detail-section">
-                    <div class="detail-label">Recommended Action</div>
-                    <div class="detail-text">${lAction}</div>
-                </div>` : ""}
+                ${d.interpretation_note ? (() => {
+                    const _boldMd = window.CAMAuditShared && window.CAMAuditShared.boldMarkdown
+                        ? window.CAMAuditShared.boldMarkdown
+                        : (t) => (t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                    const _renderNote = (text) => {
+                        const paras = text.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+                        if (paras.length <= 1) return `<p>${_boldMd(text)}</p>`;
+                        return paras.map(p => `<p>${_boldMd(p)}</p>`).join("");
+                    };
+                    return `<div class="detail-section interpretation-note-section">
+                        <div class="detail-label">Interpretation Note</div>
+                        <div class="detail-text interpretation-note-body">${_renderNote(d.interpretation_note)}</div>
+                    </div>`;
+                })() : ""}
             </div>
             ${resolutionBarHtml}
             ${d.final_verdict === 'DEVIATES' ? (() => {
@@ -7528,6 +7544,7 @@ function legacyRenderSideBySideView() {
         const recommendedAction = (p.recommended_action || "").trim();
         if (isDeviationWorkflowProvision(p, currentTenantIndex) && (whatChanged || recommendedAction)) {
             html += `<div class="docview-clause-summary" style="grid-column: 1 / -1;">`;
+            html += `<div class="detail-two-col">`;
             if (whatChanged) {
                 html += `<div class="detail-section">
                     <div class="detail-label">What Changed</div>
@@ -7536,8 +7553,22 @@ function legacyRenderSideBySideView() {
             }
             if (recommendedAction) {
                 html += `<div class="detail-section">
-                    <div class="detail-label">Recommended Action</div>
+                    <div class="detail-label">Why It Matters</div>
                     <div class="detail-text">${esc(recommendedAction)}</div>
+                </div>`;
+            }
+            html += `</div>`;
+            if (p.interpretation_note) {
+                const _boldMd = window.CAMAuditShared && window.CAMAuditShared.boldMarkdown
+                    ? window.CAMAuditShared.boldMarkdown
+                    : (t) => esc(t);
+                const _paras = p.interpretation_note.split(/\n\n+/).map(s => s.trim()).filter(Boolean);
+                const _noteHtml = _paras.length <= 1
+                    ? `<p>${_boldMd(p.interpretation_note)}</p>`
+                    : _paras.map(s => `<p>${_boldMd(s)}</p>`).join("");
+                html += `<div class="detail-section interpretation-note-section">
+                    <div class="detail-label">Interpretation Note</div>
+                    <div class="detail-text interpretation-note-body">${_noteHtml}</div>
                 </div>`;
             }
             html += `</div>`;
@@ -7776,6 +7807,19 @@ function toggleDocviewAnalysis(pid, provisions) {
         panelHtml += `<div class="detail-section">
             <div class="detail-label">Recommended Action</div>
             <div class="detail-text">${esc(action)}</div>
+        </div>`;
+    }
+    if (p.interpretation_note) {
+        const _boldMd = window.CAMAuditShared && window.CAMAuditShared.boldMarkdown
+            ? window.CAMAuditShared.boldMarkdown
+            : (t) => esc(t);
+        const _paras = p.interpretation_note.split(/\n\n+/).map(s => s.trim()).filter(Boolean);
+        const _noteHtml = _paras.length <= 1
+            ? `<p>${_boldMd(p.interpretation_note)}</p>`
+            : _paras.map(s => `<p>${_boldMd(s)}</p>`).join("");
+        panelHtml += `<div class="detail-section interpretation-note-section">
+            <div class="detail-label">Interpretation Note</div>
+            <div class="detail-text interpretation-note-body">${_noteHtml}</div>
         </div>`;
     }
 
@@ -10297,6 +10341,19 @@ function buildAuditDetailV2(p, modelsUsed, stageData) {
                 <div class="audit-proof-explainer-label">Why it matters</div>
                 <div class="audit-proof-explainer-text">${esc(p.recommended_action)}</div>
             </div>` : ""}
+            ${p.interpretation_note ? (() => {
+                const _boldMd = window.CAMAuditShared && window.CAMAuditShared.boldMarkdown
+                    ? window.CAMAuditShared.boldMarkdown
+                    : (t) => (t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+                const _paras = p.interpretation_note.split(/\n\n+/).map(s => s.trim()).filter(Boolean);
+                const _noteHtml = _paras.length <= 1
+                    ? `<p>${_boldMd(p.interpretation_note)}</p>`
+                    : _paras.map(s => `<p>${_boldMd(s)}</p>`).join("");
+                return `<div class="audit-proof-explainer interpretation-note-section">
+                    <div class="audit-proof-explainer-label">Interpretation note</div>
+                    <div class="audit-proof-explainer-text interpretation-note-body">${_noteHtml}</div>
+                </div>`;
+            })() : ""}
         </div>
     </div>`;
 

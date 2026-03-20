@@ -2306,6 +2306,15 @@ textarea.input-field {
     flex: 0 0 auto;
 }
 
+.detail-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-bottom: 0.75rem;
+}
+.detail-two-col > .detail-section {
+    margin-bottom: 0;
+}
 .detail-section {
     margin-bottom: 0.75rem;
 }
@@ -9824,6 +9833,21 @@ mark.audit-rule-highlight {
 .audit-dimension-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     margin-top: 1rem;
+}
+.audit-proof-explainer-grid > .interpretation-note-section {
+    grid-column: 1 / -1;
+}
+/* ── Interpretation note paragraphs ── */
+.interpretation-note-body p {
+    margin: 0 0 0.6rem 0;
+    line-height: 1.55;
+}
+.interpretation-note-body p:last-child {
+    margin-bottom: 0;
+}
+.interpretation-note-body strong {
+    font-weight: 600;
+    color: var(--text-primary);
 }
 .audit-score-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));

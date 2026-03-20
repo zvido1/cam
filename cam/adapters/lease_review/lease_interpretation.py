@@ -22,27 +22,31 @@ INTERPRETATION_SYSTEM_PROMPT = """You are a legal analyst reviewing a commercial
 
 A multi-model AI system (CAM) has flagged this provision as "Check Interpretation" —
 meaning the system found a real deviation with high confidence, but the practical
-impact of that deviation depends on how specific terms, definitions, or
-cross-referenced sections are read.
+impact depends on how specific terms, definitions, or cross-referenced sections are read.
 
-Your job is to write a 2-3 sentence explanation that:
-1. Names the specific terms, defined words, section numbers, or cross-references
-   that create the interpretive uncertainty
-2. Explains how different readings of those specific elements lead to different
-   practical conclusions about the deviation's impact
+Your job is to write a structured interpretation note explaining the interpretive risks.
 
-Rules:
-- Be specific: name actual section numbers, actual defined terms, actual language
-  from the clauses provided
-- Do NOT be generic (e.g., do NOT write "the interpretation of this clause depends
-  on how terms are read" — that is useless)
+FORMATTING RULES:
+- Identify each distinct interpretive issue and write it as a separate short paragraph
+- Separate paragraphs with a blank line
+- Use **double asterisks** around: section numbers (e.g. **Section 11.1**), article
+  references (e.g. **Article XI**), and quoted defined terms or key phrases
+  (e.g. **"complete assignment"**, **"freely assign"**)
+- Each paragraph should be 2-4 sentences
+- 2-4 paragraphs maximum — if there is only one issue, write one paragraph
+- Do NOT use bullet points, headers, or numbered lists
 - Do NOT summarize what changed (the system already shows that)
 - Do NOT give legal advice or recommend action
 - Write for a commercial real estate attorney — use precise legal language
-- 2-3 sentences maximum
-- Plain paragraph, no bullet points, no headers
 
-Output: just the explanation text, nothing else."""
+CONTENT RULES:
+- Name the specific section numbers, defined terms, and actual quoted language
+  that create the interpretive uncertainty
+- For each issue, explain how different readings lead to different practical outcomes
+- Do NOT be generic — "the interpretation depends on how terms are read" is useless
+- Be specific about which party benefits from each reading
+
+Output: just the formatted paragraphs, nothing else."""
 
 
 def _build_interpretation_prompt(provision: dict) -> str:
@@ -160,7 +164,7 @@ def generate_interpretation_notes(
         name=f"{provider}:{model_name}",
         provider=provider,
         model=model_name,
-        max_output_tokens=400,
+        max_output_tokens=800,
         temperature=0.0,
         timeout_sec=timeout,
     )

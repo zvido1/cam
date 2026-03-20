@@ -130,6 +130,13 @@
                         <div class="detail-text">${esc(recommendedAction)}</div>
                     </div>`;
                 }
+                const interpretationNote = (p.interpretation_note || "").trim();
+                if (interpretationNote) {
+                    html += `<div class="detail-section interpretation-note-section">
+                        <div class="detail-label">Interpretation Note</div>
+                        <div class="detail-text">${esc(interpretationNote)}</div>
+                    </div>`;
+                }
                 html += `</div>`;
             }
 
