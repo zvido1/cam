@@ -1526,6 +1526,55 @@ def _generate_email_attachments(
     return attachments, info
 
 
+# ── Feedback ──
+
+def add_feedback(
+    job_id: str,
+    tenant_index: int,
+    provision_id: str,
+    assessment: str,
+    notes: str = None,
+) -> bool:
+    """Append user feedback (agree/disagree/unsure) for a provision finding.
+
+    Stores in job['feedback'] list and logs a run_metadata event so it
+    survives in Railway logs even after job expiry.
+    """
+    now = _utc_now_iso()
+    entry = {
+        "tenant_index": tenant_index,
+        "provision_id": provision_id,
+        "assessment": assessment,  # agree | disagree | unsure
+        "notes": notes,
+        "timestamp": now,
+    }
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if not job:
+            return False
+        if "feedback" not in job:
+            job["feedback"] = []
+        # Overwrite existing entry for same tenant+provision (last click wins)
+        job["feedback"] = [
+            f for f in job["feedback"]
+            if not (f.get("tenant_index") == tenant_index
+                    and f.get("provision_id") == provision_id)
+        ]
+        job["feedback"].append(entry)
+
+    # Log to Railway-persistent telemetry stream
+    _append_job_event(
+        job_id,
+        "user_feedback",
+        tenant_index=tenant_index,
+        provision_id=provision_id,
+        assessment=assessment,
+    )
+
+    save_job_results(job_id)
+    return True
+
+
 # ── Resolution Workflow ──
 
 def get_resolutions(job_id: str) -> dict:
