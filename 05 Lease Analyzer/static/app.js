@@ -2164,15 +2164,15 @@ async function handleSubmit() {
 
 function initProcessingView(jobData) {
     processingDetailsExpanded = true;
-    const email = $("#email-input").value.trim();
-    if (email) {
-        $("#email-notice").innerHTML = `&#128231; We'll email you at <strong>${esc(email)}</strong> when results are ready.`;
-    } else {
-        $("#email-notice").textContent = "Bookmark this link to return to your results.";
-    }
 
-    // Email capture card (shown only if no email was provided)
-    maybeShowEmailCapture(email);
+    // Use global jobEmail (set from upload page or processing capture)
+    if (jobEmail) {
+        syncEmailState();
+    } else {
+        // No email yet — show capture card and default notice
+        $("#email-notice").textContent = "Bookmark this link to return to your results.";
+        maybeShowEmailCapture(null);
+    }
 
     // Start educational carousel
     mountProcessingCarousel();
@@ -3015,29 +3015,44 @@ function renderNavSidebar() {
 
                 const _navGovernanceSignal = p.cam_score ? p.cam_score.governance_signal : "";
                 const _navBadge = getConfidenceBadgeData(_navGovernanceSignal, sev);
-                const _navConfidenceHelp = (function(signal, badge) {
-                    if (!badge) return "";
-                    const map = {
-                        ASSERT_SIGNAL: "High confidence - strong agreement",
-                        ASSERT_REVIEW_SIGNAL: "Moderate confidence - some interpretation sensitivity",
-                        REVIEW_SIGNAL: "Moderate confidence - some evaluator disagreement",
-                        WITHHOLD_SIGNAL: "Low confidence - unstable interpretation"
-                    };
-                    return map[signal] || (badge.label + " confidence");
-                })(_navGovernanceSignal, _navBadge);
-                const _navDotsHtml = _navBadge ? `<span class="nav-confidence-dots" aria-label="${esc(_navConfidenceHelp)}" title="${esc(_navConfidenceHelp)}">${_navBadge.dots}</span>` : "";
+                const _sidebarLabel = window.CAMAuditShared.getSidebarConfidenceLabel
+                    ? window.CAMAuditShared.getSidebarConfidenceLabel(_navGovernanceSignal)
+                    : null;
+                const _explanationText = window.CAMAuditShared.getSidebarExplanationText
+                    ? window.CAMAuditShared.getSidebarExplanationText(p)
+                    : "";
+
+                // Build dots (keep for visual scanning)
+                const _navDotsHtml = _navBadge
+                    ? `<span class="nav-confidence-dots">${_navBadge.dots}</span>`
+                    : "";
+
+                // Build sidebar confidence label (plain English, no jargon)
+                const _sidebarLabelHtml = _sidebarLabel
+                    ? `<span class="nav-confidence-label nav-confidence-${(_navBadge || {}).cssClass || ''}">${esc(_sidebarLabel)}</span>`
+                    : "";
+
+                // Build explanation text
+                const _explanationHtml = _explanationText
+                    ? `<span class="nav-issue-explanation">${esc(_explanationText)}</span>`
+                    : "";
 
                 const item = document.createElement("div");
                 item.className = "nav-issue-item nav-issue-" + sevLow
                     + ((sev === "CRITICAL" || sev === "HIGH") ? " nav-issue-priority" : "")
                     + (isFocused ? " nav-issue-topfocus" : "");
                 item.innerHTML =
+                    `<div class="nav-issue-main-row">` +
                     `<span class="nav-issue-signal">` +
                     `<span class="nav-issue-sev nav-issue-sev-${sevLow}">${esc(sev)}</span>` +
                     _navDotsHtml +
                     `</span>` +
-                    `<span class="nav-issue-name">${esc(cleanName)}</span>`;
-                item.title = pid + " — " + sev + (_navBadge ? " — " + _navBadge.label : "");
+                    `<span class="nav-issue-name">${esc(cleanName)}</span>` +
+                    `</div>` +
+                    (_sidebarLabelHtml || _explanationHtml
+                        ? `<div class="nav-issue-sub-row">${_sidebarLabelHtml}${_explanationHtml}</div>`
+                        : "");
+                item.title = pid + " \u2014 " + sev + (_sidebarLabel ? " \u2014 " + _sidebarLabel : "");
                 item.onclick = function() {
                     navSidebarFocusMap[i] = pid;
                     issuesList.querySelectorAll(".nav-issue-item").forEach(el => el.classList.remove("nav-issue-topfocus"));
@@ -8127,6 +8142,9 @@ async function loadJobDirect(jobId) {
         const job = await resp.json();
         currentJobData = job;
 
+        // Restore email state from server
+        if (job.email) setJobEmail(job.email);
+
         if (job.status === "completed") {
             await loadResults();
             showState("results");
@@ -9196,15 +9214,28 @@ function resetApp() {
     renderTemplateFileList();
     renderTenantFileList();
 
-    // 2. Clear email fields and close accordion
-    const emailInput = $("#email-input");
-    const emailConfirm = $("#email-confirm-input");
-    if (emailInput) emailInput.value = "";
-    if (emailConfirm) emailConfirm.value = "";
-    const accTrigger = document.getElementById('email-accordion-trigger');
+    // 2. Clear email fields, reset email confirmation notices, close accordion
     const accBody = document.getElementById('email-accordion-body');
+    if (accBody) {
+        delete accBody.dataset.emailSet;
+        accBody.innerHTML = `
+            <label class="input-label" for="email-input">Email address</label>
+            <input type="email" id="email-input" class="input-field" placeholder="you@lawfirm.com" autocomplete="off">
+            <label class="input-label mt-2" for="email-confirm-input">Confirm email</label>
+            <input type="email" id="email-confirm-input" class="input-field" placeholder="Retype your email" autocomplete="off">
+            <div id="email-mismatch-error" class="email-mismatch-error hidden">Email addresses don't match</div>`;
+        accBody.classList.add('hidden');
+    }
+    const accTrigger = document.getElementById('email-accordion-trigger');
     if (accTrigger) accTrigger.classList.remove('open');
-    if (accBody) accBody.classList.add('hidden');
+
+    // Reset processing email capture card
+    const procCard = document.getElementById('processing-email-capture');
+    if (procCard) delete procCard.dataset.emailSet;
+
+    // Reset mobile email row
+    const mobileEmailRow = document.querySelector('.mobile-results-email-row');
+    if (mobileEmailRow) delete mobileEmailRow.dataset.emailSet;
 
     // 3. Step 139: Reset to phase 1 (deactivate step 2)
     const summaryContainer = $("#template-summary-container");
@@ -11960,10 +11991,12 @@ function askHelpQuestion(question) {
 // Processing Email Capture (099)
 // ══════════════════════════════════════════════════════
 
-function maybeShowEmailCapture(jobEmail) {
+function maybeShowEmailCapture(emailArg) {
     const card = document.getElementById('processing-email-capture');
     if (!card) return;
-    if (!jobEmail) {
+    // If global jobEmail is already set, syncEmailState handles the card
+    if (jobEmail) return;
+    if (!emailArg) {
         card.classList.remove('hidden');
     } else {
         card.classList.add('hidden');

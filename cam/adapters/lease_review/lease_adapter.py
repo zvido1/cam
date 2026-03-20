@@ -22,6 +22,7 @@ from cam.adapters.lease_review.lease_provision_taxonomy import (
     get_active_provisions,
 )
 from cam.adapters.lease_review.lease_extract import extract_provisions
+from cam.adapters.lease_review.extraction_cache import load_cached_extraction
 from cam.adapters.lease_review.lease_fragility import detect_fragility
 from cam.adapters.lease_review.lease_evaluate import evaluate_provisions
 from cam.adapters.lease_review.lease_disposition import (
@@ -41,6 +42,7 @@ from cam.adapters.lease_review.lease_coverage_audit import (
 )
 from cam.adapters.lease_review.lease_extract import targeted_reextract_section
 from cam.adapters.lease_review.lease_scorer import score_all_provisions
+from cam.adapters.lease_review.lease_interpretation import generate_interpretation_notes
 
 
 # Default model configuration
@@ -63,6 +65,9 @@ DEFAULT_CONFIG = {
     "severity_model": "gpt-5.2",
     "severity_timeout": 120.0,
     "severity_max_tokens": 4000,
+    # Interpretation notes (ASSERT_REVIEW_SIGNAL provisions only)
+    "interpretation_model": "gpt-5.2",
+    "interpretation_timeout": 60.0,
     # Output
     "output_dir": str(CAM_ROOT / "05 Lease Analyzer" / "results"),
 }
@@ -263,16 +268,25 @@ def run_lease_analysis(
     if progress_callback:
         progress_callback(1, 6, "Extracting and aligning provisions from the lease.")
     print("[lease_adapter] Stage 1: Provision extraction...", flush=True)
-    extraction = extract_provisions(template_text, tenant_text, provisions, cfg)
-    total_api_calls += 1
-    models_used["extractor"] = extraction["meta"]["model"]
-    models_used["extractor_provider"] = extraction["meta"].get("provider", "google")
-    models_used["extractor_fallback_used"] = extraction["meta"].get("fallback_used", False)
-    if extraction["meta"].get("fallback_used"):
-        print(f"[lease_adapter] Stage 1 complete (FALLBACK: {extraction['meta']['model']}): "
-              f"{len(extraction['provisions'])} provisions in {extraction['meta']['elapsed_sec']}s", flush=True)
+
+    # Check extraction cache (pre-parsed demo/sample leases)
+    extraction = load_cached_extraction(template_text, tenant_text)
+    if extraction:
+        print(f"[lease_adapter] Stage 1 loaded from cache: {len(extraction['provisions'])} provisions", flush=True)
+        models_used["extractor"] = extraction["meta"].get("model", "cached")
+        models_used["extractor_provider"] = extraction["meta"].get("provider", "cached")
+        models_used["extractor_fallback_used"] = extraction["meta"].get("fallback_used", False)
     else:
-        print(f"[lease_adapter] Stage 1 complete: {len(extraction['provisions'])} provisions in {extraction['meta']['elapsed_sec']}s", flush=True)
+        extraction = extract_provisions(template_text, tenant_text, provisions, cfg)
+        total_api_calls += 1
+        models_used["extractor"] = extraction["meta"]["model"]
+        models_used["extractor_provider"] = extraction["meta"].get("provider", "google")
+        models_used["extractor_fallback_used"] = extraction["meta"].get("fallback_used", False)
+        if extraction["meta"].get("fallback_used"):
+            print(f"[lease_adapter] Stage 1 complete (FALLBACK: {extraction['meta']['model']}): "
+                  f"{len(extraction['provisions'])} provisions in {extraction['meta']['elapsed_sec']}s", flush=True)
+        else:
+            print(f"[lease_adapter] Stage 1 complete: {len(extraction['provisions'])} provisions in {extraction['meta']['elapsed_sec']}s", flush=True)
 
     _check_cancel(cfg)
 
@@ -701,6 +715,20 @@ def run_lease_analysis(
         f"WITHHOLD={cam_contract_summary['governance_counts']['WITHHOLD_SIGNAL']}",
         flush=True
     )
+
+    # ── Interpretation Notes (0-N API calls, ASSERT_REVIEW_SIGNAL only) ──
+    # Generate specific clause-level interpretation notes for provisions
+    # flagged as "Check Interpretation" (high confidence but interpretation-sensitive).
+    # Non-fatal: if generation fails, provisions just won't have interpretation_note.
+    try:
+        interp_count = generate_interpretation_notes(dispositions, cfg)
+        if interp_count > 0:
+            total_api_calls += interp_count
+            models_used["interpretation"] = cfg.get("interpretation_model", "gpt-5.2")
+            print(f"[lease_adapter] Interpretation notes: {interp_count} generated",
+                  flush=True)
+    except Exception as e:
+        print(f"[lease_adapter] Interpretation notes failed (non-fatal): {e}", flush=True)
 
     # Add key aliases for frontend/PDF compatibility
     models_used["extraction"] = models_used.get("extractor", "")

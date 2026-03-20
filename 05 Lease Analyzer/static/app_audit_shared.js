@@ -143,6 +143,74 @@
         return data;
     }
 
+    function getSidebarConfidenceLabel(governanceSignal) {
+        const map = {
+            ASSERT_SIGNAL:        "Verified",
+            ASSERT_REVIEW_SIGNAL: "Check Interpretation",
+            REVIEW_SIGNAL:        "Needs Review",
+            WITHHOLD_SIGNAL:      "Inconclusive",
+        };
+        return map[governanceSignal] || null;
+    }
+
+    function getSidebarExplanationText(provision) {
+        if (!provision) return "";
+        // Priority 1: pipeline-generated specific note
+        if (provision.interpretation_note) return provision.interpretation_note;
+        // Priority 2: pattern-matched fallback (existing logic)
+        var sig = (provision.cam_score || {}).governance_signal || "";
+        var signals = (provision.fragility || {}).signals || [];
+        var pattern = provision.agreement_pattern || "";
+        var challenge = provision.challenge_finding || "";
+        var basis = (provision.cam_score || {}).evidence_basis || "";
+
+        // WITHHOLD / INCONCLUSIVE cases
+        if (sig === "WITHHOLD_SIGNAL") {
+            if (pattern.includes("3-way") || pattern.includes("split"))
+                return "Evaluators reached different conclusions on this clause.";
+            if (basis === "absence")
+                return "This clause is not explicitly addressed in the lease.";
+            return "Insufficient evidence to reach a reliable conclusion.";
+        }
+
+        // REVIEW_SIGNAL / NEEDS REVIEW cases
+        if (sig === "REVIEW_SIGNAL") {
+            if (pattern.includes("2-1") || pattern.includes("split"))
+                return "Evaluators disagreed on whether this is a real deviation.";
+            if (challenge === "NEEDS_EXPERT")
+                return "This requires expert legal interpretation to resolve.";
+            if (basis === "ambiguous")
+                return "The language supports multiple readings.";
+            return "Mixed signals \u2014 verify before acting on this finding.";
+        }
+
+        // ASSERT_REVIEW_SIGNAL / CHECK INTERPRETATION cases
+        if (sig === "ASSERT_REVIEW_SIGNAL") {
+            if (signals.includes("definition_override"))
+                return "Depends on how a redefined term is interpreted.";
+            if (signals.includes("cross_reference_dependency"))
+                return "Meaning depends on how related clauses are read together.";
+            if (signals.includes("negation_pattern"))
+                return "New limiting language may affect the scope of this clause.";
+            if (signals.includes("quantitative_deviation"))
+                return "A numerical change may shift the practical impact.";
+            if (signals.includes("qualifier_shift"))
+                return "Obligation strength has changed (e.g., 'shall' to 'may').";
+            return "The finding is solid but depends on interpretation of the clause.";
+        }
+
+        // ASSERT_SIGNAL / VERIFIED cases
+        if (sig === "ASSERT_SIGNAL") {
+            if (basis === "explicit_text")
+                return "Clearly supported by explicit lease language.";
+            if (challenge === "SUBSTANTIVE_DEVIATION")
+                return "Confirmed as a real deviation by independent review.";
+            return "Well-supported finding \u2014 low interpretation risk.";
+        }
+
+        return "";
+    }
+
     function getConfidenceToneText(governanceSignal) {
         const map = {
             ASSERT_SIGNAL:        "Strong finding \u2014 survived both permissive and strict review",
@@ -169,5 +237,7 @@
         renderAuditTechnicalGroup,
         getConfidenceBadgeData,
         getConfidenceToneText,
+        getSidebarConfidenceLabel,
+        getSidebarExplanationText,
     };
 })();

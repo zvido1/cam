@@ -5398,8 +5398,8 @@ textarea.input-field {
 }
 .nav-issue-item {
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
+    flex-direction: column;
+    gap: 0;
     padding: 3px 9px;
     border-radius: 10px;
     cursor: pointer;
@@ -5470,6 +5470,44 @@ textarea.input-field {
     line-height: 1.2;
     flex: 1 1 auto;
     min-width: 0;
+}
+
+/* ── Sidebar issue row sub-row (Step 218) ── */
+.nav-issue-main-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+}
+
+.nav-issue-sub-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding-left: 0.25rem;
+    margin-top: 0.15rem;
+}
+
+.nav-confidence-label {
+    font-size: 0.67rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+/* Sidebar confidence label colors */
+.nav-confidence-label.nav-confidence-confirmed  { color: #15803d; }
+.nav-confidence-label.nav-confidence-fragile    { color: #b45309; }
+.nav-confidence-label.nav-confidence-uncertain  { color: #64748b; }
+.nav-confidence-label.nav-confidence-unverified { color: #94a3b8; }
+
+.nav-issue-explanation {
+    font-size: 0.67rem;
+    color: var(--text-muted, #64748b);
+    font-style: italic;
+    line-height: 1.3;
+    white-space: normal;
+    word-break: break-word;
 }
 
 /* ── All Provisions list ── */
