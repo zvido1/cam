@@ -9,8 +9,8 @@ const PROVISION_FLAG_RATES = {
     "LP-17": 0.05, "LP-18": 0.22,
 };
 
-const VARIABLE_COST_PER_FLAGGED = 29;
-const EXTRACTION_BASE_SECS = 90;
+const VARIABLE_COST_PER_FLAGGED = 40;
+const EXTRACTION_BASE_SECS = 180;
 
 const PROCESSING_STAGE_WEIGHTS = {
     1: 0.46,
@@ -39,7 +39,7 @@ function calcEstimate(provCount, idChecks, numLeases, selectedIds) {
     }
 
     const identitySecs = idCheckCount * 10;
-    const gapRepairBuffer = provCount >= 12 ? 120 : 60;
+    const gapRepairBuffer = provCount >= 12 ? 300 : 180;
     const parsingSecs = EXTRACTION_BASE_SECS + identitySecs;
     const provisionSecs = variableSecs;
     const bufferSecs = gapRepairBuffer;
@@ -48,10 +48,22 @@ function calcEstimate(provCount, idChecks, numLeases, selectedIds) {
     const totalMins = Math.max(1, numLeases * minsPerLease);
 
     const leaseLabel = `${numLeases} lease${numLeases > 1 ? "s" : ""}`;
+    const totalProvisionReviews = Math.max(0, provCount * numLeases);
+    const provisionLabel = totalProvisionReviews > 0
+        ? `, ${totalProvisionReviews} provision${totalProvisionReviews !== 1 ? "s" : ""} (${provCount}x${numLeases})`
+        : "";
     const idLabel = idCheckCount > 0 ? `, ${idCheckCount} identity check${idCheckCount !== 1 ? "s" : ""}` : "";
-    const detail = `${leaseLabel}${idLabel}`;
+    const detail = `${leaseLabel}${provisionLabel}${idLabel}`;
 
-    return { mins: totalMins, detail, secsPerLease, parsingSecs, provisionSecs, bufferSecs };
+    return {
+        mins: totalMins,
+        minsPerLease,
+        detail,
+        secsPerLease,
+        parsingSecs,
+        provisionSecs,
+        bufferSecs
+    };
 }
 
 function formatDurationShort(totalSecs) {

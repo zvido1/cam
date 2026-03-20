@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAM - Contract Analysis</title>
-    <link rel="stylesheet" href="/static/style.css?v=225">
+    <link rel="stylesheet" href="/static/style.css?v=238">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -28,6 +28,12 @@
     </nav>
 
     <!-- ═══ MAIN CONTENT ═══ -->
+    <script>
+    // Hide login gate instantly on results pages to prevent flash
+    if (/^\/results\//.test(location.pathname) || new URLSearchParams(location.search).has('job')) {
+        document.write('<style>#state-gate{display:none!important}</style>');
+    }
+    </script>
     <main class="app-main">
 
         <!-- ══ STATE 1: Access Gate ══ -->
@@ -288,9 +294,19 @@
               </div>
 
               <div class="processing-secondary-grid">
-                  <div class="processing-left-stack">
+                  <div class="processing-checklist-column">
+                    <div id="processing-checklist-card" class="processing-checklist-card">
+                        <div class="processing-side-kicker">Analysis checklist</div>
+                        <div class="processing-side-title">Progress checklist</div>
+                        <div class="processing-side-subtitle">Follow each major step as CAM works through the review.</div>
+                        <div id="processing-checklist-list" class="processing-checklist-list"></div>
+                    </div>
+                  </div>
+
+                  <div class="processing-main-stack">
                     <div id="processing-carousel-slot"></div>
                     <div id="processing-status-slot"></div>
+
                     <div class="processing-return-panel">
                         <div id="processing-email-capture" class="processing-email-card hidden">
                             <div class="processing-email-title">&#128231; Get notified when done <span style="font-size:0.75rem; font-weight:400; color:var(--text-muted);">(optional)</span></div>
@@ -621,9 +637,8 @@
                         <div class="contract-detail-sticky-shell">
                             <div id="contract-detail-header" class="contract-detail-header"></div>
 
-                        <!-- Step 129: Contract selector dropdown -->
+                        <!-- Step 129: Contract selector + filters unified bar -->
                         <div id="contract-selector-bar" class="contract-selector-bar hidden">
-                            <select id="contract-selector-dropdown" class="contract-selector-select"></select>
                             <div id="contract-clause-filter-bar" class="contract-clause-filter-bar hidden"></div>
                         </div>
                         <div id="docview-sticky-controls" class="docview-sticky-controls hidden">
@@ -909,12 +924,12 @@
 </div>
 
     <script src="/static/app_shared.js?v=1"></script>
-    <script src="/static/app_audit_shared.js?v=1"></script>
-    <script src="/static/app_workflow_shared.js?v=1"></script>
+    <script src="/static/app_audit_shared.js?v=3"></script>
+    <script src="/static/app_workflow_shared.js?v=2"></script>
     <script src="/static/app_docview_shared.js?v=1"></script>
     <script src="/static/app_docview_render_shared.js?v=1"></script>
     <script src="/static/app_summary_shared.js?v=1"></script>
     <script src="/static/app_notes_shared.js?v=1"></script>
-    <script src="/static/app.js?v=228"></script>
+    <script src="/static/app.js?v=236"></script>
 </body>
 </html>

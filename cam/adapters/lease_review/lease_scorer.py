@@ -170,33 +170,31 @@ def _compute_r(provision: dict, strict: bool = False) -> float:
     return r_base * r_hidden
 
 # ---------------------------------------------------------------------------
-# Fragility penalty (F)
+# Structural fragility (F_structural)
 # ---------------------------------------------------------------------------
 
-def _compute_f(provision: dict, strict: bool = False) -> float:
+def _compute_f_structural(provision: dict) -> float:
+    """
+    Compute structural fragility (F_structural).
+    This measures how complex/interpretation-sensitive the clause is.
+    Used ONLY to compute CAM_strict (and thus ASG).
+    Does NOT reduce CAM_perm — structural complexity is not the same as uncertainty.
+    """
     signals = provision.get("fragility", {}).get("signals", [])
-    weights = SIGNAL_WEIGHTS_STRICT if strict else SIGNAL_WEIGHTS_PERMISSIVE
-    challenge = provision.get("challenge_finding")
-
-    # Context multiplier: fragility signals on confirmed CONFORMS carry half weight.
-    # When verdict is CONFORMS and challenge is not SUBSTANTIVE_DEVIATION, signals
-    # are informational (note structural complexity) not alarming (flag an error).
-    # Without this, filling in template blanks (e.g. $8,400 where template has
-    # $__________) fires quantitative_deviation and tanks a unanimously-confirmed
-    # clean provision. Full weight still applies on DEVIATES/UNCLEAR.
-    verdict = provision.get("final_verdict", "")
-    conforms_multiplier = (
-        0.5 if (verdict == "CONFORMS" and challenge != "SUBSTANTIVE_DEVIATION")
-        else 1.0
-    )
+    weights = SIGNAL_WEIGHTS_PERMISSIVE  # use permissive weights for gap computation
 
     total_weight = 0.0
     for sig in signals:
-        total_weight += weights.get(sig, weights["_unknown"]) * conforms_multiplier
+        total_weight += weights.get(sig, weights["_unknown"])
     f = 1.0 - min(1.0, total_weight)
     f = max(0.08, f)
-    if not strict and challenge == "SUBSTANTIVE_DEVIATION":
+
+    # Challenge confirmation boosts: if challenger confirmed SUBSTANTIVE,
+    # slightly reduce fragility gap (the finding held up under adversarial scrutiny)
+    challenge = provision.get("challenge_finding")
+    if challenge == "SUBSTANTIVE_DEVIATION":
         f = min(1.0, f + CHALLENGE_CONFIRMATION_F_BOOST)
+
     return f
 
 # ---------------------------------------------------------------------------
@@ -237,22 +235,28 @@ def _classify_pattern(cam_perm: float, asg: float, verdict: str) -> str:
 
 def compute_cam_score(provision: dict) -> dict:
     """
-    Compute CAM_permissive, CAM_strict, ASG, governance_signal, and pattern
-    for a single provision dict. Returns a cam_score dict (does not mutate).
+    Compute CAM scores using the split F architecture:
+    - CAM_perm = A × E × R × 100  (uncertainty-only factors)
+    - CAM_strict = A_strict × E_strict × R_strict × F_structural × 100
+      (structural fragility widens the gap)
+    - ASG = CAM_perm − CAM_strict
     """
     verdict = provision.get("final_verdict", "?")
 
+    # Permissive path: uncertainty factors only (A, E, R)
     A_perm   = _parse_agreement(provision.get("agreement_pattern", ""))
     E_perm   = _compute_e(provision, strict=False)
     R_perm   = _compute_r(provision, strict=False)
-    F_perm   = _compute_f(provision, strict=False)
-    CAM_perm = round(100.0 * A_perm * E_perm * R_perm * F_perm, 2)
+    CAM_perm = round(100.0 * A_perm * E_perm * R_perm, 2)
 
+    # Structural fragility: only affects the strict→permissive gap
+    F_structural = _compute_f_structural(provision)
+
+    # Strict path: apply strict E/R and structural fragility
     A_strict   = _parse_agreement_strict(A_perm)
     E_strict   = _compute_e(provision, strict=True)
     R_strict   = _compute_r(provision, strict=True)
-    F_strict   = _compute_f(provision, strict=True)
-    CAM_strict = round(100.0 * A_strict * E_strict * R_strict * F_strict, 2)
+    CAM_strict = round(100.0 * A_strict * E_strict * R_strict * F_structural, 2)
 
     ASG = round(CAM_perm - CAM_strict, 2)
     gov = _governance_signal(CAM_perm, ASG)
@@ -268,7 +272,7 @@ def compute_cam_score(provision: dict) -> dict:
         "A":                 round(A_perm, 4),
         "E_perm":            round(E_perm, 4),
         "R_perm":            round(R_perm, 4),
-        "F_perm":            round(F_perm, 4),
+        "F_perm":            round(F_structural, 4),   # kept as F_perm for backward compat
         "evidence_basis":    provision.get("evidence_basis_consensus", None),
     }
 

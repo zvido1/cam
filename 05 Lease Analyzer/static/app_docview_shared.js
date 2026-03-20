@@ -63,13 +63,7 @@
                     <div class="workflow-group workflow-group-status">
                         <span class="res-label">Status:</span>
                         <div class="res-pills">${statusPillsHtml}</div>
-                    </div>
-                    <div class="workflow-divider" aria-hidden="true"></div>
-                    <div class="workflow-group workflow-group-decision">
-                        ${buildDraftDecisionControls(provision, tenantIdx)}
-                    </div>
-                    <div class="workflow-divider" aria-hidden="true"></div>
-                    <div class="workflow-group workflow-group-tools">
+                        <span class="docview-pipe" aria-hidden="true"></span>
                         <span class="res-tools-label">Tools:</span>
                         <button class="res-notes-toggle" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}"
                             onclick="window.CAM.toggleDocviewResolutionNotes('${esc(pid)}', ${tenantIdx}); event.stopPropagation();">
@@ -78,6 +72,10 @@
                         <button class="res-advisor-btn" onclick="window.CAM.openResolutionAdvisor('${esc(pid)}', ${tenantIdx}); event.stopPropagation();">
                             AI Advisor
                         </button>
+                    </div>
+                    <div class="workflow-divider" aria-hidden="true"></div>
+                    <div class="workflow-group workflow-group-decision">
+                        ${buildDraftDecisionControls(provision, tenantIdx)}
                     </div>
                     <div class="workflow-divider workflow-divider-spacer" aria-hidden="true"></div>
                     <div class="workflow-open-actions workflow-group">

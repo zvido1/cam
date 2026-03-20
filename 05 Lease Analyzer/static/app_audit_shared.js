@@ -124,6 +124,35 @@
         </div>`;
     }
 
+    function getConfidenceBadgeData(governanceSignal, severity) {
+        const map = {
+            ASSERT_SIGNAL:        { label: "Confirmed",  cssClass: "confirmed",  dots: "\u25cf\u25cf\u25cf\u25cf" },
+            ASSERT_REVIEW_SIGNAL: { label: "Fragile",    cssClass: "fragile",    dots: "\u25cf\u25cf\u25cf\u25cb" },
+            REVIEW_SIGNAL:        { label: "Uncertain",  cssClass: "uncertain",  dots: "\u25cf\u25cf\u25cb\u25cb" },
+            WITHHOLD_SIGNAL:      { label: "Unverified", cssClass: "unverified", dots: "\u25cf\u25cb\u25cb\u25cb" },
+        };
+        const data = map[governanceSignal];
+        if (!data) return null;
+
+        // High-severity + low-confidence special case
+        const isHighSeverity = severity === "CRITICAL" || severity === "HIGH";
+        const isLowConfidence = governanceSignal === "REVIEW_SIGNAL" || governanceSignal === "WITHHOLD_SIGNAL";
+        if (isHighSeverity && isLowConfidence) {
+            return { ...data, needsReview: true };
+        }
+        return data;
+    }
+
+    function getConfidenceToneText(governanceSignal) {
+        const map = {
+            ASSERT_SIGNAL:        "Strong finding \u2014 survived both permissive and strict review",
+            ASSERT_REVIEW_SIGNAL: "High confidence, but sensitive to interpretation",
+            REVIEW_SIGNAL:        "Mixed evaluator evidence \u2014 verify before acting",
+            WITHHOLD_SIGNAL:      "Insufficient confidence to assert \u2014 treat as a flag only",
+        };
+        return map[governanceSignal] || "";
+    }
+
     window.CAMAuditShared = {
         getAuditGovernanceLabel,
         getAuditPatternLabel,
@@ -138,5 +167,7 @@
         renderAuditRawRecord,
         renderAuditPromptBlock,
         renderAuditTechnicalGroup,
+        getConfidenceBadgeData,
+        getConfidenceToneText,
     };
 })();

@@ -51,7 +51,7 @@ const MODEL_DISPLAY_NAMES = {
 
 // ── Evaluator Color Classes ──
 const CAMShared = window.CAMShared || {};
-const calcEstimate = CAMShared.calcEstimate || function() { return { mins: 1, detail: "", secsPerLease: 60, parsingSecs: 0, provisionSecs: 0, bufferSecs: 0 }; };
+const calcEstimate = CAMShared.calcEstimate || function() { return { mins: 1, minsPerLease: 1, detail: "", secsPerLease: 60, parsingSecs: 0, provisionSecs: 0, bufferSecs: 0 }; };
 const formatDurationShort = CAMShared.formatDurationShort || function(totalSecs) { return `${Math.max(0, Math.round(totalSecs || 0))}s`; };
 const formatDurationApprox = CAMShared.formatDurationApprox || function(totalSecs) { return `~${Math.max(1, Math.round((totalSecs || 0) / 60))} minutes`; };
 const getProcessingStageCopy = CAMShared.getProcessingStageCopy || function(stage, detail) { return { headline: `Stage ${stage || 0}`, detail: detail || "" }; };
@@ -85,6 +85,8 @@ const renderAuditPromptBlock = CAMAuditShared.renderAuditPromptBlock
 const renderAuditTechnicalGroup = CAMAuditShared.renderAuditTechnicalGroup
     ? function(title, innerHtml) { return CAMAuditShared.renderAuditTechnicalGroup(title, innerHtml, esc); }
     : function() { return ""; };
+const getConfidenceBadgeData = CAMAuditShared.getConfidenceBadgeData || function() { return null; };
+const getConfidenceToneText = CAMAuditShared.getConfidenceToneText || function() { return ""; };
 const CAMWorkflowShared = window.CAMWorkflowShared || {};
 const isManualEscalatedProvision = CAMWorkflowShared.isManualEscalatedProvision
     ? function(p, tenantIdx = currentTenantIndex) { return CAMWorkflowShared.isManualEscalatedProvision(p, getConformingConcernState(tenantIdx, p && p.provision_id)); }
@@ -240,6 +242,7 @@ let provisions = [];
 let customProvisions = [];
 let selectedAnalysisType = ANALYSIS_TYPES[0];
 let currentTenantIndex = 0;
+let navSidebarFocusMap = {};
 let activeResultsTab = "findings";
 let openDocviewProvision = null; // track which provision's analysis panel is open
 let docviewReturnTarget = null; // track which provision to scroll back to
@@ -280,6 +283,7 @@ let contractClauseSeverityFilter = 'all';
 let contractClauseStatusFilter = 'all';
 let contractClauseReadFilter = 'all';
 let contractClauseNotesFilter = 'all';
+let contractClauseConfidenceFilter = 'all';
 let contractPickerSeverityFilter = 'all';
 let contractDetailRenderPromise = Promise.resolve();
 let contractDetailRenderSeq = 0;
@@ -470,7 +474,20 @@ async function navigateWorkflowState(targetState) {
     }
 }
 
+function measureScrollbarWidth() {
+    // Create off-screen scrolling div to measure browser's scrollbar width
+    var probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;top:-9999px;left:-9999px;width:100px;height:100px;overflow:scroll;';
+    document.body.appendChild(probe);
+    var w = probe.offsetWidth - probe.clientWidth;
+    document.body.removeChild(probe);
+    document.documentElement.style.setProperty('--scrollbar-w', w + 'px');
+}
+
 function init() {
+    // Measure browser scrollbar width so non-scrolling siblings can compensate
+    measureScrollbarWidth();
+
     const path = window.location.pathname;
     const resultsMatch = path.match(/^\/results\/(.+)$/);
 
@@ -1367,26 +1384,10 @@ function renderProcessingOverview(job, tenants) {
             if (stageDelta !== 0) return stageDelta;
             return (Number(b.total_stages) || 0) - (Number(a.total_stages) || 0);
         })[0];
+    const currentFocusPct = leadTenant
+        ? Math.round(getTenantProgressFraction(leadTenant, job.status || "") * 100)
+        : overallPct;
 
-    const stageCopy = leadTenant
-        ? getProcessingStageCopy(leadTenant.current_stage, leadTenant.stage_detail)
-        : {
-            headline: completedCount === totalCount
-                ? "Results are ready"
-                : ((job.status || "") === "queued" ? "Preparing the analysis" : "Wrapping up the analysis"),
-            detail: completedCount === totalCount
-                ? "CAM finished all contract reviews and is preparing the workspace."
-                : (((job.status || "") === "queued")
-                    ? "CAM is loading the uploaded contracts and preparing the review workflow."
-                    : "CAM is finalizing the remaining review steps and preparing the workspace.")
-        };
-
-    const headline = leadTenant
-        ? `Currently reviewing ${leadTenant.filename || "current contract"}`
-        : (completedCount === totalCount ? "All contracts are ready" : "Finalizing the remaining work");
-    const detail = leadTenant
-        ? `${stageCopy.headline}. ${stageCopy.detail}`
-        : stageCopy.detail;
     const readyText = completedCount === 1
         ? "1 contract ready now"
         : `${completedCount} contracts ready now`;
@@ -1402,18 +1403,45 @@ function renderProcessingOverview(job, tenants) {
         ? (Number(leadTenant.total_stages) || 6)
         : 6;
     const primaryReadyTenant = completedTenants[0] || null;
+    const overallStagesTotal = totalCount * 6;
+    const overallStagesDone = tenants.reduce((sum, tenant) => {
+        const effectiveStatus = (tenant.status === "queued" && job.status === "processing") ? "processing" : tenant.status;
+        if (effectiveStatus === "completed") return sum + 6;
+        if (effectiveStatus === "processing") return sum + Math.max(0, Number(tenant.current_stage) || 0);
+        return sum;
+    }, 0);
+    const contractCountLabel = totalCount === 1 ? "Total contracts: 1" : `Total contracts: ${totalCount}`;
+    const overallStageLabel = overallStagesTotal > 0
+        ? `Overall stage progress: ${overallStagesDone} of ${overallStagesTotal} stages`
+        : "Overall stage progress unavailable";
+    const overallProgressLabel = `Overall progress: ${overallPct}%`;
+    const completedContractLabel = totalCount === 1
+        ? `${completedCount} of 1 contract complete`
+        : `${completedCount} of ${totalCount} contracts complete`;
+    const headline = completedCount === totalCount
+        ? "All contracts are ready"
+        : "All contracts";
+    const detail = completedCount === totalCount
+        ? "CAM finished all contract reviews and the results workspace is ready."
+        : `${completedContractLabel} • ${remainingText}.`;
 
     panel.classList.remove("hidden");
     panel.innerHTML = `
+        <div class="processing-overview-meta-row">
+            <span class="processing-overview-meta-pill">${esc(contractCountLabel)}</span>
+            <span class="processing-overview-meta-pill">${esc(overallStageLabel)}</span>
+            <span class="processing-overview-meta-pill">${esc(overallProgressLabel)}</span>
+        </div>
         <div class="processing-hero-summary">
             <div class="processing-hero-copy">
-                <div class="processing-hero-label">Current focus</div>
+                <div class="processing-hero-label">All contracts</div>
                 <div class="processing-hero-headline">${esc(headline)}</div>
                 <div class="processing-hero-detail">${esc(detail)}</div>
             </div>
             <div class="processing-hero-meta">
                 <div class="processing-hero-percent">${overallPct}%</div>
-                <div class="processing-hero-status">Stage ${currentStageNum} of ${totalStageCount}</div>
+                <div class="processing-hero-status">Overall progress</div>
+                <div class="processing-hero-substatus">${esc(completedContractLabel)}</div>
             </div>
         </div>
         <div class="processing-hero-bar">
@@ -1422,7 +1450,6 @@ function renderProcessingOverview(job, tenants) {
             </div>
         </div>
         <div class="processing-hero-footer">
-            <span class="processing-hero-pill">${esc(stageCopy.headline)}</span>
             <span class="processing-hero-pill">${esc(readyText)}</span>
             <span class="processing-hero-pill">${esc(remainingText)}</span>
         </div>
@@ -1443,6 +1470,174 @@ function renderProcessingOverview(job, tenants) {
             await openReadyContractFromProcessing(idx);
         });
     });
+}
+
+function getProcessingSelectedProvisionCount(job) {
+    const inputCfg = (job && job.input_config) || {};
+    const base = Array.isArray(inputCfg.provisions) ? inputCfg.provisions.length : 0;
+    const custom = Array.isArray(inputCfg.custom_provisions) ? inputCfg.custom_provisions.length : 0;
+    return base + custom;
+}
+
+function getProcessingTenantProvisionCount(job, tenant) {
+    if (tenant && tenant.status === "completed" && tenant.results && Array.isArray(tenant.results.provisions)) {
+        return tenant.results.provisions.length;
+    }
+    const selected = getProcessingSelectedProvisionCount(job);
+    return selected > 0 ? selected : null;
+}
+
+function formatProvisionCountLabel(count, singular = "provision", plural = "provisions") {
+    if (!Number.isFinite(count) || count <= 0) return "";
+    return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function buildProcessingChecklistSteps(job, tenant) {
+    const currentStage = Number(tenant && tenant.current_stage) || 0;
+    const tenantStatus = (tenant && tenant.status) || "queued";
+    const provisionCount = getProcessingTenantProvisionCount(job, tenant);
+    const challengeCount = tenant && tenant.results && Array.isArray(tenant.results.provisions)
+        ? tenant.results.provisions.filter((p) => p && p.final_verdict === "DEVIATES").length
+        : null;
+
+    const isComplete = tenantStatus === "completed";
+    const stageDone = (stageNum) => isComplete || currentStage > stageNum;
+    const stageActive = (stageNum) => !isComplete && tenantStatus === "processing" && currentStage === stageNum;
+    const stagePending = (stageNum) => !stageDone(stageNum) && !stageActive(stageNum);
+
+    const steps = [
+        {
+            stage: 1,
+            title: "Parse and map the lease",
+            meta: provisionCount ? `Building the review set for ${formatProvisionCountLabel(provisionCount)}.` : "Preparing the lease for structured review.",
+        },
+        {
+            stage: 2,
+            title: "Run rules and cascade checks",
+            meta: "Applying lease-specific detection rules and definition-cascade review.",
+        },
+        {
+            stage: 3,
+            title: "Run evaluator review",
+            meta: provisionCount ? `Reviewing ${formatProvisionCountLabel(provisionCount)} with CAM's independent evaluator layer.` : "Running the independent evaluator review step.",
+        },
+        {
+            stage: 4,
+            title: "Challenge flagged findings",
+            meta: challengeCount != null ? `Re-checking ${formatProvisionCountLabel(challengeCount)} for substance vs. cosmetic change.` : "Testing whether flagged findings are substantive, cosmetic, or expert-only.",
+        },
+        {
+            stage: 5,
+            title: "Assign severity",
+            meta: "Turning confirmed differences into critical, high, medium, or low review signals.",
+        },
+        {
+            stage: 6,
+            title: "Finalize results",
+            meta: "Finalizing dispositions, CAM confidence scoring, summaries, and outputs.",
+        },
+    ];
+
+    return steps.map((step) => ({
+        ...step,
+        state: stageDone(step.stage) ? "complete" : stageActive(step.stage) ? "active" : "pending",
+        icon: stageDone(step.stage) ? "✓" : stageActive(step.stage) ? "●" : "○",
+    }));
+}
+
+function renderProcessingChecklist(job) {
+    const container = $("#processing-checklist-list");
+    if (!container) return;
+
+    const tenants = (job && job.input_config && job.input_config.tenants) || [];
+    if (!job || tenants.length === 0) {
+        container.innerHTML = `<div class="processing-checklist-empty"><span class="spinner"></span> Starting analysis checklist...</div>`;
+        return;
+    }
+
+    const selectedCount = getProcessingSelectedProvisionCount(job);
+    const completedCount = tenants.filter((tenant) => tenant && tenant.status === "completed").length;
+    const referenceComplete = completedCount > 0 || tenants.some((tenant) => Number(tenant.current_stage) >= 1);
+    const referenceProvisionLabel = formatProvisionCountLabel(selectedCount);
+    const leadTenantIndex = tenants.findIndex((tenant) => {
+        const effectiveStatus = (tenant && tenant.status === "queued" && job.status === "processing")
+            ? "processing"
+            : ((tenant && tenant.status) || "queued");
+        return effectiveStatus === "processing";
+    });
+    const orderedTenants = (leadTenantIndex >= 0)
+        ? [tenants[leadTenantIndex], ...tenants.filter((_, idx) => idx !== leadTenantIndex)]
+        : tenants.slice();
+
+    let html = `
+        <div class="processing-checklist-group ${referenceComplete ? "complete" : "current"}">
+            <div class="processing-checklist-group-header">
+                <div>
+                    <div class="processing-checklist-group-title">Reference lease baseline</div>
+                    <div class="processing-checklist-group-meta">${referenceProvisionLabel ? `${referenceProvisionLabel} selected for review.` : "Preparing the baseline for comparison."}</div>
+                </div>
+                <div class="processing-checklist-group-badge">${referenceComplete ? "Ready" : "Starting"}</div>
+            </div>
+            <div class="processing-checklist-steps">
+                <div class="processing-checklist-step ${referenceComplete ? "is-complete" : "is-active"}">
+                    <div class="processing-checklist-icon">${referenceComplete ? "✓" : "●"}</div>
+                    <div>
+                        <div class="processing-checklist-step-title">Parse the reference lease</div>
+                        <div class="processing-checklist-step-meta">CAM loads the standard lease once and uses it as the comparison baseline for every contract.</div>
+                    </div>
+                </div>
+                <div class="processing-checklist-step ${referenceComplete ? "is-complete" : "is-pending"}">
+                    <div class="processing-checklist-icon">${referenceComplete ? "✓" : "○"}</div>
+                    <div>
+                        <div class="processing-checklist-step-title">Find baseline provisions and added clauses</div>
+                        <div class="processing-checklist-step-meta">${referenceProvisionLabel ? `Preparing the baseline structure for ${referenceProvisionLabel}.` : "Preparing the baseline clause structure for comparison."}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    orderedTenants.forEach((tenant) => {
+        const idx = tenants.indexOf(tenant);
+        const status = (tenant && tenant.status) || "queued";
+        const groupState = status === "completed" ? "complete" : status === "processing" ? "current" : "";
+        const provisionCount = getProcessingTenantProvisionCount(job, tenant);
+        const steps = buildProcessingChecklistSteps(job, tenant);
+        const completedSteps = steps.filter((step) => step.state === "complete").length;
+        const totalSteps = steps.length;
+        const provisionLabel = formatProvisionCountLabel(provisionCount);
+        const metaText = status === "completed"
+            ? `${completedSteps}/${totalSteps} complete${provisionLabel ? ` • ${provisionLabel} reviewed` : ""}`
+            : status === "processing"
+                ? `${completedSteps}/${totalSteps} complete${provisionLabel ? ` • ${provisionLabel} in scope` : ""}`
+                : `Queued${provisionLabel ? ` • ${provisionLabel} in scope` : ""}`;
+        const badgeText = status === "completed" ? "Complete" : status === "processing" ? `Step ${Number(tenant.current_stage) || 1} of ${Number(tenant.total_stages) || 6}` : "Queued";
+
+        html += `
+            <div class="processing-checklist-group ${groupState}">
+                <div class="processing-checklist-group-header">
+                    <div>
+                        <div class="processing-checklist-group-title">Contract ${idx + 1}: ${esc(tenant.filename || `Lease ${idx + 1}`)}</div>
+                        <div class="processing-checklist-group-meta">${esc(metaText)}</div>
+                    </div>
+                    <div class="processing-checklist-group-badge">${esc(badgeText)}</div>
+                </div>
+                <div class="processing-checklist-steps">
+                    ${steps.map((step) => `
+                        <div class="processing-checklist-step is-${step.state}">
+                            <div class="processing-checklist-icon">${step.icon}</div>
+                            <div>
+                                <div class="processing-checklist-step-title">${esc(step.title)}</div>
+                                <div class="processing-checklist-step-meta">${esc(step.meta)}</div>
+                            </div>
+                        </div>
+                    `).join("")}
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
 }
 
 function updateEstimateDisplay() {
@@ -1574,8 +1769,10 @@ function updateSubmitState() {
     if (filesReady && !provisionsReady) {
         est.textContent = "Select at least one provision to analyze";
     } else if (filesReady) {
-        const { mins, detail } = calcEstimate(checkedCount, identityChecks, tenantFiles.length, getSelectedProvisionIds());
-        est.textContent = `Estimated analysis time: ~${mins} minute${mins !== 1 ? "s" : ""} (${detail})`;
+        const { mins, minsPerLease, detail } = calcEstimate(checkedCount, identityChecks, tenantFiles.length, getSelectedProvisionIds());
+        const firstReady = `First contract typically ready in ~${minsPerLease} minute${minsPerLease !== 1 ? "s" : ""}`;
+        const fullBatch = `Full batch estimated at ~${mins} minute${mins !== 1 ? "s" : ""}`;
+        est.textContent = `${firstReady} | ${fullBatch} (${detail})`;
     } else if (!templateFile && tenantFiles.length === 0) {
         est.textContent = "";
     } else if (!templateFile) {
@@ -1973,6 +2170,7 @@ function initProcessingView(jobData) {
     // If this view is initialized mid-run (for example after a frontend reload),
     // replace placeholder queued rows with the live job state immediately.
     renderProgress(jobData);
+    renderProcessingChecklist(jobData);
 }
 
 function mountProcessingCarousel() {
@@ -2051,6 +2249,7 @@ function renderProgress(job) {
         if (readyCard) readyCard.classList.add("hidden");
         estimateEl.textContent = "";
         renderProcessingOverview(job, []);
+        renderProcessingChecklist(job);
         return;
     }
 
@@ -2064,14 +2263,37 @@ function renderProgress(job) {
     estimateProgressFraction = totalCount > 0 ? (overallFraction / totalCount) : 0;
     updateEstimateDisplay();
     renderProcessingOverview(job, tenants);
+    renderProcessingChecklist(job);
     const completedTenants = [];
+    const displayTenants = tenants
+        .map((tenant, idx) => ({ tenant, idx }))
+        .sort((a, b) => {
+            const effectiveA = (a.tenant.status === "queued" && jobStatus === "processing") ? "processing" : a.tenant.status;
+            const effectiveB = (b.tenant.status === "queued" && jobStatus === "processing") ? "processing" : b.tenant.status;
+            const rank = (status) => {
+                if (status === "processing") return 0;
+                if (status === "completed") return 1;
+                if (status === "failed") return 2;
+                if (status === "cancelled") return 3;
+                return 4;
+            };
+            const delta = rank(effectiveA) - rank(effectiveB);
+            if (delta !== 0) return delta;
+            const stageDelta = (Number(b.tenant.current_stage) || 0) - (Number(a.tenant.current_stage) || 0);
+            if (stageDelta !== 0) return stageDelta;
+            return a.idx - b.idx;
+        });
 
     if (container) {
-        container.innerHTML = tenants.map((t, i) => {
+        container.innerHTML = displayTenants.map(({ tenant: t, idx: i }) => {
             let statusLabel = "Queued";
             let stageDetail = "";
             let fillClass = "";
             let width = "0%";
+            let statusMeta = "";
+            let percentValue = "0%";
+            let progressPill = "Queued";
+            let stagePill = "Queued";
 
             const effectiveStatus = (t.status === "queued" && jobStatus === "processing")
                 ? "processing" : t.status;
@@ -2080,62 +2302,92 @@ function renderProgress(job) {
                 statusLabel = "Complete";
                 fillClass = "completed";
                 width = "100%";
+                statusMeta = "100% • Complete";
                 completedTenants.push({ ...t, tenantIdx: i });
             } else if (effectiveStatus === "processing") {
                 if (t.current_stage && t.total_stages) {
+                    const tenantPct = Math.round(getTenantProgressFraction(t, jobStatus) * 100);
                     statusLabel = getProcessingStageCopy(t.current_stage, "").headline;
-                    width = `${Math.round(getTenantProgressFraction(t, jobStatus) * 100)}%`;
+                    width = `${tenantPct}%`;
+                    const stageMeta = `Stage ${Number(t.current_stage) || 1} of ${Number(t.total_stages) || 6}`;
+                    statusMeta = `${tenantPct}% • ${stageMeta}`;
                     stageDetail = t.stage_detail || "";
                 } else {
                     statusLabel = "Preparing analysis";
                     width = "8%";
+                    statusMeta = "Queued • Preparing analysis";
                 }
                 fillClass = "processing";
             } else if (effectiveStatus === "cancelled") {
                 statusLabel = "Cancelled";
+                statusMeta = "Cancelled";
             } else if (effectiveStatus === "failed") {
                 statusLabel = "Failed";
                 fillClass = "failed";
                 width = "100%";
+                statusMeta = "Failed";
                 stageDetail = t.error || "";
+            } else {
+                statusMeta = "Queued";
+            }
+
+            percentValue = width;
+            if (effectiveStatus === "completed") {
+                progressPill = "Complete";
+                stagePill = `Stage ${Number(t.total_stages) || 6} of ${Number(t.total_stages) || 6}`;
+            } else if (effectiveStatus === "processing") {
+                progressPill = statusLabel;
+                stagePill = t.current_stage && t.total_stages
+                    ? `Stage ${Number(t.current_stage) || 1} of ${Number(t.total_stages) || 6}`
+                    : "Queued";
+            } else if (effectiveStatus === "failed") {
+                progressPill = "Failed";
+                stagePill = "Stopped";
+            } else if (effectiveStatus === "cancelled") {
+                progressPill = "Cancelled";
+                stagePill = "Stopped";
+            }
+
+            if (effectiveStatus === "completed") {
+                statusMeta = "Complete";
+            } else if (effectiveStatus === "processing") {
+                statusMeta = stagePill === "Queued" ? "Preparing analysis" : stagePill;
             }
 
             return `<div class="processing-tenant-card">
+                <div class="processing-tenant-meta-row">
+                    <span class="processing-overview-meta-pill">${esc(progressPill)}</span>
+                    <span class="processing-overview-meta-pill">${esc(stagePill)}</span>
+                </div>
                 <div class="processing-tenant-top">
                     <div class="processing-tenant-name">${esc(t.filename || `Contract ${i + 1}`)}</div>
-                    <div class="processing-tenant-status">${esc(statusLabel)}</div>
+                    <div class="processing-tenant-status-wrap">
+                        <div class="processing-tenant-percent">${esc(percentValue)}</div>
+                        <div class="processing-tenant-status">${esc(statusLabel)}</div>
+                        <div class="processing-tenant-status-meta">${esc(statusMeta)}</div>
+                    </div>
                 </div>
                 <div class="progress-bar">
                     <div class="progress-fill ${fillClass}" style="width:${width}"></div>
                 </div>
-                ${stageDetail ? `<div class="processing-tenant-detail">${esc(stageDetail)}</div>` : ""}
+                <div class="processing-tenant-detail-row">
+                    ${stageDetail ? `<div class="processing-tenant-detail">${esc(stageDetail)}</div>` : `<div class="processing-tenant-detail"></div>`}
+                </div>
+                <div class="processing-tenant-action-row"><button class="btn btn-primary btn-sm processing-tenant-open-btn" data-tenant-open="${i}" ${effectiveStatus === "completed" ? "" : "disabled"}>Open Contract</button></div>
             </div>`;
         }).join("");
+        container.querySelectorAll("[data-tenant-open]").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+                const idx = Number(btn.dataset.tenantOpen);
+                if (Number.isNaN(idx)) return;
+                await openReadyContractFromProcessing(idx);
+            });
+        });
     }
 
     if (readyCard && readyList) {
-        if (completedTenants.length > 0) {
-            readyCard.classList.remove("hidden");
-            readyList.innerHTML = completedTenants.map((tenant) => `
-                <div class="processing-ready-item">
-                    <div>
-                        <div class="processing-ready-name">${esc(tenant.filename || `Contract ${tenant.tenantIdx + 1}`)}</div>
-                        <div class="processing-ready-meta">This contract is ready now. You can start reviewing it while CAM continues processing the remaining leases.</div>
-                    </div>
-                    <button class="btn btn-primary btn-sm" data-ready-open="${tenant.tenantIdx}">Open Contract</button>
-                </div>
-            `).join("");
-            readyList.querySelectorAll("[data-ready-open]").forEach((btn) => {
-                btn.addEventListener("click", async () => {
-                    const idx = Number(btn.dataset.readyOpen);
-                    if (Number.isNaN(idx)) return;
-                    await openReadyContractFromProcessing(idx);
-                });
-            });
-        } else {
-            readyCard.classList.add("hidden");
-            readyList.innerHTML = "";
-        }
+        readyCard.classList.add("hidden");
+        readyList.innerHTML = "";
     }
 
     if (detailToggle) {
@@ -2572,13 +2824,28 @@ function renderNavSidebar() {
         else if (resolution === "resolved") { statusIcon = "\u2713"; statusCls = "nav-status-resolved"; }
         else                           { statusIcon = "\u26A0"; statusCls = "nav-status-unreviewed"; }
 
-        // Overall status label
+        // Overall status label — confidence-aware health label
         let navStatusLabel = '', navStatusClass = '';
         if (s121) {
-            if (s121.critical > 0)      { navStatusLabel = 'Immediate Action'; navStatusClass = 'nav-status-critical'; }
-            else if (s121.high > 0)     { navStatusLabel = 'Review Recommended'; navStatusClass = 'nav-status-high'; }
-            else if (s121.deviates > 0) { navStatusLabel = 'Monitor'; navStatusClass = 'nav-status-medium'; }
-            else                        { navStatusLabel = 'Clear'; navStatusClass = 'nav-status-clear'; }
+            const _navDevs = getDeviationWorkflowProvisions(provisions, i);
+            const _navCritical = _navDevs.filter(p => p.severity === "CRITICAL").length;
+            const _navHigh = _navDevs.filter(p => p.severity === "HIGH").length;
+            const _navFragile = _navDevs.filter(p => (p.cam_score || {}).governance_signal === "ASSERT_REVIEW_SIGNAL").length;
+            const _navWithhold = _navDevs.filter(p => (p.cam_score || {}).governance_signal === "WITHHOLD_SIGNAL").length;
+
+            if (_navCritical > 0) {
+                navStatusLabel = 'Critical Issues Found'; navStatusClass = 'nav-status-critical';
+            } else if (_navHigh >= 5 && _navFragile >= _navHigh * 0.6) {
+                navStatusLabel = 'Complex Redline'; navStatusClass = 'nav-status-high';
+            } else if (_navDevs.length > 0 && _navWithhold >= _navDevs.length * 0.5) {
+                navStatusLabel = 'Uncertain'; navStatusClass = 'nav-status-high';
+            } else if (_navHigh >= 3) {
+                navStatusLabel = 'Significant Issues'; navStatusClass = 'nav-status-high';
+            } else if (s121.deviates > 0) {
+                navStatusLabel = 'Monitor'; navStatusClass = 'nav-status-medium';
+            } else {
+                navStatusLabel = 'Clear'; navStatusClass = 'nav-status-clear';
+            }
         }
 
         // Tenant label
@@ -2648,21 +2915,44 @@ function renderNavSidebar() {
 
             const issuesList = document.createElement("div");
             issuesList.className = "nav-issues-list";
-            deviations.forEach(p => {
+            deviations.forEach((p, idx) => {
                 const pid = p.provision_id || "";
                 const sev = (p.severity || "MEDIUM").toUpperCase();
                 const sevLow = sev.toLowerCase();
+                const isFocused = navSidebarFocusMap[i] ? navSidebarFocusMap[i] === pid : idx === 0;
                 // Strip LP-XX prefix from provision name for display
                 const cleanName = (p.provision_name || pid).replace(/^LP-\d{2}\s+/, "").replace(/^CUSTOM-\d+\s+/, "");
                 const concern = getConformingConcernState(i, pid);
 
+                const _navGovernanceSignal = p.cam_score ? p.cam_score.governance_signal : "";
+                const _navBadge = getConfidenceBadgeData(_navGovernanceSignal, sev);
+                const _navConfidenceHelp = (function(signal, badge) {
+                    if (!badge) return "";
+                    const map = {
+                        ASSERT_SIGNAL: "High confidence - strong agreement",
+                        ASSERT_REVIEW_SIGNAL: "Moderate confidence - some interpretation sensitivity",
+                        REVIEW_SIGNAL: "Moderate confidence - some evaluator disagreement",
+                        WITHHOLD_SIGNAL: "Low confidence - unstable interpretation"
+                    };
+                    return map[signal] || (badge.label + " confidence");
+                })(_navGovernanceSignal, _navBadge);
+                const _navDotsHtml = _navBadge ? `<span class="nav-confidence-dots" aria-label="${esc(_navConfidenceHelp)}" title="${esc(_navConfidenceHelp)}">${_navBadge.dots}</span>` : "";
+
                 const item = document.createElement("div");
-                item.className = "nav-issue-item nav-issue-" + sevLow;
+                item.className = "nav-issue-item nav-issue-" + sevLow
+                    + ((sev === "CRITICAL" || sev === "HIGH") ? " nav-issue-priority" : "")
+                    + (isFocused ? " nav-issue-topfocus" : "");
                 item.innerHTML =
+                    `<span class="nav-issue-signal">` +
                     `<span class="nav-issue-sev nav-issue-sev-${sevLow}">${esc(sev)}</span>` +
+                    _navDotsHtml +
+                    `</span>` +
                     `<span class="nav-issue-name">${esc(cleanName)}</span>`;
-                item.title = pid + " — " + sev;
+                item.title = pid + " — " + sev + (_navBadge ? " — " + _navBadge.label : "");
                 item.onclick = function() {
+                    navSidebarFocusMap[i] = pid;
+                    issuesList.querySelectorAll(".nav-issue-item").forEach(el => el.classList.remove("nav-issue-topfocus"));
+                    item.classList.add("nav-issue-topfocus");
                     jumpToProvisionFromSidebar(pid, i);
                 };
                 issuesList.appendChild(item);
@@ -2675,12 +2965,16 @@ function renderNavSidebar() {
         const allProvsDivider = document.createElement("div");
         allProvsDivider.className = "nav-section-header nav-section-header--all nav-section-toggle";
         allProvsDivider.innerHTML =
-            `<span>All Provisions <span class="nav-all-count">(${allProvsCount})</span></span>` +
+            `<span class="nav-section-toggle-label">Show All Clauses <span class="nav-all-count">(${allProvsCount})</span></span>` +
             `<span class="nav-toggle-chevron">&#9654;</span>`;
         allProvsDivider.onclick = function() {
             const isHidden = allProvsList.classList.contains("hidden");
             allProvsList.classList.toggle("hidden", !isHidden);
             allProvsDivider.querySelector(".nav-toggle-chevron").innerHTML = isHidden ? "&#9660;" : "&#9654;";
+            const toggleLabel = allProvsDivider.querySelector(".nav-section-toggle-label");
+            if (toggleLabel) {
+                toggleLabel.innerHTML = `${isHidden ? "Hide Full Clause List" : "Show All Clauses"} <span class="nav-all-count">(${allProvsCount})</span>`;
+            }
         };
         tenantEl.appendChild(allProvsDivider);
 
@@ -4016,12 +4310,27 @@ function renderContractStatusPanel() {
             return;
         }
 
-        // Status badge
+        // Status badge — use contract health label with confidence awareness
         let statusLabel, statusClass;
-        if (s.critical > 0)       { statusLabel = "\u26A0 Immediate Action"; statusClass = "status-critical"; }
-        else if (s.high > 0)      { statusLabel = "\u26A0 Review Recommended"; statusClass = "status-high"; }
-        else if (s.deviates > 0)  { statusLabel = "\u00B7 Monitor"; statusClass = "status-medium"; }
-        else                      { statusLabel = "\u2713 Clear"; statusClass = "status-clear"; }
+        const _healthProvs = deviations;
+        const _healthCritical = _healthProvs.filter(p => p.severity === "CRITICAL").length;
+        const _healthHigh = _healthProvs.filter(p => p.severity === "HIGH").length;
+        const _healthFragile = _healthProvs.filter(p => (p.cam_score || {}).governance_signal === "ASSERT_REVIEW_SIGNAL").length;
+        const _healthWithhold = _healthProvs.filter(p => (p.cam_score || {}).governance_signal === "WITHHOLD_SIGNAL").length;
+
+        if (_healthCritical > 0) {
+            statusLabel = "\u26A0 Critical Issues Found"; statusClass = "status-critical";
+        } else if (_healthHigh >= 5 && _healthFragile >= _healthHigh * 0.6) {
+            statusLabel = "\u26A0 Complex Redline \u2014 Structured Review Required"; statusClass = "status-high";
+        } else if (_healthProvs.length > 0 && _healthWithhold >= _healthProvs.length * 0.5) {
+            statusLabel = "\u26A0 Uncertain \u2014 Attorney Review Required"; statusClass = "status-high";
+        } else if (_healthHigh >= 3) {
+            statusLabel = "\u26A0 Significant Issues \u2014 Review Recommended"; statusClass = "status-high";
+        } else if (s.deviates > 0) {
+            statusLabel = "\u00B7 Monitor"; statusClass = "status-medium";
+        } else {
+            statusLabel = "\u2713 Clear"; statusClass = "status-clear";
+        }
 
         // Step 119: Build tenant/property subtitle line
         const meta = t.results && t.results.contract_metadata ? t.results.contract_metadata : {};
@@ -4340,6 +4649,20 @@ function updateContractDetailHeader(tenantIdx) {
     else if (s && (s.deviates || 0) > 0) actionBadge = ' <span class="snapshot-action-badge action-badge-medium">\u00B7 Monitor</span>';
     else if (s)                          actionBadge = ' <span class="snapshot-action-badge action-badge-clear">\u2713 Clear</span>';
 
+    // Compute fragility badge — show when high-severity findings are predominantly Fragile
+    var fragilityBadge = '';
+    var _allDevs = getDeviationWorkflowProvisions(provisions, tenantIdx);
+    var _highSevDevs = _allDevs.filter(function(p) {
+        return p.severity === 'CRITICAL' || p.severity === 'HIGH';
+    });
+    var _fragileCount = _highSevDevs.filter(function(p) {
+        return (p.cam_score || {}).governance_signal === 'ASSERT_REVIEW_SIGNAL';
+    }).length;
+    // Show fragility badge if 60%+ of high-severity findings are Fragile
+    if (_highSevDevs.length >= 2 && _fragileCount >= _highSevDevs.length * 0.6) {
+        fragilityBadge = ' <span class="snapshot-action-badge action-badge-fragile">\u26A0 Fragile Findings</span>';
+    }
+
     var deviationBadge = deviationCount > 0
         ? ' <span class="contract-detail-deviation-badge">' + deviationCount + ' Deviation' + (deviationCount !== 1 ? 's' : '') + '</span>'
         : '';
@@ -4353,8 +4676,8 @@ function updateContractDetailHeader(tenantIdx) {
     }
 
     headerEl.innerHTML = '<div class="contract-detail-header-row">'
-        + '<h2 class="contract-detail-name">' + esc(name) + actionBadge + deviationBadge + resBadge + '</h2>'
-        + '<div id="final-draft-status" class="contract-final-draft-status hidden"></div>'
+        + '<h2 class="contract-detail-name">' + esc(name) + actionBadge + fragilityBadge + deviationBadge + resBadge + '</h2>'
+        + '<div id="final-draft-status-header" class="contract-final-draft-status hidden"></div>'
         + '</div>';
 }
 
@@ -4398,18 +4721,18 @@ function buildContractPickerStatusOptions() {
 
 function renderContractPickerFilterBar() {
     const bar = $("#contract-clause-filter-bar");
-    const selectorDropdown = $("#contract-selector-dropdown");
     if (!bar) return;
     bar.classList.remove("hidden");
     bar.innerHTML = `
-        <div class="contract-clause-filter-group">
-            <span class="contract-clause-filter-label">Contract Filter</span>
-            <select id="contract-picker-severity-filter" class="contract-clause-filter-select">
-                ${buildContractPickerStatusOptions()}
-            </select>
+        <div class="contract-clause-filter-layout">
+            <div class="contract-clause-filter-controls">
+                <select id="contract-selector-dropdown" class="contract-selector-select"></select>
+                <select id="contract-picker-severity-filter" class="contract-clause-filter-select">
+                    ${buildContractPickerStatusOptions()}
+                </select>
+            </div>
         </div>
     `;
-    selectorDropdown?.classList.remove("hidden");
     $("#contract-picker-severity-filter")?.addEventListener("change", (e) => {
         contractPickerSeverityFilter = e.target.value;
         renderContractSelectorBar(null);
@@ -4423,15 +4746,32 @@ function getAvailableClauseFilterValues(provisions) {
     });
     const severitySet = new Set();
     const statusSet = new Set();
+    const confidenceSet = new Set();
     let hasRead = false;
     let hasUnread = false;
     let hasNotes = false;
     let hasNoNotes = false;
 
+    const getClauseConfidenceBucket = function(signal) {
+        switch ((signal || '').toUpperCase()) {
+            case 'ASSERT_SIGNAL':
+                return 'confident';
+            case 'ASSERT_REVIEW_SIGNAL':
+            case 'REVIEW_SIGNAL':
+                return 'needs_review';
+            case 'WITHHOLD_SIGNAL':
+                return 'withhold';
+            default:
+                return '';
+        }
+    };
+
     deviations.forEach(function(p) {
         const pid = p.provision_id || "";
         const severity = (p.severity || "").toUpperCase();
         if (severity) severitySet.add(severity);
+        const confBucket = getClauseConfidenceBucket(p && p.cam_score ? p.cam_score.governance_signal : '');
+        if (confBucket) confidenceSet.add(confBucket);
         const key = `${currentTenantIndex}:${pid}`;
         const resolution = (resolutionState[key] || {}).status || 'open';
         statusSet.add(resolution);
@@ -4445,6 +4785,8 @@ function getAvailableClauseFilterValues(provisions) {
     conforming.forEach(function(p) {
         const pid = p.provision_id || "";
         statusSet.add('conforming');
+        const confBucket = getClauseConfidenceBucket(p && p.cam_score ? p.cam_score.governance_signal : '');
+        if (confBucket) confidenceSet.add(confBucket);
         if (isNoted(currentTenantIndex, pid)) hasRead = true;
         else hasUnread = true;
         if (getConformingConcernState(currentTenantIndex, pid) === 'concern') hasNotes = true;
@@ -4454,6 +4796,7 @@ function getAvailableClauseFilterValues(provisions) {
     return {
         severities: severitySet,
         statuses: statusSet,
+        confidences: confidenceSet,
         hasRead,
         hasUnread,
         hasNotes,
@@ -4463,11 +4806,15 @@ function getAvailableClauseFilterValues(provisions) {
 
 function renderContractSelectorBar(selectedTenantIdx) {
     var selectorBar = document.getElementById('contract-selector-bar');
-    var selectorDrop = document.getElementById('contract-selector-dropdown');
     var filterBar = document.getElementById('contract-clause-filter-bar');
-    if (!selectorBar || !selectorDrop || !currentResults || !currentResults.tenants) return;
+    if (!selectorBar || !currentResults || !currentResults.tenants) return;
 
     if (selectedTenantIdx === null || selectedTenantIdx === undefined) {
+        selectorBar.classList.remove('hidden');
+        renderContractPickerFilterBar();
+        // Populate dropdown after filter bar renders it
+        var selectorDrop = document.getElementById('contract-selector-dropdown');
+        if (!selectorDrop) return;
         var filteredTenants = currentResults.tenants
             .map(function(t, i) { return { tenant: t, index: i }; })
             .filter(function(entry) {
@@ -4485,23 +4832,10 @@ function renderContractSelectorBar(selectedTenantIdx) {
             var idx = parseInt(selectorDrop.value, 10);
             if (!isNaN(idx)) openContractDetail(idx);
         };
-        selectorBar.classList.remove('hidden');
-        renderContractPickerFilterBar();
         return;
     }
 
-    selectorDrop.innerHTML = currentResults.tenants.map(function(t, i) {
-        var dName = formatTenantName(t.filename || ('Contract ' + (i + 1)));
-        var dSummary = t.results && t.results.summary ? t.results.summary : null;
-        var dHighest = dSummary ? getHighestSeverity(dSummary) : null;
-        var dStatusLabel = getStatusLabel(dHighest);
-        return '<option value="' + i + '">' + esc(dName) + ' — ' + dStatusLabel + '</option>';
-    }).join('');
-    selectorDrop.value = String(selectedTenantIdx);
-    selectorDrop.onchange = function() {
-        var idx = parseInt(selectorDrop.value, 10);
-        if (!isNaN(idx)) openContractDetail(idx);
-    };
+    // Detail mode — just show the bars; dropdown is populated by renderContractClauseFilterBar
     selectorBar.classList.remove('hidden');
     if (filterBar) filterBar.classList.remove('hidden');
 }
@@ -4535,6 +4869,9 @@ function renderContractClauseFilterBar(provisions) {
     if (contractClauseReadFilter === 'unread' && !available.hasUnread) contractClauseReadFilter = 'all';
     if (contractClauseNotesFilter === 'has_notes' && !available.hasNotes) contractClauseNotesFilter = 'all';
     if (contractClauseNotesFilter === 'no_notes' && !available.hasNoNotes) contractClauseNotesFilter = 'all';
+    if (contractClauseConfidenceFilter !== 'all' && !available.confidences.has(contractClauseConfidenceFilter)) {
+        contractClauseConfidenceFilter = 'all';
+    }
 
     const severityOptions = ['<option value="all">Severity: All</option>']
         .concat(severityDefs.filter(def => available.severities.has(def.value)).map(def =>
@@ -4552,35 +4889,49 @@ function renderContractClauseFilterBar(provisions) {
         .concat(available.hasNotes ? [`<option value="has_notes"${contractClauseNotesFilter === 'has_notes' ? ' selected' : ''}>Has Notes</option>`] : [])
         .concat(available.hasNoNotes ? [`<option value="no_notes"${contractClauseNotesFilter === 'no_notes' ? ' selected' : ''}>No Notes</option>`] : [])
         .join('');
+    const confidenceOptions = ['<option value="all">Confidence: All</option>']
+        .concat(available.confidences.has('confident') ? [`<option value="confident"${contractClauseConfidenceFilter === 'confident' ? ' selected' : ''}>High Confidence</option>`] : [])
+        .concat(available.confidences.has('needs_review') ? [`<option value="needs_review"${contractClauseConfidenceFilter === 'needs_review' ? ' selected' : ''}>Needs Review</option>`] : [])
+        .concat(available.confidences.has('withhold') ? [`<option value="withhold"${contractClauseConfidenceFilter === 'withhold' ? ' selected' : ''}>Withhold / Uncertain</option>`] : [])
+        .join('');
+
+    const tenant = currentResults && currentResults.tenants ? currentResults.tenants[currentTenantIndex] : null;
+    const annotatedButton = tenant && tenant.has_annotated
+        ? `<button type="button" class="btn btn-secondary btn-sm contract-annotated-btn"
+            onclick="window.CAM.downloadFile('/api/jobs/${currentJobId}/results/${currentTenantIndex}/annotated')">
+            Download Annotated Tenant Lease
+        </button>`
+        : '';
 
     bar.classList.remove("hidden");
     bar.innerHTML = `
-        <div class="contract-clause-filter-group">
-            <span class="contract-clause-filter-label">Clause Filters</span>
-            <select id="contract-clause-severity-filter" class="contract-clause-filter-select">
-                ${severityOptions}
-            </select>
-            <select id="contract-clause-status-filter" class="contract-clause-filter-select">
-                ${statusOptions}
-            </select>
-            <select id="contract-clause-read-filter" class="contract-clause-filter-select">
-                ${readOptions}
-            </select>
-            <select id="contract-clause-notes-filter" class="contract-clause-filter-select">
-                ${notesOptions}
-            </select>
-            <button type="button" class="contract-clause-filter-reset" id="contract-clause-filter-reset">Reset</button>
-            ${(() => {
-                const tenant = currentResults && currentResults.tenants ? currentResults.tenants[currentTenantIndex] : null;
-                return tenant && tenant.has_annotated
-                    ? `<button type="button" class="btn btn-secondary btn-sm contract-annotated-btn"
-                        onclick="window.CAM.downloadFile('/api/jobs/${currentJobId}/results/${currentTenantIndex}/annotated')">
-                        Download Annotated Tenant Lease
-                    </button>`
-                    : '';
-            })()}
-            <button type="button" class="fd-generate-btn contract-final-draft-btn" id="fd-generate-btn" disabled
-                onclick="window.CAM.generateFinalDraft()">Generate Final Draft ↓</button>
+        <div class="contract-clause-filter-layout">
+            <div class="contract-clause-filter-toprow">
+                <div class="contract-clause-filter-actions">
+                    ${annotatedButton}
+                    <button type="button" class="fd-generate-btn contract-final-draft-btn" id="fd-generate-btn" disabled
+                        onclick="window.CAM.generateFinalDraft()">Generate Final Draft \u2193</button>
+                </div>
+            </div>
+            <div class="contract-clause-filter-controls">
+                <select id="contract-selector-dropdown" class="contract-selector-select"></select>
+                <select id="contract-clause-severity-filter" class="contract-clause-filter-select">
+                    ${severityOptions}
+                </select>
+                <select id="contract-clause-status-filter" class="contract-clause-filter-select">
+                    ${statusOptions}
+                </select>
+                <select id="contract-clause-read-filter" class="contract-clause-filter-select">
+                    ${readOptions}
+                </select>
+                <select id="contract-clause-notes-filter" class="contract-clause-filter-select">
+                    ${notesOptions}
+                </select>
+                <select id="contract-clause-confidence-filter" class="contract-clause-filter-select">
+                    ${confidenceOptions}
+                </select>
+                <button type="button" class="contract-clause-filter-reset" id="contract-clause-filter-reset">Reset</button>
+            </div>
         </div>
     `;
 
@@ -4600,15 +4951,35 @@ function renderContractClauseFilterBar(provisions) {
         contractClauseNotesFilter = e.target.value;
         applyContractClauseFilters();
     });
+    $("#contract-clause-confidence-filter")?.addEventListener("change", (e) => {
+        contractClauseConfidenceFilter = e.target.value;
+        applyContractClauseFilters();
+    });
     $("#contract-clause-filter-reset")?.addEventListener("click", () => {
         contractClauseSeverityFilter = 'all';
         contractClauseStatusFilter = 'all';
         contractClauseReadFilter = 'all';
         contractClauseNotesFilter = 'all';
+        contractClauseConfidenceFilter = 'all';
         const tenant = currentResults && currentResults.tenants ? currentResults.tenants[currentTenantIndex] : null;
         renderContractClauseFilterBar((tenant && tenant.results && tenant.results.provisions) || []);
         applyContractClauseFilters();
     });
+    updateFinalDraftBar();
+
+    // Populate the contract selector dropdown (now inside filter bar HTML)
+    var selectorDrop = document.getElementById('contract-selector-dropdown');
+    if (selectorDrop && currentResults && currentResults.tenants) {
+        selectorDrop.innerHTML = currentResults.tenants.map(function(t, i) {
+            var dName = formatTenantName(t.filename || ('Contract ' + (i + 1)));
+            return '<option value="' + i + '">' + esc(dName) + '</option>';
+        }).join('');
+        selectorDrop.value = String(currentTenantIndex);
+        selectorDrop.onchange = function() {
+            var idx = parseInt(selectorDrop.value, 10);
+            if (!isNaN(idx)) openContractDetail(idx);
+        };
+    }
 }
 
 function applyContractClauseFilters() {
@@ -4617,11 +4988,31 @@ function applyContractClauseFilters() {
     const header = $("#deviations-header");
     const total = cards.length;
     let visible = 0;
+    const provisionMap = new Map((((currentResults || {}).tenants || [])[currentTenantIndex]?.results?.provisions || []).map(function(p) {
+        return [p.provision_id || "", p];
+    }));
+    const getClauseConfidenceBucket = function(signal) {
+        switch ((signal || '').toUpperCase()) {
+            case 'ASSERT_SIGNAL':
+                return 'confident';
+            case 'ASSERT_REVIEW_SIGNAL':
+            case 'REVIEW_SIGNAL':
+                return 'needs_review';
+            case 'WITHHOLD_SIGNAL':
+                return 'withhold';
+            default:
+                return '';
+        }
+    };
+    const confidenceMatches = function(bucket) {
+        return contractClauseConfidenceFilter === 'all' || bucket === contractClauseConfidenceFilter;
+    };
 
     cards.forEach(card => {
         const pid = card.dataset.provision || "";
         const tenantIdx = parseInt(card.dataset.tenantIdx || String(currentTenantIndex), 10);
         const severity = (card.dataset.severity || '').toUpperCase();
+        const confidenceBucket = getClauseConfidenceBucket(card.dataset.confidence || '');
         const key = `${tenantIdx}:${pid}`;
         const resolution = (resolutionState[key] || {}).status || 'open';
         const hasNotes = ((resolutionState[key] || {}).notes || []).length > 0;
@@ -4635,8 +5026,9 @@ function applyContractClauseFilters() {
         const notesOk = contractClauseNotesFilter === 'all'
             || (contractClauseNotesFilter === 'has_notes' && hasNotes)
             || (contractClauseNotesFilter === 'no_notes' && !hasNotes);
+        const confidenceOk = confidenceMatches(confidenceBucket);
 
-        const show = severityOk && statusOk && readOk && notesOk;
+        const show = severityOk && statusOk && readOk && notesOk && confidenceOk;
         card.classList.toggle("hidden", !show);
         if (show) visible++;
     });
@@ -4645,6 +5037,8 @@ function applyContractClauseFilters() {
         const pid = item.dataset.pid || "";
         const isRead = isNoted(currentTenantIndex, pid);
         const hasNotes = getConformingConcernState(currentTenantIndex, pid) === 'concern';
+        const provision = provisionMap.get(pid) || null;
+        const confidenceBucket = getClauseConfidenceBucket(provision && provision.cam_score ? provision.cam_score.governance_signal : '');
         const statusOk = contractClauseStatusFilter === 'all' || contractClauseStatusFilter === 'conforming';
         const readOk = contractClauseReadFilter === 'all'
             || (contractClauseReadFilter === 'read' && isRead)
@@ -4653,7 +5047,8 @@ function applyContractClauseFilters() {
             || (contractClauseNotesFilter === 'has_notes' && hasNotes)
             || (contractClauseNotesFilter === 'no_notes' && !hasNotes);
         const severityOk = contractClauseSeverityFilter === 'all';
-        item.classList.toggle("hidden", !(severityOk && statusOk && readOk && notesOk));
+        const confidenceOk = confidenceMatches(confidenceBucket);
+        item.classList.toggle("hidden", !(severityOk && statusOk && readOk && notesOk && confidenceOk));
     });
 
     if (header) header.textContent = "Deviations";
@@ -5312,15 +5707,12 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
         }
 
         const resolutionBarHtml = `
-        <div class="resolution-bar" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}">
+        <div class="resolution-bar summary-resolution-bar" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}">
             <div class="res-status-row finding-workflow-row">
                 <div class="workflow-group workflow-group-status">
                     <span class="res-label">Status:</span>
                     <div class="res-pills">${statusPillsHtml}</div>
-                </div>
-                ${draftDecisionControlsHtml ? `<div class="workflow-divider" aria-hidden="true"></div><div class="workflow-group workflow-group-decision">${draftDecisionControlsHtml}</div>` : ""}
-                <div class="workflow-divider" aria-hidden="true"></div>
-                <div class="workflow-group workflow-group-tools">
+                    <span class="summary-pipe" aria-hidden="true"></span>
                     <span class="res-tools-label">Tools:</span>
                     <button class="res-notes-toggle" onclick="window.CAM.toggleResolutionNotes('${esc(pid)}', ${tenantIdx})"
                             data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}">
@@ -5330,7 +5722,7 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
                         \uD83D\uDCA1 AI Advisor
                     </button>
                 </div>
-                <div class="workflow-divider workflow-divider-spacer" aria-hidden="true"></div>
+                ${draftDecisionControlsHtml ? `<div class="workflow-group workflow-group-decision">${draftDecisionControlsHtml}</div>` : ""}
                 ${workflowActionsHtml}
             </div>
             <div class="res-notes-panel hidden" id="res-notes-${esc(pid)}-${tenantIdx}">
@@ -5351,6 +5743,12 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
 
         const resolvedCls = (resStatus === "resolved" || resStatus === "not_a_deviation") ? " resolution-resolved" : "";
         const govSig184 = d.cam_score ? (d.cam_score.governance_signal || '') : '';
+        const _confBadgeData = window.CAMAuditShared.getConfidenceBadgeData ? window.CAMAuditShared.getConfidenceBadgeData(govSig184, (sev || "").toUpperCase()) : null;
+        const _needsReviewTag = _confBadgeData && _confBadgeData.needsReview
+            ? `<span class="cam-confidence-needs-review">Needs Review</span>` : "";
+        const confidenceBadgeHtml = _confBadgeData
+            ? `<span class="cam-confidence-badge ${_confBadgeData.cssClass}${_confBadgeData.needsReview ? ' needs-review-combo' : ''}"><span class="cam-confidence-dots">${_confBadgeData.dots}</span>${_confBadgeData.label}${_needsReviewTag}</span>`
+            : "";
         const expandedCls = (resStatus === "resolved" || resStatus === "not_a_deviation") ? "" : " card-expanded";
         return `<div class="finding-card ${sevClass}${resolvedCls}${expandedCls}" id="dev-${pid}" data-provision="${esc(pid)}" data-severity="${esc(sev)}" data-tenant-idx="${tenantIdx}" data-confidence="${esc(govSig184)}">
             <div class="deviation-header">
@@ -5358,6 +5756,7 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
                     <div class="deviation-header-left">
                         <span class="provision-title">${esc(pid)} ${esc(pname)}</span>
                         <span class="severity-badge ${sevClass}">${displayIcon} ${displaySev}</span>
+                        ${confidenceBadgeHtml}
                         ${credibilityLine}
                         ${discoveredBadge}
                     </div>
@@ -9604,20 +10003,24 @@ function renderAuditTrail(allTenants) {
     ].filter(Boolean).map(getModelDisplayName).join(" · ");
 
     let html = `<div class="audit-export-bar">
-        <span class="audit-export-label">This contract:</span>
-        <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditJSON(true)">
-            Download JSON
-        </button>
-        <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditText(true)">
-            Download Audit Report
-        </button>
-        <span class="audit-export-label audit-export-label-sep">All contracts:</span>
-        <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditJSON(false)">
-            Download JSON
-        </button>
-        <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditText(false)">
-            Download Audit Report
-        </button>
+        <div class="audit-export-group">
+            <span class="audit-export-label">This contract:</span>
+            <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditJSON(true)">
+                Download JSON
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditText(true)">
+                Download Audit Report
+            </button>
+        </div>
+        <div class="audit-export-group">
+            <span class="audit-export-label">All contracts:</span>
+            <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditJSON(false)">
+                Download JSON
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditText(false)">
+                Download Audit Report
+            </button>
+        </div>
     </div>
     <div class="audit-run-meta">
         <div class="audit-meta-section">
@@ -9703,6 +10106,7 @@ function renderAuditTrail(allTenants) {
     });
     html += `</div>`;
     tab.innerHTML = html;
+    syncAuditExpandToggle();
 }
 
 function buildAuditDetailV2(p, modelsUsed, stageData) {
@@ -9718,6 +10122,7 @@ function buildAuditDetailV2(p, modelsUsed, stageData) {
     const severityRaw = (stageData.severity_raw || []).find(x => x.provision_id === pid) || null;
     const severityPrompts = stageData.severity_prompts || {};
     const fragilityRaw = (stageData.fragility || []).find(x => x.provision_id === pid) || null;
+    const sev = p.severity || "";
     const triage = stageData.triage || {};
     const wasFlagged = (triage.flagged || []).includes(pid);
     const camScore = p.cam_score || {};
@@ -9774,11 +10179,31 @@ function buildAuditDetailV2(p, modelsUsed, stageData) {
         </div>
     </div>`;
 
+    const _auditBadgeData = getConfidenceBadgeData ? getConfidenceBadgeData(camScore.governance_signal, (sev || "").toUpperCase()) : null;
+    const _auditToneText = getConfidenceToneText ? getConfidenceToneText(camScore.governance_signal) : "";
+    const _auditNeedsReview = _auditBadgeData && _auditBadgeData.needsReview
+        ? `<span class="cam-confidence-needs-review">Needs Review</span>` : "";
+    const _auditBadgeHtml = _auditBadgeData
+        ? `<span class="cam-confidence-badge ${_auditBadgeData.cssClass}${_auditBadgeData.needsReview ? ' needs-review-combo' : ''}"><span class="cam-confidence-dots">${_auditBadgeData.dots}</span>${_auditBadgeData.label}${_auditNeedsReview}</span>`
+        : "";
+    const _camPermDisplay = camScore.CAM_perm != null ? String(camScore.CAM_perm) : "\u2014";
+    const _auditConfHelper = _auditToneText || confidenceTone.label;
+    const _auditConfidenceTone = confidenceTone.tone || "neutral";
+    const _auditConfidenceWidth = confidenceTone.width != null ? confidenceTone.width : 0;
+    const _auditConfidenceCard = `<div class="audit-score-card audit-score-${_auditConfidenceTone}">
+        <div class="audit-score-head">
+            <span class="audit-score-label">CAM confidence</span>
+            <span class="audit-score-value">${_auditBadgeHtml}${_auditBadgeHtml ? " " : ""}${esc(_camPermDisplay)}</span>
+        </div>
+        <div class="audit-score-track"><span class="audit-score-fill audit-score-fill-${_auditConfidenceTone}" style="width:${Math.max(0, Math.min(100, _auditConfidenceWidth))}%"></span></div>
+        <div class="audit-score-helper">${esc(_auditConfHelper)}</div>
+    </div>`;
+
     html += `<div class="audit-proof-section">
         <div class="audit-proof-section-title">Confidence and stability</div>
         <div class="audit-score-grid">
-            ${renderAuditScoreBar("CAM confidence", camScore.CAM_perm != null ? String(camScore.CAM_perm) : "—", confidenceTone.label, confidenceTone)}
-            ${renderAuditScoreBar("Strict review sensitivity (ASG)", camScore.ASG != null ? String(camScore.ASG) : "—", asgTone.label, asgTone)}
+            ${_auditConfidenceCard}
+            ${renderAuditScoreBar("Strict review sensitivity (ASG)", camScore.ASG != null ? String(camScore.ASG) : "\u2014", asgTone.label, asgTone)}
             ${renderAuditScoreBar("Structural fragility", fragilityRaw && fragilityRaw.fragility_score != null ? String(Math.round(fragilityRaw.fragility_score * 100)) + "%" : "—", fragilityTone.label, fragilityTone)}
         </div>
         <div class="audit-proof-microcopy">CAM separates strong findings that survive stricter review from findings that look persuasive but weaken under scrutiny.</div>
@@ -10209,11 +10634,15 @@ function toggleAuditRow(idx) {
     detail.classList.toggle("hidden");
     const chevron = header && header.querySelector(".audit-chevron");
     if (chevron) chevron.innerHTML = isOpen ? "&#9662;" : "&#9652;";
+    syncAuditExpandToggle();
 }
 
 function expandAllAuditRows() {
-    document.querySelectorAll(".audit-provision-detail").forEach(d => d.classList.remove("hidden"));
-    document.querySelectorAll(".audit-chevron").forEach(c => { c.innerHTML = "&#9652;"; });
+    const details = Array.from(document.querySelectorAll(".audit-provision-detail"));
+    const hasCollapsed = details.some(d => d.classList.contains("hidden"));
+    details.forEach(d => d.classList.toggle("hidden", !hasCollapsed));
+    document.querySelectorAll(".audit-chevron").forEach(c => { c.innerHTML = hasCollapsed ? "&#9652;" : "&#9662;"; });
+    syncAuditExpandToggle();
 }
 
 function collapseAllConforming() {
@@ -10230,6 +10659,21 @@ function collapseAllConforming() {
 function collapseAllAuditRows() {
     document.querySelectorAll(".audit-provision-detail").forEach(d => d.classList.add("hidden"));
     document.querySelectorAll(".audit-chevron").forEach(c => { c.innerHTML = "&#9662;"; });
+    syncAuditExpandToggle();
+}
+
+function syncAuditExpandToggle() {
+    const buttons = Array.from(document.querySelectorAll(".audit-controls-buttons .btn-audit-control"));
+    if (buttons.length === 0) return;
+    const primary = buttons[0];
+    const secondary = buttons[1];
+    if (secondary) secondary.classList.add("hidden");
+    const details = Array.from(document.querySelectorAll(".audit-provision-detail"));
+    const hasCollapsed = details.some(d => d.classList.contains("hidden"));
+    if (primary) {
+        primary.textContent = hasCollapsed ? "Expand all" : "Collapse all";
+        primary.setAttribute("onclick", "window.CAM.expandAllAuditRows()");
+    }
 }
 
 // ── Resolution Workflow Functions ──
@@ -10646,13 +11090,12 @@ function switchTopTab(tab) {
     });
     if (contractDetailOpen) {
         closeContractDetail();
-    } else {
-        if (ncp)        ncp.classList.add('hidden');
-        if (contractsT) contractsT.classList.add('hidden');
-        if (overview)   overview.classList.remove('hidden');
-        if (detail)     detail.classList.add('hidden');
-        document.querySelectorAll('#top-tab-bar .top-tab[data-tab]').forEach(function(t) { t.classList.remove('active'); });
     }
+    if (ncp)        ncp.classList.add('hidden');
+    if (contractsT) contractsT.classList.add('hidden');
+    if (overview)   overview.classList.remove('hidden');
+    if (detail)     detail.classList.add('hidden');
+    document.querySelectorAll('#top-tab-bar .top-tab[data-tab]').forEach(function(t) { t.classList.remove('active'); });
 }
 
 // ── Step 130: Contract name filter dropdown builder ──
@@ -11847,18 +12290,18 @@ function countFinalDraftDecisions() {
 
 function updateFinalDraftBar() {
     const statusEl = $('#final-draft-status');
+    const headerStatusEl = $('#final-draft-status-header');
     const btn = $('#fd-generate-btn');
-    if (!statusEl && !btn) return;
+    if (!statusEl && !headerStatusEl && !btn) return;
     const { decided, resolved, ready, total } = countFinalDraftDecisions();
     const remaining = Math.max(0, total - ready);
-    if (statusEl) {
-        if (total === 0) statusEl.classList.add('hidden');
-        else {
-            statusEl.classList.remove('hidden');
-            statusEl.innerHTML = '<span class="fd-bar-label">📋 Final Draft:</span> '
-                + '<span class="fd-counter">' + `${remaining} deviation${remaining === 1 ? '' : 's'} remaining` + '</span>';
-        }
-    }
+    const statusHTML = '<span class="fd-bar-label">\uD83D\uDCCB Final Draft:</span> '
+        + '<span class="fd-counter">' + `${remaining} deviation${remaining === 1 ? '' : 's'} remaining` + '</span>';
+    [statusEl, headerStatusEl].forEach(el => {
+        if (!el) return;
+        if (total === 0) el.classList.add('hidden');
+        else { el.classList.remove('hidden'); el.innerHTML = statusHTML; }
+    });
     if (btn) btn.disabled = ready < total;
 }
 
@@ -12316,6 +12759,7 @@ window.CAM = {
     cancelAddMore,
     toggleAuditRow,
     expandAllAuditRows,
+    syncAuditExpandToggle,
     collapseAllConforming,
     collapseAllAuditRows,
     exportAuditJSON,

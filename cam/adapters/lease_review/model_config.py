@@ -5,7 +5,7 @@ Single source of truth for all model strings used in the pipeline.
 To upgrade a model, change it here — all stages pick it up automatically.
 
 Last updated: 2026-03-15 (session 2)
-  - Evaluator A: claude-sonnet-4-20250514 → claude-sonnet-4-6
+  - Evaluator A: claude-sonnet-4-20250514 → claude-sonnet-4-6 → reverted (212: 4-6 generates unwrapped objects)
   - Evaluator C: grok-3 → grok-4
   - Evaluator B: gpt-5.2 → gpt-5.4 (released 2026-03-05; 33% fewer errors vs 5.2)
   - Challenge/Severity/Cascade: gpt-5.2 → gpt-5.4
@@ -29,8 +29,8 @@ EXTRACTION_CHAIN = [
 
 # ── Evaluators (Stage 2) ───────────────────────────────────────────────────────
 # Three independent models, one per provider. Blind to each other.
-EVALUATOR_A_PRIMARY  = ("anthropic",  "claude-sonnet-4-6")
-EVALUATOR_A_FALLBACK = ("anthropic",  "claude-sonnet-4-20250514")   # prev Sonnet
+EVALUATOR_A_PRIMARY  = ("anthropic",  "claude-sonnet-4-20250514")
+EVALUATOR_A_FALLBACK = ("anthropic",  "claude-sonnet-4-6")          # generates unwrapped objects
 
 EVALUATOR_B_PRIMARY  = ("openai",     "gpt-5.2")
 EVALUATOR_B_FALLBACK = ("openai",     "gpt-4o")

@@ -20,6 +20,9 @@ CAM_KEYS = [
     'eliminate', 'abstain', 'weakest_link', 'confidence',
 ]
 
+# Fields that identify a single provision evaluation object
+_PROVISION_SHAPE = frozenset({'provision_id', 'verdict', 'reasoning'})
+
 
 def _fix_latex_escapes(json_str: str) -> str:
     r"""
@@ -165,6 +168,40 @@ def _extract_all_json_candidates(text: str) -> List[Tuple[int, str, Dict]]:
     return candidates
 
 
+def _collect_provision_objects(candidates: list) -> Optional[Dict[str, Any]]:
+    """
+    If no wrapper with 'evaluations' key was found, check whether we have
+    multiple individual provision evaluation objects. If so, collect them
+    into a synthetic wrapper.
+
+    This handles models that output provision objects one-by-one instead of
+    batching them in an evaluations array.
+
+    Returns a synthetic {"evaluations": [...], "discovered_clauses": []} dict
+    if 2+ unique provision objects are found, else None.
+    """
+    provision_objects = [
+        parsed for _, _, parsed in candidates
+        if _PROVISION_SHAPE.issubset(parsed.keys())
+    ]
+    if len(provision_objects) < 2:
+        return None
+
+    # Deduplicate by provision_id, preserving first occurrence
+    seen: set = set()
+    unique: list = []
+    for obj in provision_objects:
+        pid = obj.get('provision_id')
+        if pid and pid not in seen:
+            seen.add(pid)
+            unique.append(obj)
+
+    if len(unique) < 2:
+        return None
+
+    return {"evaluations": unique, "discovered_clauses": []}
+
+
 def safe_json_extract(text: str) -> Dict[str, Any]:
     r"""
     Extract JSON object from a string that might contain extra text.
@@ -184,12 +221,18 @@ def safe_json_extract(text: str) -> Dict[str, Any]:
     # Fast path: entire text is valid JSON
     if normalized.startswith("{") and normalized.endswith("}"):
         try:
-            return json.loads(normalized)
+            result = json.loads(normalized)
+            # Only take the fast path if it's a priority-key wrapper or not a provision object
+            # (i.e., don't short-circuit with a single provision object)
+            if not _PROVISION_SHAPE.issubset(result.keys()) or any(k in result for k in PRIORITY_KEYS):
+                return result
+            # Single provision object on fast path — fall through to full extraction
         except json.JSONDecodeError:
-            # Try fixing LaTeX escapes
             try:
                 fixed = _fix_latex_escapes(normalized)
-                return json.loads(fixed)
+                result = json.loads(fixed)
+                if not _PROVISION_SHAPE.issubset(result.keys()) or any(k in result for k in PRIORITY_KEYS):
+                    return result
             except json.JSONDecodeError:
                 pass
 
@@ -208,10 +251,19 @@ def safe_json_extract(text: str) -> Dict[str, Any]:
 
         # Sort by score descending (best first)
         candidates.sort(key=score_candidate, reverse=True)
-
-        # Return the best candidate
         best = candidates[0]
-        return best[2]  # Return parsed dict
+
+        # If best candidate has a priority key, return it directly
+        if any(k in best[2] for k in PRIORITY_KEYS):
+            return best[2]
+
+        # No priority-key wrapper found — try collecting individual provision objects
+        synthetic = _collect_provision_objects(candidates)
+        if synthetic is not None:
+            return synthetic
+
+        # Fall back to best-scored candidate
+        return best[2]
 
     # Try the original text too (before normalization)
     if text != normalized:
@@ -226,8 +278,17 @@ def safe_json_extract(text: str) -> Dict[str, Any]:
                 return (priority_score, cam_key_count, field_count, position_score)
 
             candidates.sort(key=score_candidate, reverse=True)
-            return candidates[0][2]
-    
+            best = candidates[0]
+
+            if any(k in best[2] for k in PRIORITY_KEYS):
+                return best[2]
+
+            synthetic = _collect_provision_objects(candidates)
+            if synthetic is not None:
+                return synthetic
+
+            return best[2]
+
     # If nothing worked, give error with context
     excerpt = text[-500:] if len(text) > 500 else text
     raise ValueError(f"json_parse_failed: no valid JSON found (tail: {repr(excerpt)})")

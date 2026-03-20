@@ -233,11 +233,23 @@ def run_lease_analysis(
 
     # ── Parse documents ──
     print("[lease_adapter] Parsing documents...", flush=True)
+    reference_parse_start = time.time()
     template_text = parse_document(template_path)
+    reference_parse_elapsed = time.time() - reference_parse_start
+    print(f"[lease_adapter] Reference parse complete in {reference_parse_elapsed:.2f}s", flush=True)
+
+    tenant_parse_start = time.time()
     tenant_text = parse_document(tenant_path)
+    tenant_parse_elapsed = time.time() - tenant_parse_start
+    print(f"[lease_adapter] Tenant parse complete in {tenant_parse_elapsed:.2f}s", flush=True)
+
+    parse_elapsed_total = reference_parse_elapsed + tenant_parse_elapsed
     tenant_word_count = len(tenant_text.split())
     cfg["tenant_word_count"] = tenant_word_count
-    print(f"[lease_adapter] Template: {len(template_text)} chars, Tenant: {len(tenant_text)} chars ({tenant_word_count} words)", flush=True)
+    print(
+        f"[lease_adapter] Template: {len(template_text)} chars, Tenant: {len(tenant_text)} chars ({tenant_word_count} words) | total local parse {parse_elapsed_total:.2f}s",
+        flush=True,
+    )
 
     # ── Document Gate Check ──
     # Verify tenant document is a commercial lease before burning expensive API calls.
@@ -249,7 +261,7 @@ def run_lease_analysis(
 
     # ── Stage 1: Provision Extraction & Alignment ──
     if progress_callback:
-        progress_callback(1, 6, "Extracting provisions... This is the longest step (~1\u20132 min).")
+        progress_callback(1, 6, "Extracting and aligning provisions from the lease.")
     print("[lease_adapter] Stage 1: Provision extraction...", flush=True)
     extraction = extract_provisions(template_text, tenant_text, provisions, cfg)
     total_api_calls += 1

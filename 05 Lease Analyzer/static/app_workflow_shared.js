@@ -1,6 +1,33 @@
 (function() {
     "use strict";
 
+    const SEVERITY_SORT_RANK = {
+        "CRITICAL": 0,
+        "HIGH":     1,
+        "MEDIUM":   2,
+        "LOW":      3,
+        "REVIEW":   4,
+    };
+
+    const GOVERNANCE_SORT_RANK = {
+        "ASSERT_SIGNAL":        0,
+        "ASSERT_REVIEW_SIGNAL": 1,
+        "REVIEW_SIGNAL":        2,
+        "WITHHOLD_SIGNAL":      3,
+    };
+
+    function _sortByPriority(arr) {
+        arr.sort((a, b) => {
+            const sevA = SEVERITY_SORT_RANK[a.severity] ?? 5;
+            const sevB = SEVERITY_SORT_RANK[b.severity] ?? 5;
+            if (sevA !== sevB) return sevA - sevB;
+            const govA = GOVERNANCE_SORT_RANK[(a.cam_score || {}).governance_signal] ?? 4;
+            const govB = GOVERNANCE_SORT_RANK[(b.cam_score || {}).governance_signal] ?? 4;
+            return govA - govB;
+        });
+        return arr;
+    }
+
     function isManualEscalatedProvision(provision, concernState) {
         if (!provision || provision.provision_id === "LP-00" || provision.final_verdict !== "CONFORMS") return false;
         return concernState === "flag";
@@ -40,19 +67,20 @@
                 base.push(buildManualEscalatedProvision(provision, getConcernReason(tenantIdx, provision.provision_id)));
             }
         });
-        return base;
+        return _sortByPriority(base);
     }
 
     function getDocviewWorkflowProvisions(provisions, tenantIdx, helpers) {
         const getConcernState = helpers && helpers.getConcernState ? helpers.getConcernState : function() { return "none"; };
         const getConcernReason = helpers && helpers.getConcernReason ? helpers.getConcernReason : function() { return ""; };
-        return (provisions || []).map((provision) => {
+        const mapped = (provisions || []).map((provision) => {
             const concernState = getConcernState(tenantIdx, provision && provision.provision_id);
             if (isManualEscalatedProvision(provision, concernState)) {
                 return buildManualEscalatedProvision(provision, getConcernReason(tenantIdx, provision.provision_id));
             }
             return provision;
         });
+        return _sortByPriority(mapped);
     }
 
     function getContractResolutionKey(jobId, tenant, tenantIdx) {

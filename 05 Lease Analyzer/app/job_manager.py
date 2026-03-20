@@ -33,8 +33,8 @@ PROVISION_FLAG_RATES = {
     "LP-13": 0.60, "LP-14": 0.26, "LP-15": 0.14, "LP-16": 0.32,
     "LP-17": 0.05, "LP-18": 0.22,
 }
-VARIABLE_COST_PER_FLAGGED = 29
-EXTRACTION_BASE_SECS = 90
+VARIABLE_COST_PER_FLAGGED = 40
+EXTRACTION_BASE_SECS = 180
 
 
 def _utc_now_iso() -> str:
@@ -191,7 +191,7 @@ def estimate_job_minutes(input_config: dict) -> int:
         "landlord_tenant": 2,
     }.get(identity_check, 2)
 
-    gap_repair_buffer = 120 if prov_count >= 12 else 60
+    gap_repair_buffer = 300 if prov_count >= 12 else 180
     secs_per_lease = max(
         60,
         EXTRACTION_BASE_SECS + variable_secs + (id_check_count * 10) + gap_repair_buffer,
