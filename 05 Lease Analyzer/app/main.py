@@ -226,6 +226,30 @@ async def update_job_email(job_id: str, body: dict):
     return {"ok": True, "email": email}
 
 
+@app.post("/api/send-results-link")
+async def send_results_link(body: dict):
+    """Send the results URL to an email address (mobile convenience)."""
+    from app.notifications import _send_email
+
+    email = (body.get("email") or "").strip()
+    url = (body.get("url") or "").strip()
+    if not email or "@" not in email:
+        raise HTTPException(status_code=400, detail="Valid email address required")
+    if not url:
+        raise HTTPException(status_code=400, detail="URL required")
+
+    subject = "Your CAM Lease Analysis Results"
+    text = (
+        f"Here is the link to your lease analysis results:\n\n"
+        f"{url}\n\n"
+        f"Open this link on a desktop browser for the best experience.\n"
+    )
+    ok = _send_email(email, subject, text)
+    if not ok:
+        raise HTTPException(status_code=500, detail="Failed to send email")
+    return {"ok": True}
+
+
 @app.get("/api/jobs/{job_id}/results")
 def get_job_results(job_id: str):
     """Return available results JSON for tenants. 404 only if no tenant results exist yet."""

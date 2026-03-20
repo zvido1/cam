@@ -443,6 +443,27 @@
         <!-- ══ STATE 5: Results Dashboard ══ -->
         <section id="state-results" class="hidden">
 
+            <!-- Mobile: desktop-only notice -->
+            <div class="mobile-results-notice">
+                <div class="mobile-results-card">
+                    <div class="mobile-results-icon">&#128187;</div>
+                    <h2 class="mobile-results-title">View Results on Desktop</h2>
+                    <p class="mobile-results-text">The full analysis view is optimized for desktop browsers.</p>
+                    <div class="mobile-results-link-row">
+                        <input type="text" class="mobile-results-url" id="mobile-results-url" readonly>
+                        <button class="btn btn-sm mobile-copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('mobile-results-url').value).then(()=>{this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',2000)})">Copy</button>
+                    </div>
+                    <div class="mobile-results-email-row">
+                        <p class="mobile-results-email-label">Or email yourself the link:</p>
+                        <div class="mobile-results-email-input">
+                            <input type="email" class="input-field" id="mobile-results-email" placeholder="your@email.com">
+                            <button class="btn btn-primary btn-sm" id="mobile-results-email-btn" onclick="window.CAM.sendMobileResultsLink()">Send</button>
+                        </div>
+                        <p class="mobile-results-email-status hidden" id="mobile-results-email-status"></p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Three-column layout: nav (left) + results (center) + chat panel (right) -->
             <div id="results-layout" class="results-layout">
 

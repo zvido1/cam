@@ -406,8 +406,44 @@ function showState(name) {
         }
     }
 
+    // Mobile: populate results URL for copy/email
+    if (name === "results") {
+        const urlField = $("#mobile-results-url");
+        if (urlField) urlField.value = window.location.href;
+    }
+
     updateWorkflowNav();
 }
+
+window.CAM = window.CAM || {};
+window.CAM.sendMobileResultsLink = async function() {
+    const emailInput = $("#mobile-results-email");
+    const statusEl = $("#mobile-results-email-status");
+    const btn = $("#mobile-results-email-btn");
+    if (!emailInput || !emailInput.value) return;
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+    try {
+        const resp = await fetch("/api/send-results-link", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: emailInput.value, url: window.location.href })
+        });
+        if (resp.ok) {
+            statusEl.textContent = "Link sent! Check your inbox.";
+            statusEl.style.color = "var(--success, #16a34a)";
+        } else {
+            statusEl.textContent = "Failed to send. Please copy the link instead.";
+            statusEl.style.color = "#dc2626";
+        }
+    } catch (e) {
+        statusEl.textContent = "Failed to send. Please copy the link instead.";
+        statusEl.style.color = "#dc2626";
+    }
+    statusEl.classList.remove("hidden");
+    btn.disabled = false;
+    btn.textContent = "Send";
+};
 
 function updateWorkflowNav() {
     const nav = $("#workflow-nav");

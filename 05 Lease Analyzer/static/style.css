@@ -10130,6 +10130,83 @@ mark.audit-rule-highlight {
     border: 1px solid #f59e0b;
 }
 
+/* ── Mobile results notice (hidden on desktop) ── */
+.mobile-results-notice {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    padding: 5%;
+}
+.mobile-results-card {
+    background: var(--bg, #fff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 16px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    width: 100%;
+    max-width: 400px;
+}
+.mobile-results-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+.mobile-results-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--primary, #1a365d);
+    margin-bottom: 0.5rem;
+}
+.mobile-results-text {
+    font-size: 0.875rem;
+    color: var(--text-muted, #64748b);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+.mobile-results-link-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+.mobile-results-url {
+    flex: 1;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 8px;
+    background: var(--bg-alt, #f8fafc);
+    color: var(--text, #1e293b);
+    min-width: 0;
+}
+.mobile-copy-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.mobile-results-email-label {
+    font-size: 0.8rem;
+    color: var(--text-muted, #64748b);
+    margin-bottom: 0.5rem;
+}
+.mobile-results-email-input {
+    display: flex;
+    gap: 0.5rem;
+}
+.mobile-results-email-input .input-field {
+    flex: 1;
+    font-size: 0.85rem;
+    min-width: 0;
+}
+.mobile-results-email-input .btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.mobile-results-email-status {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    color: var(--success, #16a34a);
+}
+
 /* ══════════════════════════════════════════════════════
    MOBILE RESPONSIVE (≤ 480px)
    Scope: login gate, upload, processing/progress
@@ -10236,6 +10313,21 @@ mark.audit-rule-highlight {
     }
     .processing-secondary-grid {
         grid-template-columns: 1fr !important;
+        gap: 1rem;
+    }
+    .processing-checklist-column,
+    .processing-main-stack {
+        min-width: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+    .processing-detail-card,
+    .processing-checklist-card,
+    .processing-return-panel,
+    .processing-ready-card {
+        max-width: 100%;
+        overflow-x: hidden;
+        box-sizing: border-box;
     }
     .processing-sidebar {
         display: none;
@@ -10248,14 +10340,7 @@ mark.audit-rule-highlight {
     .results-layout {
         display: none;
     }
-    #state-results::before {
-        content: "For the best experience, please view results on a desktop browser.";
-        display: block;
-        text-align: center;
-        padding: 3rem 2rem;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-muted, #64748b);
-        line-height: 1.5;
+    .mobile-results-notice {
+        display: flex;
     }
 }
