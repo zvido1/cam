@@ -90,6 +90,8 @@ def _build_html_email(
     """ if attachment_lines else ""
 
     short_id = job_id[:12] if len(job_id) > 12 else job_id
+    from datetime import datetime as _dt
+    current_year = _dt.now().year
 
     html = f"""
 <html>
@@ -141,8 +143,8 @@ def _build_html_email(
     <!-- Footer -->
     <div style="background:#f8f9fa;padding:16px 32px;text-align:center;border-top:1px solid #eee;">
       <p style="margin:0;font-size:0.78rem;color:#95a5a6;">
-        Your documents were deleted immediately after processing.<br>
-        © 2026 Vered.ai · <a href="https://www.vered.ai" style="color:#95a5a6;">vered.ai</a>
+        Uploaded files deleted immediately. Analysis results purged after 24 hours.<br>
+        © {{current_year}} Vered.ai · <a href="https://www.vered.ai" style="color:#95a5a6;">vered.ai</a>
       </p>
     </div>
 
