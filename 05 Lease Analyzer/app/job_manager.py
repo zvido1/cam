@@ -1289,8 +1289,10 @@ def _process_lease_job(job_id: str, job: dict) -> None:
 
             # Generate attachments
             attachments, att_info = _generate_email_attachments(job_id, tenants, results_dir)
+            tenant_filenames = [t.get("filename", "") for t in tenants if t.get("filename")]
             send_job_complete_email(email, job_id, job_url, summary,
-                                   attachments=attachments, attachment_info=att_info)
+                                   attachments=attachments, attachment_info=att_info,
+                                   tenant_names=tenant_filenames)
 
 
 def _generate_email_attachments(

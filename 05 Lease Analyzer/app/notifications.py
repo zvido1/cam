@@ -21,8 +21,151 @@ from app.config import get_config, email_configured, gmail_api_configured
 
 logger = logging.getLogger(__name__)
 
-# Gmail attachment limit (25 MB)
 MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
+
+
+def _build_html_email(
+    job_id: str,
+    results_url: str,
+    summary: dict,
+    attachment_info: Optional[dict] = None,
+) -> tuple:
+    """Build HTML + plain text email bodies. Returns (html, plain)."""
+    info = attachment_info or {}
+    deviates = summary.get("deviates", 0)
+    total = summary.get("total_provisions_checked", 0)
+    critical = summary.get("critical", 0)
+    high = summary.get("high", 0)
+    medium = summary.get("medium", 0)
+    low = summary.get("low", 0)
+
+    # Summary banner color based on highest severity
+    if critical > 0:
+        banner_color = "#c0392b"
+        banner_bg = "#fdf2f2"
+        banner_border = "#e74c3c"
+        status_line = f"🚨 {critical} critical finding{'s' if critical != 1 else ''} require immediate attention"
+    elif high > 0:
+        banner_color = "#c0470a"
+        banner_bg = "#fff4ef"
+        banner_border = "#e8613c"
+        status_line = f"⚠️ {high} high-severity finding{'s' if high != 1 else ''} require attorney review"
+    elif deviates > 0:
+        banner_color = "#856404"
+        banner_bg = "#fffbf0"
+        banner_border = "#f0c040"
+        status_line = f"📋 {deviates} deviation{'s' if deviates != 1 else ''} found — review recommended"
+    else:
+        banner_color = "#155724"
+        banner_bg = "#f0fff4"
+        banner_border = "#28a745"
+        status_line = "✅ All provisions conform to the standard template"
+
+    # Severity rows — only show non-zero
+    sev_rows = ""
+    if critical > 0:
+        sev_rows += f'<tr><td style="padding:4px 0;color:#c0392b;">🚨 Critical</td><td style="padding:4px 0;font-weight:600;">{critical}</td></tr>'
+    if high > 0:
+        sev_rows += f'<tr><td style="padding:4px 0;color:#c0470a;">🟠 High</td><td style="padding:4px 0;font-weight:600;">{high}</td></tr>'
+    if medium > 0:
+        sev_rows += f'<tr><td style="padding:4px 0;color:#856404;">🟡 Medium</td><td style="padding:4px 0;font-weight:600;">{medium}</td></tr>'
+    if low > 0:
+        sev_rows += f'<tr><td style="padding:4px 0;color:#555;">⚪ Low</td><td style="padding:4px 0;font-weight:600;">{low}</td></tr>'
+    if not sev_rows:
+        sev_rows = '<tr><td colspan="2" style="padding:4px 0;color:#155724;">No deviations found</td></tr>'
+
+    # Attached files list
+    attachment_lines = ""
+    if info.get("summary_included"):
+        attachment_lines += '<li>📄 Lease_Analysis_Summary.pdf — combined findings</li>'
+    annotated = info.get("annotated_tenants", [])
+    unannotated = info.get("unannotated_tenants", [])
+    for fname in annotated:
+        attachment_lines += f'<li>📎 Annotated: {fname}</li>'
+    for fname in unannotated:
+        attachment_lines += f'<li style="color:#888;">📄 {fname} (annotation not available for TXT files)</li>'
+    attachments_section = f"""
+        <p style="margin:16px 0 6px;font-weight:600;">Attached Files:</p>
+        <ul style="margin:0;padding-left:20px;color:#2980b9;line-height:1.8;">{attachment_lines}</ul>
+    """ if attachment_lines else ""
+
+    short_id = job_id[:12] if len(job_id) > 12 else job_id
+
+    html = f"""
+<html>
+<body style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;color:#333;line-height:1.6;background:#f5f6fa;margin:0;padding:20px;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+
+    <!-- Header -->
+    <div style="background:#1e2a3a;padding:24px 32px;text-align:center;">
+      <h1 style="margin:0;color:#fff;font-size:1.4rem;font-weight:700;letter-spacing:0.02em;">Vered.ai</h1>
+      <p style="margin:4px 0 0;color:#94a3b8;font-size:0.85rem;">Lease Analysis Complete</p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding:28px 32px;">
+      <p style="margin:0 0 20px;">Your lease analysis is ready. Here's a summary of what was found:</p>
+
+      <!-- Status banner -->
+      <div style="background:{banner_bg};border-left:4px solid {banner_border};padding:14px 18px;border-radius:4px;margin-bottom:24px;">
+        <p style="margin:0;color:{banner_color};font-weight:600;">{status_line}</p>
+        <p style="margin:6px 0 0;color:#555;font-size:0.9rem;">{total} provisions analyzed · Job {short_id}</p>
+      </div>
+
+      <!-- Severity breakdown -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+        <tr style="border-bottom:1px solid #eee;">
+          <td style="padding:6px 0;font-weight:600;color:#555;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;">Finding</td>
+          <td style="padding:6px 0;font-weight:600;color:#555;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em;">Count</td>
+        </tr>
+        {sev_rows}
+      </table>
+
+      {attachments_section}
+
+      <!-- CTA Button -->
+      <div style="text-align:center;margin:28px 0 20px;">
+        <a href="{results_url}"
+           style="background:#1e2a3a;color:#fff;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:600;font-size:1rem;display:inline-block;letter-spacing:0.02em;">
+          View Interactive Dashboard →
+        </a>
+      </div>
+
+      <!-- Expiry notice -->
+      <div style="background:#fffbf0;border:1px solid #f0c040;border-radius:4px;padding:12px 16px;font-size:0.85rem;color:#856404;">
+        <strong>Note:</strong> Once you open the dashboard link, you'll have 15 minutes to download your files.
+        Results are automatically purged from our servers after 24 hours.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="background:#f8f9fa;padding:16px 32px;text-align:center;border-top:1px solid #eee;">
+      <p style="margin:0;font-size:0.78rem;color:#95a5a6;">
+        Your documents were deleted immediately after processing.<br>
+        © 2026 Vered.ai · <a href="https://www.vered.ai" style="color:#95a5a6;">vered.ai</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
+"""
+
+    plain = (
+        f"Your lease analysis is complete.\n\n"
+        f"Results: {deviates} deviation(s) found across {total} provisions checked.\n"
+    )
+    if critical:
+        plain += f"  Critical: {critical}\n"
+    if high:
+        plain += f"  High: {high}\n"
+    if medium:
+        plain += f"  Medium: {medium}\n"
+    if low:
+        plain += f"  Low: {low}\n"
+    plain += f"\nView your results: {results_url}\n\nJob ID: {job_id}\n"
+
+    return html, plain
 
 
 def send_job_complete_email(
@@ -32,47 +175,23 @@ def send_job_complete_email(
     summary: dict,
     attachments: Optional[List[str]] = None,
     attachment_info: Optional[dict] = None,
+    tenant_names: Optional[List[str]] = None,
 ) -> bool:
     """Send notification that analysis is done with link to results."""
-    subject = "Your lease analysis is complete"
-    info = attachment_info or {}
+    def _strip_ext(name: str) -> str:
+        return Path(name).stem if name else name
 
-    deviates = summary.get("deviates", 0)
-    total = summary.get("total_provisions_checked", 0)
-    critical = summary.get("critical", 0)
-    high = summary.get("high", 0)
-
-    body = (
-        f"Your lease analysis is complete.\n\n"
-        f"Results: {deviates} deviation(s) found across {total} provisions checked.\n"
-    )
-    if critical or high:
-        body += f"  - {critical} critical, {high} high severity\n"
-
-    body += "\nAttached:\n"
-    if info.get("summary_included"):
-        body += "  - Lease_Analysis_Summary.pdf \u2014 combined findings across all tenants\n"
+    names = [_strip_ext(n) for n in (tenant_names or []) if n]
+    if len(names) == 1:
+        subject = f"Lease Analysis Ready \u2014 {names[0]}"
+    elif len(names) == 2:
+        subject = f"Lease Analysis Ready \u2014 {names[0]} & {names[1]}"
+    elif len(names) >= 3:
+        subject = f"Lease Analysis Ready \u2014 {len(names)} Leases Reviewed"
     else:
-        body += "  - Note: Summary PDF could not be generated for this analysis.\n"
-
-    annotated = info.get("annotated_tenants", [])
-    unannotated = info.get("unannotated_tenants", [])
-    if annotated:
-        for fname in annotated:
-            body += f"  - Annotated: {fname}\n"
-    if unannotated:
-        body += f"  - Annotation unavailable for: {', '.join(unannotated)} (TXT files)\n"
-
-    body += (
-        f"\nView the full interactive dashboard:\n{job_url}\n\n"
-        f"Once you open the link, you'll have 15 minutes to download your files.\n"
-        f"If you don't open the link, results are available for up to 24 hours.\n\n"
-        f"\U0001f512 Your documents were deleted after processing. "
-        f"Results will be permanently deleted after the download window closes.\n\n"
-        f"Job ID: {job_id}\n"
-    )
-
-    return _send_email(to_email, subject, body, attachments=attachments)
+        subject = "Your Lease Analysis is Ready"
+    html, plain = _build_html_email(job_id, job_url, summary, attachment_info)
+    return _send_email(to_email, subject, plain, html=html, attachments=attachments)
 
 
 def send_job_failed_email(
@@ -81,46 +200,44 @@ def send_job_failed_email(
     error_summary: str,
 ) -> bool:
     """Send notification that something went wrong."""
-    subject = "Lease analysis encountered an error"
-    body = (
+    subject = "Lease Analysis — Error During Processing"
+    plain = (
         f"Your lease analysis encountered an error during processing.\n\n"
         f"Error: {error_summary}\n\n"
         f"Please try again or contact support.\n\n"
         f"Job ID: {job_id}\n"
     )
-    return _send_email(to_email, subject, body)
+    return _send_email(to_email, subject, plain)
 
 
 def _send_email(
     to_email: str,
     subject: str,
     body: str,
+    html: Optional[str] = None,
     attachments: Optional[List[str]] = None,
 ) -> bool:
     """Send email via Gmail API if configured, else SMTP, else log."""
     config = get_config()
 
     if not email_configured(config):
-        att_names = [Path(a).name for a in (attachments or [])]
         logger.info(
-            "Email not configured — logging notification:\n"
-            f"  To: {to_email}\n"
-            f"  Subject: {subject}\n"
-            f"  Attachments: {att_names}\n"
-            f"  Body:\n{body}"
+            f"Email not configured — logging notification:\n"
+            f"  To: {to_email}\n  Subject: {subject}\n  Body:\n{body}"
         )
         return True
 
     if gmail_api_configured(config):
-        return _send_via_gmail_api(to_email, subject, body, attachments, config)
+        return _send_via_gmail_api(to_email, subject, body, html, attachments, config)
     else:
-        return _send_via_smtp(to_email, subject, body, attachments, config)
+        return _send_via_smtp(to_email, subject, body, html, attachments, config)
 
 
 def _send_via_gmail_api(
     to_email: str,
     subject: str,
-    body: str,
+    plain: str,
+    html: Optional[str],
     attachments: Optional[List[str]],
     config: dict,
 ) -> bool:
@@ -136,64 +253,73 @@ def _send_via_gmail_api(
             client_secret=config["GMAIL_CLIENT_SECRET"],
             token_uri="https://oauth2.googleapis.com/token",
         )
-
         service = build("gmail", "v1", credentials=creds)
 
-        # Build message
-        msg = MIMEMultipart()
-        msg["From"] = config["GMAIL_USER"]
+        msg = MIMEMultipart("mixed")
+        msg["From"] = f"CAM Lease Analysis <{config['GMAIL_USER']}>"
         msg["To"] = to_email
         msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain"))
 
-        # Add attachments if any
+        # Multipart/alternative for plain + HTML
+        alt = MIMEMultipart("alternative")
+        alt.attach(MIMEText(plain, "plain"))
+        if html:
+            alt.attach(MIMEText(html, "html"))
+        msg.attach(alt)
+
+        # Attachments
         if attachments:
-            valid_attachments, _ = _filter_attachments(attachments)
-            for p in valid_attachments:
+            valid, _ = _filter_attachments(attachments)
+            for p in valid:
                 part = MIMEBase("application", "octet-stream")
                 part.set_payload(p.read_bytes())
                 encoders.encode_base64(part)
                 part.add_header("Content-Disposition", f"attachment; filename={p.name}")
                 msg.attach(part)
-            logger.info(f"Attaching {len(valid_attachments)} file(s) via Gmail API")
+            logger.info(f"Attaching {len(valid)} file(s) via Gmail API")
 
         raw = base64.urlsafe_b64encode(msg.as_bytes()).decode()
         result = service.users().messages().send(
             userId="me", body={"raw": raw}
         ).execute()
 
-        logger.info(f"Gmail API: email sent to {to_email} — message id {result['id']}")
+        logger.info(f"Gmail API: sent to {to_email} — id {result['id']}")
         return True
 
     except Exception as e:
-        logger.error(f"Gmail API send failed: {e} — falling back to SMTP")
-        return _send_via_smtp(to_email, subject, body, attachments, config)
+        logger.error(f"Gmail API failed: {e} — falling back to SMTP")
+        return _send_via_smtp(to_email, subject, plain, html, attachments, config)
 
 
 def _send_via_smtp(
     to_email: str,
     subject: str,
-    body: str,
+    plain: str,
+    html: Optional[str],
     attachments: Optional[List[str]],
     config: dict,
 ) -> bool:
     """Send email using SMTP (fallback)."""
     try:
-        msg = MIMEMultipart()
+        msg = MIMEMultipart("mixed")
         msg["From"] = config.get("NOTIFICATION_FROM") or config.get("SMTP_USER", "")
         msg["To"] = to_email
         msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain"))
+
+        alt = MIMEMultipart("alternative")
+        alt.attach(MIMEText(plain, "plain"))
+        if html:
+            alt.attach(MIMEText(html, "html"))
+        msg.attach(alt)
 
         if attachments:
-            valid_attachments, _ = _filter_attachments(attachments)
-            for p in valid_attachments:
+            valid, _ = _filter_attachments(attachments)
+            for p in valid:
                 part = MIMEBase("application", "octet-stream")
                 part.set_payload(p.read_bytes())
                 encoders.encode_base64(part)
                 part.add_header("Content-Disposition", f"attachment; filename={p.name}")
                 msg.attach(part)
-            logger.info(f"Attaching {len(valid_attachments)} file(s) via SMTP")
 
         port = int(config.get("SMTP_PORT", 587))
         if port == 465:
@@ -208,19 +334,16 @@ def _send_via_smtp(
                 server.login(config["SMTP_USER"], config["SMTP_PASSWORD"])
                 server.send_message(msg)
 
-        logger.info(f"SMTP: email sent to {to_email}: {subject}")
+        logger.info(f"SMTP: sent to {to_email}: {subject}")
         return True
 
     except Exception as e:
-        logger.error(f"SMTP send failed to {to_email}: {e}")
+        logger.error(f"SMTP failed to {to_email}: {e}")
         return False
 
 
 def _filter_attachments(attachments: List[str]) -> tuple:
-    """Filter attachments to valid files within size limit.
-
-    Returns (valid_paths, skipped_reason)
-    """
+    """Filter to valid files within size limit. Returns (valid_paths, reason)."""
     total_size = 0
     valid = []
     for filepath in attachments:
@@ -228,12 +351,7 @@ def _filter_attachments(attachments: List[str]) -> tuple:
         if p.exists():
             total_size += p.stat().st_size
             valid.append(p)
-
     if total_size > MAX_ATTACHMENT_BYTES:
-        logger.warning(
-            f"Attachments too large ({total_size / 1024 / 1024:.1f} MB). "
-            f"Attaching summary only."
-        )
+        logger.warning(f"Attachments too large ({total_size/1024/1024:.1f} MB) — summary only")
         return valid[:1], "size_limit"
-
     return valid, None
