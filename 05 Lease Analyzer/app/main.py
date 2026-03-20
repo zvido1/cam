@@ -24,7 +24,7 @@ from starlette.staticfiles import NotModifiedResponse
 from starlette.responses import Response
 
 # config.py sets up sys.path for cam imports
-from app.config import get_config, email_configured, LEASE_DIR
+from app.config import get_config, email_configured, LEASE_DIR, APP_VERSION, GIT_SHA
 from app import job_manager
 
 # ── Logging ──
@@ -64,7 +64,9 @@ def startup():
     print(f"\n{'='*60}", flush=True)
     print(f"  CAM LEASE ANALYZER — SERVER STARTED", flush=True)
     print(f"  {now}", flush=True)
+    print(f"  version={APP_VERSION}  sha={GIT_SHA}", flush=True)
     print(f"{'='*60}\n", flush=True)
+    logger.info(f"app_startup version={APP_VERSION} sha={GIT_SHA}")
 
     config = get_config()
 

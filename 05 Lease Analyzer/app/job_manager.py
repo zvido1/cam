@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-from app.config import get_config
+from app.config import get_config, APP_VERSION, GIT_SHA
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +160,160 @@ def _finalize_tenant_runtime(job_id: str, tenant_index: int) -> dict:
     return {
         "processing_started_at": processing_started_at,
         "elapsed_seconds": _safe_elapsed_seconds(processing_started_at),
+    }
+
+
+def _build_job_outcome(job_id: str, tenants: list, started_at: str) -> dict:
+    """Build a self-contained outcome summary from result files.
+
+    Reads each tenant's result JSON to produce:
+    - Per-tenant outcome rows (severity + governance state counts)
+    - Rolled-up job-level totals
+    - Run quality marker (clean / degraded / partial)
+    - Version metadata
+    """
+    per_tenant = []
+    job_totals = {
+        "deviates": 0, "conforms": 0, "unclear": 0,
+        "critical": 0, "high": 0, "medium": 0, "low": 0,
+        "total_provisions": 0,
+        # Governance state counts
+        "assert_signal": 0,
+        "assert_review_signal": 0,
+        "review_signal": 0,
+        "withhold_signal": 0,
+        # Pipeline quality
+        "triage_skipped": 0,       # provisions that skipped challenge (conforms + no rules)
+        "fallback_used": 0,        # tenants where any model fallback fired
+        "gap_repairs": 0,          # re-extraction repair calls
+        "api_calls_total": 0,
+    }
+    has_any_failure = False
+    has_any_fallback = False
+    has_any_degraded = False
+
+    for i, t in enumerate(tenants):
+        rp = t.get("result_path")
+        status = t.get("status", "unknown")
+
+        if status in ("failed", "cancelled"):
+            has_any_failure = True
+            per_tenant.append({
+                "tenant_index": i,
+                "filename": t.get("filename", ""),
+                "input_type": Path(t.get("filename", "")).suffix.lower().lstrip(".") or "unknown",
+                "status": status,
+            })
+            continue
+
+        if not rp or not Path(rp).exists():
+            has_any_degraded = True
+            per_tenant.append({
+                "tenant_index": i,
+                "filename": t.get("filename", ""),
+                "input_type": Path(t.get("filename", "")).suffix.lower().lstrip(".") or "unknown",
+                "status": "missing_results",
+            })
+            continue
+
+        try:
+            r = json.loads(Path(rp).read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            has_any_degraded = True
+            per_tenant.append({
+                "tenant_index": i,
+                "filename": t.get("filename", ""),
+                "input_type": Path(t.get("filename", "")).suffix.lower().lstrip(".") or "unknown",
+                "status": "unreadable_results",
+            })
+            continue
+
+        s = r.get("summary", {})
+        provisions = r.get("provisions", [])
+        models_used = r.get("models_used", {})
+
+        # Governance state counts from individual provisions
+        gov_counts = {"ASSERT_SIGNAL": 0, "ASSERT_REVIEW_SIGNAL": 0,
+                      "REVIEW_SIGNAL": 0, "WITHHOLD_SIGNAL": 0}
+        triage_skipped = 0
+        for p in provisions:
+            sig = (p.get("cam_score") or {}).get("governance_signal", "")
+            if sig in gov_counts:
+                gov_counts[sig] += 1
+            # Triage gate: conforms + no rules fired = challenge skipped
+            meta = p.get("cam_metadata") or {}
+            if (p.get("final_verdict") == "CONFORMS"
+                    and not meta.get("rules_fired")
+                    and 3 not in (meta.get("stages_run") or [])):
+                triage_skipped += 1
+
+        fallback_used = any(
+            models_used.get(k + "_fallback") for k in ("evaluator_a", "evaluator_b", "evaluator_c")
+        )
+        if fallback_used:
+            has_any_fallback = True
+
+        gap_repairs = r.get("analysis_completeness", {}).get("gaps_resolved_by_reextraction", 0)
+
+        api_calls = r.get("api_calls_total", 0)
+
+        tenant_row = {
+            "tenant_index": i,
+            "filename": t.get("filename", ""),
+            "input_type": Path(t.get("filename", "")).suffix.lower().lstrip(".") or "unknown",
+            "status": "completed",
+            "deviates": s.get("deviates", 0),
+            "conforms": s.get("conforms", 0),
+            "unclear": s.get("unclear", 0),
+            "critical": s.get("critical", 0),
+            "high": s.get("high", 0),
+            "medium": s.get("medium", 0),
+            "low": s.get("low", 0),
+            "total_provisions": s.get("total_provisions_checked", len(provisions)),
+            "assert_signal": gov_counts["ASSERT_SIGNAL"],
+            "assert_review_signal": gov_counts["ASSERT_REVIEW_SIGNAL"],
+            "review_signal": gov_counts["REVIEW_SIGNAL"],
+            "withhold_signal": gov_counts["WITHHOLD_SIGNAL"],
+            "triage_skipped": triage_skipped,
+            "fallback_used": fallback_used,
+            "gap_repairs": gap_repairs,
+            "api_calls": api_calls,
+            "elapsed_seconds": r.get("elapsed_sec"),
+        }
+        per_tenant.append(tenant_row)
+
+        # Roll up to job totals
+        for k in ("deviates", "conforms", "unclear", "critical", "high", "medium", "low"):
+            job_totals[k] += s.get(k, 0)
+        job_totals["total_provisions"] += s.get("total_provisions_checked", len(provisions))
+        job_totals["assert_signal"]        += gov_counts["ASSERT_SIGNAL"]
+        job_totals["assert_review_signal"] += gov_counts["ASSERT_REVIEW_SIGNAL"]
+        job_totals["review_signal"]        += gov_counts["REVIEW_SIGNAL"]
+        job_totals["withhold_signal"]      += gov_counts["WITHHOLD_SIGNAL"]
+        job_totals["triage_skipped"]       += triage_skipped
+        job_totals["fallback_used"]        += int(fallback_used)
+        job_totals["gap_repairs"]          += gap_repairs
+        job_totals["api_calls_total"]      += api_calls
+
+    # Run quality marker
+    completed_count = sum(1 for t in per_tenant if t.get("status") == "completed")
+    total_count = len(tenants)
+    if has_any_failure or completed_count < total_count:
+        run_quality = "partial"
+    elif has_any_degraded or has_any_fallback:
+        run_quality = "degraded"
+    else:
+        run_quality = "clean"
+
+    return {
+        "tenant_count": total_count,
+        "completed_count": completed_count,
+        "run_quality": run_quality,
+        "totals": job_totals,
+        "per_tenant": per_tenant,
+        "elapsed_seconds": _safe_elapsed_seconds(started_at),
+        "app_version": APP_VERSION,
+        "git_sha": GIT_SHA,
     }
 
 
@@ -1254,6 +1408,13 @@ def _process_lease_job(job_id: str, job: dict) -> None:
     elif all_failed:
         mark_job_failed(job_id, job_error or "All tenants failed")
     else:
+        # Emit self-contained outcome event before completing
+        # (result files still exist; mark_job_completed starts expiry clock)
+        try:
+            outcome = _build_job_outcome(job_id, tenants, job.get("started_at"))
+            _append_job_event(job_id, "job_outcome", **outcome)
+        except Exception as _oe:
+            logger.warning(f"Could not build job outcome event: {_oe}")
         mark_job_completed(job_id)
 
     save_job_results(job_id)

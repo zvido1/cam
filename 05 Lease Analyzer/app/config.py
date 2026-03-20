@@ -27,6 +27,15 @@ if str(CAM_ROOT) not in sys.path:
     sys.path.insert(0, str(CAM_ROOT))
 
 
+# ── App version ──
+# Bump this manually on significant changes so Railway logs are self-annotating.
+# Format: YYYY-MM-DD.N (date + build counter)
+APP_VERSION = os.getenv("APP_VERSION", "2026-03-20.1")
+
+# Git SHA — Railway injects RAILWAY_GIT_COMMIT_SHA automatically.
+GIT_SHA = os.getenv("RAILWAY_GIT_COMMIT_SHA", "")[:8] or "local"
+
+
 def get_config() -> dict:
     """Load configuration from environment variables."""
     return {
