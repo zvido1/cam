@@ -250,6 +250,7 @@ let docviewMode = "sidebyside"; // "full" or "sidebyside" — default to side-by
 let docviewSort = "contract";   // "contract" or "reference" — tenant-led or reference-led docview order
 let pollNotFoundCount = 0;
 let addMoreMode = null; // null or "addmore"
+let jobEmail = null;    // Tracks confirmed notification email across all screens
 let templateSummary = null;      // Step 138: {landlord, property, base_rent, lease_term, gate_passed}
 let identityChecks = {           // Step 138: which identity fields to verify (all off by default)
     landlord: false,
@@ -412,7 +413,58 @@ function showState(name) {
         if (urlField) urlField.value = window.location.href;
     }
 
+    syncEmailState();
     updateWorkflowNav();
+}
+
+/**
+ * Syncs the confirmed email across all screens.
+ * If jobEmail is set, replaces email inputs with a confirmation message.
+ */
+function syncEmailState() {
+    if (!jobEmail) return;
+
+    const escapedEmail = esc(jobEmail);
+    const confirmHtml = `<div class="email-confirmed-notice">&#128231; Notifications will be sent to <strong>${escapedEmail}</strong></div>`;
+
+    // Upload page: replace email accordion body
+    const accBody = document.getElementById('email-accordion-body');
+    if (accBody && !accBody.dataset.emailSet) {
+        accBody.innerHTML = confirmHtml;
+        accBody.dataset.emailSet = "1";
+        // Ensure it's visible
+        accBody.classList.remove('hidden');
+    }
+
+    // Processing page: replace email capture card
+    const procCard = document.getElementById('processing-email-capture');
+    if (procCard) {
+        procCard.innerHTML = confirmHtml;
+        procCard.classList.remove('hidden');
+        procCard.dataset.emailSet = "1";
+    }
+
+    // Processing page: update the email notice
+    const emailNotice = $("#email-notice");
+    if (emailNotice) {
+        emailNotice.innerHTML = `&#128231; We'll email you at <strong>${escapedEmail}</strong> when results are ready.`;
+    }
+
+    // Mobile results page: replace email row
+    const mobileEmailRow = document.querySelector('.mobile-results-email-row');
+    if (mobileEmailRow && !mobileEmailRow.dataset.emailSet) {
+        mobileEmailRow.innerHTML = confirmHtml;
+        mobileEmailRow.dataset.emailSet = "1";
+    }
+}
+
+/**
+ * Sets the global email and syncs all screens.
+ */
+function setJobEmail(email) {
+    if (!email) return;
+    jobEmail = email.trim();
+    syncEmailState();
 }
 
 window.CAM = window.CAM || {};
@@ -430,8 +482,7 @@ window.CAM.sendMobileResultsLink = async function() {
             body: JSON.stringify({ email: emailInput.value, url: window.location.href })
         });
         if (resp.ok) {
-            statusEl.textContent = "Link sent! Check your inbox.";
-            statusEl.style.color = "var(--success, #16a34a)";
+            setJobEmail(emailInput.value);
         } else {
             statusEl.textContent = "Failed to send. Please copy the link instead.";
             statusEl.style.color = "#dc2626";
@@ -2049,7 +2100,9 @@ async function handleSubmit() {
 
         const formData = new FormData();
         formData.append("access_code", sessionStorage.getItem("cam_access_code") || "");
-        formData.append("email", $("#email-input").value.trim());
+        const _uploadEmail = $("#email-input").value.trim();
+        formData.append("email", _uploadEmail);
+        if (_uploadEmail) setJobEmail(_uploadEmail);
         formData.append("template_file", templateFile);
 
         tenantFiles.forEach(f => {
@@ -9137,6 +9190,7 @@ function resetApp() {
     tenantFiles = [];
     addMoreMode = null;
     currentJobId = null;
+    jobEmail = null;
     templateSummary = null;
     identityChecks = { landlord: false, property: false, tenant: false };
     renderTemplateFileList();
@@ -11945,8 +11999,7 @@ async function submitProcessingEmail() {
             body: JSON.stringify({ email })
         });
         if (resp.ok) {
-            showProcessingEmailStatus("\u2713 We'll email you when analysis is complete.", 'success');
-            document.getElementById('processing-email-capture').classList.add('hidden');
+            setJobEmail(email);
         } else {
             showProcessingEmailStatus('Something went wrong. Please try again.', 'error');
             btn.disabled = false;

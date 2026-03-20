@@ -1587,7 +1587,8 @@ textarea.input-field {
     flex-direction: column;
     align-items: flex-end;
     gap: 0.35rem;
-    min-width: 220px;
+    min-width: 35%;
+    flex-shrink: 0;
 }
 
 .processing-tenant-percent {
@@ -1633,6 +1634,7 @@ textarea.input-field {
     align-items: center;
     gap: 1rem;
     min-height: 2.1rem;
+    min-width: 0;
 }
 
 .processing-tenant-detail-row .processing-tenant-detail {
@@ -10130,6 +10132,18 @@ mark.audit-rule-highlight {
     border: 1px solid #f59e0b;
 }
 
+/* ── Email confirmed notice (shown after email is entered) ── */
+.email-confirmed-notice {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text, #1e293b);
+    padding: 0.75rem 1rem;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    line-height: 1.5;
+}
+
 /* ── Mobile results notice (hidden on desktop) ── */
 .mobile-results-notice {
     display: none;
@@ -10328,6 +10342,35 @@ mark.audit-rule-highlight {
         max-width: 100%;
         overflow-x: hidden;
         box-sizing: border-box;
+    }
+    .processing-tenant-top {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .processing-tenant-status-wrap {
+        min-width: 0;
+        width: 100%;
+        align-items: flex-start;
+        flex-direction: row;
+        gap: 0.75rem;
+    }
+    .processing-tenant-status,
+    .processing-tenant-status-meta {
+        white-space: normal;
+    }
+    .processing-tenant-detail-row {
+        flex-direction: column;
+        gap: 0.4rem;
+        min-height: auto;
+    }
+    .processing-tenant-percent {
+        font-size: 1.5rem;
+    }
+    .processing-tenant-card {
+        padding: 0.75rem;
+    }
+    .processing-detail-card {
+        padding: 0.75rem;
     }
     .processing-sidebar {
         display: none;
