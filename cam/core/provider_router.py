@@ -355,8 +355,13 @@ class GoogleGenAIAdapter(BaseAdapter):
             else:
                 contents = user_prompt
             
-            # Set up timeout signal (Unix only - Windows will use threading timeout)
-            if hasattr(signal, "SIGALRM"):
+            # Set up timeout signal (Unix only, main thread only)
+            # Railway runs jobs in background threads where signal.alarm() is not allowed.
+            # The streaming loop already enforces timeout via elapsed-time checks, so
+            # signal.alarm() is only used as an additional safety net when available.
+            import threading
+            _in_main_thread = threading.current_thread() is threading.main_thread()
+            if hasattr(signal, "SIGALRM") and _in_main_thread:
                 signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(int(target.timeout_sec))
             
@@ -397,7 +402,7 @@ class GoogleGenAIAdapter(BaseAdapter):
                                             chunks.append(str(p.thought))
                 
                 # Cancel timeout signal
-                if hasattr(signal, "SIGALRM"):
+                if hasattr(signal, "SIGALRM") and _in_main_thread:
                     signal.alarm(0)
                 
                 # If we got text from streaming, return it
@@ -417,12 +422,12 @@ class GoogleGenAIAdapter(BaseAdapter):
                 else:
                     raise Exception("No chunks received from stream")
             except TimeoutError:
-                if hasattr(signal, "SIGALRM"):
+                if hasattr(signal, "SIGALRM") and _in_main_thread:
                     signal.alarm(0)
                 raise
             except Exception as e:
                 # Cancel timeout signal before fallback
-                if hasattr(signal, "SIGALRM"):
+                if hasattr(signal, "SIGALRM") and _in_main_thread:
                     signal.alarm(0)
                 # Fallback to non-streaming (but still enforce timeout)
                 router_elapsed = time.time() - router_start_time
