@@ -42,7 +42,7 @@ from cam.adapters.lease_review.lease_coverage_audit import (
 )
 from cam.adapters.lease_review.lease_extract import targeted_reextract_section
 from cam.adapters.lease_review.lease_scorer import score_all_provisions
-from cam.adapters.lease_review.lease_interpretation import generate_interpretation_notes
+from cam.adapters.lease_review.lease_interpretation import generate_interpretation_notes, generate_uncertainty_notes
 
 
 # Default model configuration
@@ -258,19 +258,24 @@ def run_lease_analysis(
 
     # ── Document Gate Check ──
     # Verify tenant document is a commercial lease before burning expensive API calls.
-    print("[lease_adapter] Gate: classifying tenant document...", flush=True)
-    gate_result = check_document_is_lease(tenant_text, cfg)
-    print(f"[lease_adapter] Gate: is_lease={gate_result['is_lease']} in {gate_result['elapsed_sec']}s", flush=True)
-    if gate_result.get("abort"):
-        raise GateAbortError(gate_result["abort_message"])
+    # Skip if extraction cache exists (demo/sample files are pre-validated).
+    _cached_extraction = load_cached_extraction(template_text, tenant_text)
+    if _cached_extraction:
+        print("[lease_adapter] Gate: skipped (extraction cache exists — pre-validated document)", flush=True)
+    else:
+        print("[lease_adapter] Gate: classifying tenant document...", flush=True)
+        gate_result = check_document_is_lease(tenant_text, cfg)
+        print(f"[lease_adapter] Gate: is_lease={gate_result['is_lease']} in {gate_result['elapsed_sec']}s", flush=True)
+        if gate_result.get("abort"):
+            raise GateAbortError(gate_result["abort_message"])
 
     # ── Stage 1: Provision Extraction & Alignment ──
     if progress_callback:
         progress_callback(1, 6, "Extracting and aligning provisions from the lease.")
     print("[lease_adapter] Stage 1: Provision extraction...", flush=True)
 
-    # Check extraction cache (pre-parsed demo/sample leases)
-    extraction = load_cached_extraction(template_text, tenant_text)
+    # Reuse cache lookup from gate check, or try fresh
+    extraction = _cached_extraction or load_cached_extraction(template_text, tenant_text)
     if extraction:
         print(f"[lease_adapter] Stage 1 loaded from cache: {len(extraction['provisions'])} provisions", flush=True)
         models_used["extractor"] = extraction["meta"].get("model", "cached")
@@ -574,6 +579,27 @@ def run_lease_analysis(
     else:
         print("[lease_adapter] Cascade: Skipped (no RULE-LS-002 fires)", flush=True)
 
+    # ── Cascade Context Injection ──
+    # For CASCADE_MATERIAL provisions, inject the cascade finding into the
+    # extraction provision so evaluators receive informed context.
+    # Evaluators originally saw the provision text in isolation and said CONFORMS
+    # because they didn't know a referenced definition had changed. With this
+    # injection they can make an informed verdict. No extra API calls.
+    cascade_map_pre = cascade_result.get("cascades", {})
+    for prov in extraction["provisions"]:
+        pid = prov.get("provision_id", "")
+        c = cascade_map_pre.get(pid, {})
+        if c.get("verdict") == "CASCADE_MATERIAL":
+            cascade_summary = c.get("cascade_mechanism") or c.get("reasoning") or ""
+            existing_note = prov.get("definition_changes", "").strip()
+            injection = (
+                f"DEFINITION CASCADE ALERT: A pre-analysis cascade check has determined "
+                f"that a changed definition in this lease materially affects this provision. "
+                f"Even if the provision text appears unchanged, evaluate it as DEVIATES and "
+                f"explain the impact. Cascade finding: {cascade_summary[:500]}"
+            )
+            prov["definition_changes"] = (existing_note + "\n\n" + injection).strip() if existing_note else injection
+
     _check_cancel(cfg)
 
     # ── Stage 2: Multi-Evaluator Assessment (3 parallel API calls) ──
@@ -729,6 +755,19 @@ def run_lease_analysis(
                   flush=True)
     except Exception as e:
         print(f"[lease_adapter] Interpretation notes failed (non-fatal): {e}", flush=True)
+
+    # ── Uncertainty Notes (0-N API calls, REVIEW_SIGNAL only) ──
+    # Generate notes explaining evaluator disagreement for provisions where
+    # the system is uncertain whether a real deviation exists.
+    # Non-fatal: if generation fails, provisions just won't have the note.
+    try:
+        uncert_count = generate_uncertainty_notes(dispositions, cfg)
+        if uncert_count > 0:
+            total_api_calls += uncert_count
+            print(f"[lease_adapter] Uncertainty notes: {uncert_count} generated",
+                  flush=True)
+    except Exception as e:
+        print(f"[lease_adapter] Uncertainty notes failed (non-fatal): {e}", flush=True)
 
     # Add key aliases for frontend/PDF compatibility
     models_used["extraction"] = models_used.get("extractor", "")

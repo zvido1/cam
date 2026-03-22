@@ -82,7 +82,7 @@
                         <a class="docview-link card-docview-link card-docview-link--btn"
                            href="#"
                            onclick="window.CAM.openDocviewSummary(${tenantIdx}, '${esc(pid)}'); return false;">
-                            Open Contract Summary
+                            Open Lease Summary
                         </a>
                         <a class="card-audit-link card-audit-link--btn"
                            href="#"
@@ -133,7 +133,7 @@
                     <a class="docview-link card-docview-link card-docview-link--btn"
                        href="#"
                        onclick="window.CAM.openDocviewSummary(${tenantIdx}, '${esc(pid)}'); return false;">
-                        Open Contract Summary
+                        Open Lease Summary
                     </a>
                     <a class="card-audit-link card-audit-link--btn"
                        href="#"

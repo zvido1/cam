@@ -15,11 +15,19 @@ from typing import Any, Dict, List, Optional
 SEVERITY_RANK = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
 
 SEVERITY_FLOORS = {
-    "LP-01": "HIGH",    # Rent & Payment Terms — money changes are always material
-    "LP-02": "HIGH",    # Rent Escalation — escalation changes affect total cost
-    "LP-07": "HIGH",    # CAM Charges — operating expense allocation
-    "LP-11": "HIGH",    # Default & Remedies — cure periods, termination rights
-    "LP-12": "HIGH",    # Indemnification & Liability — risk allocation
+    # Financial provisions — money changes are always material
+    "LP-01": "HIGH",    # Rent & Payment Terms
+    "LP-02": "HIGH",    # Rent Escalation
+    "LP-07": "HIGH",    # CAM Charges
+    # Core landlord control provisions — consent/approval changes are material
+    "LP-09": "HIGH",    # Subletting & Assignment
+    "LP-10": "HIGH",    # Landlord Access & Entry
+    # Default and risk provisions — always material
+    "LP-11": "HIGH",    # Default & Remedies
+    "LP-12": "HIGH",    # Indemnification & Liability
+    # Casualty and termination — structural deal terms
+    "LP-13": "HIGH",    # Damage, Destruction & Condemnation
+    "LP-14": "HIGH",    # Force Majeure
 }
 
 
@@ -35,6 +43,66 @@ def apply_severity_floor(provision_id: str, model_severity: str) -> tuple:
     if SEVERITY_RANK.get(model_severity, 99) > SEVERITY_RANK.get(floor, 99):
         return floor, True  # upgrade to floor
     return model_severity, False  # model was already at or above floor
+
+
+def apply_severity_modifier(
+    provision_id: str,
+    model_severity: str,
+    fragility: dict,
+    challenge: dict,
+    extraction: dict,
+) -> tuple:
+    """Apply signal-based severity modifier after model assessment.
+
+    Catches material changes the provision-ID floors don't cover.
+    Based on change type and fragility signals, not provision identity.
+
+    Architecture note: Severity is a judgment layer, not a detection layer.
+    This modifier enforces policy-level constraints the model won't reliably
+    self-enforce — it does not replace model judgment.
+
+    Returns:
+        (final_severity, modifier_applied, modifier_reason)
+    """
+    signals = [r.get("signal", "") for r in fragility.get("rules_fired", [])]
+    challenge_verdict = (challenge or {}).get("challenge_verdict", "")
+    status = extraction.get("status", "")
+
+    # Rule M-01: obligation_swap affecting core landlord right → minimum HIGH
+    # An obligation swap means party responsibilities shifted. If the shift
+    # involves a core landlord right (consent, approval, access, indemnity),
+    # this is always at least HIGH regardless of provision.
+    if "obligation_swap" in signals:
+        if SEVERITY_RANK.get(model_severity, 99) > SEVERITY_RANK.get("HIGH", 99):
+            return "HIGH", True, "M-01: obligation_swap on core landlord right"
+
+    # Rule M-02: complete omission of template provision → minimum HIGH
+    # If the entire provision was removed from the tenant lease, that is always
+    # a material change regardless of what the provision covers.
+    if status == "TEMPLATE_ONLY":
+        if SEVERITY_RANK.get(model_severity, 99) > SEVERITY_RANK.get("HIGH", 99):
+            return "HIGH", True, "M-02: complete omission of template provision"
+
+    # Rule M-03: substantive_deviation + quantitative_deviation on financial provision
+    # Numerical changes to financial terms (rent, percentages, time periods)
+    # confirmed as substantive by challenger → minimum HIGH
+    financial_pids = {"LP-01", "LP-02", "LP-03", "LP-07"}
+    if (
+        challenge_verdict == "SUBSTANTIVE_DEVIATION"
+        and "quantitative_deviation" in signals
+        and provision_id in financial_pids
+    ):
+        if SEVERITY_RANK.get(model_severity, 99) > SEVERITY_RANK.get("HIGH", 99):
+            return "HIGH", True, "M-03: quantitative deviation on financial provision"
+
+    # Rule M-04: negation_pattern + qualifier_shift together → minimum MEDIUM
+    # Both negation and qualifier shift firing together indicates a compound
+    # structural change — not just one weakened word but a reversal pattern.
+    if "negation_pattern" in signals and "qualifier_shift" in signals:
+        if SEVERITY_RANK.get(model_severity, 99) > SEVERITY_RANK.get("MEDIUM", 99):
+            return "MEDIUM", True, "M-04: compound negation + qualifier shift"
+
+    return model_severity, False, ""
 
 
 # Patterns in definition_changes field that mean "no change" — ignore these
@@ -231,9 +299,21 @@ def compute_disposition(
             sev = severity.get("severity", "MEDIUM") if severity else "MEDIUM"
         stages_run = [1, 2, 3, 4, 5, 6]
 
-    # Apply severity floor for DEVIATES verdicts on sensitive provisions
+    # Apply severity governance for DEVIATES verdicts:
+    # Step 1 — Signal-based modifier (cross-cutting, change-type rules)
+    # Step 2 — Provision floor (ID-based hard minimums)
+    # Order matters: modifier runs first, floor catches anything still too low.
+    severity_modifier_applied = False
+    severity_modifier_reason = ""
     severity_floor_applied = False
     if final_verdict == "DEVIATES":
+        sev, severity_modifier_applied, severity_modifier_reason = apply_severity_modifier(
+            provision_id=provision_id,
+            model_severity=sev,
+            fragility=fragility,
+            challenge=challenge or {},
+            extraction=extraction,
+        )
         sev, severity_floor_applied = apply_severity_floor(provision_id, sev)
 
     # Build rules fired list
@@ -246,6 +326,8 @@ def compute_disposition(
         "final_verdict": final_verdict,
         "severity": sev,
         "severity_floor_applied": severity_floor_applied,
+        "severity_modifier_applied": severity_modifier_applied,
+        "severity_modifier_reason": severity_modifier_reason,
         "discovered": extraction.get("discovered", False),
         "agreement_pattern": evaluation.get("agreement_pattern", "unknown"),
         "evaluator_verdicts": evaluation.get("verdicts", {}),

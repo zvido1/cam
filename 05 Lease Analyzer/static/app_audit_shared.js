@@ -23,29 +23,30 @@
     }
 
     function getAuditAsgTone(asg) {
-        if (asg == null || isNaN(asg)) return { label: "Unknown", tone: "neutral", width: 0 };
-        if (asg < 15) return { label: "Low sensitivity", tone: "good", width: 18 };
-        if (asg < 35) return { label: "Moderate sensitivity", tone: "caution", width: 46 };
-        if (asg < 55) return { label: "High sensitivity", tone: "warning", width: 74 };
-        return { label: "Very high sensitivity", tone: "danger", width: 100 };
+        if (asg == null || isNaN(asg)) return { label: "Not available", tone: "neutral", width: 0 };
+        const width = Math.max(5, Math.min(100, Math.round(asg)));
+        if (asg < 15) return { label: "Stable \u2014 finding holds up even under the most conservative reading.", tone: "good", width };
+        if (asg < 35) return { label: "Mostly stable \u2014 solid finding that could look slightly different under a stricter reading.", tone: "caution", width };
+        if (asg < 55) return { label: "Sensitive \u2014 how this clause is ultimately read could change the practical impact.", tone: "warning", width };
+        return { label: "Highly sensitive \u2014 the practical impact depends significantly on how the clause is interpreted.", tone: "danger", width };
     }
 
     function getAuditConfidenceTone(camPerm) {
-        if (camPerm == null || isNaN(camPerm)) return { label: "Unknown", tone: "neutral", width: 0 };
-        if (camPerm >= 85) return { label: "High confidence", tone: "good", width: camPerm };
-        if (camPerm >= 70) return { label: "Strong confidence", tone: "good", width: camPerm };
-        if (camPerm >= 50) return { label: "Moderate confidence", tone: "caution", width: camPerm };
-        return { label: "Low confidence", tone: "danger", width: Math.max(18, camPerm) };
+        if (camPerm == null || isNaN(camPerm)) return { label: "Not available", tone: "neutral", width: 0 };
+        if (camPerm >= 85) return { label: "Very strong \u2014 reviewers were highly consistent and the finding can be relied upon.", tone: "good", width: camPerm };
+        if (camPerm >= 70) return { label: "Strong \u2014 solid reviewer agreement, well-supported finding.", tone: "good", width: camPerm };
+        if (camPerm >= 50) return { label: "Moderate \u2014 some variation between reviewers; worth checking directly.", tone: "caution", width: camPerm };
+        return { label: "Weak \u2014 reviewers disagreed significantly; treat this as a flag rather than a confirmed finding.", tone: "danger", width: Math.max(18, camPerm) };
     }
 
     function getAuditFragilityTone(fragilityRaw) {
         const score = fragilityRaw && fragilityRaw.fragility_score != null ? Number(fragilityRaw.fragility_score) : null;
-        if (score == null || isNaN(score)) return { label: "No fragility score", tone: "neutral", width: 0 };
+        if (score == null || isNaN(score)) return { label: "Not available", tone: "neutral", width: 0 };
         const pct = Math.max(0, Math.min(100, Math.round(score * 100)));
-        if (pct < 15) return { label: "Low structural fragility", tone: "good", width: pct };
-        if (pct < 35) return { label: "Moderate structural fragility", tone: "caution", width: pct };
-        if (pct < 60) return { label: "High structural fragility", tone: "warning", width: pct };
-        return { label: "Very high structural fragility", tone: "danger", width: pct };
+        if (pct < 15) return { label: "Simple clause \u2014 clear language that doesn\u2019t depend on other parts of the lease.", tone: "good", width: pct };
+        if (pct < 35) return { label: "Moderate complexity \u2014 mostly clear, with some elements that may need careful reading.", tone: "caution", width: pct };
+        if (pct < 60) return { label: "Complex \u2014 cross-references or defined terms make the meaning dependent on context.", tone: "warning", width: pct };
+        return { label: "Highly complex \u2014 the clause\u2019s meaning is heavily tied to how other parts of the lease are read.", tone: "danger", width: pct };
     }
 
     function getAuditAgreementSummary(pattern) {
@@ -83,17 +84,19 @@
         return `Structural fragility was detected because of ${translated.join(", ")}.`;
     }
 
-    function renderAuditScoreBar(label, value, helper, toneInfo, escFn) {
+    function renderAuditScoreBar(label, value, helper, toneInfo, escFn, context) {
         const esc = escFn || (value => String(value ?? ""));
         const tone = toneInfo && toneInfo.tone ? toneInfo.tone : "neutral";
         const width = toneInfo && toneInfo.width != null ? toneInfo.width : 0;
+        const contextHtml = context ? `<div class="audit-score-context">${esc(context)}</div>` : "";
         return `<div class="audit-score-card audit-score-${tone}">
             <div class="audit-score-head">
                 <span class="audit-score-label">${esc(label)}</span>
-                <span class="audit-score-value">${esc(value)}</span>
+                <span class="audit-score-value">${value}</span>
             </div>
             <div class="audit-score-track"><span class="audit-score-fill audit-score-fill-${tone}" style="width:${Math.max(0, Math.min(100, width))}%"></span></div>
             <div class="audit-score-helper">${esc(helper)}</div>
+            ${contextHtml}
         </div>`;
     }
 
@@ -126,10 +129,10 @@
 
     function getConfidenceBadgeData(governanceSignal, severity) {
         const map = {
-            ASSERT_SIGNAL:        { label: "Confirmed",  cssClass: "confirmed",  dots: "\u25cf\u25cf\u25cf\u25cf" },
-            ASSERT_REVIEW_SIGNAL: { label: "Fragile",    cssClass: "fragile",    dots: "\u25cf\u25cf\u25cf\u25cb" },
-            REVIEW_SIGNAL:        { label: "Uncertain",  cssClass: "uncertain",  dots: "\u25cf\u25cf\u25cb\u25cb" },
-            WITHHOLD_SIGNAL:      { label: "Unverified", cssClass: "unverified", dots: "\u25cf\u25cb\u25cb\u25cb" },
+            ASSERT_SIGNAL:        { label: "Verified",       cssClass: "confirmed",  dots: "\u25cf\u25cf\u25cf\u25cf" },
+            ASSERT_REVIEW_SIGNAL: { label: "Impact Unclear", cssClass: "fragile",    dots: "\u25cf\u25cf\u25cf\u25cb" },
+            REVIEW_SIGNAL:        { label: "Needs Review",   cssClass: "uncertain",  dots: "\u25cf\u25cf\u25cb\u25cb" },
+            WITHHOLD_SIGNAL:      { label: "Inconclusive",   cssClass: "unverified", dots: "\u25cf\u25cb\u25cb\u25cb" },
         };
         const data = map[governanceSignal];
         if (!data) return null;
@@ -146,7 +149,7 @@
     function getSidebarConfidenceLabel(governanceSignal) {
         const map = {
             ASSERT_SIGNAL:        "Verified",
-            ASSERT_REVIEW_SIGNAL: "Check Interpretation",
+            ASSERT_REVIEW_SIGNAL: "Impact Unclear",
             REVIEW_SIGNAL:        "Needs Review",
             WITHHOLD_SIGNAL:      "Inconclusive",
         };
@@ -201,11 +204,34 @@
             if (basis === "explicit_text")
                 return "Clearly supported by explicit lease language.";
             if (challenge === "SUBSTANTIVE_DEVIATION")
-                return "Confirmed as a real deviation by independent review.";
+                return "Verified as a real deviation by independent review.";
             return "Well-supported finding \u2014 low interpretation risk.";
         }
 
         return "";
+    }
+
+    function getCombinedTooltipText(severity, governanceSignal) {
+        const key = (severity || "").toUpperCase() + ":" + (governanceSignal || "");
+        const map = {
+            "CRITICAL:ASSERT_SIGNAL":        "Fundamental deal terms changed with clear impact. All evaluators agree, reasoning grounded in explicit text.",
+            "CRITICAL:ASSERT_REVIEW_SIGNAL": "Fundamental change identified but practical impact depends on how specific terms or cross-references are interpreted.",
+            "CRITICAL:REVIEW_SIGNAL":        "Evaluators disagreed on a potentially high-impact change. The clause text should be examined directly.",
+            "CRITICAL:WITHHOLD_SIGNAL":      "A potentially significant change was flagged but the pipeline lacks sufficient basis to characterize it. Independent examination warranted.",
+            "HIGH:ASSERT_SIGNAL":            "Material change to rights or obligations. Well-supported by evaluator consensus and explicit lease language.",
+            "HIGH:ASSERT_REVIEW_SIGNAL":     "Material change identified but significance depends on how terms, definitions, or related clauses are read together.",
+            "HIGH:REVIEW_SIGNAL":            "Possible material change with mixed evaluator evidence. May be significant if confirmed.",
+            "HIGH:WITHHOLD_SIGNAL":          "A possible material issue was flagged with insufficient confidence to characterize. Should not be relied upon without independent review.",
+            "MEDIUM:ASSERT_SIGNAL":          "Notable change with limited impact. Confirmed by evaluator agreement and grounded in text.",
+            "MEDIUM:ASSERT_REVIEW_SIGNAL":   "Notable change found but practical significance depends on interpretation. Unlikely to be a deal-breaker.",
+            "MEDIUM:REVIEW_SIGNAL":          "Possible change with limited risk and mixed evidence. Lower priority for review.",
+            "MEDIUM:WITHHOLD_SIGNAL":        "Weak signal on a moderate issue. Unlikely to warrant attention unless part of a broader pattern.",
+            "LOW:ASSERT_SIGNAL":             "Minor deviation confirmed. De minimis impact. Noted for completeness.",
+            "LOW:ASSERT_REVIEW_SIGNAL":      "Minor change with some interpretive nuance. Recorded but action unlikely to be needed.",
+            "LOW:REVIEW_SIGNAL":             "Possible minor change with mixed evidence. Low priority.",
+            "LOW:WITHHOLD_SIGNAL":           "Weak signal on a minor issue.",
+        };
+        return map[key] || "";
     }
 
     function getConfidenceToneText(governanceSignal) {
@@ -249,6 +275,7 @@
         renderAuditTechnicalGroup,
         getConfidenceBadgeData,
         getConfidenceToneText,
+        getCombinedTooltipText,
         getSidebarConfidenceLabel,
         getSidebarExplanationText,
         boldMarkdown,

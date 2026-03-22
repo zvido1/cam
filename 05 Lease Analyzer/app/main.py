@@ -393,6 +393,106 @@ async def update_resolution(job_id: str, request: Request):
 # PRE-SCAN ENDPOINTS (050)
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ── Aggressive Read endpoint (Step 228) ──
+
+@app.post("/api/jobs/{job_id}/aggressive-read")
+async def aggressive_read(job_id: str, body: dict):
+    """Return the strongest tenant-favorable reading of a specific provision.
+
+    Exploratory only — does not affect scores, governance signals, or pipeline results.
+    """
+    tenant_index = body.get("tenant_index", 0)
+    provision_id = body.get("provision_id", "")
+
+    if not provision_id:
+        raise HTTPException(status_code=400, detail="provision_id required")
+
+    job = job_manager.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.get("status") == "completed" and job_manager.is_job_expired(job):
+        raise HTTPException(status_code=410, detail="Analysis expired")
+
+    tenants = job.get("input_config", {}).get("tenants", [])
+    if tenant_index < 0 or tenant_index >= len(tenants):
+        raise HTTPException(status_code=404, detail="Invalid tenant index")
+
+    result_path = tenants[tenant_index].get("result_path")
+    if not result_path or not Path(result_path).exists():
+        raise HTTPException(status_code=404, detail="Results not available")
+
+    try:
+        results = json.loads(Path(result_path).read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read results: {e}")
+
+    provision = next(
+        (p for p in results.get("provisions", []) if p.get("provision_id") == provision_id),
+        None,
+    )
+    if not provision:
+        raise HTTPException(status_code=404, detail=f"Provision {provision_id} not found")
+
+    template_text = (provision.get("template_text") or "").strip()
+    tenant_text = (provision.get("tenant_text") or "").strip()
+    risk_headline = (provision.get("risk_headline") or "").strip()
+    provision_name = (provision.get("provision_name") or provision_id).strip()
+
+    if not tenant_text:
+        raise HTTPException(status_code=400, detail="No tenant clause text available for this provision")
+
+    system_prompt = (
+        "You are a commercial real estate attorney analyzing a lease deviation from the tenant's perspective. "
+        "Your job is to identify the strongest possible reading of the tenant's clause — "
+        "the interpretation that most benefits the tenant or most burdens the landlord. "
+        "Be specific to the actual clause language. Do not generalize or speculate beyond what the text supports."
+    )
+
+    user_prompt = f"""PROVISION: {provision_id} — {provision_name}
+
+STANDARD TEMPLATE CLAUSE:
+{template_text or '[not present in template — tenant-added clause]'}
+
+TENANT CLAUSE:
+{tenant_text}
+
+WHAT CAM IDENTIFIED:
+{risk_headline or 'Deviation from standard template'}
+
+Answer these four things specifically:
+
+1. STRONGEST AGGRESSIVE READING: What is the most expansive interpretation of this tenant clause that benefits the tenant or burdens the landlord? Quote the specific language that supports this reading.
+
+2. WHY IT IS PLAUSIBLE: What makes this reading legally defensible? What ambiguity or structure in the clause supports it?
+
+3. LANDLORD PUSHBACK: What is the strongest argument a landlord's attorney would make against this reading? What limits it?
+
+4. BOTTOM LINE: Is this aggressive reading likely to hold up, or is it a stretch? One sentence.
+
+Be direct. Name the specific clause language. Do not hedge unnecessarily."""
+
+    try:
+        from cam.core.config import find_and_load_env
+        find_and_load_env()
+        from cam.core.provider_router import ModelTarget, ProviderRouter, RouterConfig
+        target = ModelTarget(
+            name="openai:gpt-5.2",
+            provider="openai",
+            model="gpt-5.2",
+            max_output_tokens=800,
+            temperature=0.3,
+            timeout_sec=60.0,
+        )
+        router = ProviderRouter([target], RouterConfig())
+        adapter = router._get_adapter("openai")
+        response = adapter.call(system_prompt, user_prompt, target)
+        return {"analysis": response.strip(), "provision_id": provision_id}
+    except Exception as e:
+        logger.error(f"Aggressive read failed for {provision_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {e}")
+
+
 # ── Prescan endpoints removed in step 112 (discovery moved into pipeline) ──
 # @app.post("/api/prescan/template")
 # Prescan replaced by in-pipeline discovery during Stage 2 evaluation.
@@ -435,15 +535,21 @@ async def get_template_summary(
     try:
         text = parse_document(tmp_path)
 
-        # Gate check
-        gate = check_document_is_lease(text, {})
-        if not gate["is_lease"]:
-            return {
-                "gate_passed": False,
-                "gate_message": gate["abort_message"],
-                "landlord": "", "property": "",
-                "base_rent": "", "lease_term": "", "governing_law": ""
-            }
+        # Skip gate check for known demo/sample files
+        _demo_names = {"meridian standard template (demo).txt", "template.txt"}
+        _is_demo = template_file.filename.lower().strip() in _demo_names
+        if _is_demo:
+            logger.info("Template gate: skipped (known demo file: %s)", template_file.filename)
+        else:
+            # Gate check
+            gate = check_document_is_lease(text, {})
+            if not gate["is_lease"]:
+                return {
+                    "gate_passed": False,
+                    "gate_message": gate["abort_message"],
+                    "landlord": "", "property": "",
+                    "base_rent": "", "lease_term": "", "governing_law": ""
+                }
 
         # Extract summary
         summary = read_template_summary(text)
@@ -1204,7 +1310,9 @@ async def chat_with_analysis(job_id: str, body: dict):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    if job.get("status") not in ("completed", "cancelled"):
+    # Allow chat on completed, cancelled, or processing jobs (partial results are fine —
+    # the user may be reviewing a finished tenant while others are still running)
+    if job.get("status") not in ("completed", "cancelled", "processing"):
         raise HTTPException(status_code=400, detail="Job must be completed to chat")
 
     if job_manager.is_job_expired(job):

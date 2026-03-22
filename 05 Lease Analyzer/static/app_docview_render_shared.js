@@ -12,7 +12,7 @@
         const SEVERITY_ICONS = helpers.SEVERITY_ICONS || {};
 
         const tenantLeads = !!options.tenantLeads;
-        const templateFile = options.templateFile || "Standard Template";
+        const templateFile = options.templateFile || "Reference Lease";
         const tenantFile = options.tenantFile || "Tenant Lease";
         const tenantIdx = options.tenantIdx;
         const modelsUsed = options.modelsUsed || {};
@@ -27,11 +27,11 @@
         const referenceHeaderClass = docviewSort === "reference" ? "docview-column-header-primary" : "docview-column-header-secondary";
         const tenantHeaderClass = docviewSort === "contract" ? "docview-column-header-primary" : "docview-column-header-secondary";
         if (tenantLeads) {
-            html += `<div class="docview-column-header ${referenceHeaderClass}">Standard Template &mdash; ${esc(templateFile)}</div>`;
+            html += `<div class="docview-column-header ${referenceHeaderClass}">Reference Lease &mdash; ${esc(templateFile)}</div>`;
             html += `<div class="docview-column-header ${tenantHeaderClass}">Tenant Lease &mdash; ${esc(tenantFile)}</div>`;
         } else {
             html += `<div class="docview-column-header ${tenantHeaderClass}">Tenant Lease &mdash; ${esc(tenantFile)}</div>`;
-            html += `<div class="docview-column-header ${referenceHeaderClass}">Standard Template &mdash; ${esc(templateFile)}</div>`;
+            html += `<div class="docview-column-header ${referenceHeaderClass}">Reference Lease &mdash; ${esc(templateFile)}</div>`;
         }
         html += `</div>`;
         html += `</div>`;
@@ -132,9 +132,16 @@
                 }
                 const interpretationNote = (p.interpretation_note || "").trim();
                 if (interpretationNote) {
+                    const _boldMd = window.CAMAuditShared && window.CAMAuditShared.boldMarkdown
+                        ? window.CAMAuditShared.boldMarkdown
+                        : (t) => esc(t);
+                    const _paras = interpretationNote.split(/\n\n+/).map(s => s.trim()).filter(Boolean);
+                    const _noteHtml = _paras.length <= 1
+                        ? `<p>${_boldMd(interpretationNote)}</p>`
+                        : _paras.map(s => `<p>${_boldMd(s)}</p>`).join("");
                     html += `<div class="detail-section interpretation-note-section">
                         <div class="detail-label">Interpretation Note</div>
-                        <div class="detail-text">${esc(interpretationNote)}</div>
+                        <div class="detail-text interpretation-note-body">${_noteHtml}</div>
                     </div>`;
                 }
                 html += `</div>`;

@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAM - Contract Analysis</title>
-    <link rel="stylesheet" href="/static/style.css?v=240">
+    <title>CAM - Shopping Center Lease Review</title>
+    <link rel="stylesheet" href="/static/style.css?v=279">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -14,7 +14,7 @@
     <!-- ═══ HEADER ═══ -->
     <header class="app-header" id="app-header">
         <span class="logo" id="logo-home" onclick="window.CAM.resetApp(); return false;" style="cursor:pointer;" title="Back to home">CAM&#8482;</span>
-        <span class="tagline" id="header-tagline">AI-Powered Contract Analysis</span>
+        <span class="tagline" id="header-tagline">Shopping Center Lease Review</span>
         <span id="expiry-notice" class="expiry-notice hidden">&#128274; <span id="expiry-countdown"></span> to deletion</span>
         <a class="privacy-link" id="about-cam-toggle">About CAM's Analysis</a>
         <a class="privacy-link" id="privacy-toggle">Privacy &amp; Data</a>
@@ -25,6 +25,7 @@
             <button class="workflow-nav-tab" id="workflow-tab-processing" data-workflow-state="processing">Processing</button>
             <button class="workflow-nav-tab" id="workflow-tab-results" data-workflow-state="results">Results</button>
         </div>
+        <button class="btn btn-cancel workflow-cancel-btn hidden" id="workflow-cancel-btn" onclick="window.CAM.handleCancel(); return false;">&#9632; Cancel</button>
     </nav>
 
     <!-- ═══ MAIN CONTENT ═══ -->
@@ -40,7 +41,7 @@
         <section id="state-gate">
             <div class="gate-card">
                 <div class="logo">CAM&#8482;</div>
-                <div class="subtitle">AI-Powered Contract Analysis</div>
+                <div class="subtitle">Shopping Center Lease Review</div>
                 <div id="gate-error" class="alert alert-error hidden"></div>
                 <input
                     type="password"
@@ -82,13 +83,13 @@
                                 <div id="submit-error" class="alert alert-error hidden mt-2"></div>
                                 <div id="template-gate-error" class="alert alert-error hidden mt-2"></div>
                                 <div id="template-loading" class="hidden mt-2" style="text-align:center;color:var(--text-muted);font-size:0.875rem;padding:1rem 0;">
-                                    <span class="spinner"></span> Reading reference document...
+                                    <span class="spinner"></span> Reading reference lease...
                                 </div>
 
                                 <div class="upload-col">
                                     <div class="upload-col-header">
                                         <div>
-                                            <span class="upload-col-title">Reference Contract</span>
+                                            <span class="upload-col-title">Reference Lease</span>
                                             <span class="upload-col-subtitle">(single file)</span>
                                         </div>
                                         <button class="upload-clear-btn hidden" id="template-clear-btn">Clear</button>
@@ -225,11 +226,11 @@
                                             ↺ Reset All
                                         </button>
                                         <button class="btn btn-primary btn-sm" id="analyze-btn" disabled>
-                                            Analyze Leases
+                                            Review Leases
                                         </button>
                                     </div>
                                 </div>
-                                <div class="provisions-subtitle">Select provisions to check, then click Analyze Leases. CAM also discovers additional clauses automatically.</div>
+                                <div class="provisions-subtitle">Select provisions to check, then click Review Leases. CAM also discovers additional provisions automatically.</div>
                                 <div class="provisions-panel-controls">
                                     <a href="#" id="check-all-provisions" onclick="window.CAM.checkAllProvisions(); return false;">Check All</a>
                                     <a href="#" id="uncheck-all-provisions" onclick="window.CAM.uncheckAllProvisions(); return false;">Uncheck All</a>
@@ -281,7 +282,7 @@
                     <div class="processing-title">CAM is reviewing your leases</div>
                     <div class="processing-subtitle">Completed contracts unlock as soon as they finish, so you can begin reviewing while CAM continues processing the remaining leases.</div>
                     <div id="processing-overview-status" class="processing-overview-status hidden"></div>
-                    <div id="estimate-remaining" class="estimate-text mt-2"></div>
+                    <div id="estimate-remaining" class="estimate-text mt-2" style="font-size:0.8rem;color:var(--text-muted);"></div>
 
                     <div class="cancel-area mt-2">
                         <button class="btn btn-cancel" id="cancel-btn">Cancel Analysis</button>
@@ -339,7 +340,7 @@
 
                     <div id="processing-ready-card" class="processing-ready-card hidden">
                         <div class="processing-side-kicker">Ready now</div>
-                        <div class="processing-side-title">Contracts ready to review</div>
+                        <div class="processing-side-title">Leases ready to review</div>
                         <div class="processing-side-subtitle">Open completed contracts immediately while CAM continues processing the rest.</div>
                         <div id="processing-ready-list" class="processing-ready-list"></div>
                     </div>
@@ -394,7 +395,7 @@
                         <div class="cam-slide">
                             <div class="cam-slide-icon">🎯</div>
                             <div class="cam-slide-title">Applied here: lease deviation analysis</div>
-                            <div class="cam-slide-body">This tool applies CAM to one of the most consequential review tasks in commercial real estate: comparing a tenant lease against a reference form and surfacing what materially changed. CAM is not just looking for differences — it is judging whether those differences are important enough, stable enough, and well-supported enough to matter.</div>
+                            <div class="cam-slide-body">This tool applies CAM to one of the most consequential review tasks in commercial real estate: comparing a tenant lease against a reference lease and surfacing what materially changed. CAM is not just looking for differences — it is judging whether those differences are important enough, stable enough, and well-supported enough to matter.</div>
                         </div>
 
                         <div class="cam-slide">
@@ -406,7 +407,7 @@
                         <div class="cam-slide">
                             <div class="cam-slide-icon">📋</div>
                             <div class="cam-slide-title">What you'll get in results</div>
-                            <div class="cam-slide-body">You’ll get a working review system, not just a list of flags: clause-by-clause summaries, document comparison in lease order, notes and draft decisions, an annotated tenant lease, and contract-level tracking of what is still open, resolved, or no longer a deviation.</div>
+                            <div class="cam-slide-body">You’ll get a working review system, not just a list of flags: provision-by-provision summaries, document comparison in lease order, notes and draft decisions, an annotated tenant lease, and lease-level tracking of what is still open, resolved, or no longer a deviation.</div>
                         </div>
 
                         <div class="cam-slide">
@@ -470,16 +471,16 @@
                 <!-- Top-level tab bar (Step 116) — spans full width via grid -->
                 <div class="top-tab-bar" id="top-tab-bar">
                     <div class="top-tab-nav" id="top-tab-nav">
-                        <button class="top-tab active" data-top-tab="overview">Run Synopsis</button>
-                        <button class="top-tab" data-top-tab="contracts" id="top-tab-contracts">Contracts</button>
+                        <button class="top-tab active" data-top-tab="overview">Overview</button>
+                        <button class="top-tab" data-top-tab="contracts" id="top-tab-contracts">Leases</button>
                         <div class="top-tab-divider" id="contract-tab-divider"></div>
-                        <button class="top-tab" data-tab="findings" id="contract-tab-findings">Contract Summary</button>
+                        <button class="top-tab" data-tab="findings" id="contract-tab-findings">Lease Summary</button>
                         <button class="top-tab" data-tab="docview" id="contract-tab-docview">Document Comparison</button>
                         <button class="top-tab" data-tab="audittrail" id="contract-tab-audittrail">CAM Audit Trail</button>
                     </div>
                     <div class="top-tab-actions" id="top-tab-actions">
                         <button class="tab-action-btn" id="new-analysis-btn" title="Start New Analysis">&#128196;</button>
-                        <button class="tab-action-btn" id="add-more-btn" title="Add More Contracts">&#10133;</button>
+                        <button class="tab-action-btn" id="add-more-btn" title="Add More Leases">&#10133;</button>
                         <button class="tab-action-btn" id="my-rules-btn" title="My Rules" onclick="window.CAM.showRulesPanel()">&#9881;&#65039;</button>
                         <div class="tab-action-divider"></div>
                         <button class="tab-action-btn tab-action-btn--danger" id="delete-job-btn" title="Delete All Data — permanently removes all uploaded documents and results">&#128465;</button>
@@ -487,7 +488,7 @@
                 </div>
 
                 <!-- Persistent sub-header bar (always visible, updates per tab) — spans full width via grid -->
-                <div id="tab-subheader" class="tab-subheader">Run Synopsis</div>
+                <div id="tab-subheader" class="tab-subheader">Overview</div>
 
                 <div id="nav-sidebar" class="nav-sidebar">
                     <div class="nav-sidebar-header">Open Issues</div>
@@ -545,7 +546,7 @@
                         <span class="legend-item"><span class="legend-dot legend-high"></span> High &mdash; Significant deviation, review recommended</span>
                         <span class="legend-item"><span class="legend-dot legend-medium"></span> Medium &mdash; Moderate deviation, monitor</span>
                         <span class="legend-item"><span class="legend-dot legend-low"></span> Low &mdash; Minor deviation, informational</span>
-                        <span class="legend-item"><span class="legend-dot legend-conforms"></span> Conforms &mdash; Aligns with standard template</span>
+                        <span class="legend-item"><span class="legend-dot legend-conforms"></span> Conforms &mdash; Aligns with reference lease</span>
                     </div>
 
                     <!-- ═══ FILTER BAR (048+049) ═══ -->
@@ -597,7 +598,7 @@
                         <div class="filter-dropdown" id="filter-confidence-dropdown">
                             <button class="btn btn-outline filter-dropdown-trigger" id="filter-confidence-trigger"
                                     onclick="window.CAM.toggleFilterDropdown('confidence')">
-                                &#9662; AI Confidence: <span id="filter-confidence-label">All</span>
+                                &#9662; Confidence: <span id="filter-confidence-label">All</span>
                             </button>
                             <div class="filter-dropdown-panel hidden" id="filter-confidence-panel">
                                 <label class="filter-option filter-option-all">
@@ -605,12 +606,20 @@
                                     <span>All</span>
                                 </label>
                                 <label class="filter-option">
-                                    <input type="checkbox" value="NEEDS_REVIEW" class="filter-conf-cb">
-                                    <span>&#9888; Needs Review</span>
+                                    <input type="checkbox" value="HIGH" class="filter-conf-cb">
+                                    <span>&#9679;&#9679;&#9679;&#9679; Verified</span>
                                 </label>
                                 <label class="filter-option">
-                                    <input type="checkbox" value="HIGH" class="filter-conf-cb">
-                                    <span>&#10003; High Confidence</span>
+                                    <input type="checkbox" value="IMPACT_UNCLEAR" class="filter-conf-cb">
+                                    <span>&#9679;&#9679;&#9679;&#9675; Impact Unclear</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="NEEDS_REVIEW" class="filter-conf-cb">
+                                    <span>&#9679;&#9679;&#9675;&#9675; Needs Review</span>
+                                </label>
+                                <label class="filter-option">
+                                    <input type="checkbox" value="INCONCLUSIVE" class="filter-conf-cb">
+                                    <span>&#9679;&#9675;&#9675;&#9675; Inconclusive</span>
                                 </label>
                             </div>
                         </div>
@@ -695,7 +704,7 @@
 
                         <!-- Contract metadata -->
                         <div id="contract-summary-section" class="card mb-2">
-                        <div class="section-header">Contract Summary</div>
+                        <div class="section-header">Lease Summary</div>
                         <div class="contract-summary" id="contract-summary"></div>
                             <div id="contract-ai-comment" class="contract-ai-comment hidden"></div>
                          </div>
@@ -708,9 +717,9 @@
 
                         <!-- Additional Findings (112 — in-pipeline discovery) -->
                         <div id="additional-findings-section" class="additional-findings-wrapper" style="display:none;">
-                            <h3 class="section-title">Additional Clauses</h3>
+                            <h3 class="section-title">Additional Provisions</h3>
                             <p class="section-subtitle">
-                                Clauses identified outside the evaluated provision scope with no standard provision match.
+                                Provisions identified outside the evaluated scope with no standard provision match.
                             </p>
                             <div id="additional-findings-list"></div>
                         </div>
@@ -863,27 +872,91 @@
 
     <!-- ═══ ABOUT CAM MODAL (1G) ═══ -->
     <div class="modal-overlay" id="about-cam-modal">
-        <div class="modal-content">
+        <div class="modal-content about-cam-content">
             <h2>How CAM Analyzes Your Lease</h2>
+
+            <div class="about-cam-story">
+                <div class="about-cam-story-block">
+                    <div class="about-cam-story-icon">&#128064;</div>
+                    <div>
+                        <div class="about-cam-story-title">Most AI tools hide disagreement. CAM surfaces it.</div>
+                        <p class="about-cam-story-text">When AI evaluators disagree about a clause, conventional tools quietly resolve that disagreement and deliver one confident-sounding answer. You never see the uncertainty. CAM works differently: each provision is evaluated independently by multiple AI roles, without any of them seeing the others&rsquo; conclusions. Where they agree, the finding is reliable. Where they don&rsquo;t, that disagreement is shown to you &mdash; because a split evaluation is itself important information.</p>
+                    </div>
+                </div>
+                <div class="about-cam-story-block">
+                    <div class="about-cam-story-icon">&#128202;</div>
+                    <div>
+                        <div class="about-cam-story-title">Most AI tools ask the model how confident it is. CAM doesn’t — because that answer isn’t reliable.</div>
+                        <p class="about-cam-story-text">AI models routinely express high confidence in wrong answers. A model’s self-reported certainty is not a meaningful signal — it reflects how the model “feels” about its answer, not whether the answer is actually well-supported. CAM doesn’t ask evaluators to rate their own certainty. Instead it measures things that are independently observable: did all evaluators reach the same conclusion without seeing each other’s work? Is the reasoning grounded in explicit clause text, or inferred? Did the finding survive a dedicated challenge step? Does the clause depend on how other parts of the lease are read? The scores you see in CAM reflect those factors — agreement, evidence quality, reasoning completeness, and structural complexity — not a self-assessment.</p>
+
+                    </div>
+                </div>
+                <div class="about-cam-story-block">
+                    <div class="about-cam-story-icon">&#9878;</div>
+                    <div>
+                        <div class="about-cam-story-title">CAM knows when not to assert.</div>
+                        <p class="about-cam-story-text">Most AI systems are built to always give you an answer. CAM is built around a different question: &ldquo;Is there enough evidence to assert this conclusion reliably?&rdquo; When the answer is no &mdash; because evaluators disagreed, or the clause is too context-dependent to characterize definitively &mdash; CAM withholds the finding rather than guessing. A withheld finding is not a failure. It is the system being honest about the limits of what it can confidently conclude.</p>
+                    </div>
+                </div>
+            </div>
+
+            <hr style="margin: 1.25rem 0; border: none; border-top: 1px solid #e2e8f0;">
+            <p style="font-size:0.875rem; font-weight:600; margin-bottom:0.5rem;">How the pipeline works:</p>
             <p>Unlike single-AI tools, CAM uses a multi-stage evaluation pipeline designed for accuracy and transparency:</p>
             <ol class="numbered-list">
-                <li><strong>Three AI models from different providers</strong> (Anthropic, OpenAI, xAI) independently analyze each provision without seeing each other's work.</li>
-                <li><strong>An automated rules engine</strong> checks for 8 specific deviation patterns (exception clauses, definition changes, numerical differences, obligation shifts, and more).</li>
-                <li><strong>A challenger AI</strong> probes flagged findings to verify accuracy and catch false positives.</li>
-                <li><strong>Severity is assessed</strong> based on legal and financial impact to prioritize what matters most.</li>
+                <li><strong>Multiple AI evaluation roles</strong> independently analyze each provision without seeing each other&rsquo;s conclusions &mdash; producing genuinely independent assessments, not a consensus.</li>
+                <li><strong>An automated rules engine</strong> checks for specific deviation patterns: exception clauses, definition changes, numerical differences, obligation shifts, and more.</li>
+                <li><strong>A challenger role</strong> probes flagged findings to test whether the deviation is substantive or cosmetic, and to surface hidden dependencies.</li>
+                <li><strong>Severity is assessed</strong> based on legal and financial impact, so you know what to address first.</li>
             </ol>
             <p>Each finding shows you exactly what each evaluator concluded, which rules triggered, and how the final verdict was reached. <strong>Full transparency, not a black box.</strong></p>
-            <p style="color:var(--text-muted); font-size:0.8125rem;">Click any finding card to expand it and see the full AI analysis, evaluator reasoning, and detection rules.</p>
+
             <hr style="margin: 1.25rem 0; border: none; border-top: 1px solid #e2e8f0;">
-            <h3 id="cam-confidence-explainer" style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">What the confidence indicators mean</h3>
-            <p>After evaluating each clause, CAM assesses how certain the analysis is. These indicators appear in the sidebar and on individual findings:</p>
-            <ul>
-                <li><strong>&#10003; Verified</strong> &mdash; All AI evaluators agreed. The finding is reliable.</li>
-                <li><strong>&#9888; Complex</strong> &mdash; A conclusion was reached, but evaluators had differing interpretations. Worth a careful read.</li>
-                <li><strong>&#9675; Review</strong> &mdash; AI confidence was moderate on this clause. Consider checking it manually.</li>
-                <li><strong>&#9888; Uncertain</strong> &mdash; Evaluators could not reach confident agreement. Manual review is recommended.</li>
+            <h3 id="cam-confidence-explainer" style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">Confidence indicators</h3>
+            <p style="font-size:0.875rem;">After evaluating each clause, CAM assigns a confidence label. These appear in the sidebar and on every finding card:</p>
+            <ul class="about-cam-indicators">
+                <li><span class="about-cam-badge confirmed">&#9679;&#9679;&#9679;&#9679; Verified</span> &mdash; All reviewers agreed. The finding is reliable and well-grounded in the clause text.</li>
+                <li><span class="about-cam-badge fragile">&#9679;&#9679;&#9679;&#9675; Impact Unclear</span> &mdash; Finding is confirmed, but the practical impact depends on how specific terms or cross-references are interpreted. Read the interpretation note.</li>
+                <li><span class="about-cam-badge uncertain">&#9679;&#9679;&#9675;&#9675; Needs Review</span> &mdash; Reviewers had mixed signals. Worth checking directly.</li>
+                <li><span class="about-cam-badge unverified">&#9679;&#9675;&#9675;&#9675; Inconclusive</span> &mdash; Insufficient basis to assert a finding. Treat as a flag, not a confirmed deviation.</li>
             </ul>
-            <p style="margin-top: 0.75rem; font-size: 0.875rem; color: #64748b;">The &ldquo;Analysis confidence&rdquo; line at the top of each contract summary shows what percentage of clauses were evaluated with high confidence. Clauses flagged as Uncertain or Review are not necessarily errors &mdash; they indicate the AI found the clause more difficult to assess definitively.</p>
+
+            <hr style="margin: 1.25rem 0; border: none; border-top: 1px solid #e2e8f0;">
+            <h3 id="cam-scoring-explainer" style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">How the confidence scores work</h3>
+            <p style="font-size:0.875rem;">Each provision receives three diagnostic scores, visible in the expanded audit detail:</p>
+
+            <div class="about-cam-score-block">
+                <div class="about-cam-score-title">Finding reliability</div>
+                <div class="about-cam-score-desc">How much can you rely on this finding? Calculated as <code>A &times; E &times; R &times; 100</code> where:</div>
+                <ul class="about-cam-score-list">
+                    <li><strong>A (Agreement)</strong> &mdash; Did all three reviewers reach the same conclusion? Unanimous (3&ndash;0) = 1.0, majority (2&ndash;1) = 0.75, no consensus = 0.5.</li>
+                    <li><strong>E (Evidence)</strong> &mdash; Is the conclusion grounded in explicit clause text, or inferred? E ranges from ~0.65 (weak, inferred) to ~0.95 (strong, grounded in direct text). If the challenger confirms the deviation as substantive, E rises; if it finds the difference cosmetic, E falls. This is why two findings with identical reviewer agreement can have very different reliability scores &mdash; one may be anchored in exact clause language while the other depends on interpretation.</li>
+                    <li><strong>R (Reasoning)</strong> &mdash; Did the finding go through every stage of the pipeline? R ranges from ~0.80 (challenge skipped) to 1.00 (full chain: extraction &rarr; evaluation &rarr; challenge &rarr; severity). Hidden dependencies &mdash; cross-referenced sections, cascading definitions &mdash; also reduce R because they make the reasoning path harder to verify independently. Most DEVIATES findings score 0.90 or above; lower values flag provisions where the pipeline had to make assumptions.</li>
+                </ul>
+                <p class="about-cam-score-note">A score of 80+ is strong. Below 50, the finding is withheld rather than surfaced.</p>
+            </div>
+
+            <div class="about-cam-score-block">
+                <div class="about-cam-score-title">Stricter review (drop score)</div>
+                <div class="about-cam-score-desc">How does this hold up under the most conservative reading? CAM recalculates the score with stricter evidence standards and applies a structural fragility penalty. The &ldquo;drop&rdquo; is the difference &mdash; called the <strong>Assertion Sensitivity Gap (ASG)</strong>.</div>
+                <ul class="about-cam-score-list">
+                    <li>A small drop (ASG &lt; 15) means the finding is stable regardless of how strictly you read it.</li>
+                    <li>A large drop (ASG &gt; 28) means the finding looks persuasive but weakens under scrutiny &mdash; this is what triggers &ldquo;Impact Unclear.&rdquo;</li>
+                </ul>
+                <p class="about-cam-score-note">This is the key innovation of CAM. Traditional AI tools report only one confidence score. CAM reports two &mdash; exposing findings that appear reliable but aren&rsquo;t.</p>
+            </div>
+
+            <div class="about-cam-score-block">
+                <div class="about-cam-score-title">Clause complexity</div>
+                <div class="about-cam-score-desc">How tied is this clause to other parts of the lease? Factors include:</div>
+                <ul class="about-cam-score-list">
+                    <li>Internal cross-references (e.g. &ldquo;subject to Section 9.1&rdquo;)</li>
+                    <li>Definition overrides (a defined term was changed elsewhere)</li>
+                    <li>Negation or conditional scope changes</li>
+                </ul>
+                <p class="about-cam-score-note">High complexity doesn&rsquo;t mean the finding is wrong &mdash; it means the clause&rsquo;s meaning depends on context that may require expert interpretation.</p>
+            </div>
+
             <button class="btn btn-secondary modal-close" id="about-cam-close">Close</button>
         </div>
     </div>
@@ -945,12 +1018,12 @@
 </div>
 
     <script src="/static/app_shared.js?v=1"></script>
-    <script src="/static/app_audit_shared.js?v=6"></script>
+    <script src="/static/app_audit_shared.js?v=12"></script>
     <script src="/static/app_workflow_shared.js?v=2"></script>
     <script src="/static/app_docview_shared.js?v=1"></script>
     <script src="/static/app_docview_render_shared.js?v=3"></script>
     <script src="/static/app_summary_shared.js?v=1"></script>
     <script src="/static/app_notes_shared.js?v=1"></script>
-    <script src="/static/app.js?v=239"></script>
+    <script src="/static/app.js?v=291"></script>
 </body>
 </html>

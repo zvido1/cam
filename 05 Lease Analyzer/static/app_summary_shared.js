@@ -61,7 +61,7 @@
         const clausePairHtml = (tmplText || tenantText) ? `
             <div class="conforming-clause-pair">
                 <div class="conforming-clause-col">
-                    <div class="conforming-clause-label">Standard Template</div>
+                    <div class="conforming-clause-label">Reference Lease</div>
                     <div class="conforming-clause-text">${esc(tmplText || "—")}</div>
                 </div>
                 <div class="conforming-clause-col">

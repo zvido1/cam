@@ -16,9 +16,11 @@ cam_scorer.py (standalone) remains unchanged for batch/audit use.
 # ---------------------------------------------------------------------------
 
 SIGNAL_WEIGHTS_PERMISSIVE = {
-    "cross_reference_dependency": 0.15,
-    "negation_pattern":           0.35,
-    "quantitative_deviation":     0.40,
+    "cross_reference_dependency": 0.04,  # fires on provision anatomy (mentions other sections), not on whether
+                                          # the deviation itself depends on those sections — nearly irrelevant
+                                          # for ASG; real cross-ref sensitivity comes from co-firing signals
+    "negation_pattern":           0.30,  # obligation direction shift — moderately interpretation-sensitive
+    "quantitative_deviation":     0.08,  # explicit number — least interpretation-sensitive deviation type
     "_unknown":                   0.20,
 }
 
@@ -30,9 +32,10 @@ SIGNAL_WEIGHTS_STRICT = {
 }
 
 SIGNAL_E_PENALTIES_STRICT = {
-    "cross_reference_dependency": 0.82,
-    "negation_pattern":           0.74,
-    "quantitative_deviation":     0.78,
+    "cross_reference_dependency": 0.98,  # near-neutral: provision having cross-references doesn't itself
+                                          # reduce epistemic confidence in an identified deviation
+    "negation_pattern":           0.80,  # direction change has some scope ambiguity
+    "quantitative_deviation":     0.93,  # explicit number — near-certain in strict mode too
 }
 
 CHALLENGE_CONFIRMATION_F_BOOST = 0.10

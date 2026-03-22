@@ -11,7 +11,7 @@ const ANALYSIS_TYPES = [
     {
         id: "lease_review",
         domain: "Legal",
-        name: "Lease Comparison",
+        name: "Shopping Center Lease Review",
         description: "Compare tenant leases against a standard template to detect deviations, assess risk, and generate annotated reports.",
         endpoint: "/api/jobs/lease",
         provisions_endpoint: "/api/provisions"
@@ -20,6 +20,8 @@ const ANALYSIS_TYPES = [
 
 const POLL_INTERVAL_MS = 5000;
 const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
+const SEVERITY_DISPLAY = { CRITICAL: "Critical", HIGH: "High", MEDIUM: "Medium", LOW: "Low", CONFORMS: "Conforms" };
+function sevDisplay(s) { return SEVERITY_DISPLAY[(s || "").toUpperCase()] || s || ""; }
 const SEVERITY_ICONS = {
     CRITICAL: "\uD83D\uDD34",
     HIGH: "\u26A0\uFE0F",
@@ -74,7 +76,7 @@ const getAuditFragilitySummary = CAMAuditShared.getAuditFragilitySummary
     ? function(fragilityRaw) { return CAMAuditShared.getAuditFragilitySummary(fragilityRaw, FRAGILITY_TRANSLATIONS); }
     : function() { return "No structural fragility signals were detected."; };
 const renderAuditScoreBar = CAMAuditShared.renderAuditScoreBar
-    ? function(label, value, helper, toneInfo) { return CAMAuditShared.renderAuditScoreBar(label, value, helper, toneInfo, esc); }
+    ? function(label, value, helper, toneInfo, escFn, context) { return CAMAuditShared.renderAuditScoreBar(label, value, helper, toneInfo, esc, context); }
     : function() { return ""; };
 const renderAuditRawRecord = CAMAuditShared.renderAuditRawRecord
     ? function(title, record) { return CAMAuditShared.renderAuditRawRecord(title, record, esc); }
@@ -276,17 +278,31 @@ let contractDetailIdx = -1;
 let snapshotActiveIndex = null;    // Step 120: remembers open contract in Run Snapshot
 let snapshotVisited = false;       // Step 122: true after first visit to Run Snapshot tab
 let snapshotSort = 'risk';         // Step 124: sort dropdown
-let snapshotSeverityFilter = 'all'; // Step 124: severity filter
+let snapshotSeverityFilter = new Set(); // empty = All
+let snapshotConfidenceFilter = new Set(); // empty = All
 let snapshotStatusFilter = 'all';  // Step 124: status filter
 let snapshotSearch = '';           // Step 124: live search text
 let snapshotContractFilter = new Set(); // Step 130: empty = show all
-let contractClauseSeverityFilter = 'all';
+let contractClauseSeverityFilter = new Set(); // empty = All
 let contractClauseStatusFilter = 'all';
 let contractClauseReadFilter = 'all';
 let contractClauseNotesFilter = 'all';
-let contractClauseConfidenceFilter = 'all';
+let contractClauseConfidenceFilter = new Set(); // empty = All
+let contractClauseProvisionFilter = new Set(); // empty = All provisions
+let contractClauseSort = 'severity'; // severity | confidence | provision_id
 let contractPickerSeverityFilter = 'all';
 let contractDetailRenderPromise = Promise.resolve();
+
+// Global provision ID sort key: LP-xx (0,xx), CUSTOM-xx (1,xx), ADDED-xx (2,xx)
+function pidSortKeyGlobal(pid) {
+    const m = (pid || "").match(/^(LP|CUSTOM|ADDED)-(\d+)/i);
+    if (!m) return [2, 999];
+    const prefix = m[1].toUpperCase();
+    const num = parseInt(m[2], 10);
+    if (prefix === "LP") return [0, num];
+    if (prefix === "CUSTOM") return [1, num];
+    return [2, num];
+}
 let contractDetailRenderSeq = 0;
 
 function getResultsViewStateKey() {
@@ -385,14 +401,18 @@ function showState(name) {
     // Lock page scroll when results are showing — prevents sticky header jitter
     document.body.classList.toggle('results-active', name === 'results');
 
+    // Show cancel button in nav only during active processing
+    const wfCancelBtn = $("#workflow-cancel-btn");
+    if (wfCancelBtn) wfCancelBtn.classList.toggle("hidden", name !== "processing");
+
     const tagline = $("#header-tagline");
     if (name === "gate") {
-        tagline.textContent = "AI-Powered Contract Analysis";
+        tagline.textContent = "Shopping Center Lease Review";
         $("#app-header").style.display = "none";
     } else {
         tagline.textContent = selectedAnalysisType
             ? selectedAnalysisType.name
-            : "AI-Powered Contract Analysis";
+            : "Shopping Center Lease Review";
         $("#app-header").style.display = "";
     }
 
@@ -616,6 +636,14 @@ function enterApp() {
 // Event Listeners
 // ══════════════════════════════════════════════════════
 
+// Close all custom filter dropdowns when clicking outside
+document.addEventListener("click", function(e) {
+    if (e.target.closest(".clause-filter-dropdown, .snapshot-contract-filter-wrap")) return;
+    document.querySelectorAll(".clause-filter-panel, .snapshot-contract-dropdown").forEach(function(el) {
+        el.classList.add("hidden");
+    });
+});
+
 function setupEventListeners() {
     $$("#workflow-nav [data-workflow-state]").forEach(btn => {
         btn.onclick = async () => {
@@ -755,7 +783,7 @@ function setupEventListeners() {
             currentResults = null;
             currentTenantIndex = 0;
             addMoreMode = null;
-            activeTopTab = "overview"; snapshotActiveIndex = null; snapshotVisited = false; snapshotSort = 'risk'; snapshotSeverityFilter = 'all'; snapshotStatusFilter = 'all'; snapshotSearch = ''; snapshotContractFilter = new Set();  // Step 120/122/124/130: reset
+            activeTopTab = "overview"; snapshotActiveIndex = null; snapshotVisited = false; snapshotSort = 'risk'; snapshotSeverityFilter = new Set(); snapshotConfidenceFilter = new Set(); snapshotStatusFilter = 'all'; snapshotSearch = ''; snapshotContractFilter = new Set();  // Step 120/122/124/130: reset
             // prescan removed (112)
             cancelRequested = false;
             chatHistory = [];
@@ -795,7 +823,7 @@ function setupEventListeners() {
             // Lock template display
             const templateDrop = $("#template-drop");
             const origTemplate = currentJobData && currentJobData.input_config
-                ? currentJobData.input_config.template_file : "Standard Template";
+                ? currentJobData.input_config.template_file : "Reference Lease";
             templateDrop.classList.add("has-files", "locked");
             const templateList = $("#template-file-list");
             templateList.classList.remove("hidden");
@@ -1540,15 +1568,15 @@ function renderProcessingOverview(job, tenants) {
             <span class="processing-hero-pill">${esc(readyText)}</span>
             <span class="processing-hero-pill">${esc(remainingText)}</span>
         </div>
-        ${primaryReadyTenant ? `
+        ${completedTenants.length > 0 ? completedTenants.map(ct => `
         <div class="processing-hero-ready">
             <div>
-                <div class="processing-hero-ready-title">${esc(primaryReadyTenant.filename || "Completed contract")} is ready to review</div>
+                <div class="processing-hero-ready-title">${esc(ct.filename || "Completed contract")} is ready to review</div>
                 <div class="processing-hero-ready-meta">Open it now while CAM continues processing the remaining leases.</div>
             </div>
-            <button class="btn btn-primary" data-hero-ready-open="${tenants.indexOf(primaryReadyTenant)}">Open Contract</button>
+            <button class="btn btn-primary" data-hero-ready-open="${tenants.indexOf(ct)}">Open Contract</button>
         </div>
-        ` : ""}
+        `).join("") : ""}
     `;
     panel.querySelectorAll("[data-hero-ready-open]").forEach((btn) => {
         btn.addEventListener("click", async () => {
@@ -1728,23 +1756,16 @@ function renderProcessingChecklist(job) {
 }
 
 function updateEstimateDisplay() {
+    // Time estimates removed — too variable to be reliable
+    // Show only elapsed time so users know work is progressing
     const estimateEl = $("#estimate-remaining");
     if (!estimateEl) return;
-
     const elapsedSecs = jobStartTime ? Math.max(0, (Date.now() - jobStartTime) / 1000) : 0;
-    const parts = [];
-
-    if (estimateTotalSecs > 0) {
-        parts.push(`Estimated analysis time ${formatDurationApprox(estimateTotalSecs)}`);
+    if (elapsedSecs > 5) {
+        estimateEl.textContent = `${formatDurationShort(elapsedSecs)} elapsed`;
+    } else {
+        estimateEl.textContent = "";
     }
-
-    parts.push(`Elapsed ${formatDurationShort(elapsedSecs)}`);
-
-    if (estimateTotalSecs > 0 && elapsedSecs > estimateTotalSecs) {
-        parts.push("Running longer than the initial estimate");
-    }
-
-    estimateEl.textContent = parts.join(" | ");
 }
 
 // Step 196: Stable whole-job progress timer for processing page
@@ -1820,7 +1841,7 @@ function updateSubmitState() {
             btn.textContent = `Add ${tenantFiles.length} Lease${tenantFiles.length !== 1 ? "s" : ""}`;
             est.textContent = `Adding ${tenantFiles.length} new lease${tenantFiles.length !== 1 ? "s" : ""} to existing analysis`;
         } else if (hasNewProvisions) {
-            btn.textContent = `Analyze ${newProvisionCount} New Provision${newProvisionCount !== 1 ? "s" : ""}`;
+            btn.textContent = `Review ${newProvisionCount} New Provision${newProvisionCount !== 1 ? "s" : ""}`;
             est.textContent = `Adding ${newProvisionCount} new provision${newProvisionCount !== 1 ? "s" : ""} to existing analysis`;
         } else {
             btn.textContent = "Add More";
@@ -1851,19 +1872,16 @@ function updateSubmitState() {
     const ready = filesReady && emailOk && provisionsReady;
     btn.disabled = !ready;
 
-    btn.textContent = "Analyze Leases";
+    btn.textContent = "Review Leases";
 
     if (filesReady && !provisionsReady) {
         est.textContent = "Select at least one provision to analyze";
     } else if (filesReady) {
-        const { mins, minsPerLease, detail } = calcEstimate(checkedCount, identityChecks, tenantFiles.length, getSelectedProvisionIds());
-        const firstReady = `First contract typically ready in ~${minsPerLease} minute${minsPerLease !== 1 ? "s" : ""}`;
-        const fullBatch = `Full batch estimated at ~${mins} minute${mins !== 1 ? "s" : ""}`;
-        est.textContent = `${firstReady} | ${fullBatch} (${detail})`;
+        est.textContent = "";
     } else if (!templateFile && tenantFiles.length === 0) {
         est.textContent = "";
     } else if (!templateFile) {
-        est.textContent = "Upload a standard template to continue";
+        est.textContent = "Upload a reference lease to continue";
     } else {
         est.textContent = "Upload at least one tenant lease to continue";
     }
@@ -2154,7 +2172,7 @@ async function handleSubmit() {
             errorEl.classList.remove("hidden");
         }
         btn.disabled = false;
-        btn.textContent = "Analyze Leases";
+        btn.textContent = "Review Leases";
     }
 }
 
@@ -2190,6 +2208,9 @@ function initProcessingView(jobData) {
     cancelBtn.classList.remove("hidden");
     cancelBtn.disabled = false;
     cancelBtn.textContent = "Cancel Analysis";
+    // Show nav cancel button during processing
+    const navCancelBtn = $("#workflow-cancel-btn");
+    if (navCancelBtn) { navCancelBtn.classList.remove("hidden"); navCancelBtn.disabled = false; }
 
     // Back-to-results link (add-more runs only)
     const backLink = $("#processing-back-link");
@@ -2323,6 +2344,8 @@ function showCancellingState() {
     // Hide cancel button and processing info while cancelling
     const cancelBtn = $("#cancel-btn");
     if (cancelBtn) cancelBtn.classList.add("hidden");
+    const wfCancelBtn = $("#workflow-cancel-btn");
+    if (wfCancelBtn) { wfCancelBtn.textContent = "Cancelling\u2026"; wfCancelBtn.disabled = true; }
 }
 
 function renderProgress(job) {
@@ -2373,8 +2396,17 @@ function renderProgress(job) {
             return a.idx - b.idx;
         });
 
+    // Filter out completed tenants — they appear in the top ready card instead
+    const inProgressTenants = displayTenants.filter(({ tenant: t }) => {
+        const es = (t.status === "queued" && jobStatus === "processing") ? "processing" : t.status;
+        if (es === "completed") {
+            completedTenants.push({ ...t, tenantIdx: displayTenants.find(d => d.tenant === t)?.idx });
+        }
+        return es !== "completed";
+    });
+
     if (container) {
-        container.innerHTML = displayTenants.map(({ tenant: t, idx: i }) => {
+        container.innerHTML = inProgressTenants.map(({ tenant: t, idx: i }) => {
             let statusLabel = "Queued";
             let stageDetail = "";
             let fillClass = "";
@@ -2387,13 +2419,7 @@ function renderProgress(job) {
             const effectiveStatus = (t.status === "queued" && jobStatus === "processing")
                 ? "processing" : t.status;
 
-            if (effectiveStatus === "completed") {
-                statusLabel = "Complete";
-                fillClass = "completed";
-                width = "100%";
-                statusMeta = "100% • Complete";
-                completedTenants.push({ ...t, tenantIdx: i });
-            } else if (effectiveStatus === "processing") {
+            if (effectiveStatus === "processing") {
                 if (t.current_stage && t.total_stages) {
                     const tenantPct = Math.round(getTenantProgressFraction(t, jobStatus) * 100);
                     statusLabel = getProcessingStageCopy(t.current_stage, "").headline;
@@ -2421,10 +2447,7 @@ function renderProgress(job) {
             }
 
             percentValue = width;
-            if (effectiveStatus === "completed") {
-                progressPill = "Complete";
-                stagePill = `Stage ${Number(t.total_stages) || 6} of ${Number(t.total_stages) || 6}`;
-            } else if (effectiveStatus === "processing") {
+            if (effectiveStatus === "processing") {
                 progressPill = statusLabel;
                 stagePill = t.current_stage && t.total_stages
                     ? `Stage ${Number(t.current_stage) || 1} of ${Number(t.total_stages) || 6}`
@@ -2437,9 +2460,7 @@ function renderProgress(job) {
                 stagePill = "Stopped";
             }
 
-            if (effectiveStatus === "completed") {
-                statusMeta = "Complete";
-            } else if (effectiveStatus === "processing") {
+            if (effectiveStatus === "processing") {
                 statusMeta = stagePill === "Queued" ? "Preparing analysis" : stagePill;
             }
 
@@ -2479,6 +2500,14 @@ function renderProgress(job) {
         readyList.innerHTML = "";
     }
 
+    // Hide the entire detail card if no in-progress tenants remain
+    const detailCard = container ? container.closest(".processing-detail-card") : null;
+    if (detailCard && inProgressTenants.length === 0) {
+        detailCard.classList.add("hidden");
+    } else if (detailCard) {
+        detailCard.classList.remove("hidden");
+    }
+
     if (detailToggle) {
         detailToggle.textContent = processingDetailsExpanded ? "Hide details" : "Show details";
         detailToggle.setAttribute("aria-expanded", processingDetailsExpanded ? "true" : "false");
@@ -2495,6 +2524,8 @@ function handleCancelledJob(job) {
     // Hide cancel button
     const cancelBtn = $("#cancel-btn");
     if (cancelBtn) cancelBtn.classList.add("hidden");
+    const navCancelBtnDone = $("#workflow-cancel-btn");
+    if (navCancelBtnDone) navCancelBtnDone.classList.add("hidden");
 
     const estimateEl = $("#estimate-remaining");
     if (estimateEl) estimateEl.textContent = "";
@@ -2522,7 +2553,7 @@ function handleCancelledJob(job) {
             </div>`;
         $("#cancel-new-analysis-btn").addEventListener("click", () => {
             currentJobId = null; currentJobData = null; currentResults = null;
-            currentTenantIndex = 0; addMoreMode = null; activeTopTab = "overview"; snapshotActiveIndex = null; snapshotVisited = false; snapshotSort = 'risk'; snapshotSeverityFilter = 'all'; snapshotStatusFilter = 'all'; snapshotSearch = ''; snapshotContractFilter = new Set(); // prescan removed (112), Step 130
+            currentTenantIndex = 0; addMoreMode = null; activeTopTab = "overview"; snapshotActiveIndex = null; snapshotVisited = false; snapshotSort = 'risk'; snapshotSeverityFilter = new Set(); snapshotConfidenceFilter = new Set(); snapshotStatusFilter = 'all'; snapshotSearch = ''; snapshotContractFilter = new Set(); // prescan removed (112), Step 130
             if (expiryTimer) { clearInterval(expiryTimer); expiryTimer = null; }
             stopPolling(); history.replaceState(null, "", "/"); enterApp();
         });
@@ -2543,7 +2574,7 @@ function handleCancelledJob(job) {
             </div>`;
         $("#cancel-new-analysis-btn").addEventListener("click", () => {
             currentJobId = null; currentJobData = null; currentResults = null;
-            currentTenantIndex = 0; addMoreMode = null; activeTopTab = "overview"; snapshotActiveIndex = null; snapshotVisited = false; snapshotSort = 'risk'; snapshotSeverityFilter = 'all'; snapshotStatusFilter = 'all'; snapshotSearch = ''; snapshotContractFilter = new Set(); // prescan removed (112), Step 130
+            currentTenantIndex = 0; addMoreMode = null; activeTopTab = "overview"; snapshotActiveIndex = null; snapshotVisited = false; snapshotSort = 'risk'; snapshotSeverityFilter = new Set(); snapshotConfidenceFilter = new Set(); snapshotStatusFilter = 'all'; snapshotSearch = ''; snapshotContractFilter = new Set(); // prescan removed (112), Step 130
             if (expiryTimer) { clearInterval(expiryTimer); expiryTimer = null; }
             stopPolling(); history.replaceState(null, "", "/"); enterApp();
         });
@@ -2818,7 +2849,7 @@ function renderResults() {
     // Wire detail sub-tab clicks (now in top nav)
     document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail").forEach(function(btn) {
         btn.onclick = function() {
-            var _l = { findings: 'Contract Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
+            var _l = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
             setSubheader(_l[btn.dataset.tab] || btn.dataset.tab);
             if (!contractDetailOpen) {
                 showNoContractPlaceholder(btn.dataset.tab);
@@ -2852,6 +2883,7 @@ function renderNavSidebar() {
     container.innerHTML = "";
 
     const tenants = currentResults.tenants || [];
+    const legendChecked = localStorage.getItem("cam_show_legend") === "1";
     const header = document.querySelector(".nav-sidebar-header");
     if (header) {
         const totalIssues = tenants.reduce((sum, tenant, tenantIdx) => {
@@ -2864,12 +2896,82 @@ function renderNavSidebar() {
             return sum + unresolved.length;
         }, 0);
         header.innerHTML =
-            '<div class="nav-sidebar-header-main">Open Issues</div>' +
-            '<div class="nav-sidebar-header-meta">' + esc(String(tenants.length)) + ' lease' + (tenants.length === 1 ? '' : 's') + ' • ' + esc(String(totalIssues)) + ' issue' + (totalIssues === 1 ? '' : 's') + '</div>';
+            '<div class="nav-sidebar-header-top">' +
+                '<div class="nav-sidebar-header-main">Open Issues</div>' +
+                '<label class="nav-legend-toggle"><input type="checkbox" id="nav-legend-checkbox"' + (legendChecked ? ' checked' : '') + '> Legend</label>' +
+            '</div>' +
+            '<div class="nav-sidebar-header-meta">' + esc(String(tenants.length)) + ' lease' + (tenants.length === 1 ? '' : 's') + ' \u2022 ' + esc(String(totalIssues)) + ' issue' + (totalIssues === 1 ? '' : 's') + '</div>';
     }
 
-    // Severity sort order for open issues
+    // Collect all severity+signal combinations from unresolved issues
     const sevOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+    const legendCombos = {};
+    tenants.forEach((tenant, tenantIdx) => {
+        const provisions = (tenant.results && tenant.results.provisions) || [];
+        getDeviationWorkflowProvisions(provisions, tenantIdx).forEach((p) => {
+            const key = `${tenantIdx}:${p.provision_id}`;
+            const status = (resolutionState[key] || {}).status || "open";
+            if (status === "resolved" || status === "not_a_deviation") return;
+            let sev = (p.severity || "MEDIUM").toUpperCase();
+            // Normalize invalid severity values (e.g. "REVIEW" from UNCLEAR verdicts)
+            if (!sevOrder.hasOwnProperty(sev)) sev = "MEDIUM";
+            const sig = p.cam_score ? p.cam_score.governance_signal : "";
+            const comboKey = sev + ":" + sig;
+            if (!legendCombos[comboKey]) {
+                legendCombos[comboKey] = { severity: sev, signal: sig, count: 0 };
+            }
+            legendCombos[comboKey].count++;
+        });
+    });
+
+    // Build and insert legend panel
+    const legendPanel = document.getElementById("nav-legend-panel") || document.createElement("div");
+    legendPanel.id = "nav-legend-panel";
+    legendPanel.className = "nav-legend-panel" + (legendChecked ? "" : " hidden");
+    const sortedCombos = Object.values(legendCombos).sort((a, b) => {
+        const sd = (sevOrder[a.severity] ?? 99) - (sevOrder[b.severity] ?? 99);
+        if (sd !== 0) return sd;
+        const sigOrder = { ASSERT_SIGNAL: 0, ASSERT_REVIEW_SIGNAL: 1, REVIEW_SIGNAL: 2, WITHHOLD_SIGNAL: 3 };
+        return (sigOrder[a.signal] ?? 99) - (sigOrder[b.signal] ?? 99);
+    });
+    const getBadge = window.CAMAuditShared.getConfidenceBadgeData || function() { return null; };
+    const getLabel = window.CAMAuditShared.getSidebarConfidenceLabel || function() { return ""; };
+    const getTooltip = window.CAMAuditShared.getCombinedTooltipText || function() { return ""; };
+    legendPanel.innerHTML = sortedCombos.length === 0
+        ? '<div class="nav-legend-empty">No open issues</div>'
+        : sortedCombos.map(c => {
+            const badge = getBadge(c.signal, c.severity);
+            const dots = badge ? badge.dots : "";
+            const confLabel = getLabel(c.signal);
+            const meaning = getTooltip(c.severity, c.signal);
+            const sevLow = c.severity.toLowerCase();
+            return `<div class="nav-legend-entry">
+                <div class="nav-legend-entry-header">
+                    <span class="nav-issue-sev nav-issue-sev-${sevLow}">${esc(sevDisplay(c.severity))}</span>
+                    <span class="nav-confidence-dots">${dots}</span>
+                    <span class="nav-legend-conf-label">${esc(confLabel)}</span>
+                    <span class="nav-legend-count">(${c.count})</span>
+                </div>
+                <div class="nav-legend-meaning">${esc(meaning)}</div>
+            </div>`;
+        }).join("");
+
+    const headerEl = document.querySelector(".nav-sidebar-header");
+    if (headerEl) {
+        const existingPanel = document.getElementById("nav-legend-panel");
+        if (existingPanel) {
+            existingPanel.replaceWith(legendPanel);
+        } else {
+            headerEl.after(legendPanel);
+        }
+        const checkbox = document.getElementById("nav-legend-checkbox");
+        if (checkbox) {
+            checkbox.onchange = function() {
+                legendPanel.classList.toggle("hidden", !this.checked);
+                localStorage.setItem("cam_show_legend", this.checked ? "1" : "0");
+            };
+        }
+    }
 
     // LP/CUSTOM/ADDED sort key
     const pidSortKey = function(pid) {
@@ -2898,6 +3000,7 @@ function renderNavSidebar() {
         });
 
         const tenantName = formatTenantName(tenant.filename) || ("Tenant " + (i + 1));
+        const tenantStillProcessing = !tenant.results;
         const s121 = tenant.results && tenant.results.summary ? tenant.results.summary : null;
         const unresolvedDeviations = getDeviationWorkflowProvisions(provisions, i).filter(function(p) {
             const key = `${i}:${p.provision_id}`;
@@ -2969,7 +3072,13 @@ function renderNavSidebar() {
 
         const sevMap = { 'nav-status-critical': 'sev-critical', 'nav-status-high': 'sev-high', 'nav-status-medium': 'sev-medium', 'nav-status-clear': 'sev-clear' };
         if (sevMap[navStatusClass]) tenantEl.classList.add(sevMap[navStatusClass]);
-        if (navStatusLabel) {
+        if (tenantStillProcessing) {
+            const procLabel = document.createElement('div');
+            procLabel.className = 'nav-status-label nav-status-processing';
+            procLabel.innerHTML = '<span class="spinner-inline"></span> Processing\u2026';
+            tenantEl.appendChild(procLabel);
+            tenantEl.classList.add('nav-tenant-processing');
+        } else if (navStatusLabel) {
             const statusLabelEl = document.createElement('div');
             statusLabelEl.className = 'nav-status-label ' + navStatusClass;
             statusLabelEl.textContent = navStatusLabel;
@@ -3044,7 +3153,7 @@ function renderNavSidebar() {
                 item.innerHTML =
                     `<div class="nav-issue-main-row">` +
                     `<span class="nav-issue-signal">` +
-                    `<span class="nav-issue-sev nav-issue-sev-${sevLow}">${esc(sev)}</span>` +
+                    `<span class="nav-issue-sev nav-issue-sev-${sevLow}">${esc(sevDisplay(sev))}</span>` +
                     _navDotsHtml +
                     `</span>` +
                     `<span class="nav-issue-name">${esc(cleanName)}</span>` +
@@ -3052,7 +3161,10 @@ function renderNavSidebar() {
                     (_sidebarLabelHtml || _explanationHtml
                         ? `<div class="nav-issue-sub-row">${_sidebarLabelHtml}${_explanationHtml}</div>`
                         : "");
-                item.title = pid + " \u2014 " + sev + (_sidebarLabel ? " \u2014 " + _sidebarLabel : "");
+                const _combinedTooltip = window.CAMAuditShared.getCombinedTooltipText
+                    ? window.CAMAuditShared.getCombinedTooltipText(sev, _navGovernanceSignal)
+                    : "";
+                item.title = _combinedTooltip || (pid + " \u2014 " + sev + (_sidebarLabel ? " \u2014 " + _sidebarLabel : ""));
                 item.onclick = function() {
                     navSidebarFocusMap[i] = pid;
                     issuesList.querySelectorAll(".nav-issue-item").forEach(el => el.classList.remove("nav-issue-topfocus"));
@@ -3492,7 +3604,7 @@ function legacyBuildDocviewDeviationControls(provision, tenantIdx) {
                     <a class="docview-link card-docview-link card-docview-link--btn"
                        href="#"
                        onclick="window.CAM.openDocviewSummary(${tenantIdx}, '${esc(pid)}'); return false;">
-                        Open Contract Summary
+                        Open Lease Summary
                     </a>
                     <a class="card-audit-link card-audit-link--btn"
                        href="#"
@@ -3541,7 +3653,7 @@ function legacyBuildDocviewConformingControls(provision, tenantIdx) {
                 <a class="docview-link card-docview-link card-docview-link--btn"
                    href="#"
                    onclick="window.CAM.openDocviewSummary(${tenantIdx}, '${esc(pid)}'); return false;">
-                    Open Contract Summary
+                    Open Lease Summary
                 </a>
                 <a class="card-audit-link card-audit-link--btn"
                    href="#"
@@ -3989,7 +4101,7 @@ async function renderAISummaryBar() {
         ? `You are summarizing a single lease deviation analysis for a lawyer's review. Write 2-3 plain-English sentences about this one lease. ${
             singleConforms
               ? "State that the lease fully conforms to the standard template."
-              : "State that the lease does not fully conform to the standard template. Describe which types of provisions deviate and their severity."
+              : "State that the lease does not fully conform to the reference lease. Describe which types of provisions deviate and their severity."
           } Always refer to it as 'the standard template', never 'our template' or 'our standard template'. Do not use the words 'leases' or 'tenants'. Do not name or label the lease. Do not recommend signing, rejecting, or revising. Do not give legal advice. Do not use bullet points.${confidenceInstruction}${camContext}\n\nLease findings:\n${summaryData}`
         : `You are summarizing lease deviation analysis results for a lawyer's review. Write 2-3 plain-English sentences. Start by stating how many of the ${tenants.length} leases conform fully to the standard template (${cleanCount} do). Then identify which tenants have the most significant issues and what types of provisions are affected. Report what was found. Do not recommend signing, rejecting, or revising any lease. Do not give legal advice. Do not use bullet points. Do not mention AI or analysis pipelines.${confidenceInstruction}\n\nResults:\n${summaryData}${cleanContext}${camContext}`;
 
@@ -4071,7 +4183,7 @@ function renderBatchMeta() {
         if (totalCritical > 0) findingsLine += ` \u00B7 ${totalCritical} critical finding${totalCritical !== 1 ? "s" : ""}`;
         else if (totalHigh > 0) findingsLine += ` \u00B7 ${totalHigh} high-severity finding${totalHigh !== 1 ? "s" : ""}`;
     } else {
-        findingsLine = `\u2705 All ${totalTenants} tenants conform to standard template`;
+        findingsLine = `\u2705 All ${totalTenants} tenants conform to reference lease`;
     }
 
     const sectionHeading = tenantsWithDeviations > 0 && tenantsWithDeviations === totalTenants
@@ -4249,7 +4361,7 @@ function renderDealBrief() {
     if (totalDeviations === 0) {
         line2Html = '<div class="deal-brief-verdict" style="color: var(--success, #15803d);">'
             + esc(tenantCount + ' lease' + (tenantCount !== 1 ? 's' : '') + ' reviewed')
-            + ' \u00B7 All provisions conform to standard template</div>';
+            + ' \u00B7 All provisions conform to reference lease</div>';
     } else {
         var sevClass = highestSev === 'CRITICAL' ? 'color: var(--danger, #dc2626);'
             : highestSev === 'HIGH' ? 'color: #c2410c;'
@@ -4394,7 +4506,7 @@ function renderContractStatusPanel() {
     cards.sort((a, b) => a.sevScore - b.sevScore);
 
     let html = `<div class="findings-panel-header">
-        <div class="findings-panel-subtitle">Standard template &mdash; deviations from these terms are flagged below</div>
+        <div class="findings-panel-subtitle">Reference lease &mdash; deviations from these terms are flagged below</div>
         ${provCount > 0 ? `<div class="findings-panel-provcount">${provCount} provision${provCount !== 1 ? "s" : ""} analyzed</div>` : ""}
     </div>`;
     cards.forEach(({ t, i, s, deviations, highestSev }) => {
@@ -4461,7 +4573,7 @@ function renderContractStatusPanel() {
 
         // Severity-colored provision chips — compact visual fingerprint
         if (deviations.length === 0) {
-            html += `<div class="contract-card-clean">\u2713 All ${s.total_provisions_checked || provCount} provisions conform to standard template</div>`;
+            html += `<div class="contract-card-clean">\u2713 All ${s.total_provisions_checked || provCount} provisions conform to reference lease</div>`;
         } else {
             html += `<div class="overview-chip-row">`;
             deviations.forEach(p => {
@@ -4522,10 +4634,10 @@ function renderBatchTable() {
 
         // Build severity breakdown — show each non-zero severity as its own mini badge
         const sevBreakdown = [];
-        if (s.critical > 0) sevBreakdown.push(`<span class="severity-badge severity-CRITICAL">${SEVERITY_ICONS["CRITICAL"] || ""} ${s.critical} CRITICAL</span>`);
-        if (s.high > 0)     sevBreakdown.push(`<span class="severity-badge severity-HIGH">${SEVERITY_ICONS["HIGH"] || ""} ${s.high} HIGH</span>`);
-        if (s.medium > 0)   sevBreakdown.push(`<span class="severity-badge severity-MEDIUM">${SEVERITY_ICONS["MEDIUM"] || ""} ${s.medium} MEDIUM</span>`);
-        if (s.low > 0)      sevBreakdown.push(`<span class="severity-badge severity-LOW">${SEVERITY_ICONS["LOW"] || ""} ${s.low} LOW</span>`);
+        if (s.critical > 0) sevBreakdown.push(`<span class="severity-badge severity-CRITICAL">${SEVERITY_ICONS["CRITICAL"] || ""} ${s.critical} Critical</span>`);
+        if (s.high > 0)     sevBreakdown.push(`<span class="severity-badge severity-HIGH">${SEVERITY_ICONS["HIGH"] || ""} ${s.high} High</span>`);
+        if (s.medium > 0)   sevBreakdown.push(`<span class="severity-badge severity-MEDIUM">${SEVERITY_ICONS["MEDIUM"] || ""} ${s.medium} Medium</span>`);
+        if (s.low > 0)      sevBreakdown.push(`<span class="severity-badge severity-LOW">${SEVERITY_ICONS["LOW"] || ""} ${s.low} Low</span>`);
         const sevCell = sevBreakdown.length > 0
             ? `<div class="sev-breakdown">${sevBreakdown.join("")}</div>`
             : `<span class="text-muted">—</span>`;
@@ -4779,8 +4891,21 @@ function updateContractDetailHeader(tenantIdx) {
         resBadge = ' <span class="snapshot-resolution-badge res-badge-resolved">\u2713 Resolved</span>';
     }
 
+    var r2 = tenant.results || {};
+    var provCount = provisions.length;
+    var elapsed = r2.elapsed_sec ? fmtDuration(r2.elapsed_sec) : null;
+    var apiCalls = r2.api_calls_total || null;
+    var runStatParts = [];
+    if (provCount) runStatParts.push(provCount + ' provision' + (provCount !== 1 ? 's' : ''));
+    if (elapsed) runStatParts.push(elapsed + ' runtime');
+    if (apiCalls) runStatParts.push(apiCalls + ' model calls');
+    var runStatBadge = runStatParts.length
+        ? ' <span class="contract-detail-run-stats">' + runStatParts.join(' &middot; ') + '</span>'
+        : '';
+
     headerEl.innerHTML = '<div class="contract-detail-header-row">'
         + '<h2 class="contract-detail-name">' + esc(name) + actionBadge + fragilityBadge + deviationBadge + resBadge + '</h2>'
+        + runStatBadge
         + '<div id="final-draft-status-header" class="contract-final-draft-status hidden"></div>'
         + '</div>';
 }
@@ -4788,9 +4913,10 @@ function updateContractDetailHeader(tenantIdx) {
 function getContractPickerStatusValue(tenant) {
     var s = tenant && tenant.results ? tenant.results.summary : null;
     if (!s) return null;
-    if (s.critical > 0) return 'immediate';
-    if (s.high > 0) return 'review';
-    if ((s.deviates || 0) > 0) return 'monitor';
+    if (s.critical > 0) return 'critical';
+    if (s.high > 0) return 'high';
+    if ((s.medium || 0) > 0) return 'medium';
+    if ((s.deviates || 0) > 0) return 'low';
     return 'clear';
 }
 
@@ -4807,15 +4933,16 @@ function getAvailableContractPickerStatuses() {
 function buildContractPickerStatusOptions() {
     const available = getAvailableContractPickerStatuses();
     const optionDefs = [
-        { value: 'immediate', label: 'Immediate Action' },
-        { value: 'review', label: 'Review Recommended' },
-        { value: 'monitor', label: 'Monitor' },
+        { value: 'critical', label: 'Critical' },
+        { value: 'high', label: 'High' },
+        { value: 'medium', label: 'Medium' },
+        { value: 'low', label: 'Low' },
         { value: 'clear', label: 'Clear' }
     ];
     if (contractPickerSeverityFilter !== 'all' && !available.has(contractPickerSeverityFilter)) {
         contractPickerSeverityFilter = 'all';
     }
-    let html = '<option value="all">Contract Risk: All</option>';
+    let html = '<option value="all">Severity: All</option>';
     optionDefs.forEach(function(opt) {
         if (!available.has(opt.value)) return;
         html += '<option value="' + opt.value + '"' + (contractPickerSeverityFilter === opt.value ? ' selected' : '') + '>' + opt.label + '</option>';
@@ -4859,12 +4986,13 @@ function getAvailableClauseFilterValues(provisions) {
     const getClauseConfidenceBucket = function(signal) {
         switch ((signal || '').toUpperCase()) {
             case 'ASSERT_SIGNAL':
-                return 'confident';
+                return 'verified';
             case 'ASSERT_REVIEW_SIGNAL':
+                return 'impact_unclear';
             case 'REVIEW_SIGNAL':
                 return 'needs_review';
             case 'WITHHOLD_SIGNAL':
-                return 'withhold';
+                return 'inconclusive';
             default:
                 return '';
         }
@@ -4897,10 +5025,24 @@ function getAvailableClauseFilterValues(provisions) {
         else hasNoNotes = true;
     });
 
+    // Provision names
+    const provisionSet = new Map(); // pid -> name
+    deviations.forEach(function(p) {
+        const pid = p.provision_id || "";
+        const name = (p.provision_name || pid).replace(/^LP-\d{2}\s*/, "");
+        provisionSet.set(pid, name);
+    });
+    conforming.forEach(function(p) {
+        const pid = p.provision_id || "";
+        const name = (p.provision_name || pid).replace(/^LP-\d{2}\s*/, "");
+        provisionSet.set(pid, name);
+    });
+
     return {
         severities: severitySet,
         statuses: statusSet,
         confidences: confidenceSet,
+        provisions: provisionSet,
         hasRead,
         hasUnread,
         hasNotes,
@@ -4963,8 +5105,9 @@ function renderContractClauseFilterBar(provisions) {
         { value: 'resolved', label: 'Resolved' }
     ];
 
-    if (contractClauseSeverityFilter !== 'all' && !available.severities.has(contractClauseSeverityFilter)) {
-        contractClauseSeverityFilter = 'all';
+    // Remove selected severities that are no longer available
+    for (const s of [...contractClauseSeverityFilter]) {
+        if (!available.severities.has(s)) contractClauseSeverityFilter.delete(s);
     }
     if (contractClauseStatusFilter !== 'all' && !available.statuses.has(contractClauseStatusFilter)) {
         contractClauseStatusFilter = 'all';
@@ -4973,14 +5116,27 @@ function renderContractClauseFilterBar(provisions) {
     if (contractClauseReadFilter === 'unread' && !available.hasUnread) contractClauseReadFilter = 'all';
     if (contractClauseNotesFilter === 'has_notes' && !available.hasNotes) contractClauseNotesFilter = 'all';
     if (contractClauseNotesFilter === 'no_notes' && !available.hasNoNotes) contractClauseNotesFilter = 'all';
-    if (contractClauseConfidenceFilter !== 'all' && !available.confidences.has(contractClauseConfidenceFilter)) {
-        contractClauseConfidenceFilter = 'all';
+    for (const c of [...contractClauseConfidenceFilter]) {
+        if (!available.confidences.has(c)) contractClauseConfidenceFilter.delete(c);
     }
 
-    const severityOptions = ['<option value="all">Severity: All</option>']
-        .concat(severityDefs.filter(def => available.severities.has(def.value)).map(def =>
-            `<option value="${def.value}"${contractClauseSeverityFilter === def.value ? ' selected' : ''}>${def.label}</option>`
-        )).join('');
+    const severityDropdownHtml = `<div class="filter-dropdown clause-filter-dropdown" id="clause-severity-dropdown">
+        <button class="btn btn-outline filter-dropdown-trigger clause-filter-trigger" id="clause-severity-trigger" type="button">
+            Severity: <span id="clause-severity-label">${contractClauseSeverityFilter.size === 0 ? 'All' : contractClauseSeverityFilter.size === 1 ? [...contractClauseSeverityFilter][0] : 'Custom'}</span> &#9662;
+        </button>
+        <div class="filter-dropdown-panel clause-filter-panel hidden" id="clause-severity-panel">
+            <label class="filter-option filter-option-all">
+                <input type="checkbox" id="clause-severity-all"${contractClauseSeverityFilter.size === 0 ? ' checked' : ''}>
+                <span>All Severities</span>
+            </label>
+            ${severityDefs.filter(def => available.severities.has(def.value)).map(def =>
+                `<label class="filter-option">
+                    <input type="checkbox" value="${def.value}" class="clause-sev-cb"${contractClauseSeverityFilter.has(def.value) ? ' checked' : ''}>
+                    <span>${def.label}</span>
+                </label>`
+            ).join('')}
+        </div>
+    </div>`;
     const statusOptions = ['<option value="all">Status: All</option>']
         .concat(statusDefs.filter(def => available.statuses.has(def.value)).map(def =>
             `<option value="${def.value}"${contractClauseStatusFilter === def.value ? ' selected' : ''}>${def.label}</option>`
@@ -4993,11 +5149,29 @@ function renderContractClauseFilterBar(provisions) {
         .concat(available.hasNotes ? [`<option value="has_notes"${contractClauseNotesFilter === 'has_notes' ? ' selected' : ''}>Has Notes</option>`] : [])
         .concat(available.hasNoNotes ? [`<option value="no_notes"${contractClauseNotesFilter === 'no_notes' ? ' selected' : ''}>No Notes</option>`] : [])
         .join('');
-    const confidenceOptions = ['<option value="all">Confidence: All</option>']
-        .concat(available.confidences.has('confident') ? [`<option value="confident"${contractClauseConfidenceFilter === 'confident' ? ' selected' : ''}>High Confidence</option>`] : [])
-        .concat(available.confidences.has('needs_review') ? [`<option value="needs_review"${contractClauseConfidenceFilter === 'needs_review' ? ' selected' : ''}>Needs Review</option>`] : [])
-        .concat(available.confidences.has('withhold') ? [`<option value="withhold"${contractClauseConfidenceFilter === 'withhold' ? ' selected' : ''}>Withhold / Uncertain</option>`] : [])
-        .join('');
+    const confDefs = [
+        { value: 'verified', label: 'Verified' },
+        { value: 'impact_unclear', label: 'Impact Unclear' },
+        { value: 'needs_review', label: 'Needs Review' },
+        { value: 'inconclusive', label: 'Inconclusive' },
+    ];
+    const confidenceDropdownHtml = `<div class="filter-dropdown clause-filter-dropdown" id="clause-confidence-dropdown">
+        <button class="btn btn-outline filter-dropdown-trigger clause-filter-trigger" id="clause-confidence-trigger" type="button">
+            Confidence: <span id="clause-confidence-label">${contractClauseConfidenceFilter.size === 0 ? 'All' : contractClauseConfidenceFilter.size === 1 ? [...contractClauseConfidenceFilter][0] : 'Custom'}</span> &#9662;
+        </button>
+        <div class="filter-dropdown-panel clause-filter-panel hidden" id="clause-confidence-panel">
+            <label class="filter-option filter-option-all">
+                <input type="checkbox" id="clause-confidence-all"${contractClauseConfidenceFilter.size === 0 ? ' checked' : ''}>
+                <span>All Confidence</span>
+            </label>
+            ${confDefs.filter(def => available.confidences.has(def.value)).map(def =>
+                `<label class="filter-option">
+                    <input type="checkbox" value="${def.value}" class="clause-conf-cb"${contractClauseConfidenceFilter.has(def.value) ? ' checked' : ''}>
+                    <span>${def.label}</span>
+                </label>`
+            ).join('')}
+        </div>
+    </div>`;
 
     const tenant = currentResults && currentResults.tenants ? currentResults.tenants[currentTenantIndex] : null;
     const annotatedButton = tenant && tenant.has_annotated
@@ -5006,6 +5180,35 @@ function renderContractClauseFilterBar(provisions) {
             Download Annotated Tenant Lease
         </button>`
         : '';
+
+    // Provision filter dropdown
+    const provEntries = [...available.provisions.entries()].sort(function(a, b) {
+        const ka = pidSortKeyGlobal(a[0]), kb = pidSortKeyGlobal(b[0]);
+        return ka[0] - kb[0] || ka[1] - kb[1];
+    });
+    for (const pid of [...contractClauseProvisionFilter]) {
+        if (!available.provisions.has(pid)) contractClauseProvisionFilter.delete(pid);
+    }
+    const provLabel = contractClauseProvisionFilter.size === 0 ? 'All' : contractClauseProvisionFilter.size === 1 ? ([...contractClauseProvisionFilter][0]) : contractClauseProvisionFilter.size + ' selected';
+    const provisionDropdownHtml = `<div class="filter-dropdown clause-filter-dropdown" id="clause-provision-dropdown">
+        <button class="btn btn-outline filter-dropdown-trigger clause-filter-trigger snap-filter-btn" id="clause-provision-trigger" type="button">
+            Provision: <span id="clause-provision-label">${provLabel}</span> &#9662;
+        </button>
+        <div class="filter-dropdown-panel clause-filter-panel hidden" id="clause-provision-panel" style="max-height:18rem;overflow-y:auto">
+            <label class="filter-option filter-option-all">
+                <input type="checkbox" id="clause-provision-all"${contractClauseProvisionFilter.size === 0 ? ' checked' : ''}>
+                <span>All Provisions</span>
+            </label>
+            ${provEntries.map(function(e) {
+                return '<label class="filter-option"><input type="checkbox" value="' + esc(e[0]) + '" class="clause-prov-cb"' + (contractClauseProvisionFilter.has(e[0]) ? ' checked' : '') + '><span>' + esc(e[0] + ' ' + e[1]) + '</span></label>';
+            }).join('')}
+        </div>
+    </div>`;
+
+    // Sort dropdown
+    const sortOptions = '<option value="severity"' + (contractClauseSort === 'severity' ? ' selected' : '') + '>Order: Risk level</option>'
+        + '<option value="confidence"' + (contractClauseSort === 'confidence' ? ' selected' : '') + '>Order: Confidence</option>'
+        + '<option value="provision_id"' + (contractClauseSort === 'provision_id' ? ' selected' : '') + '>Order: Provision ID</option>';
 
     bar.classList.remove("hidden");
     bar.innerHTML = `
@@ -5019,30 +5222,139 @@ function renderContractClauseFilterBar(provisions) {
             </div>
             <div class="contract-clause-filter-controls">
                 <select id="contract-selector-dropdown" class="contract-selector-select"></select>
-                <select id="contract-clause-severity-filter" class="contract-clause-filter-select">
-                    ${severityOptions}
-                </select>
+                <select id="contract-clause-sort" class="contract-clause-filter-select">${sortOptions}</select>
+                ${severityDropdownHtml}
+                ${confidenceDropdownHtml}
                 <select id="contract-clause-status-filter" class="contract-clause-filter-select">
                     ${statusOptions}
                 </select>
+                ${provisionDropdownHtml}
                 <select id="contract-clause-read-filter" class="contract-clause-filter-select">
                     ${readOptions}
                 </select>
                 <select id="contract-clause-notes-filter" class="contract-clause-filter-select">
                     ${notesOptions}
                 </select>
-                <select id="contract-clause-confidence-filter" class="contract-clause-filter-select">
-                    ${confidenceOptions}
-                </select>
                 <button type="button" class="contract-clause-filter-reset" id="contract-clause-filter-reset">Reset</button>
             </div>
         </div>
     `;
 
-    $("#contract-clause-severity-filter")?.addEventListener("change", (e) => {
-        contractClauseSeverityFilter = e.target.value;
+    // Position a fixed dropdown panel below its trigger button
+    function positionClausePanel(trigger, panel) {
+        const rect = trigger.getBoundingClientRect();
+        panel.style.top = rect.bottom + 2 + "px";
+        panel.style.left = rect.left + "px";
+    }
+
+    // Severity multi-select dropdown
+    function closeAllClausePanels(except) {
+        ["clause-severity-panel", "clause-confidence-panel", "clause-provision-panel"].forEach(function(id) {
+            if (id !== except) { const p = $("#" + id); if (p) p.classList.add("hidden"); }
+        });
+    }
+    const _sevTrigger = $("#clause-severity-trigger");
+    if (_sevTrigger) _sevTrigger.addEventListener("click", () => {
+        closeAllClausePanels("clause-severity-panel");
+        const panel = $("#clause-severity-panel");
+        if (panel) {
+            panel.classList.toggle("hidden");
+            if (!panel.classList.contains("hidden")) positionClausePanel(_sevTrigger, panel);
+        }
+    });
+    const _sevAll = $("#clause-severity-all");
+    if (_sevAll) _sevAll.addEventListener("change", function() {
+        if (this.checked) {
+            contractClauseSeverityFilter.clear();
+            document.querySelectorAll(".clause-sev-cb").forEach(cb => cb.checked = false);
+        }
+        applyContractClauseFilters();
+        const label = $("#clause-severity-label");
+        if (label) label.textContent = "All";
+    });
+    document.querySelectorAll(".clause-sev-cb").forEach(cb => {
+        cb.addEventListener("change", function() {
+            if (this.checked) contractClauseSeverityFilter.add(this.value);
+            else contractClauseSeverityFilter.delete(this.value);
+            const allCb = $("#clause-severity-all");
+            if (allCb) allCb.checked = contractClauseSeverityFilter.size === 0;
+            const label = $("#clause-severity-label");
+            if (label) label.textContent = contractClauseSeverityFilter.size === 0 ? "All" : contractClauseSeverityFilter.size === 1 ? [...contractClauseSeverityFilter][0] : "Custom";
+            applyContractClauseFilters();
+        });
+    });
+
+    // Confidence multi-select dropdown
+    const _confTrigger = $("#clause-confidence-trigger");
+    if (_confTrigger) _confTrigger.addEventListener("click", () => {
+        closeAllClausePanels("clause-confidence-panel");
+        const panel = $("#clause-confidence-panel");
+        if (panel) {
+            panel.classList.toggle("hidden");
+            if (!panel.classList.contains("hidden")) positionClausePanel(_confTrigger, panel);
+        }
+    });
+    const _confAll = $("#clause-confidence-all");
+    if (_confAll) _confAll.addEventListener("change", function() {
+        if (this.checked) {
+            contractClauseConfidenceFilter.clear();
+            document.querySelectorAll(".clause-conf-cb").forEach(cb => cb.checked = false);
+        }
+        applyContractClauseFilters();
+        const label = $("#clause-confidence-label");
+        if (label) label.textContent = "All";
+    });
+    document.querySelectorAll(".clause-conf-cb").forEach(cb => {
+        cb.addEventListener("change", function() {
+            if (this.checked) contractClauseConfidenceFilter.add(this.value);
+            else contractClauseConfidenceFilter.delete(this.value);
+            const allCb = $("#clause-confidence-all");
+            if (allCb) allCb.checked = contractClauseConfidenceFilter.size === 0;
+            const label = $("#clause-confidence-label");
+            const labelMap = { verified: 'Verified', impact_unclear: 'Impact Unclear', needs_review: 'Needs Review', inconclusive: 'Inconclusive' };
+            if (label) label.textContent = contractClauseConfidenceFilter.size === 0 ? "All" : contractClauseConfidenceFilter.size === 1 ? (labelMap[[...contractClauseConfidenceFilter][0]] || [...contractClauseConfidenceFilter][0]) : "Custom";
+            applyContractClauseFilters();
+        });
+    });
+
+    // Provision multi-select dropdown
+    const _provTrigger = $("#clause-provision-trigger");
+    if (_provTrigger) _provTrigger.addEventListener("click", () => {
+        closeAllClausePanels("clause-provision-panel");
+        const panel = $("#clause-provision-panel");
+        if (panel) {
+            panel.classList.toggle("hidden");
+            if (!panel.classList.contains("hidden")) positionClausePanel(_provTrigger, panel);
+        }
+    });
+    const _provAll = $("#clause-provision-all");
+    if (_provAll) _provAll.addEventListener("change", function() {
+        if (this.checked) {
+            contractClauseProvisionFilter.clear();
+            document.querySelectorAll(".clause-prov-cb").forEach(cb => cb.checked = false);
+        }
+        applyContractClauseFilters();
+        const label = $("#clause-provision-label");
+        if (label) label.textContent = "All";
+    });
+    document.querySelectorAll(".clause-prov-cb").forEach(cb => {
+        cb.addEventListener("change", function() {
+            if (this.checked) contractClauseProvisionFilter.add(this.value);
+            else contractClauseProvisionFilter.delete(this.value);
+            const allCb = $("#clause-provision-all");
+            if (allCb) allCb.checked = contractClauseProvisionFilter.size === 0;
+            const label = $("#clause-provision-label");
+            if (label) label.textContent = contractClauseProvisionFilter.size === 0 ? "All" : contractClauseProvisionFilter.size === 1 ? [...contractClauseProvisionFilter][0] : contractClauseProvisionFilter.size + " selected";
+            applyContractClauseFilters();
+        });
+    });
+
+    // Sort dropdown
+    $("#contract-clause-sort")?.addEventListener("change", (e) => {
+        contractClauseSort = e.target.value;
         applyContractClauseFilters();
     });
+
     $("#contract-clause-status-filter")?.addEventListener("change", (e) => {
         contractClauseStatusFilter = e.target.value;
         applyContractClauseFilters();
@@ -5055,16 +5367,14 @@ function renderContractClauseFilterBar(provisions) {
         contractClauseNotesFilter = e.target.value;
         applyContractClauseFilters();
     });
-    $("#contract-clause-confidence-filter")?.addEventListener("change", (e) => {
-        contractClauseConfidenceFilter = e.target.value;
-        applyContractClauseFilters();
-    });
     $("#contract-clause-filter-reset")?.addEventListener("click", () => {
-        contractClauseSeverityFilter = 'all';
+        contractClauseSeverityFilter.clear();
         contractClauseStatusFilter = 'all';
         contractClauseReadFilter = 'all';
         contractClauseNotesFilter = 'all';
-        contractClauseConfidenceFilter = 'all';
+        contractClauseConfidenceFilter.clear();
+        contractClauseProvisionFilter.clear();
+        contractClauseSort = 'severity';
         const tenant = currentResults && currentResults.tenants ? currentResults.tenants[currentTenantIndex] : null;
         renderContractClauseFilterBar((tenant && tenant.results && tenant.results.provisions) || []);
         applyContractClauseFilters();
@@ -5098,19 +5408,63 @@ function applyContractClauseFilters() {
     const getClauseConfidenceBucket = function(signal) {
         switch ((signal || '').toUpperCase()) {
             case 'ASSERT_SIGNAL':
-                return 'confident';
+                return 'verified';
             case 'ASSERT_REVIEW_SIGNAL':
+                return 'impact_unclear';
             case 'REVIEW_SIGNAL':
                 return 'needs_review';
             case 'WITHHOLD_SIGNAL':
-                return 'withhold';
+                return 'inconclusive';
             default:
                 return '';
         }
     };
     const confidenceMatches = function(bucket) {
-        return contractClauseConfidenceFilter === 'all' || bucket === contractClauseConfidenceFilter;
+        return contractClauseConfidenceFilter.size === 0 || contractClauseConfidenceFilter.has(bucket);
     };
+
+    // Sort order for confidence signals (lower = higher priority)
+    const confSortOrder = { ASSERT_SIGNAL: 3, ASSERT_REVIEW_SIGNAL: 2, REVIEW_SIGNAL: 1, WITHHOLD_SIGNAL: 0 };
+    const sevSortOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+
+    // Sort cards if needed
+    if (contractClauseSort !== 'severity') {
+        const devList = document.getElementById("deviations-list");
+        if (devList && cards.length > 1) {
+            cards.sort(function(a, b) {
+                if (contractClauseSort === 'confidence') {
+                    const ca = confSortOrder[(a.dataset.confidence || '').toUpperCase()] ?? 4;
+                    const cb = confSortOrder[(b.dataset.confidence || '').toUpperCase()] ?? 4;
+                    if (ca !== cb) return ca - cb;
+                    // Tiebreak by severity
+                    const sa = sevSortOrder[(a.dataset.severity || '').toUpperCase()] ?? 4;
+                    const sb = sevSortOrder[(b.dataset.severity || '').toUpperCase()] ?? 4;
+                    return sa - sb;
+                }
+                if (contractClauseSort === 'provision_id') {
+                    const ka = pidSortKeyGlobal(a.dataset.provision || "");
+                    const kb = pidSortKeyGlobal(b.dataset.provision || "");
+                    return ka[0] - kb[0] || ka[1] - kb[1];
+                }
+                return 0;
+            });
+            cards.forEach(function(c) { devList.appendChild(c); });
+        }
+    } else {
+        // Default sort: severity (re-sort in case prior sort changed DOM order)
+        const devList = document.getElementById("deviations-list");
+        if (devList && cards.length > 1) {
+            cards.sort(function(a, b) {
+                const sa = sevSortOrder[(a.dataset.severity || '').toUpperCase()] ?? 4;
+                const sb = sevSortOrder[(b.dataset.severity || '').toUpperCase()] ?? 4;
+                if (sa !== sb) return sa - sb;
+                const ka = pidSortKeyGlobal(a.dataset.provision || "");
+                const kb = pidSortKeyGlobal(b.dataset.provision || "");
+                return ka[0] - kb[0] || ka[1] - kb[1];
+            });
+            cards.forEach(function(c) { devList.appendChild(c); });
+        }
+    }
 
     cards.forEach(card => {
         const pid = card.dataset.provision || "";
@@ -5122,7 +5476,8 @@ function applyContractClauseFilters() {
         const hasNotes = ((resolutionState[key] || {}).notes || []).length > 0;
         const isRead = isNoted(tenantIdx, pid);
 
-        const severityOk = contractClauseSeverityFilter === 'all' || severity === contractClauseSeverityFilter;
+        const provisionOk = contractClauseProvisionFilter.size === 0 || contractClauseProvisionFilter.has(pid);
+        const severityOk = contractClauseSeverityFilter.size === 0 || contractClauseSeverityFilter.has(severity);
         const statusOk = contractClauseStatusFilter === 'all' || resolution === contractClauseStatusFilter;
         const readOk = contractClauseReadFilter === 'all'
             || (contractClauseReadFilter === 'read' && isRead)
@@ -5132,7 +5487,7 @@ function applyContractClauseFilters() {
             || (contractClauseNotesFilter === 'no_notes' && !hasNotes);
         const confidenceOk = confidenceMatches(confidenceBucket);
 
-        const show = severityOk && statusOk && readOk && notesOk && confidenceOk;
+        const show = severityOk && statusOk && readOk && notesOk && confidenceOk && provisionOk;
         card.classList.toggle("hidden", !show);
         if (show) visible++;
     });
@@ -5143,6 +5498,7 @@ function applyContractClauseFilters() {
         const hasNotes = getConformingConcernState(currentTenantIndex, pid) === 'concern';
         const provision = provisionMap.get(pid) || null;
         const confidenceBucket = getClauseConfidenceBucket(provision && provision.cam_score ? provision.cam_score.governance_signal : '');
+        const provisionOk = contractClauseProvisionFilter.size === 0 || contractClauseProvisionFilter.has(pid);
         const statusOk = contractClauseStatusFilter === 'all' || contractClauseStatusFilter === 'conforming';
         const readOk = contractClauseReadFilter === 'all'
             || (contractClauseReadFilter === 'read' && isRead)
@@ -5150,12 +5506,12 @@ function applyContractClauseFilters() {
         const notesOk = contractClauseNotesFilter === 'all'
             || (contractClauseNotesFilter === 'has_notes' && hasNotes)
             || (contractClauseNotesFilter === 'no_notes' && !hasNotes);
-        const severityOk = contractClauseSeverityFilter === 'all';
+        const severityOk = contractClauseSeverityFilter.size === 0;
         const confidenceOk = confidenceMatches(confidenceBucket);
-        item.classList.toggle("hidden", !(severityOk && statusOk && readOk && notesOk && confidenceOk));
+        item.classList.toggle("hidden", !(severityOk && statusOk && readOk && notesOk && confidenceOk && provisionOk));
     });
 
-    if (header) header.textContent = "Deviations";
+    if (header) header.textContent = "Deviations \u2014 Review Recommended";
 }
 
 function shouldShowField(value) {
@@ -5564,6 +5920,20 @@ function getProviderShortNames(modelsUsed) {
 
 // ── Cross-Reference Linking ──
 
+/**
+ * Render detail text with paragraph splitting and bold markdown.
+ * Splits on \n\n into paragraphs, converts **bold** to <strong>, wraps in <p> tags.
+ * Formatting is produced by the models — this just renders it.
+ */
+function renderDetailText(text) {
+    if (!text) return "";
+    const _boldMd = window.CAMAuditShared && window.CAMAuditShared.boldMarkdown
+        ? window.CAMAuditShared.boldMarkdown
+        : (t) => (t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const paras = text.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
+    return paras.map(p => `<p>${_boldMd(p)}</p>`).join("");
+}
+
 function linkifyProvisions(text, analyzedPids, currentPid) {
     if (!text) return "";
     // Escape first, then replace LP-XX patterns
@@ -5615,13 +5985,13 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
         });
 
     const header = $("#deviations-header");
-    header.textContent = "Deviations";
+    header.textContent = "Deviations \u2014 Review Recommended";
 
     const progressEl = document.getElementById("resolution-progress");
     if (progressEl) progressEl.remove();
 
     if (deviations.length === 0) {
-        container.innerHTML = '<div class="alert alert-success">No deviations detected. All analyzed provisions conform to the standard template.</div>';
+        container.innerHTML = '<div class="alert alert-success">No deviations detected. All analyzed provisions conform to the reference lease.</div>';
         return;
     }
 
@@ -5680,7 +6050,7 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
                 <div class="finding-language-pair">
                     <div class="finding-language finding-language--removed">
                         <div class="finding-language-label finding-language-label--removed">
-                            Standard Template — omitted from tenant lease
+                            Reference Lease — omitted from tenant lease
                         </div>
                         <div class="finding-language-text finding-language-text--removed">${esc(templateText)}</div>
                     </div>
@@ -5697,7 +6067,7 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
                 <div class="finding-language-pair finding-language-pair--diff">
                     <div class="finding-language">
                         <div class="finding-language-label">
-                            Standard Template
+                            Reference Lease
                             <span class="diff-legend diff-legend--removed">removed</span>
                         </div>
                         <div class="finding-language-text finding-language-text--template-diff">${templateHtml}</div>
@@ -5714,7 +6084,7 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
                 languageHtml = `
                 <div class="finding-language-pair">
                     ${templateText ? `<div class="finding-language">
-                        <div class="finding-language-label">Standard Template</div>
+                        <div class="finding-language-label">Reference Lease</div>
                         <div class="finding-language-text">${esc(templateText)}</div>
                     </div>` : ""}
                     ${tenantText ? `<div class="finding-language">
@@ -5738,7 +6108,7 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
 
         // Item 6: UNCLEAR → "Needs Review" styling
         const isUnclear = d.final_verdict === "UNCLEAR";
-        const displaySev = isUnclear ? "Needs Review" : sev;
+        const displaySev = isUnclear ? "Needs Review" : sevDisplay(sev);
         const displayIcon = isUnclear ? "\u2753" : icon;
         const sevClass = isUnclear ? "severity-review" : `severity-${sev}`;
 
@@ -5885,11 +6255,11 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
                 ${(challenge || action) ? `<div class="detail-two-col">
                     ${challenge ? `<div class="detail-section">
                         <div class="detail-label">What Changed</div>
-                        <div class="detail-text">${lChallenge}</div>
+                        <div class="detail-text">${renderDetailText(challenge)}</div>
                     </div>` : ""}
                     ${action ? `<div class="detail-section">
                         <div class="detail-label">Why It Matters</div>
-                        <div class="detail-text">${lAction}</div>
+                        <div class="detail-text">${renderDetailText(action)}</div>
                     </div>` : ""}
                 </div>` : ""}
                 ${d.interpretation_note ? (() => {
@@ -6008,12 +6378,8 @@ function renderCredibilityLine(d, modelsUsed, tenantIdx, pid, sev) {
     const agreeing = Object.values(verdicts).filter(v => v === "DEVIATES").length;
     const total = Object.keys(verdicts).length || 3;
 
-    const fragSignals = (d.fragility && d.fragility.signals) ? d.fragility.signals : [];
-    const rulesCount = fragSignals.length;
-
     const agreementText = `${agreeing}/${total} evaluators agree`;
-    const ruleText = rulesCount > 0 ? ` \u00B7 ${rulesCount} rule${rulesCount > 1 ? "s" : ""} triggered` : "";
-    const label = agreementText + ruleText + " \u2192";
+    const label = agreementText + " \u2192";
 
     const colorCls = {
         'CRITICAL': 'credibility-critical',
@@ -6272,7 +6638,7 @@ function renderConforming(provisions, modelsUsed) {
         const clausePairHtml = (tmplText || tenantText) ? `
             <div class="conforming-clause-pair">
                 <div class="conforming-clause-col">
-                    <div class="conforming-clause-label">Standard Template</div>
+                    <div class="conforming-clause-label">Reference Lease</div>
                     <div class="conforming-clause-text">${esc(tmplText || "\u2014")}</div>
                 </div>
                 <div class="conforming-clause-col">
@@ -6444,7 +6810,7 @@ function showNoContractPlaceholder(tab) {
     persistResultsViewState();
     if (!currentResults || !currentResults.tenants) {
         // No run loaded at all — show a helpful empty state instead of blank
-        var _subLabels = { findings: 'Contract Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
+        var _subLabels = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
         setSubheader(_subLabels[tab] || tab);
         var detail = document.getElementById('contract-detail-view');
         var overview = document.getElementById('overview-tab-content');
@@ -6470,7 +6836,7 @@ function showNoContractPlaceholder(tab) {
     var tenants = currentResults.tenants;
 
     // Update subheader immediately
-    var _subLabels = { findings: 'Contract Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
+    var _subLabels = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
     setSubheader(_subLabels[tab] || tab);
 
     // Single contract: auto-open immediately
@@ -6489,7 +6855,7 @@ function showNoContractPlaceholder(tab) {
     setResultsContentDetailMode(true);
 
     // Mark the clicked tab as active (no contract open)
-    var tabNames = { findings: 'Contract Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
+    var tabNames = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
     document.querySelectorAll('#top-tab-bar .top-tab[data-top-tab]').forEach(function(t) { t.classList.remove('active'); });
     document.querySelectorAll('#top-tab-bar .top-tab[data-tab]').forEach(function(t) {
         t.classList.toggle('active', t.dataset.tab === tab);
@@ -6864,7 +7230,7 @@ function renderFullDocumentView() {
             const icon = SEVERITY_ICONS[p.severity] || "";
             const headline = p.risk_headline || p.challenge_details || "";
             mainHtml += `<div class="fulldoc-callout fulldoc-callout-${p.severity || "MEDIUM"}">
-                <span class="fulldoc-callout-header"><span class="severity-badge severity-${p.severity || ""}">${icon} ${p.severity || ""}</span> ${esc(m.pid)}</span>
+                <span class="fulldoc-callout-header"><span class="severity-badge severity-${p.severity || ""}">${icon} ${sevDisplay(p.severity)}</span> ${esc(m.pid)}</span>
                 ${headline ? `<span class="fulldoc-callout-text">&mdash; ${esc(truncateToSentence(headline, 120))}</span>` : ""}
                 <a class="fulldoc-callout-link" data-pid="${esc(m.pid)}">View full analysis &#8594;</a>
             </div>`;
@@ -7076,187 +7442,6 @@ function renderSidebarTOC(sidebar, fullText, scrollTargetPrefix, options = {}) {
     if (!fullText) return;
     const { provisions = [], primarySide = "tenant" } = options;
     const { sectionMap, articleMap } = buildTocSeverityMaps(provisions, primarySide);
-
-    const articlePattern = /^(?:={3,}\s*)?(?:ARTICLE\s+[IVXLC\d]+\s*[—–\-]\s*(.+?))(?:\s*={3,})?$/gmi;
-    const sectionPattern = /^Section\s+([\d.]+)\.\s+(.+)$/gmi;
-    const articles = [];
-    const sections = [];
-    let match;
-
-    while ((match = articlePattern.exec(fullText)) !== null) {
-        articles.push({ title: match[0].replace(/={3,}/g, "").trim(), index: match.index });
-    }
-    while ((match = sectionPattern.exec(fullText)) !== null) {
-        const sectionNumber = match[1];
-        const remainder = (match[2] || "").trim();
-        const shortTitle = remainder.split(".")[0].trim();
-        sections.push({
-            title: shortTitle ? `Section ${sectionNumber}. ${shortTitle}` : `Section ${sectionNumber}`,
-            index: match.index,
-            sectionNumber
-        });
-    }
-
-    const outline = articles
-        .map((entry) => ({ ...entry, type: "article" }))
-        .concat(sections.map((entry) => ({ ...entry, type: "section" })))
-        .sort((a, b) => a.index - b.index);
-
-    if (outline.length === 0) return;
-
-    const articleGroups = articles.map((article, idx) => {
-        const nextArticleIndex = idx < articles.length - 1 ? articles[idx + 1].index : Number.POSITIVE_INFINITY;
-        const groupedSections = sections.filter((section) => section.index > article.index && section.index < nextArticleIndex);
-        return {
-            ...article,
-            outlineIndex: outline.findIndex((entry) => entry.type === "article" && entry.index === article.index),
-            articleToken: (article.title.match(/ARTICLE\s+([IVXLC\d]+)/i) || [null, ""])[1].toUpperCase(),
-            sections: groupedSections.map((section) => ({
-                ...section,
-                outlineIndex: outline.findIndex((entry) => entry.type === "section" && entry.index === section.index)
-            }))
-        };
-    });
-
-    let tocHtml = `<div class="fulldoc-sidebar-divider"></div>
-        <div class="sidebar-toc-toggle" id="toc-toggle-${scrollTargetPrefix}">
-            <span class="toc-arrow">&#9654;</span> TABLE OF CONTENTS
-        </div>
-        <div class="sidebar-toc-content hidden" id="toc-content-${scrollTargetPrefix}">`;
-
-    if (articleGroups.some((group) => group.sections.length > 0)) {
-        tocHtml += `<button type="button" class="sidebar-toc-expand-all" data-expanded="false">Expand All Sections</button>`;
-    }
-
-    articleGroups.forEach((group, articleIdx) => {
-        const articleSeverity = group.articleToken ? (articleMap.get(group.articleToken) || "") : "";
-        const articleSeverityDot = articleSeverity ? `<span class="sidebar-toc-severity sidebar-toc-severity-${articleSeverity}"></span>` : "";
-        const hasSections = group.sections.length > 0;
-        const firstSectionAttr = hasSections ? ` data-first-section-number="${esc(group.sections[0].sectionNumber)}"` : "";
-        tocHtml += `<div class="sidebar-toc-group" data-article-group="${articleIdx}">
-            <div class="sidebar-toc-item sidebar-toc-item-article" data-toc-idx="${group.outlineIndex}" data-toc-text="${esc(group.title)}"${firstSectionAttr}>
-                <button type="button" class="sidebar-toc-group-toggle${hasSections ? "" : " sidebar-toc-group-toggle-hidden"}" data-article-group-toggle="${articleIdx}" aria-label="Toggle sections">${hasSections ? "&#9654;" : ""}</button>
-                ${articleSeverityDot}
-                <span>${esc(group.title)}</span>
-            </div>`;
-
-        if (hasSections) {
-            tocHtml += `<div class="sidebar-toc-sections hidden" data-article-sections="${articleIdx}">`;
-            group.sections.forEach((section) => {
-                const sectionSeverity = sectionMap.get(section.sectionNumber || "") || "";
-                const sectionSeverityDot = sectionSeverity ? `<span class="sidebar-toc-severity sidebar-toc-severity-${sectionSeverity}"></span>` : "";
-                tocHtml += `<div class="sidebar-toc-item sidebar-toc-item-section" data-toc-idx="${section.outlineIndex}" data-toc-text="${esc(section.title)}" data-section-number="${esc(section.sectionNumber)}">${sectionSeverityDot}<span>${esc(section.title)}</span></div>`;
-            });
-            tocHtml += `</div>`;
-        }
-
-        tocHtml += `</div>`;
-    });
-    tocHtml += `</div>`;
-
-    sidebar.insertAdjacentHTML("beforeend", tocHtml);
-
-    const toggle = sidebar.querySelector(`#toc-toggle-${scrollTargetPrefix}`);
-    const content = sidebar.querySelector(`#toc-content-${scrollTargetPrefix}`);
-    if (toggle && content) {
-        toggle.addEventListener("click", () => {
-            const isOpen = !content.classList.contains("hidden");
-            content.classList.toggle("hidden");
-            const arrow = toggle.querySelector(".toc-arrow");
-            if (arrow) arrow.innerHTML = isOpen ? "&#9654;" : "&#9660;";
-        });
-    }
-
-    const navigateToTocEntry = (item) => {
-        const entry = outline[parseInt(item.dataset.tocIdx, 10)];
-        if (!entry) return;
-        const searchText = entry.title;
-        if (scrollTargetPrefix === "sbs") {
-            const articleMatch = searchText.match(/ARTICLE\s+([IVXLC\d]+)/i);
-            const sectionNumber = item.dataset.sectionNumber || item.dataset.firstSectionNumber || "";
-            const primaryAttr = docviewSort === "reference" ? "data-template-ref" : "data-tenant-ref";
-            const headers = Array.from(document.querySelectorAll(".docview-provision-header"));
-
-            let target = null;
-            if (sectionNumber) {
-                const escapedSection = sectionNumber.replace(".", "\\.");
-                target = headers.find((header) => {
-                    const ref = header.getAttribute(primaryAttr) || "";
-                    return new RegExp(`Sections?\\s+${escapedSection}\\b|Section\\s+${escapedSection}\\b`, "i").test(ref);
-                }) || null;
-            }
-            if (articleMatch) {
-                const articleToken = articleMatch[1].toUpperCase();
-                target = target || headers.find((header) => {
-                    const ref = header.getAttribute(primaryAttr) || "";
-                    return new RegExp(`Article\\s+${articleToken}\\b`, "i").test(ref);
-                }) || null;
-            }
-            if (target) {
-                const mainPanel = $(".docview-main-sbs");
-                scrollElementIntoPanelView(target, mainPanel, getDocviewJumpOffset(mainPanel));
-                target.classList.add("highlight-flash");
-                setTimeout(() => target.classList.remove("highlight-flash"), 1500);
-                return;
-            }
-        }
-
-        const mainPanel = scrollTargetPrefix === "fulldoc" ? $("#docview-main") : $(".docview-main-sbs");
-        if (!mainPanel) return;
-        const walker = document.createTreeWalker(mainPanel, NodeFilter.SHOW_TEXT, null);
-        while (walker.nextNode()) {
-            const idx = walker.currentNode.textContent.indexOf(searchText.substring(0, 30));
-            if (idx !== -1) {
-                const parent = walker.currentNode.parentElement;
-                scrollElementIntoPanelView(parent, mainPanel, getDocviewJumpOffset(mainPanel));
-                parent.classList.add("highlight-flash");
-                setTimeout(() => parent.classList.remove("highlight-flash"), 1500);
-                break;
-            }
-        }
-    };
-
-    sidebar.querySelectorAll(".sidebar-toc-group-toggle[data-article-group-toggle]").forEach((toggleBtn) => {
-        toggleBtn.addEventListener("click", (event) => {
-            event.stopPropagation();
-            const groupId = toggleBtn.dataset.articleGroupToggle;
-            const sectionBlock = sidebar.querySelector(`[data-article-sections="${groupId}"]`);
-            if (!sectionBlock) return;
-            const isOpen = !sectionBlock.classList.contains("hidden");
-            sectionBlock.classList.toggle("hidden");
-            toggleBtn.innerHTML = isOpen ? "&#9654;" : "&#9660;";
-        });
-    });
-
-    const expandAllBtn = sidebar.querySelector(".sidebar-toc-expand-all");
-    if (expandAllBtn) {
-        expandAllBtn.addEventListener("click", () => {
-            const expand = expandAllBtn.dataset.expanded !== "true";
-            sidebar.querySelectorAll(".sidebar-toc-sections").forEach((sectionBlock) => {
-                sectionBlock.classList.toggle("hidden", !expand);
-            });
-            sidebar.querySelectorAll(".sidebar-toc-group-toggle[data-article-group-toggle]").forEach((toggleBtn) => {
-                if (!toggleBtn.classList.contains("sidebar-toc-group-toggle-hidden")) {
-                    toggleBtn.innerHTML = expand ? "&#9660;" : "&#9654;";
-                }
-            });
-            expandAllBtn.dataset.expanded = expand ? "true" : "false";
-            expandAllBtn.textContent = expand ? "Collapse All Sections" : "Expand All Sections";
-        });
-    }
-
-    sidebar.querySelectorAll(".sidebar-toc-item").forEach((item) => {
-        item.addEventListener("click", (event) => {
-            if (event.target.closest(".sidebar-toc-group-toggle")) return;
-            navigateToTocEntry(item);
-        });
-    });
-}
-
-function renderSidebarTOC(sidebar, fullText, scrollTargetPrefix, options = {}) {
-    if (!fullText) return;
-    const { provisions = [], primarySide = "tenant" } = options;
-    const { sectionMap, articleMap } = buildTocSeverityMaps(provisions, primarySide);
     const { articles, sections, outline } = parseSidebarTocOutline(fullText);
     if (outline.length === 0) return;
 
@@ -7435,7 +7620,7 @@ function legacyRenderSideBySideView() {
     const r = tenant.results;
     const provisions = sortProvisionsForDocviewTenantLed(getDocviewWorkflowProvisions(r.provisions || []));
 
-    const templateFile = r.template_file || "Standard Template";
+    const templateFile = r.template_file || "Reference Lease";
     const tenantFile = r.tenant_file || tenant.filename || "Tenant Lease";
 
     // Build the side-by-side frame
@@ -7451,11 +7636,11 @@ function legacyRenderSideBySideView() {
     const referenceHeaderClass = docviewSort === "reference" ? "docview-column-header-primary" : "docview-column-header-secondary";
     const tenantHeaderClass = docviewSort === "contract" ? "docview-column-header-primary" : "docview-column-header-secondary";
     if (tenantLeads) {
-        html += `<div class="docview-column-header ${referenceHeaderClass}">Standard Template &mdash; ${esc(templateFile)}</div>`;
+        html += `<div class="docview-column-header ${referenceHeaderClass}">Reference Lease &mdash; ${esc(templateFile)}</div>`;
         html += `<div class="docview-column-header ${tenantHeaderClass}">Tenant Lease &mdash; ${esc(tenantFile)}</div>`;
     } else {
         html += `<div class="docview-column-header ${tenantHeaderClass}">Tenant Lease &mdash; ${esc(tenantFile)}</div>`;
-        html += `<div class="docview-column-header ${referenceHeaderClass}">Standard Template &mdash; ${esc(templateFile)}</div>`;
+        html += `<div class="docview-column-header ${referenceHeaderClass}">Reference Lease &mdash; ${esc(templateFile)}</div>`;
     }
     html += `</div>`;
     html += `</div>`;
@@ -7484,7 +7669,7 @@ function legacyRenderSideBySideView() {
         if (verdict === "DEVIATES") {
             rowClass = "deviation";
             const icon = SEVERITY_ICONS[severity] || "";
-            severityBadge = `<span class="severity-badge severity-${severity}">${icon} ${severity}</span>`;
+            severityBadge = `<span class="severity-badge severity-${severity}">${icon} ${sevDisplay(severity)}</span>`;
 
             // Apply word-level diff when both sides exist
             if (templateText && tenantText) {
@@ -7548,13 +7733,13 @@ function legacyRenderSideBySideView() {
             if (whatChanged) {
                 html += `<div class="detail-section">
                     <div class="detail-label">What Changed</div>
-                    <div class="detail-text">${esc(whatChanged)}</div>
+                    <div class="detail-text">${renderDetailText(whatChanged)}</div>
                 </div>`;
             }
             if (recommendedAction) {
                 html += `<div class="detail-section">
                     <div class="detail-label">Why It Matters</div>
-                    <div class="detail-text">${esc(recommendedAction)}</div>
+                    <div class="detail-text">${renderDetailText(recommendedAction)}</div>
                 </div>`;
             }
             html += `</div>`;
@@ -7623,7 +7808,7 @@ function renderSideBySideView() {
 
     const r = tenant.results;
     const provisions = sortProvisionsForDocviewTenantLed(getDocviewWorkflowProvisions(r.provisions || []));
-    const templateFile = r.template_file || "Standard Template";
+    const templateFile = r.template_file || "Reference Lease";
     const tenantFile = r.tenant_file || tenant.filename || "Tenant Lease";
     const tenantLeads = docviewSort === "contract";
 
@@ -7778,7 +7963,7 @@ function toggleDocviewAnalysis(pid, provisions) {
 
     let panelHtml = `<div class="docview-analysis" data-pid="${esc(pid)}">
         <div class="docview-analysis-header">
-            <span><span class="severity-badge severity-${severity}">${icon} ${severity}</span> &mdash; ${esc(p.provision_name || "")}</span>
+            <span><span class="severity-badge severity-${severity}">${icon} ${sevDisplay(severity)}</span> &mdash; ${esc(p.provision_name || "")}</span>
             <button class="docview-analysis-close">&times;</button>
         </div>`;
 
@@ -7788,25 +7973,25 @@ function toggleDocviewAnalysis(pid, provisions) {
     if (challenge) {
         panelHtml += `<div class="detail-section">
             <div class="detail-label">What Changed</div>
-            <div class="detail-text">${esc(challenge)}</div>
+            <div class="detail-text">${renderDetailText(challenge)}</div>
         </div>`;
     }
     if (sevReasoning) {
         panelHtml += `<div class="detail-section">
             <div class="detail-label">Impact</div>
-            <div class="detail-text">${esc(sevReasoning)}</div>
+            <div class="detail-text">${renderDetailText(sevReasoning)}</div>
         </div>`;
     }
     if (financial) {
         panelHtml += `<div class="detail-section">
             <div class="detail-label">Financial Impact</div>
-            <div class="detail-text">${esc(financial)}</div>
+            <div class="detail-text">${renderDetailText(financial)}</div>
         </div>`;
     }
     if (action) {
         panelHtml += `<div class="detail-section">
-            <div class="detail-label">Recommended Action</div>
-            <div class="detail-text">${esc(action)}</div>
+            <div class="detail-label">Why It Matters</div>
+            <div class="detail-text">${renderDetailText(action)}</div>
         </div>`;
     }
     if (p.interpretation_note) {
@@ -9655,10 +9840,11 @@ function updateFilterLabels() {
     const confLabel = $('#filter-confidence-label');
     if (confLabel) {
         if (filterConfidence.size === 0) confLabel.textContent = 'All';
-        else if (filterConfidence.has('NEEDS_REVIEW') && !filterConfidence.has('HIGH'))
-            confLabel.textContent = 'Needs Review';
-        else if (filterConfidence.has('HIGH') && !filterConfidence.has('NEEDS_REVIEW'))
-            confLabel.textContent = 'High Only';
+        else if (filterConfidence.size === 1) {
+            const val = [...filterConfidence][0];
+            const labelMap = { HIGH: 'Verified', IMPACT_UNCLEAR: 'Impact Unclear', NEEDS_REVIEW: 'Needs Review', INCONCLUSIVE: 'Inconclusive' };
+            confLabel.textContent = labelMap[val] || val;
+        }
         else confLabel.textContent = 'Custom';
     }
 
@@ -9685,8 +9871,9 @@ function applyFilters() {
     function confMatch(signal) {
         if (filterConfidence.size === 0) return true;
         if (filterConfidence.has('HIGH') && signal === 'ASSERT_SIGNAL') return true;
-        if (filterConfidence.has('NEEDS_REVIEW') &&
-            ['WITHHOLD_SIGNAL','REVIEW_SIGNAL','ASSERT_REVIEW_SIGNAL'].includes(signal)) return true;
+        if (filterConfidence.has('IMPACT_UNCLEAR') && signal === 'ASSERT_REVIEW_SIGNAL') return true;
+        if (filterConfidence.has('NEEDS_REVIEW') && signal === 'REVIEW_SIGNAL') return true;
+        if (filterConfidence.has('INCONCLUSIVE') && signal === 'WITHHOLD_SIGNAL') return true;
         return false;
     }
 
@@ -9968,6 +10155,7 @@ function showChatAdvisorPrompts(pid, tenantIdx) {
         <button class="chat-advisor-chip" onclick="window.CAM.askResolution('${esc(pid)}', ${tenantIdx}, 'rewrite')">Draft replacement language</button>
         <button class="chat-advisor-chip" onclick="window.CAM.askResolution('${esc(pid)}', ${tenantIdx}, 'risk')">Risk if accepted as-is</button>
         <button class="chat-advisor-chip" onclick="window.CAM.askResolution('${esc(pid)}', ${tenantIdx}, 'standard')">Is this market/standard?</button>
+        <button class="chat-advisor-chip" onclick="window.CAM.aggressiveRead('${esc(pid)}', ${tenantIdx})">&#x26A1; Strongest tenant reading</button>
     `;
     container.classList.remove("hidden");
 }
@@ -10150,7 +10338,7 @@ function renderAuditTrail(allTenants) {
         return;
     }
     const r = tenant.results;
-    const provisions = getTenantWorkflowProvisions(currentTenantIndex);
+    let provisions = getTenantWorkflowProvisions(currentTenantIndex);
     const modelsUsed = r.models_used || {};
 
     // Run metadata block
@@ -10166,6 +10354,20 @@ function renderAuditTrail(allTenants) {
         modelsUsed.evaluator_b,
         modelsUsed.evaluator_c
     ].filter(Boolean).map(getModelDisplayName).join(" · ");
+
+    // Aggregate run stats across all tenants
+    const _allTenants = (currentResults && currentResults.tenants) || [];
+    const _totalProvs   = _allTenants.reduce((s,t) => s + ((t.results && t.results.provisions) ? t.results.provisions.length : 0), 0);
+    const _totalElapsed = _allTenants.reduce((s,t) => s + ((t.results && t.results.elapsed_sec) || 0), 0);
+    const _totalCalls   = _allTenants.reduce((s,t) => s + ((t.results && t.results.api_calls_total) || 0), 0);
+    const _pipeVer      = r.pipeline_version || '';
+    const _pipeDomain   = r.pipeline_domain_label || '';
+    const _runStatLine  = [
+        _totalProvs   ? `${_totalProvs} provisions` : '',
+        _totalElapsed ? fmtDuration(_totalElapsed) + ' total runtime' : '',
+        _totalCalls   ? `${_totalCalls} model calls` : '',
+        _pipeVer      ? `Pipeline ${esc(_pipeVer)}` : '',
+    ].filter(Boolean).join(' &middot; ');
 
     let html = `<div class="audit-export-bar">
         <div class="audit-export-group">
@@ -10186,30 +10388,28 @@ function renderAuditTrail(allTenants) {
                 Download Audit Report
             </button>
         </div>
+        ${_runStatLine ? `<div class="audit-export-run-stats">${_runStatLine}</div>` : ''}
     </div>
     <div class="audit-run-meta">
         <div class="audit-meta-section">
-            <div class="audit-meta-label">REVIEW CONTEXT</div>
+            <div class="audit-meta-label">LEASE DETAILS</div>
             <div>Tenant lease: ${esc(tenant.filename || r.tenant_file || "—")}</div>
             <div>Completed at: ${esc(ts)}</div>
             <div>Standard lease: ${esc(r.template_file || "—")}</div>
         </div>
         <div class="audit-meta-section">
-            <div class="audit-meta-label">CAM REVIEWERS</div>
-            <div>Clause comparison: ${esc(readableEvalModels || "—")}</div>
+            <div class="audit-meta-label">MODELS &amp; ROLES</div>
+            <div>Extraction: ${esc(getModelDisplayName(modelsUsed.extractor || "—"))}</div>
+            <div>Provision comparison: ${esc(readableEvalModels || "—")}</div>
             <div>Challenge review: ${esc(getModelDisplayName(modelsUsed.challenger || "—"))}</div>
             <div>Severity review: ${esc(getModelDisplayName(modelsUsed.severity_assessor || "—"))}</div>
         </div>
         <div class="audit-meta-section">
-            <div class="audit-meta-label">RUN STATS</div>
+            <div class="audit-meta-label">LEASE STATS</div>
             <div>${provisions.length} provision${provisions.length !== 1 ? "s" : ""} reviewed</div>
             <div>${r.elapsed_sec ? fmtDuration(r.elapsed_sec) + " actual runtime" : "Actual runtime unavailable"}</div>
             <div>${r.api_calls_total || "—"} model calls</div>
-            <details class="audit-meta-tech">
-                <summary>Technical run details</summary>
-                <div>Pipeline: ${esc(r.pipeline_version || "—")} &middot; ${esc(r.pipeline_domain_label || "")}</div>
-                <div>Extractor: ${esc(getModelDisplayName(modelsUsed.extractor || "—"))}${modelsUsed.extractor_provider ? ` (${esc(modelsUsed.extractor_provider)})` : ""}</div>
-            </details>
+
         </div>
     </div>`;
 
@@ -10220,13 +10420,66 @@ function renderAuditTrail(allTenants) {
                        currentResults.tenants[currentTenantIndex].results._stage_data) || {};
 
     // Provision rows
+    const _sortIcon = (col) => {
+        if (window._auditSortCol !== col) return `<span class="audit-sort-icon">⇕</span>`;
+        return `<span class="audit-sort-icon">${window._auditSortDir === 'asc' ? '↑' : '↓'}</span>`;
+    };
+    const _sortClass = (col) => window._auditSortCol === col ? 'active' : '';
     html += `<div class="audit-controls-bar">
-        <span class="audit-controls-count">${provisions.length} provision${provisions.length !== 1 ? "s" : ""}</span>
-        <div class="audit-controls-buttons">
-            <button class="btn-audit-control" onclick="window.CAM.expandAllAuditRows()">▾ Expand all</button>
-            <button class="btn-audit-control" onclick="window.CAM.collapseAllAuditRows()">&#9656; Collapse all</button>
+        <div class="audit-table-header">
+            <button class="audit-sort-btn audit-sort-btn-provision ${_sortClass('provision')}" onclick="window.CAM.sortAuditTrail('provision')">Provisions (${provisions.length}) ${_sortIcon('provision')}</button>
+            <button class="audit-sort-btn ${_sortClass('severity')}" onclick="window.CAM.sortAuditTrail('severity')">Severity ${_sortIcon('severity')}</button>
+            <button class="audit-sort-btn ${_sortClass('confidence')}" onclick="window.CAM.sortAuditTrail('confidence')">Confidence ${_sortIcon('confidence')}</button>
+            <button class="audit-sort-btn ${_sortClass('agreement')}" onclick="window.CAM.sortAuditTrail('agreement')">Reviewer Agreement ${_sortIcon('agreement')}</button>
+            <button class="audit-sort-btn ${_sortClass('complexity')}" onclick="window.CAM.sortAuditTrail('complexity')">Complexity ${_sortIcon('complexity')}</button>
+            <div class="audit-controls-buttons">
+                <button class="btn-audit-control audit-expand-btn" onclick="window.CAM.expandAllAuditRows()">Expand all</button>
+            </div>
         </div>
+
     </div>`;
+    // Default sort: provision ascending on first load
+    if (window._auditSortCol === undefined) {
+        window._auditSortCol = 'provision';
+        window._auditSortDir = 'asc';
+    }
+
+    // Apply sort if active
+    const SEVERITY_RANK = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, CONFORMS: 4 };
+    if (window._auditSortCol) {
+        const dir = window._auditSortDir === 'asc' ? 1 : -1;
+        provisions = provisions.slice().sort((a, b) => {
+            switch (window._auditSortCol) {
+                case 'provision': {
+                    const pa = a.provision_id || '';
+                    const pb = b.provision_id || '';
+                    return dir * pa.localeCompare(pb);
+                }
+                case 'severity': {
+                    const ra = SEVERITY_RANK[a.severity] ?? (a.final_verdict === 'CONFORMS' ? 4 : 3);
+                    const rb = SEVERITY_RANK[b.severity] ?? (b.final_verdict === 'CONFORMS' ? 4 : 3);
+                    return dir * (ra - rb);
+                }
+                case 'confidence': {
+                    const ca = (a.cam_score || {}).CAM_perm ?? -1;
+                    const cb = (b.cam_score || {}).CAM_perm ?? -1;
+                    return dir * (cb - ca);
+                }
+                case 'agreement': {
+                    const ea = Object.values(a.evaluator_verdicts || {}).filter(v => v === 'DEVIATES').length;
+                    const eb = Object.values(b.evaluator_verdicts || {}).filter(v => v === 'DEVIATES').length;
+                    return dir * (eb - ea);
+                }
+                case 'complexity': {
+                    const fa = (a.fragility || {}).fragility_score ?? -1;
+                    const fb = (b.fragility || {}).fragility_score ?? -1;
+                    return dir * (fb - fa);
+                }
+                default: return 0;
+            }
+        });
+    }
+
     html += `<div class="audit-provision-list">`;
     provisions.forEach((p, idx) => {
         const pid = p.provision_id || "";
@@ -10238,34 +10491,68 @@ function renderAuditTrail(allTenants) {
         const agPattern = p.agreement_pattern || "—";
         const fragile = p.fragility && p.fragility.fragile;
 
+        // ── Redesigned audit row (Step 229) — human-readable, no jargon ──
+
+        // 1. Severity / verdict badge
         const verdictBadge = verdict === "DEVIATES"
-            ? `<span class="audit-verdict audit-verdict-deviates">${esc(sev)}</span>`
+            ? `<span class="audit-verdict audit-verdict-deviates">${esc(sevDisplay(sev))}</span>`
             : verdict === "CONFORMS"
-                ? `<span class="audit-verdict audit-verdict-conforms">CONFORMS</span>`
-                : `<span class="audit-verdict audit-verdict-unclear">UNCLEAR</span>`;
+                ? `<span class="audit-verdict audit-verdict-conforms">Conforms</span>`
+                : `<span class="audit-verdict audit-verdict-unclear">Unclear</span>`;
 
-        const rulesBadge = rulesFired.length > 0
-            ? `<span class="audit-rules-badge">${rulesFired.length} rule${rulesFired.length !== 1 ? "s" : ""} fired</span>`
-            : `<span class="audit-rules-badge audit-rules-none">no rules</span>`;
-
-        const fragBadge = fragile
-            ? `<span class="audit-fragile-badge" title="${esc((p.fragility.signals || []).join(", "))}">⚠ fragile</span>`
+        // 2. Confidence dots badge — reuse existing badge data
+        const govSig = (p.cam_score || {}).governance_signal || "";
+        const badgeData = getConfidenceBadgeData ? getConfidenceBadgeData(govSig, sev.toUpperCase()) : null;
+        const dotsBadge = badgeData
+            ? `<span class="audit-confidence-badge audit-confidence-${badgeData.cssClass}">${badgeData.dots} ${badgeData.label}</span>`
             : "";
+
+        // 3. Plain-English evaluator agreement
+        const evVerdicts = p.evaluator_verdicts || {};
+        const evTotal = Object.keys(evVerdicts).length || 3;
+        const evAgree = verdict === "DEVIATES"
+            ? Object.values(evVerdicts).filter(v => v === "DEVIATES").length
+            : Object.values(evVerdicts).filter(v => v === "CONFORMS").length;
+        const agreementText = evTotal === 0 ? ""
+            : `${evAgree}/${evTotal} reviewers ${verdict === "DEVIATES" ? "flagged this" : "confirmed"}`;
+        const agreementSpan = agreementText
+            ? `<span class="audit-reviewer-agreement">${esc(agreementText)}</span>`
+            : "";
+
+        // Clause complexity mini-badge for collapsed row
+        const _rowFragSigs = (p.cam_score || {}).fragility_signals || [];
+        const _rowFragRaw = (stageData.fragility || []).find(x => x.provision_id === pid) || null;
+        const _rowFragScore = _rowFragRaw && _rowFragRaw.fragility_score != null ? Math.round(_rowFragRaw.fragility_score * 100) : null;
+        const _rowComplexityLabel = _rowFragScore == null ? null
+            : _rowFragScore < 15 ? "Simple"
+            : _rowFragScore < 35 ? "Moderate"
+            : _rowFragScore < 60 ? "Complex"
+            : "Highly complex";
+        const _rowComplexityCls = _rowFragScore == null ? ""
+            : _rowFragScore < 15 ? "audit-complexity-simple"
+            : _rowFragScore < 35 ? "audit-complexity-moderate"
+            : _rowFragScore < 60 ? "audit-complexity-complex"
+            : "audit-complexity-high";
+        const complexityBadge = _rowComplexityLabel
+            ? `<span class="audit-complexity-badge ${_rowComplexityCls}">${esc(_rowComplexityLabel)}</span>`
+            : "";
+
+
 
         html += `<div class="audit-provision-row" data-idx="${idx}" data-pid="${esc(pid)}" data-tenant="${currentTenantIndex}">
             <div class="audit-provision-header" onclick="window.CAM.toggleAuditRow(${idx})">
                 <span class="audit-pid">${esc(pid)}</span>
                 <span class="audit-pname">${esc(pname)}</span>
-                ${verdictBadge}
-                <span class="audit-agreement">${esc(getAuditGovernanceLabel((p.cam_score || {}).governance_signal))}</span>
-                <span class="audit-agreement">${esc(getAuditPatternLabel((p.cam_score || {}).pattern))}</span>
-                ${rulesBadge}
-                <span class="audit-agreement">${esc(agPattern)}</span>
-                ${fragBadge}
-                <span class="audit-chevron">&#9662;</span>
+                <span class="audit-row-signals">
+                    ${verdictBadge}
+                    ${dotsBadge}
+                    ${agreementSpan}
+                    ${complexityBadge}
+                </span>
+                <span class="audit-chevron">&#9654;</span>
             </div>
             <div class="audit-provision-detail hidden" id="audit-detail-${idx}">
-                ${buildAuditDetailV2(p, modelsUsed, stageData)}
+                ${buildAuditDetailV2(p, modelsUsed, stageData, idx)}
             </div>
         </div>`;
     });
@@ -10274,7 +10561,8 @@ function renderAuditTrail(allTenants) {
     syncAuditExpandToggle();
 }
 
-function buildAuditDetailV2(p, modelsUsed, stageData) {
+function buildAuditDetailV2(p, modelsUsed, stageData, idx) {
+    idx = idx != null ? idx : 0;
     stageData = stageData || {};
     const pid = p.provision_id || "";
     const meta = p.cam_metadata || {};
@@ -10304,169 +10592,289 @@ function buildAuditDetailV2(p, modelsUsed, stageData) {
         C: modelsUsed.evaluator_c || "Evaluator C",
     };
 
-    let html = `<div class="audit-narrative audit-proof-card">`;
+    // ── Redesigned audit detail (Step 229) ──
+    // Lead with interpretation note (if any), then each model's view,
+    // then the challenge round. Confidence scores come last, collapsed.
+    // No duplicate content from Contract Summary / Document Comparison.
 
-    html += `<div class="audit-proof-overview">
-        <div class="audit-proof-topline">
-            <div class="audit-proof-outcome">
-                <span class="audit-proof-kicker">Final outcome</span>
-                <div class="audit-proof-headline">${esc((p.severity || p.final_verdict || "Review") + (p.final_verdict === "DEVIATES" ? " deviation" : p.final_verdict === "CONFORMS" ? " conforming clause" : ""))}</div>
-                <div class="audit-proof-subline">
-                    <span class="audit-proof-chip">${esc(governanceLabel)}</span>
-                    <span class="audit-proof-chip">${esc(patternLabel)}</span>
-                    <span class="audit-proof-chip">${esc(p.agreement_pattern || "Agreement unavailable")}</span>
-                </div>
-            </div>
-            <div class="audit-proof-summary">
-                <div class="audit-proof-summary-title">What CAM concluded</div>
-                <div class="audit-proof-summary-text">${esc((p.risk_headline || p.challenge_details || p.severity_reasoning || "CAM completed a full review of this provision.").trim())}</div>
-            </div>
-        </div>
-        <div class="audit-proof-text-pair">
-            <div class="audit-proof-text-col">
-                <div class="audit-proof-text-label">Standard clause</div>
-                <div class="audit-text-content">${esc(p.template_text || "(not present in template)")}</div>
-            </div>
-            <div class="audit-proof-text-col">
-                <div class="audit-proof-text-label">Tenant clause</div>
-                <div class="audit-text-content">${esc(p.tenant_text || "(not found in tenant lease)")}</div>
-            </div>
-        </div>
-        <div class="audit-proof-explainer-grid">
-            ${p.challenge_details ? `<div class="audit-proof-explainer">
-                <div class="audit-proof-explainer-label">What changed</div>
-                <div class="audit-proof-explainer-text">${esc(p.challenge_details)}</div>
-            </div>` : ""}
-            ${p.recommended_action ? `<div class="audit-proof-explainer">
-                <div class="audit-proof-explainer-label">Why it matters</div>
-                <div class="audit-proof-explainer-text">${esc(p.recommended_action)}</div>
-            </div>` : ""}
-            ${p.interpretation_note ? (() => {
-                const _boldMd = window.CAMAuditShared && window.CAMAuditShared.boldMarkdown
-                    ? window.CAMAuditShared.boldMarkdown
-                    : (t) => (t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-                const _paras = p.interpretation_note.split(/\n\n+/).map(s => s.trim()).filter(Boolean);
-                const _noteHtml = _paras.length <= 1
-                    ? `<p>${_boldMd(p.interpretation_note)}</p>`
-                    : _paras.map(s => `<p>${_boldMd(s)}</p>`).join("");
-                return `<div class="audit-proof-explainer interpretation-note-section">
-                    <div class="audit-proof-explainer-label">Interpretation note</div>
-                    <div class="audit-proof-explainer-text interpretation-note-body">${_noteHtml}</div>
-                </div>`;
-            })() : ""}
-        </div>
-    </div>`;
+    const boldMd = window.CAMAuditShared && window.CAMAuditShared.boldMarkdown
+        ? window.CAMAuditShared.boldMarkdown
+        : (t) => (t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
 
+    let html = `<div class="audit-detail-v3">`;
+
+    // 0. Confidence label explanation — one sentence at the top explaining why
+    //    the badge says what it says (e.g. why Impact Unclear vs Verified)
+    const _sidebarExplain = window.CAMAuditShared && window.CAMAuditShared.getSidebarExplanationText
+        ? window.CAMAuditShared.getSidebarExplanationText(p)
+        : "";
+    const _badgeForExplain = getConfidenceBadgeData ? getConfidenceBadgeData(
+        (p.cam_score || {}).governance_signal, (p.severity || "").toUpperCase()) : null;
+    if (_sidebarExplain && _badgeForExplain) {
+        const _seeNote = p.interpretation_note ? " See interpretation note below." : "";
+        html += `<div class="adv3-confidence-explainer">
+            <span class="adv3-confidence-explainer-badge audit-confidence-${_badgeForExplain.cssClass}">${_badgeForExplain.dots} ${_badgeForExplain.label}</span>
+            <span class="adv3-confidence-explainer-text">${esc(_sidebarExplain)}${esc(_seeNote)}</span>
+        </div>`;
+    }
+
+    // 1. What each reviewer said
+    const verdictLabel = { DEVIATES: "Flagged as deviation", CONFORMS: "Confirmed conforming", UNCLEAR: "Unclear" };
+    const verdictCls   = { DEVIATES: "adv3-verdict-flag", CONFORMS: "adv3-verdict-ok", UNCLEAR: "adv3-verdict-unclear" };
+
+    html += `<div class="adv3-section-label">What each reviewer said</div>
+    <div class="adv3-evaluators">`;
+
+    ["A", "B", "C"].forEach(key => {
+        const items = evalRaw[key] || [];
+        const ev = items.find(x => x.provision_id === pid);
+        if (!ev) return;
+        const verdict = ev.verdict || "";
+        const modelName = evalModelMap[key] || `Reviewer ${key}`;
+        const vLabel = verdictLabel[verdict] || verdict;
+        const vCls   = verdictCls[verdict]   || "";
+        const diffs = (ev.key_differences || []).filter(Boolean);
+
+        html += `<div class="adv3-eval-card">
+            <div class="adv3-eval-header">
+                <span class="adv3-eval-model">${esc(modelName)}</span>
+                <span class="adv3-eval-verdict ${vCls}">${esc(vLabel)}</span>
+            </div>
+            ${ev.reasoning ? `<div class="adv3-eval-reasoning">${boldMd(ev.reasoning)}</div>` : ""}
+            ${diffs.length ? `<ul class="adv3-eval-diffs">${diffs.map(d => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
+        </div>`;
+    });
+
+    html += `</div>`; // adv3-evaluators
+
+    // 3. Independent review (challenge)
+    if (stagesRun.has(4) && challengeRaw) {
+        const challengeText = challengeRaw.substantive_finding || p.challenge_details || "";
+        const hiddenDeps = challengeRaw.hidden_dependencies || [];
+        html += `<div class="adv3-section-label">Independent review <span class="adv3-model-tag">${esc(challengeModel)}</span></div>
+        <div class="adv3-challenge-card">
+            ${challengeText ? `<div class="adv3-challenge-text">${boldMd(challengeText)}</div>` : ""}
+            ${hiddenDeps.length ? `<ul class="adv3-eval-diffs">${hiddenDeps.map(d => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
+        </div>`;
+    }
+
+    // 3b. Interpretation note — after reviewers and challenge, before scores
+    if (p.interpretation_note) {
+        const noteParas = p.interpretation_note.split(/\n\n+/).map(s => s.trim()).filter(Boolean);
+        const noteHtml = noteParas.map(s => `<p>${boldMd(s)}</p>`).join("");
+        html += `<div class="adv3-interp-note">
+            <div class="adv3-section-label">Interpretation note</div>
+            <div class="adv3-interp-body">${noteHtml}</div>
+        </div>`;
+    }
+
+    // 4. Confidence scores — collapsed by default
     const _auditBadgeData = getConfidenceBadgeData ? getConfidenceBadgeData(camScore.governance_signal, (sev || "").toUpperCase()) : null;
-    const _auditToneText = getConfidenceToneText ? getConfidenceToneText(camScore.governance_signal) : "";
-    const _auditNeedsReview = _auditBadgeData && _auditBadgeData.needsReview
-        ? `<span class="cam-confidence-needs-review">Needs Review</span>` : "";
+    const _auditToneText  = getConfidenceToneText  ? getConfidenceToneText(camScore.governance_signal) : "";
     const _auditBadgeHtml = _auditBadgeData
-        ? `<span class="cam-confidence-badge ${_auditBadgeData.cssClass}${_auditBadgeData.needsReview ? ' needs-review-combo' : ''}"><span class="cam-confidence-dots">${_auditBadgeData.dots}</span>${_auditBadgeData.label}${_auditNeedsReview}</span>`
+        ? `<span class="cam-confidence-badge ${_auditBadgeData.cssClass}"><span class="cam-confidence-dots">${_auditBadgeData.dots}</span>${_auditBadgeData.label}</span>`
         : "";
     const _camPermDisplay = camScore.CAM_perm != null ? String(camScore.CAM_perm) : "\u2014";
-    const _auditConfHelper = _auditToneText || confidenceTone.label;
-    const _auditConfidenceTone = confidenceTone.tone || "neutral";
-    const _auditConfidenceWidth = confidenceTone.width != null ? confidenceTone.width : 0;
-    const _auditConfidenceCard = `<div class="audit-score-card audit-score-${_auditConfidenceTone}">
-        <div class="audit-score-head">
-            <span class="audit-score-label">CAM confidence</span>
-            <span class="audit-score-value">${_auditBadgeHtml}${_auditBadgeHtml ? " " : ""}${esc(_camPermDisplay)}</span>
-        </div>
-        <div class="audit-score-track"><span class="audit-score-fill audit-score-fill-${_auditConfidenceTone}" style="width:${Math.max(0, Math.min(100, _auditConfidenceWidth))}%"></span></div>
-        <div class="audit-score-helper">${esc(_auditConfHelper)}</div>
-    </div>`;
 
-    html += `<div class="audit-proof-section">
-        <div class="audit-proof-section-title">Confidence and stability</div>
+    // Context lines — always explain what drove each score
+    const _fragSigs = (camScore.fragility_signals || []);
+
+    const _reliabilityContext = (() => {
+        const reasons = [];
+        if (_fragSigs.includes("definition_override"))        reasons.push("a redefined term introduced interpretive uncertainty");
+        if (_fragSigs.includes("cross_reference_dependency")) reasons.push("the finding depends on how cross-referenced sections are read");
+        if (_fragSigs.includes("negation_pattern"))           reasons.push("new limiting language may narrow the scope of the obligation");
+        if (_fragSigs.includes("exception_clause"))           reasons.push("an added exception affects what the obligation covers");
+        if (_fragSigs.includes("qualifier_shift"))            reasons.push("a change in obligation strength (e.g. \u2018shall\u2019 to \u2018may\u2019)");
+        if (_fragSigs.includes("quantitative_deviation"))     reasons.push("a numeric change whose practical impact depends on context");
+        if (reasons.length) return `Why not higher: ${reasons.join("; ")}.`;
+        // No specific signals — explain based on evaluator confidence
+        const perm = camScore.CAM_perm;
+        if (perm >= 85) return "Reviewers were highly consistent and the finding is well-grounded in the clause text.";
+        if (perm >= 70) return "Solid reviewer agreement with minor variation in how the clause impact was assessed.";
+        if (perm >= 50) return "Some variation between reviewers on the scope or significance of the deviation.";
+        return "Reviewers disagreed significantly — treat this as a flag rather than a confirmed finding.";
+    })();
+
+    const _stricterContext = (() => {
+        const cd = (challengeRaw && challengeRaw.substantive_finding) || p.challenge_details || "";
+        if (cd) {
+            const plain = cd.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\n/g, " ").trim();
+            const firstSentence = plain.split(/\.\s+/)[0];
+            const snippet = firstSentence.length > 160 ? firstSentence.slice(0, 157) + "\u2026" : firstSentence;
+            if (snippet) return `The independent reviewer found: ${snippet}.`;
+        }
+        // No challenge text — explain based on ASG value
+        const asg = camScore.ASG;
+        if (asg == null) return "";
+        if (asg < 15) return "The finding is consistent across both permissive and strict readings of the clause.";
+        if (asg < 35) return "Under a conservative reading, the deviation would look broadly similar but with slightly different emphasis.";
+        if (asg < 55) return "A stricter reading of the clause could shift how significant this deviation appears to be.";
+        return "Under the most conservative reading, the practical impact of this deviation could differ substantially.";
+    })();
+
+    const _complexityContext = (() => {
+        const cm = p.cascade_mechanism || "";
+        if (cm) {
+            const plain = cm.replace(/\*\*(.+?)\*\*/g, "$1").trim();
+            const snippet = plain.length > 180 ? plain.slice(0, 177) + "\u2026" : plain;
+            return `This clause is tied to: ${snippet}`;
+        }
+        if (_fragSigs.includes("cross_reference_dependency")) return "This clause references other sections or defined terms — changes elsewhere in the lease could affect how it is read.";
+        if (_fragSigs.includes("definition_override"))        return "A defined term used in this clause was changed, making the clause\u2019s meaning dependent on how that definition is interpreted.";
+        if (_fragSigs.includes("exception_clause"))           return "An exception clause was added that may interact with other provisions in the lease.";
+        // Generic based on score
+        const fScore = fragilityRaw && fragilityRaw.fragility_score != null ? Math.round(fragilityRaw.fragility_score * 100) : null;
+        if (fScore == null) return "";
+        if (fScore < 15) return "This clause stands on its own — its meaning is self-contained.";
+        if (fScore < 35) return "This clause has some dependencies on standard lease definitions and other sections.";
+        return "This clause interacts with other provisions — its full impact can only be assessed in the context of the whole lease.";
+    })();
+
+    // Word ratings for each score — lawyers don't need raw numbers
+    const _reliabilityRating = (() => {
+        const p = camScore.CAM_perm;
+        if (p == null) return "\u2014";
+        if (p >= 85) return "Very strong";
+        if (p >= 70) return "Strong";
+        if (p >= 50) return "Moderate";
+        return "Weak";
+    })();
+    const _stabilityRating = (() => {
+        const a = camScore.ASG;
+        if (a == null) return "\u2014";
+        if (a < 15) return "Stable";
+        if (a < 35) return "Mostly stable";
+        if (a < 55) return "Sensitive";
+        return "Highly sensitive";
+    })();
+    const _complexityRating = (() => {
+        const f = fragilityRaw && fragilityRaw.fragility_score != null ? Math.round(fragilityRaw.fragility_score * 100) : null;
+        if (f == null) return "\u2014";
+        if (f < 15) return "Simple";
+        if (f < 35) return "Moderate";
+        if (f < 60) return "Complex";
+        return "Highly complex";
+    })();
+
+    const _permNum = camScore.CAM_perm != null ? camScore.CAM_perm.toFixed(1) : null;
+    const _asgNum  = camScore.ASG != null ? camScore.ASG.toFixed(1) : null;
+    const _fragNum = fragilityRaw && fragilityRaw.fragility_score != null ? Math.round(fragilityRaw.fragility_score * 100) : null;
+
+    const _reliabilityValue = _permNum ? `${_reliabilityRating} <span class="adv3-score-num">${_permNum}/100 \u2191</span>` : _reliabilityRating;
+    const _stabilityValue   = _asgNum  ? `${_stabilityRating} <span class="adv3-score-num">${_asgNum} drop \u2193</span>` : _stabilityRating;
+    const _complexityValue  = _fragNum != null ? `${_complexityRating} <span class="adv3-score-num">${_fragNum}% \u2191</span>` : _complexityRating;
+
+    html += `<div class="adv3-scores-section">
+        <div class="adv3-section-label">Confidence &amp; stability <button class="adv3-scores-info" onclick="window.CAM.showAboutModal('cam-scoring-explainer')" title="How scoring works">&#9432;</button></div>
         <div class="audit-score-grid">
-            ${_auditConfidenceCard}
-            ${renderAuditScoreBar("Strict review sensitivity (ASG)", camScore.ASG != null ? String(camScore.ASG) : "\u2014", asgTone.label, asgTone)}
-            ${renderAuditScoreBar("Structural fragility", fragilityRaw && fragilityRaw.fragility_score != null ? String(Math.round(fragilityRaw.fragility_score * 100)) + "%" : "—", fragilityTone.label, fragilityTone)}
-        </div>
-        <div class="audit-proof-microcopy">CAM separates strong findings that survive stricter review from findings that look persuasive but weaken under scrutiny.</div>
-    </div>`;
-
-    html += `<div class="audit-proof-section">
-        <div class="audit-proof-section-title">How CAM reached this</div>
-        <div class="audit-dimension-grid">
-            <div class="audit-dimension-card">
-                <div class="audit-dimension-title">Agreement</div>
-                <div class="audit-dimension-text">${esc(getAuditAgreementSummary(p.agreement_pattern || ""))}</div>
-            </div>
-            <div class="audit-dimension-card">
-                <div class="audit-dimension-title">Evidence support</div>
-                <div class="audit-dimension-text">${esc(getAuditEvidenceSummary(p, challengeRaw))}</div>
-            </div>
-            <div class="audit-dimension-card">
-                <div class="audit-dimension-title">Reasoning strength</div>
-                <div class="audit-dimension-text">${esc(getAuditReasoningSummary(p, stagesRun, challengeRaw))}</div>
-            </div>
-            <div class="audit-dimension-card">
-                <div class="audit-dimension-title">Structural fragility</div>
-                <div class="audit-dimension-text">${esc(getAuditFragilitySummary(fragilityRaw))}</div>
-            </div>
+            ${renderAuditScoreBar("Finding reliability", _reliabilityValue, "How much can you rely on this finding?", confidenceTone, esc, _reliabilityContext)}
+            ${renderAuditScoreBar("Stricter review", _stabilityValue, "How does this hold up under the most conservative reading?", asgTone, esc, _stricterContext)}
+            ${renderAuditScoreBar("Clause complexity", _complexityValue, "How tied is this clause to other parts of the lease?", fragilityTone, esc, _complexityContext)}
         </div>
     </div>`;
 
-    if (stagesRun.has(3)) {
-        html += `<div class="audit-proof-section">
-            <div class="audit-proof-section-title">Evaluator views</div>
-            <div class="audit-evaluators">`;
-        ["A", "B", "C"].forEach(key => {
-            const items = evalRaw[key] || [];
-            const ev = items.find(x => x.provision_id === pid);
-            if (!ev) return;
-            const verdict = ev.verdict || "—";
-            const conf = ev.confidence != null ? (ev.confidence * 100).toFixed(0) + "%" : "";
-            const verdClass = verdict === "DEVIATES" ? "audit-eval-deviates" : verdict === "CONFORMS" ? "audit-eval-conforms" : "audit-eval-na";
-            const basisMap = {
-                explicit_text: "Directly grounded in the clause text.",
-                structural_inference: "Partly dependent on structural inference.",
-                absence: "Based on language that is missing from one side.",
-                ambiguous: "The evidence allows multiple readings.",
-                unverified_citation: "Some cited support could not be fully verified.",
-            };
-            html += `<div class="audit-eval-card">
-                <div class="audit-eval-header2">
-                    <span class="audit-eval-key">${esc(key)}</span>
-                    <span class="audit-eval-model-name">${esc(evalModelMap[key])}</span>
-                    <span class="audit-eval-verdict2 ${verdClass}">${esc(verdict)}</span>
-                    ${conf ? `<span class="audit-eval-conf2">${conf}</span>` : ""}
+    // 5. Technical details — for nerds, collapsed by default
+    const _techA      = camScore.A      != null ? String(camScore.A)      : '\u2014';
+    const _techE      = camScore.E_perm != null ? camScore.E_perm.toFixed(4) : '\u2014';
+    const _techR      = camScore.R_perm != null ? camScore.R_perm.toFixed(4) : '\u2014';
+    const _techF      = camScore.F_perm != null ? camScore.F_perm.toFixed(4) : '\u2014';
+    const _techPerm   = camScore.CAM_perm  != null ? camScore.CAM_perm.toFixed(2)  : '\u2014';
+    const _techStrict = camScore.CAM_strict != null ? camScore.CAM_strict.toFixed(2) : '\u2014';
+    const _techASG    = camScore.ASG != null ? camScore.ASG.toFixed(2) : '\u2014';
+    const _techSignal = camScore.governance_signal || '\u2014';
+    const _techPattern = camScore.pattern || '\u2014';
+    const _techBasis  = camScore.evidence_basis || '\u2014';
+
+    const _techId = `tech-${esc(pid)}-${idx}`;
+    let techHtml = `<div class="adv3-tech-details" id="${_techId}-wrap">
+        <div class="adv3-tech-toggle-row">
+            <span class="adv3-tech-toggle-label">🔧 Technical details</span>
+            <button class="audit-chevron adv3-tech-btn" onclick="(function(){
+                var b = document.getElementById('${_techId}-body');
+                var w = document.getElementById('${_techId}-wrap');
+                b.classList.remove('hidden');
+                w.classList.add('adv3-tech-open');
+            })()">&#9654;</button>
+        </div>
+        <div class="adv3-tech-body hidden" id="${_techId}-body">
+
+            <div class="adv3-tech-section">
+                <div class="adv3-tech-label">Scoring formula</div>
+                <div class="adv3-tech-formula">
+                    <span class="adv3-tech-formula-row">
+                        <span class="adv3-tech-term">Agreement (A)</span>
+                        <span class="adv3-tech-val">${esc(_techA)}</span>
+                        <span class="adv3-tech-op">\u00d7</span>
+                        <span class="adv3-tech-term">Evaluator (E)</span>
+                        <span class="adv3-tech-val">${esc(_techE)}</span>
+                        <span class="adv3-tech-op">\u00d7</span>
+                        <span class="adv3-tech-term">Reasoning (R)</span>
+                        <span class="adv3-tech-val">${esc(_techR)}</span>
+                        <span class="adv3-tech-op">\u00d7 100 =</span>
+                        <span class="adv3-tech-result">CAM_perm ${esc(_techPerm)}</span>
+                    </span>
+                    <span class="adv3-tech-formula-row">
+                        <span class="adv3-tech-term">Fragility (F)</span>
+                        <span class="adv3-tech-val">${esc(_techF)}</span>
+                        <span class="adv3-tech-op">applied to ASG gap \u2192</span>
+                        <span class="adv3-tech-result">CAM_strict ${esc(_techStrict)}</span>
+                        <span class="adv3-tech-op">&nbsp;&nbsp;drop =</span>
+                        <span class="adv3-tech-result">ASG ${esc(_techASG)}</span>
+                    </span>
+                    <span class="adv3-tech-formula-row">
+                        <span class="adv3-tech-term">Signal</span>
+                        <span class="adv3-tech-val">${esc(_techSignal)}</span>
+                        <span class="adv3-tech-op">&nbsp;&nbsp;Pattern</span>
+                        <span class="adv3-tech-val">${esc(_techPattern)}</span>
+                        <span class="adv3-tech-op">&nbsp;&nbsp;Evidence basis</span>
+                        <span class="adv3-tech-val">${esc(_techBasis)}</span>
+                    </span>
                 </div>
-                ${ev.reasoning ? `<div class="audit-eval-reasoning2">${esc(ev.reasoning)}</div>` : ""}
-                ${ev.evidence_basis ? `<div class="audit-eval-basis-plain">${esc(basisMap[ev.evidence_basis] || ev.evidence_basis)}</div>` : ""}
-                ${(ev.key_differences || []).length ? `<ul class="audit-eval-diffs">${ev.key_differences.map(d => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
             </div>`;
-        });
-        html += `</div></div>`;
+
+    // Raw evaluator responses
+    ['A','B','C'].forEach(key => {
+        const items = evalRaw[key] || [];
+        const ev = items.find(x => x.provision_id === pid);
+        if (!ev) return;
+        techHtml += `<details class="adv3-tech-raw">
+            <summary>Evaluator ${esc(key)} — ${esc(evalModelMap[key])} raw response</summary>
+            <pre class="adv3-tech-pre">${esc(JSON.stringify(ev, null, 2))}</pre>
+        </details>`;
+    });
+
+    // Raw challenge response
+    if (challengeRaw) {
+        techHtml += `<details class="adv3-tech-raw">
+            <summary>Challenge round — ${esc(challengeModel)} raw response</summary>
+            <pre class="adv3-tech-pre">${esc(JSON.stringify(challengeRaw, null, 2))}</pre>
+        </details>`;
     }
 
-    html += `<div class="audit-proof-section">
-        <div class="audit-proof-section-title">Challenge round</div>`;
-    if (stagesRun.has(4) && challengeRaw) {
-        const cv = challengeRaw.challenge_verdict || "—";
-        const cvClass = cv === "SUBSTANTIVE_DEVIATION" ? "audit-challenge-sub"
-            : cv === "COSMETIC_ONLY" ? "audit-challenge-cos"
-            : cv === "NEEDS_EXPERT" ? "audit-challenge-exp"
-            : "";
-        html += `<div class="audit-challenge-summary-card">
-            <div class="audit-challenge-summary-head">
-                <span class="audit-challenge-verdict ${cvClass}">${esc(cv)}</span>
-                <span class="audit-stage-model">${esc(challengeModel)}</span>
-            </div>
-            <div class="audit-challenge-finding">${esc(challengeRaw.substantive_finding || p.challenge_details || "CAM challenged this provision to test whether the difference was substantive or cosmetic.")}</div>
-            ${(challengeRaw.hidden_dependencies || []).length > 0 ? `<div class="audit-hidden-deps">
-                <div class="audit-detail-label">Hidden dependencies considered</div>
-                <ul>${challengeRaw.hidden_dependencies.map(d => `<li>${esc(d)}</li>`).join("")}</ul>
-            </div>` : ""}
+    // Fragility signals
+    const _fragSigsRaw = (camScore.fragility_signals || []);
+    if (_fragSigsRaw.length) {
+        techHtml += `<div class="adv3-tech-section">
+            <div class="adv3-tech-label">Fragility signals fired</div>
+            <ul class="adv3-tech-list">${_fragSigsRaw.map(s => `<li>${esc(s)}</li>`).join('')}</ul>
         </div>`;
-    } else {
-        html += `<div class="audit-stage-skipped-label">Challenge was skipped because the evaluator outcome did not require a separate challenge step.</div>`;
     }
-    html += `</div>`;
 
-    html += `</div>`;
+    techHtml += `
+        <div class="adv3-tech-close-row">
+            <span class="adv3-tech-toggle-label">🔧 Technical details</span>
+            <button class="audit-chevron adv3-tech-btn" onclick="(function(){
+                var b = document.getElementById('${_techId}-body');
+                var w = document.getElementById('${_techId}-wrap');
+                b.classList.add('hidden');
+                w.classList.remove('adv3-tech-open');
+            })()">&#9660;</button>
+        </div>
+    </div></div>`;
+    html += techHtml;
+
+    html += `</div>`; // audit-detail-v3
     return html;
 }
 
@@ -10811,15 +11219,35 @@ function toggleAuditRow(idx) {
     const isOpen = !detail.classList.contains("hidden");
     detail.classList.toggle("hidden");
     const chevron = header && header.querySelector(".audit-chevron");
-    if (chevron) chevron.innerHTML = isOpen ? "&#9662;" : "&#9652;";
+    if (chevron) chevron.innerHTML = isOpen ? "&#9654;" : "&#9660;";
     syncAuditExpandToggle();
+}
+
+function openAllTechDetails() {
+    document.querySelectorAll(".adv3-tech-body").forEach(b => b.classList.remove('hidden'));
+    document.querySelectorAll(".adv3-tech-details").forEach(w => w.classList.add('adv3-tech-open'));
+}
+
+function closeAllTechDetails() {
+    document.querySelectorAll(".adv3-tech-body").forEach(b => b.classList.add('hidden'));
+    document.querySelectorAll(".adv3-tech-details").forEach(w => w.classList.remove('adv3-tech-open'));
+}
+
+function sortAuditTrail(col) {
+    if (window._auditSortCol === col) {
+        window._auditSortDir = window._auditSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+        window._auditSortCol = col;
+        window._auditSortDir = 'asc';
+    }
+    renderAuditTrail();
 }
 
 function expandAllAuditRows() {
     const details = Array.from(document.querySelectorAll(".audit-provision-detail"));
     const hasCollapsed = details.some(d => d.classList.contains("hidden"));
     details.forEach(d => d.classList.toggle("hidden", !hasCollapsed));
-    document.querySelectorAll(".audit-chevron").forEach(c => { c.innerHTML = hasCollapsed ? "&#9652;" : "&#9662;"; });
+    document.querySelectorAll(".audit-chevron").forEach(c => { c.innerHTML = hasCollapsed ? "&#9660;" : "&#9654;"; });
     syncAuditExpandToggle();
 }
 
@@ -11262,7 +11690,7 @@ function switchTopTab(tab) {
     // overview / snapshot
     activeTopTab = 'overview';
     persistResultsViewState();
-    setSubheader('Run Synopsis');
+    setSubheader('Overview');
     document.querySelectorAll('#top-tab-bar .top-tab[data-top-tab]').forEach(function(t) {
         t.classList.toggle('active', t.dataset.topTab === 'overview');
     });
@@ -11301,13 +11729,25 @@ function buildContractFilterDropdown() {
         var isClean = deviations.length === 0 && s;
         var resolution = getContractResolution(i);
 
-        // Severity filter
+        // Severity filter (multi-select)
         var sevOk = true;
-        if (snapshotSeverityFilter !== 'all') {
-            var sevRank = { 'CRITICAL': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
-            var threshold = { 'critical': 4, 'high': 3, 'medium': 2, 'issues': 1 };
-            var cardRank = sevRank[highestSev] || 0;
-            sevOk = !isClean && cardRank >= (threshold[snapshotSeverityFilter] || 0);
+        if (snapshotSeverityFilter.size > 0) {
+            if (isClean) {
+                sevOk = snapshotSeverityFilter.has('CLEAR');
+            } else {
+                sevOk = snapshotSeverityFilter.has((highestSev || '').toUpperCase());
+            }
+        }
+
+        // Confidence filter (multi-select) — match if ANY deviation has the selected signal
+        var confOk = true;
+        if (snapshotConfidenceFilter.size > 0) {
+            var provs = t.results && t.results.provisions ? t.results.provisions : [];
+            var devs = getDeviationWorkflowProvisions(provs, i);
+            confOk = devs.some(function(p) {
+                var sig = p.cam_score ? p.cam_score.governance_signal : '';
+                return snapshotConfidenceFilter.has(sig);
+            });
         }
 
         // Status filter
@@ -11316,7 +11756,7 @@ function buildContractFilterDropdown() {
         else if (snapshotStatusFilter === 'resolved') statusOk = resolution === 'resolved';
         else if (snapshotStatusFilter === 'clear') statusOk = isClean;
 
-        if (sevOk && statusOk) eligibleIndices.push(i);
+        if (sevOk && confOk && statusOk) eligibleIndices.push(i);
     });
 
     // Build checkbox list
@@ -11355,6 +11795,11 @@ function buildContractFilterDropdown() {
     // Wire: toggle dropdown open/close on button click
     btn.onclick = function(e) {
         e.stopPropagation();
+        // Close other filter dropdowns
+        ['snap-severity-panel', 'snap-confidence-panel'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.classList.add('hidden');
+        });
         dropdown.classList.toggle('hidden');
     };
 
@@ -11451,45 +11896,76 @@ function renderRunSnapshot() {
         };
     });
 
-    // ── Pipeline Step 1: Severity filter ──
-    var filtered = allCards;
-    if (snapshotSeverityFilter !== 'all') {
-        filtered = filtered.filter(function(c) {
-            if (!c.s) return false; // hide no-results
-            if (snapshotSeverityFilter === 'critical') return (c.sevCounts['CRITICAL'] || 0) > 0;
-            if (snapshotSeverityFilter === 'high') return (c.sevCounts['CRITICAL'] || 0) > 0 || (c.sevCounts['HIGH'] || 0) > 0;
-            if (snapshotSeverityFilter === 'medium') return (c.sevCounts['CRITICAL'] || 0) > 0 || (c.sevCounts['HIGH'] || 0) > 0 || (c.sevCounts['MEDIUM'] || 0) > 0;
-            if (snapshotSeverityFilter === 'issues') return c.deviations.length > 0;
-            return true;
+    // ── Enrich cards with confidence signals ──
+    allCards.forEach(function(c) {
+        c.confSignals = new Set();
+        c.sevLabel = c.isClean ? 'CLEAR' : (c.highestSev || 'MEDIUM').toUpperCase();
+        c.deviations.forEach(function(p) {
+            var sig = p.cam_score ? p.cam_score.governance_signal : '';
+            if (sig) c.confSignals.add(sig);
         });
-    }
+    });
 
-    // ── Pipeline Step 2: Status filter ──
-    if (snapshotStatusFilter !== 'all') {
-        filtered = filtered.filter(function(c) {
-            if (snapshotStatusFilter === 'unreviewed') return c.resolution === 'unreviewed';
-            if (snapshotStatusFilter === 'resolved') return c.resolution === 'resolved';
-            if (snapshotStatusFilter === 'clear') return c.isClean;
-            return true;
-        });
+    // ── Filter helpers ──
+    function passesSev(c) {
+        if (snapshotSeverityFilter.size === 0) return true;
+        return snapshotSeverityFilter.has(c.sevLabel);
     }
-
-    // ── Pipeline Step 3: Contract name filter (Step 130) ──
-    if (snapshotContractFilter.size > 0) {
-        filtered = filtered.filter(function(c) {
-            return snapshotContractFilter.has(c.i);
-        });
+    function passesConf(c) {
+        if (snapshotConfidenceFilter.size === 0) return true;
+        for (var sig of snapshotConfidenceFilter) { if (c.confSignals.has(sig)) return true; }
+        return false;
     }
-
-    // ── Pipeline Step 4: Search filter ──
-    if (snapshotSearch) {
+    function passesStatus(c) {
+        if (snapshotStatusFilter === 'all') return true;
+        if (snapshotStatusFilter === 'unreviewed') return c.resolution === 'unreviewed';
+        if (snapshotStatusFilter === 'resolved') return c.resolution === 'resolved';
+        if (snapshotStatusFilter === 'clear') return c.isClean;
+        return true;
+    }
+    function passesContract(c) {
+        if (snapshotContractFilter.size === 0) return true;
+        return snapshotContractFilter.has(c.i);
+    }
+    function passesSearch(c) {
+        if (!snapshotSearch) return true;
         var q = snapshotSearch.toLowerCase();
-        filtered = filtered.filter(function(c) {
-            return c.name.toLowerCase().indexOf(q) !== -1
-                || c.tenantName.toLowerCase().indexOf(q) !== -1
-                || c.propertyDesc.toLowerCase().indexOf(q) !== -1;
-        });
+        return c.name.toLowerCase().indexOf(q) !== -1
+            || c.tenantName.toLowerCase().indexOf(q) !== -1
+            || c.propertyDesc.toLowerCase().indexOf(q) !== -1;
     }
+
+    // ── Cascading available values (each computed with all OTHER filters applied) ──
+    var _snapAvailSev = new Set();
+    var _snapAvailConf = new Set();
+    var _snapAvailStatus = new Set();
+    allCards.forEach(function(c) {
+        // Available severities: passes conf + status + contract + search
+        if (passesConf(c) && passesStatus(c) && passesContract(c) && passesSearch(c)) {
+            _snapAvailSev.add(c.sevLabel);
+        }
+        // Available confidences: passes sev + status + contract + search
+        if (passesSev(c) && passesStatus(c) && passesContract(c) && passesSearch(c)) {
+            c.confSignals.forEach(function(sig) { _snapAvailConf.add(sig); });
+            if (c.isClean) _snapAvailConf.add('_CLEAR'); // mark that clear contracts exist
+        }
+        // Available statuses: passes sev + conf + contract + search
+        if (passesSev(c) && passesConf(c) && passesContract(c) && passesSearch(c)) {
+            if (c.isClean) _snapAvailStatus.add('clear');
+            if (c.resolution === 'unreviewed') _snapAvailStatus.add('unreviewed');
+            if (c.resolution === 'resolved') _snapAvailStatus.add('resolved');
+        }
+    });
+
+    // ── Auto-clear selections that are no longer available ──
+    for (var s of [...snapshotSeverityFilter]) { if (!_snapAvailSev.has(s)) snapshotSeverityFilter.delete(s); }
+    for (var c of [...snapshotConfidenceFilter]) { if (!_snapAvailConf.has(c)) snapshotConfidenceFilter.delete(c); }
+    if (snapshotStatusFilter !== 'all' && !_snapAvailStatus.has(snapshotStatusFilter)) snapshotStatusFilter = 'all';
+
+    // ── Apply all filters ──
+    var filtered = allCards.filter(function(c) {
+        return passesSev(c) && passesConf(c) && passesStatus(c) && passesContract(c) && passesSearch(c);
+    });
 
     // ── Pipeline Step 5: Sort ──
     if (snapshotSort === 'risk') {
@@ -11522,6 +11998,20 @@ function renderRunSnapshot() {
         });
     }
 
+    // ── Label helpers ──
+    var _sevLabelMap = { CRITICAL: 'Critical', HIGH: 'High', MEDIUM: 'Medium', LOW: 'Low', CLEAR: 'Clear' };
+    var _confLabelMap = { ASSERT_SIGNAL: 'Verified', ASSERT_REVIEW_SIGNAL: 'Impact Unclear', REVIEW_SIGNAL: 'Needs Review', WITHHOLD_SIGNAL: 'Inconclusive' };
+    function _snapSevLabel() {
+        if (snapshotSeverityFilter.size === 0) return 'All';
+        if (snapshotSeverityFilter.size === 1) return _sevLabelMap[[...snapshotSeverityFilter][0]] || [...snapshotSeverityFilter][0];
+        return snapshotSeverityFilter.size + ' selected';
+    }
+    function _snapConfLabel() {
+        if (snapshotConfidenceFilter.size === 0) return 'All';
+        if (snapshotConfidenceFilter.size === 1) return _confLabelMap[[...snapshotConfidenceFilter][0]] || [...snapshotConfidenceFilter][0];
+        return snapshotConfidenceFilter.size + ' selected';
+    }
+
     // ── Render toolbar into persistent bar (stays visible in contract detail too) ──
     var toolbarBar = document.getElementById('snapshot-toolbar-bar');
     if (toolbarBar) toolbarBar.classList.remove('hidden');
@@ -11532,18 +12022,34 @@ function renderRunSnapshot() {
         + '<option value="name"' + (snapshotSort === 'name' ? ' selected' : '') + '>Sort: Name (A\u2013Z)</option>'
         + '<option value="unreviewed"' + (snapshotSort === 'unreviewed' ? ' selected' : '') + '>Sort: Unreviewed First</option>'
         + '</select>'
-        + '<select class="snapshot-toolbar-select" id="snapshot-severity-select">'
-        + '<option value="all"' + (snapshotSeverityFilter === 'all' ? ' selected' : '') + '>Severity: All</option>'
-        + '<option value="critical"' + (snapshotSeverityFilter === 'critical' ? ' selected' : '') + '>Critical</option>'
-        + '<option value="high"' + (snapshotSeverityFilter === 'high' ? ' selected' : '') + '>High &amp; above</option>'
-        + '<option value="medium"' + (snapshotSeverityFilter === 'medium' ? ' selected' : '') + '>Medium &amp; above</option>'
-        + '<option value="issues"' + (snapshotSeverityFilter === 'issues' ? ' selected' : '') + '>Issues only</option>'
-        + '</select>'
+        + '<div class="filter-dropdown clause-filter-dropdown" id="snap-severity-dropdown">'
+        + '<button class="btn btn-outline filter-dropdown-trigger clause-filter-trigger snap-filter-btn" id="snap-severity-trigger" type="button">'
+        + 'Severity: <span id="snap-severity-label">' + _snapSevLabel() + '</span> &#9662;'
+        + '</button>'
+        + '<div class="filter-dropdown-panel clause-filter-panel hidden" id="snap-severity-panel">'
+        + '<label class="filter-option filter-option-all"><input type="checkbox" id="snap-severity-all"' + (snapshotSeverityFilter.size === 0 ? ' checked' : '') + '><span>All Severities</span></label>'
+        + (_snapAvailSev.has('CRITICAL') ? '<label class="filter-option"><input type="checkbox" value="CRITICAL" class="snap-sev-cb"' + (snapshotSeverityFilter.has('CRITICAL') ? ' checked' : '') + '><span>Critical</span></label>' : '')
+        + (_snapAvailSev.has('HIGH') ? '<label class="filter-option"><input type="checkbox" value="HIGH" class="snap-sev-cb"' + (snapshotSeverityFilter.has('HIGH') ? ' checked' : '') + '><span>High</span></label>' : '')
+        + (_snapAvailSev.has('MEDIUM') ? '<label class="filter-option"><input type="checkbox" value="MEDIUM" class="snap-sev-cb"' + (snapshotSeverityFilter.has('MEDIUM') ? ' checked' : '') + '><span>Medium</span></label>' : '')
+        + (_snapAvailSev.has('LOW') ? '<label class="filter-option"><input type="checkbox" value="LOW" class="snap-sev-cb"' + (snapshotSeverityFilter.has('LOW') ? ' checked' : '') + '><span>Low</span></label>' : '')
+        + (_snapAvailSev.has('CLEAR') ? '<label class="filter-option"><input type="checkbox" value="CLEAR" class="snap-sev-cb"' + (snapshotSeverityFilter.has('CLEAR') ? ' checked' : '') + '><span>Clear</span></label>' : '')
+        + '</div></div>'
+        + '<div class="filter-dropdown clause-filter-dropdown" id="snap-confidence-dropdown">'
+        + '<button class="btn btn-outline filter-dropdown-trigger clause-filter-trigger snap-filter-btn" id="snap-confidence-trigger" type="button">'
+        + 'Confidence: <span id="snap-confidence-label">' + _snapConfLabel() + '</span> &#9662;'
+        + '</button>'
+        + '<div class="filter-dropdown-panel clause-filter-panel hidden" id="snap-confidence-panel">'
+        + '<label class="filter-option filter-option-all"><input type="checkbox" id="snap-confidence-all"' + (snapshotConfidenceFilter.size === 0 ? ' checked' : '') + '><span>All Confidence</span></label>'
+        + (_snapAvailConf.has('ASSERT_SIGNAL') ? '<label class="filter-option"><input type="checkbox" value="ASSERT_SIGNAL" class="snap-conf-cb"' + (snapshotConfidenceFilter.has('ASSERT_SIGNAL') ? ' checked' : '') + '><span>Verified</span></label>' : '')
+        + (_snapAvailConf.has('ASSERT_REVIEW_SIGNAL') ? '<label class="filter-option"><input type="checkbox" value="ASSERT_REVIEW_SIGNAL" class="snap-conf-cb"' + (snapshotConfidenceFilter.has('ASSERT_REVIEW_SIGNAL') ? ' checked' : '') + '><span>Impact Unclear</span></label>' : '')
+        + (_snapAvailConf.has('REVIEW_SIGNAL') ? '<label class="filter-option"><input type="checkbox" value="REVIEW_SIGNAL" class="snap-conf-cb"' + (snapshotConfidenceFilter.has('REVIEW_SIGNAL') ? ' checked' : '') + '><span>Needs Review</span></label>' : '')
+        + (_snapAvailConf.has('WITHHOLD_SIGNAL') ? '<label class="filter-option"><input type="checkbox" value="WITHHOLD_SIGNAL" class="snap-conf-cb"' + (snapshotConfidenceFilter.has('WITHHOLD_SIGNAL') ? ' checked' : '') + '><span>Inconclusive</span></label>' : '')
+        + '</div></div>'
         + '<select class="snapshot-toolbar-select" id="snapshot-status-select">'
         + '<option value="all"' + (snapshotStatusFilter === 'all' ? ' selected' : '') + '>Status: All</option>'
-        + '<option value="unreviewed"' + (snapshotStatusFilter === 'unreviewed' ? ' selected' : '') + '>Unreviewed</option>'
-        + '<option value="resolved"' + (snapshotStatusFilter === 'resolved' ? ' selected' : '') + '>Resolved</option>'
-        + '<option value="clear"' + (snapshotStatusFilter === 'clear' ? ' selected' : '') + '>Clear</option>'
+        + (_snapAvailStatus.has('unreviewed') ? '<option value="unreviewed"' + (snapshotStatusFilter === 'unreviewed' ? ' selected' : '') + '>Unreviewed</option>' : '')
+        + (_snapAvailStatus.has('resolved') ? '<option value="resolved"' + (snapshotStatusFilter === 'resolved' ? ' selected' : '') + '>Resolved</option>' : '')
+        + (_snapAvailStatus.has('clear') ? '<option value="clear"' + (snapshotStatusFilter === 'clear' ? ' selected' : '') + '>Clear</option>' : '')
         + '</select>'
         + '<div class="snapshot-contract-filter-wrap" id="snapshot-contract-filter-wrap">'
         + '<button class="snapshot-toolbar-select snapshot-contract-filter-btn" id="snapshot-contract-filter-btn">'
@@ -11594,7 +12100,7 @@ function renderRunSnapshot() {
                     + sMetaLine
                     + blurbLine
                     + '<div class="snapshot-card-body snapshot-card-body-clean">'
-                    + 'All ' + provCount + ' provisions conform to standard template'
+                    + 'All ' + provCount + ' provisions conform to reference lease'
                     + '</div>'
                     + '<div class="snapshot-card-footer">'
                     + '<button class="snapshot-open-btn" data-tenant="' + i + '">Open Contract \u2192</button>'
@@ -11665,10 +12171,78 @@ function renderRunSnapshot() {
         snapshotSort = sortSel.value;
         renderRunSnapshot();
     });
-    var sevSel = document.getElementById('snapshot-severity-select');
-    if (sevSel) sevSel.addEventListener('change', function() {
-        snapshotSeverityFilter = sevSel.value;
+    // Close all snapshot filter dropdowns except the specified one
+    function closeSnapDropdowns(except) {
+        ['snap-severity-panel', 'snap-confidence-panel', 'snapshot-contract-dropdown'].forEach(function(id) {
+            if (id !== except) {
+                var el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            }
+        });
+    }
+
+    // Severity multi-select dropdown
+    var _snapSevTrigger = document.getElementById('snap-severity-trigger');
+    if (_snapSevTrigger) _snapSevTrigger.addEventListener('click', function() {
+        closeSnapDropdowns('snap-severity-panel');
+        var panel = document.getElementById('snap-severity-panel');
+        if (panel) {
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                var rect = _snapSevTrigger.getBoundingClientRect();
+                panel.style.top = (rect.bottom + 2) + 'px';
+                panel.style.left = rect.left + 'px';
+            }
+        }
+    });
+    var _snapSevAll = document.getElementById('snap-severity-all');
+    if (_snapSevAll) _snapSevAll.addEventListener('change', function() {
+        if (this.checked) {
+            snapshotSeverityFilter.clear();
+            document.querySelectorAll('.snap-sev-cb').forEach(function(cb) { cb.checked = false; });
+        }
         renderRunSnapshot();
+    });
+    document.querySelectorAll('.snap-sev-cb').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            if (this.checked) snapshotSeverityFilter.add(this.value);
+            else snapshotSeverityFilter.delete(this.value);
+            var allCb = document.getElementById('snap-severity-all');
+            if (allCb) allCb.checked = snapshotSeverityFilter.size === 0;
+            renderRunSnapshot();
+        });
+    });
+
+    // Confidence multi-select dropdown
+    var _snapConfTrigger = document.getElementById('snap-confidence-trigger');
+    if (_snapConfTrigger) _snapConfTrigger.addEventListener('click', function() {
+        closeSnapDropdowns('snap-confidence-panel');
+        var panel = document.getElementById('snap-confidence-panel');
+        if (panel) {
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                var rect = _snapConfTrigger.getBoundingClientRect();
+                panel.style.top = (rect.bottom + 2) + 'px';
+                panel.style.left = rect.left + 'px';
+            }
+        }
+    });
+    var _snapConfAll = document.getElementById('snap-confidence-all');
+    if (_snapConfAll) _snapConfAll.addEventListener('change', function() {
+        if (this.checked) {
+            snapshotConfidenceFilter.clear();
+            document.querySelectorAll('.snap-conf-cb').forEach(function(cb) { cb.checked = false; });
+        }
+        renderRunSnapshot();
+    });
+    document.querySelectorAll('.snap-conf-cb').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            if (this.checked) snapshotConfidenceFilter.add(this.value);
+            else snapshotConfidenceFilter.delete(this.value);
+            var allCb = document.getElementById('snap-confidence-all');
+            if (allCb) allCb.checked = snapshotConfidenceFilter.size === 0;
+            renderRunSnapshot();
+        });
     });
     var statusSel = document.getElementById('snapshot-status-select');
     if (statusSel) statusSel.addEventListener('change', function() {
@@ -12911,7 +13485,80 @@ async function loadDemoTenants() {
     if (btn) { btn.textContent = 'Load Selected'; }
 }
 
+// ── Aggressive Read (Step 228) ──
+async function aggressiveRead(pid, tenantIdx) {
+    const resultId = `aggressive-result-${pid}`;
+    const btnId = `aggressive-btn-${pid}`;
+    const existing = document.getElementById(resultId);
+    const btn = document.getElementById(btnId);
+
+    // Toggle: if result already showing, hide it
+    if (existing && !existing.classList.contains('hidden')) {
+        existing.classList.add('hidden');
+        if (btn) btn.textContent = 'Strongest Tenant Reading';
+        return;
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Analyzing…'; }
+
+    try {
+        const resp = await fetch(`/api/jobs/${currentJobId}/aggressive-read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenant_index: tenantIdx, provision_id: pid }),
+        });
+
+        if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            throw new Error(err.detail || 'Request failed');
+        }
+
+        const data = await resp.json();
+        const analysis = data.analysis || '';
+
+        // Find or create result panel
+        let panel = document.getElementById(resultId);
+        if (!panel) {
+            // Insert after the action bar — find the resolution-bar parent
+            const bar = document.querySelector(`.resolution-bar[data-pid="${CSS.escape(pid)}"][data-tenant-idx="${tenantIdx}"]`)
+                || document.querySelector(`.resolution-bar[data-pid="${CSS.escape(pid)}"]`);
+            if (bar) {
+                panel = document.createElement('div');
+                panel.id = resultId;
+                panel.className = 'aggressive-read-panel';
+                bar.after(panel);
+            }
+        }
+
+        if (panel) {
+            // Format the four numbered sections with simple paragraph breaks
+            const formatted = esc(analysis)
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+            panel.innerHTML = `
+                <div class="aggressive-read-header">
+                    <span class="aggressive-read-label">⚡ Strongest Tenant Reading</span>
+                    <span class="aggressive-read-advisory">Advisory only — does not affect scores or findings</span>
+                    <button class="aggressive-read-close" onclick="document.getElementById('${resultId}').classList.add('hidden'); document.getElementById('${btnId}').textContent='Strongest Tenant Reading';">✕</button>
+                </div>
+                <div class="aggressive-read-body"><p>${formatted}</p></div>
+            `;
+            panel.classList.remove('hidden');
+        }
+
+        if (btn) btn.textContent = 'Strongest Tenant Reading';
+
+    } catch (err) {
+        if (btn) btn.textContent = 'Strongest Tenant Reading';
+        console.error('Aggressive read error:', err);
+        alert(`Could not generate analysis: ${err.message}`);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
 window.CAM = {
+    aggressiveRead,
     showAboutModal,
     jumpToDocview,
     jumpToAuditProvision,
@@ -12989,6 +13636,10 @@ window.CAM = {
             console.error("Error loading cancelled results:", err);
         }
     },
+    sortAuditTrail,
+    openAllTechDetails,
+    closeAllTechDetails,
+    showAboutModal,
     toggleNotableClauses,
     loadDemoTemplate,
     toggleDemoTenantPicker,

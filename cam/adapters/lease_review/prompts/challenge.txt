@@ -29,7 +29,7 @@ Respond with a JSON object containing a single key "challenges" whose value is a
 Each challenge object must have these exact fields:
 - "provision_id": The provision ID
 - "challenge_verdict": One of "SUBSTANTIVE_DEVIATION", "COSMETIC_ONLY", "NEEDS_EXPERT"
-- "substantive_finding": Description of the substantive deviation found (empty string if cosmetic)
+- "substantive_finding": Description of the substantive deviation found (empty string if cosmetic). FORMATTING: Write 2-3 short paragraphs separated by a blank line (\n\n). Each paragraph should cover one aspect of the deviation. Use **double asterisks** around section numbers (e.g. **Section 5.2**), article references (e.g. **Article VII**), and key legal terms or quoted phrases (e.g. **"base rent"**, **"permitted use"**). Start each paragraph with a bold topic phrase (e.g. **Assignment rights expanded:** Tenant replaced...).
 - "hidden_dependencies": Array of strings listing any hidden dependencies (empty array if none)
 - "risk_description": Specific risk this creates (empty string if cosmetic)
 - "recommended_action": One of "no_action", "note_for_awareness", "attorney_review_recommended", "attorney_review_required"

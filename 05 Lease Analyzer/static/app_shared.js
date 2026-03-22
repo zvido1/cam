@@ -84,7 +84,7 @@ function getProcessingStageCopy(stage, detail) {
         case 1:
             return {
                 headline: "Parsing and mapping the lease documents",
-                detail: fallbackDetail || "CAM is extracting the clause structure, including LP-00, and aligning the tenant lease to the standard form."
+                detail: fallbackDetail || "CAM is extracting the clause structure, including LP-00, and aligning the tenant lease to the reference lease."
             };
         case 2:
             return {

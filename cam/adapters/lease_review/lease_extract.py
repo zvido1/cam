@@ -207,6 +207,14 @@ def _extract_provisions_json(raw: str) -> dict:
             if repaired:
                 return repaired
 
+    # Check if model returned a bare array of provisions (no wrapper)
+    try:
+        arr = json.loads(text)
+        if isinstance(arr, list) and len(arr) > 0 and isinstance(arr[0], dict) and "provision_id" in arr[0]:
+            return {"provisions": arr}
+    except (json.JSONDecodeError, IndexError, KeyError):
+        pass
+
     # Last resort: fall back to core extractor (may pick wrong object)
     obj = safe_json_extract(raw)
     if isinstance(obj, dict) and "provisions" in obj:
@@ -230,12 +238,14 @@ EXTRACTION_FALLBACK_TIMEOUT = 300.0
 
 # Output token caps
 EXTRACTION_MAX_TOKENS_SINGLE = 32_000  # Single-call path (lease ≤ CHUNK_WORD_THRESHOLD)
-EXTRACTION_MAX_TOKENS_CHUNK  = 16_000  # Per-chunk path — half the provisions per call
+EXTRACTION_MAX_TOKENS_CHUNK  = 24_000  # Per-chunk path — half the provisions per call
 
-# Tenant word count above which extraction splits into two provision-list chunks.
-# Each chunk covers half the provisions against the full document text.
-# Our test leases: ~5,500 words (single-call). Standard commercial: 10-20k (chunked).
+# Tenant word count above which extraction splits into provision-list chunks.
+# Each chunk covers a subset of provisions against the full document text.
+# Our test leases: ~5,500 words (single-call). Standard commercial: 10-20k (2-chunk).
+# Very large documents: >15,000 words use 4 chunks to keep output tokens manageable.
 CHUNK_WORD_THRESHOLD = 8_000
+CHUNK_WORD_THRESHOLD_LARGE = 15_000  # Switch to 4 chunks above this
 
 
 def _get_adapter_for_provider(provider: str):
@@ -391,7 +401,21 @@ def _run_extraction_call(
             from cam.adapters.lease_review.lease_adapter import _check_cancel
             _check_cancel(config)
 
-            obj = _extract_provisions_json(raw)
+            # Detect model refusal or error responses before JSON parsing
+            raw_stripped = raw.strip()
+            if len(raw_stripped) < 100 or raw_stripped.startswith(("I'm sorry", "I cannot", "Error:", "The document")):
+                errors.append({"model": model_name, "error": f"model_refused_or_error: {raw_stripped[:100]}"})
+                print(f"{label_prefix} {model_name} returned refusal/error: {raw_stripped[:100]}", flush=True)
+                continue
+
+            try:
+                obj = _extract_provisions_json(raw)
+            except ValueError as ve:
+                elapsed_so_far = time.time() - start_time
+                print(f"{label_prefix} {model_name} JSON extraction failed: {ve}", flush=True)
+                print(f"{label_prefix} {model_name} raw response preview: {repr(raw[:600])}", flush=True)
+                errors.append({"model": model_name, "error": f"json_extract: {ve}"})
+                continue
 
             # Validate
             ok, why = _validate_extraction(obj)
@@ -435,7 +459,34 @@ def _run_extraction_call(
     elapsed = time.time() - start_time
 
     if obj is None:
-        raise RuntimeError(f"Stage 1 extraction failed on all models{' (' + chunk_label + ')' if chunk_label else ''}: {errors}")
+        print(f"{label_prefix} All models failed for {chunk_label or 'extraction'}. Returning empty provisions.", flush=True)
+        stub_provisions = []
+        for prov in provisions:
+            stub_provisions.append({
+                "provision_id": prov["id"],
+                "provision_name": prov["name"],
+                "template_text": "",
+                "tenant_text": "",
+                "template_section_ref": "",
+                "tenant_section_ref": "",
+                "status": "AMBIGUOUS",
+                "alignment_notes": f"Extraction failed: all models returned unparseable responses. Errors: {[e.get('error','')[:80] for e in errors[-3:]]}",
+                "definition_changes": "",
+            })
+        return {
+            "provisions": stub_provisions,
+            "contract_metadata": {},
+            "deal_overview": {},
+            "discovered_provisions": [],
+            "meta": {
+                "model": "none",
+                "provider": "none",
+                "fallback_used": True,
+                "elapsed_sec": round(elapsed, 2),
+                "errors": errors,
+                "extraction_failed": True,
+            },
+        }
 
     call_label = "primary" if not fallback_used else "FALLBACK"
     print(f"{label_prefix} Success: {actual_model} ({call_label}) in {round(elapsed, 1)}s", flush=True)
@@ -476,59 +527,73 @@ def _extract_chunked(
     tenant_text: str,
     provisions: List[dict],
     config: dict,
+    num_chunks: int = 2,
 ) -> Dict[str, Any]:
-    """Run extraction in two sequential calls, each covering half the provision list.
+    """Run extraction in sequential calls, each covering a subset of the provision list.
 
     Used when the tenant lease exceeds CHUNK_WORD_THRESHOLD words. Splitting the
-    provision list halves the output tokens per call, making fallback models
+    provision list reduces output tokens per call, making fallback models
     reliable within the standard timeout budget.
 
-    The full document text is passed to both calls — only the provision list
+    For very large documents (>CHUNK_WORD_THRESHOLD_LARGE words), use num_chunks=4
+    to keep each call to ~4-5 provisions and ~12k output tokens.
+
+    The full document text is passed to all calls — only the provision list
     is split. contract_metadata and deal_overview are taken from the first call.
     """
-    midpoint = len(provisions) // 2
-    chunk_a = provisions[:midpoint]
-    chunk_b = provisions[midpoint:]
+    # Split provisions into num_chunks roughly equal groups
+    chunk_size = max(1, (len(provisions) + num_chunks - 1) // num_chunks)
+    chunks = [provisions[i:i + chunk_size] for i in range(0, len(provisions), chunk_size)]
+    actual_chunks = len(chunks)
 
+    sizes = ", ".join(str(len(c)) for c in chunks)
     print(f"[lease_extract] Chunked extraction: {len(provisions)} provisions → "
-          f"chunk 1: {len(chunk_a)}, chunk 2: {len(chunk_b)}", flush=True)
+          f"{actual_chunks} chunks ({sizes})", flush=True)
 
-    result_a = _run_extraction_call(
-        template_text, tenant_text, chunk_a, config,
-        max_output_tokens=EXTRACTION_MAX_TOKENS_CHUNK,
-        chunk_label="chunk 1/2",
-    )
+    results = []
+    for idx, chunk in enumerate(chunks):
+        chunk_label = f"chunk {idx + 1}/{actual_chunks}"
+        result = _run_extraction_call(
+            template_text, tenant_text, chunk, config,
+            max_output_tokens=EXTRACTION_MAX_TOKENS_CHUNK,
+            chunk_label=chunk_label,
+        )
+        results.append(result)
 
-    result_b = _run_extraction_call(
-        template_text, tenant_text, chunk_b, config,
-        max_output_tokens=EXTRACTION_MAX_TOKENS_CHUNK,
-        chunk_label="chunk 2/2",
-    )
+    # Merge: combine provision lists, take metadata from first chunk
+    merged_provisions = []
+    merged_errors = []
+    total_elapsed = 0.0
+    chunk_models = []
+    any_fallback = False
 
-    # Merge: combine provision lists, take metadata from chunk 1
-    merged_provisions = result_a["provisions"] + result_b["provisions"]
-    merged_errors = result_a["meta"]["errors"] + result_b["meta"]["errors"]
-    total_elapsed = result_a["meta"]["elapsed_sec"] + result_b["meta"]["elapsed_sec"]
+    for r in results:
+        merged_provisions.extend(r["provisions"])
+        merged_errors.extend(r["meta"]["errors"])
+        total_elapsed += r["meta"]["elapsed_sec"]
+        chunk_models.append(r["meta"]["model"])
+        if r["meta"]["fallback_used"]:
+            any_fallback = True
 
     print(f"[lease_extract] Chunked extraction complete: "
           f"{len(merged_provisions)} provisions total, {round(total_elapsed, 1)}s combined", flush=True)
 
     return {
         "provisions": merged_provisions,
-        "contract_metadata": result_a["contract_metadata"],
-        "deal_overview": result_a["deal_overview"],
-        "discovered_provisions": (
-            result_a.get("discovered_provisions", []) +
-            result_b.get("discovered_provisions", [])
-        ),
+        "contract_metadata": results[0]["contract_metadata"],
+        "deal_overview": results[0]["deal_overview"],
+        "discovered_provisions": [
+            p for r in results for p in r.get("discovered_provisions", [])
+        ],
         "meta": {
-            "model": result_a["meta"]["model"],
-            "provider": result_a["meta"]["provider"],
-            "fallback_used": result_a["meta"]["fallback_used"] or result_b["meta"]["fallback_used"],
+            "model": results[0]["meta"]["model"],
+            "provider": results[0]["meta"]["provider"],
+            "fallback_used": any_fallback,
             "elapsed_sec": round(total_elapsed, 2),
             "errors": merged_errors,
             "chunked": True,
-            "chunk_models": [result_a["meta"]["model"], result_b["meta"]["model"]],
+            "num_chunks": actual_chunks,
+            "chunk_models": chunk_models,
         },
     }
 
@@ -568,10 +633,16 @@ def extract_provisions(
     """
     word_count = config.get("tenant_word_count") or len(tenant_text.split())
 
+    if word_count > CHUNK_WORD_THRESHOLD_LARGE:
+        num_chunks = 4
+        print(f"[lease_extract] Tenant lease is {word_count} words (>{CHUNK_WORD_THRESHOLD_LARGE}) — "
+              f"using 4-chunk extraction", flush=True)
+        return _extract_chunked(template_text, tenant_text, provisions, config, num_chunks=4)
+
     if word_count > CHUNK_WORD_THRESHOLD:
         print(f"[lease_extract] Tenant lease is {word_count} words (>{CHUNK_WORD_THRESHOLD}) — "
-              f"using chunked extraction", flush=True)
-        return _extract_chunked(template_text, tenant_text, provisions, config)
+              f"using 2-chunk extraction", flush=True)
+        return _extract_chunked(template_text, tenant_text, provisions, config, num_chunks=2)
 
     print(f"[lease_extract] Tenant lease is {word_count} words (≤{CHUNK_WORD_THRESHOLD}) — "
           f"using single-call extraction", flush=True)

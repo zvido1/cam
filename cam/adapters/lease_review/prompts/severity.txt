@@ -29,8 +29,8 @@ Respond with a JSON object containing a single key "severities" whose value is a
 Each severity object must have these exact fields:
 - "provision_id": The provision ID
 - "severity": One of "CRITICAL", "HIGH", "MEDIUM", "LOW"
-- "severity_reasoning": 2-3 sentences explaining the severity assessment
-- "financial_impact": Brief description of potential financial impact (or "Negligible" if LOW)
-- "recommended_action": One sentence directing the attorney's attention to what needs examination. Use investigative verbs only: confirm, verify, examine, consider whether, investigate, check, review, assess. Do NOT use directive verbs: negotiate, require, restore, demand, insist, ensure, obtain. Frame as "Attorney should [examine/confirm/verify] [what specifically] and [second check if applicable]." Example: "Attorney should confirm the parking provision omission is intentional and verify that parking arrangements are addressed elsewhere in the lease or through separate agreement."
+- "severity_reasoning": 2-3 short paragraphs explaining the severity assessment, separated by blank lines (\n\n). Use **double asterisks** around section numbers, article references, and key legal terms. Start each paragraph with a bold topic phrase (e.g. **Risk allocation shifted:** The tenant...).
+- "financial_impact": Brief description of potential financial impact (or "Negligible" if LOW). Use **double asterisks** around dollar amounts, percentages, and key financial terms.
+- "recommended_action": 1-2 short paragraphs directing the attorney's attention to what needs examination, separated by a blank line (\n\n). Use **double asterisks** around specific section numbers and key terms the attorney should focus on. Use investigative verbs only: confirm, verify, examine, consider whether, investigate, check, review, assess. Do NOT use directive verbs: negotiate, require, restore, demand, insist, ensure, obtain. Frame as "Attorney should [examine/confirm/verify] [what specifically]." Example: "Attorney should confirm the **parking provision** omission is intentional and verify that parking arrangements are addressed elsewhere in the lease or through separate agreement."
 
 Respond ONLY with the JSON object. No additional text.

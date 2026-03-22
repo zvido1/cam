@@ -1,0 +1,20 @@
+
+cd "C:\Users\Owner\OneDrive\CAM\05 Lease Analyzer"
+Get-NetTCPConnection -LocalPort 8000 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }
+$env:PYTHONUNBUFFERED = "1"; uvicorn app.main:app --reload --port 8000
+
+
+
+Then open your browser and go to http://localhost:8000
+The access code is cam_demo_2026
+
+
+cd "C:\Users\Owner\OneDrive\CAM"
+git add .
+git commit -m "brief description of what changed"
+git push
+
+
+
+
+
