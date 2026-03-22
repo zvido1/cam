@@ -5990,11 +5990,9 @@ function getProviderShortNames(modelsUsed) {
  */
 function renderDetailText(text) {
     if (!text) return "";
-    const _boldMd = window.CAMAuditShared && window.CAMAuditShared.boldMarkdown
-        ? window.CAMAuditShared.boldMarkdown
-        : (t) => (t || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    const paras = text.split(/\n\n+/).map(p => p.trim()).filter(Boolean);
-    return paras.map(p => `<p>${_boldMd(p)}</p>`).join("");
+    const formatted = formatChatResponse(text).trim();
+    if (!formatted) return "";
+    return `<div class="detail-text-body">${formatted}</div>`;
 }
 
 function linkifyProvisions(text, analyzedPids, currentPid) {
