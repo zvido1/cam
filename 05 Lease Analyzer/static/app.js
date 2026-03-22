@@ -3518,28 +3518,70 @@ function getProvisionWorkflowExportState(tenantIdx, pid) {
     };
 }
 
+function getAuditExportComplexity(provision) {
+    const fragility = provision && provision.fragility ? provision.fragility : {};
+    const rawScore = fragility.fragility_score != null
+        ? Number(fragility.fragility_score)
+        : fragility.score != null
+            ? Number(fragility.score)
+            : null;
+    if (rawScore == null || isNaN(rawScore)) {
+        return { label: null, score_pct: null };
+    }
+    const pct = rawScore <= 1 ? Math.round(rawScore * 100) : Math.round(rawScore);
+    const label = pct < 15 ? "Simple"
+        : pct < 35 ? "Moderate"
+        : pct < 60 ? "Complex"
+        : "Highly complex";
+    return { label, score_pct: pct };
+}
+
 function serializeProvisionForAuditExport(p, tenantIdx) {
     const pid = p.provision_id || "";
     const workflow = getProvisionWorkflowExportState(tenantIdx, pid);
+    const verdict = p.final_verdict || "";
+    const evVerdicts = p.evaluator_verdicts || {};
+    const evTotal = Object.keys(evVerdicts).length || 0;
+    const evAgree = verdict === "DEVIATES"
+        ? Object.values(evVerdicts).filter(v => v === "DEVIATES").length
+        : verdict === "CONFORMS"
+            ? Object.values(evVerdicts).filter(v => v === "CONFORMS").length
+            : Object.values(evVerdicts).filter(v => v === "UNCLEAR").length;
+    const agreementSummary = evTotal > 0
+        ? `${evAgree}/${evTotal} reviewers ${verdict === "DEVIATES" ? "flagged this" : verdict === "CONFORMS" ? "confirmed" : "marked this unclear"}`
+        : "";
+    const confidenceBadge = getConfidenceBadgeData
+        ? getConfidenceBadgeData((p.cam_score || {}).governance_signal || "", (p.severity || "").toUpperCase())
+        : null;
+    const complexity = getAuditExportComplexity(p);
     return {
         provision_id: pid,
         provision_name: p.provision_name,
         final_verdict: p.final_verdict,
         severity: p.severity,
         severity_floor_applied: p.severity_floor_applied,
+        confidence_label: confidenceBadge ? confidenceBadge.label : null,
+        confidence_dots: confidenceBadge ? confidenceBadge.dots : null,
         agreement_pattern: p.agreement_pattern,
+        reviewer_agreement_summary: agreementSummary,
         evaluator_verdicts: p.evaluator_verdicts,
         evaluator_reasoning: p.evaluator_reasoning,
         evaluator_confidences: p.evaluator_confidences,
         challenge_finding: p.challenge_finding,
         challenge_details: p.challenge_details,
         fragility: p.fragility,
+        complexity_label: complexity.label,
+        complexity_score_pct: complexity.score_pct,
         cam_metadata: p.cam_metadata,
         cam_score: p.cam_score,
         risk_headline: p.risk_headline,
         severity_reasoning: p.severity_reasoning,
         financial_impact: p.financial_impact,
         recommended_action: p.recommended_action,
+        template_text: p.template_text,
+        tenant_text: p.tenant_text,
+        template_section_ref: p.template_section_ref,
+        tenant_section_ref: p.tenant_section_ref,
         manual_escalation: !!p.manual_escalation,
         workflow_status: workflow.status,
         read: workflow.read,
@@ -5198,7 +5240,7 @@ function renderContractClauseFilterBar(provisions) {
     const annotatedButton = tenant && tenant.has_annotated
         ? `<button type="button" class="btn btn-secondary btn-sm contract-annotated-btn"
             onclick="window.CAM.downloadFile('/api/jobs/${currentJobId}/results/${currentTenantIndex}/annotated')">
-            Download Annotated Tenant Lease
+            &#128196; Download Working Draft
         </button>`
         : '';
 
@@ -8221,12 +8263,38 @@ function exportAuditJSON(singleContract) {
 
     const allTenants = currentResults.tenants || [];
     const tenantsToExport = singleContract ? [allTenants[currentTenantIndex]].filter(Boolean) : allTenants;
+    const totalProvisions = tenantsToExport.reduce((sum, t) => sum + (((t || {}).results || {}).provisions || []).length, 0);
+    const totalElapsed = tenantsToExport.reduce((sum, t) => sum + ((((t || {}).results || {}).elapsed_sec) || 0), 0);
+    const totalCalls = tenantsToExport.reduce((sum, t) => sum + ((((t || {}).results || {}).api_calls_total) || 0), 0);
+    const primaryResults = tenantsToExport[0] && tenantsToExport[0].results ? tenantsToExport[0].results : null;
+    const primaryModels = primaryResults ? (primaryResults.models_used || {}) : {};
 
     // Build export object: job-level metadata + per-tenant pipeline results
     const exportObj = {
         export_type: singleContract ? "CAM Audit Trail (Single Contract)" : "CAM Audit Trail (All Contracts)",
         exported_at: new Date().toISOString(),
         job_id: jobId,
+        review_context: primaryResults ? {
+            reference_document: primaryResults.template_file || null,
+            pipeline_version: primaryResults.pipeline_version || null,
+            pipeline_domain_label: primaryResults.pipeline_domain_label || null,
+        } : null,
+        cam_reviewers: primaryResults ? {
+            extraction: primaryModels.extractor ? getModelDisplayName(primaryModels.extractor) : null,
+            provision_comparison: [
+                primaryModels.evaluator_a,
+                primaryModels.evaluator_b,
+                primaryModels.evaluator_c,
+            ].filter(Boolean).map(getModelDisplayName),
+            challenge_review: primaryModels.challenger ? getModelDisplayName(primaryModels.challenger) : null,
+            severity_review: primaryModels.severity_assessor ? getModelDisplayName(primaryModels.severity_assessor) : null,
+        } : null,
+        run_stats: {
+            contracts_included: tenantsToExport.length,
+            provisions_reviewed: totalProvisions,
+            actual_runtime_sec: totalElapsed,
+            model_calls: totalCalls,
+        },
         tenants: tenantsToExport.map((t) => {
             const tenantIdx = allTenants.indexOf(t);
             const workflowProvisions = getTenantWorkflowProvisions(tenantIdx);

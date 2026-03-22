@@ -77,7 +77,7 @@ def _build_html_email(
     # Attached files list
     attachment_lines = ""
     if info.get("summary_included"):
-        attachment_lines += '<li>📄 Lease_Analysis_Summary.pdf — combined findings</li>'
+        attachment_lines += '<li>📄 Lease_Analysis_Synopsis.pdf — combined CAM synopsis</li>'
     annotated = info.get("annotated_tenants", [])
     unannotated = info.get("unannotated_tenants", [])
     for fname in annotated:

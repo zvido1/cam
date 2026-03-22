@@ -84,6 +84,10 @@ def _validate_severity(obj: dict) -> Tuple[bool, Optional[str]]:
     return True, None
 
 
+# Maximum provisions per severity call — above this we chunk
+SEVERITY_CHUNK_SIZE = 8
+
+
 def assess_severity(
     confirmed_deviations: List[dict],
     extraction_map: Dict[str, dict],
@@ -93,6 +97,9 @@ def assess_severity(
     config: dict,
 ) -> Dict[str, Any]:
     """Run Stage 5: Severity assessment on confirmed deviations.
+
+    Chunks into batches of SEVERITY_CHUNK_SIZE when there are many deviations,
+    to avoid output token overflow on large leases.
 
     Args:
         confirmed_deviations: List of provision dicts confirmed as substantive deviations.
@@ -108,49 +115,81 @@ def assess_severity(
     if not confirmed_deviations:
         return {"severities": {}, "meta": {"skipped": True, "reason": "no_confirmed_deviations"}}
 
-    prompt_template = _load_prompt_template()
-    details_text = _build_deviation_details(
-        confirmed_deviations, extraction_map, evaluation_agg, challenge_results, fragility_map
-    )
-    user_prompt = prompt_template.replace("{deviation_details}", details_text)
+    # Split into chunks if needed
+    chunks = [
+        confirmed_deviations[i:i + SEVERITY_CHUNK_SIZE]
+        for i in range(0, len(confirmed_deviations), SEVERITY_CHUNK_SIZE)
+    ]
+    needs_chunking = len(chunks) > 1
+    if needs_chunking:
+        print(f"[lease_severity] {len(confirmed_deviations)} deviations → {len(chunks)} chunks of ≤{SEVERITY_CHUNK_SIZE}", flush=True)
 
+    prompt_template = _load_prompt_template()
     system_prompt = (
         "You are a commercial real estate legal expert assessing the severity of "
         "confirmed lease deviations. Be precise and practical in your severity ratings. "
         "Always respond with valid JSON only."
     )
 
-    start_time = time.time()
-    obj, meta = call_with_fallback(
-        stage_name="lease_severity",
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        validate_fn=_validate_severity,
-        max_output_tokens=config.get("severity_max_tokens", 4000),
-        reasoning_effort="high",
-    )
-
-    # Cancel check immediately after API return
     from cam.adapters.lease_review.lease_adapter import _check_cancel
-    _check_cancel(config)
 
-    elapsed = time.time() - start_time
+    all_severities = []
+    all_raw = []
+    total_elapsed = 0.0
+    last_meta = {}
+    total_api_calls = 0
 
-    severities = {s["provision_id"]: s for s in obj.get("severities", [])}
+    start_time = time.time()
+
+    for chunk_idx, chunk in enumerate(chunks):
+        if needs_chunking:
+            print(f"[lease_severity chunk {chunk_idx+1}/{len(chunks)}] {len(chunk)} provisions...", flush=True)
+
+        details_text = _build_deviation_details(
+            chunk, extraction_map, evaluation_agg, challenge_results, fragility_map
+        )
+        user_prompt = prompt_template.replace("{deviation_details}", details_text)
+
+        chunk_start = time.time()
+        obj, meta = call_with_fallback(
+            stage_name="lease_severity",
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            validate_fn=_validate_severity,
+            max_output_tokens=config.get("severity_max_tokens", 4000),
+            reasoning_effort="high",
+        )
+        chunk_elapsed = time.time() - chunk_start
+        total_elapsed += chunk_elapsed
+        total_api_calls += 1
+        last_meta = meta
+
+        chunk_results = obj.get("severities", [])
+        all_severities.extend(chunk_results)
+        all_raw.extend(chunk_results)
+
+        if needs_chunking:
+            print(f"[lease_severity chunk {chunk_idx+1}/{len(chunks)}] {len(chunk_results)} severities in {chunk_elapsed:.1f}s", flush=True)
+
+        # Cancel check between chunks
+        _check_cancel(config)
+
+    severities = {s["provision_id"]: s for s in all_severities}
 
     return {
         "severities": severities,
-        "raw_severities": obj.get("severities", []),
+        "raw_severities": all_raw,
         "prompts": {
             "system_prompt": system_prompt,
-            "user_prompt": user_prompt,
+            "user_prompt": "(chunked — see individual chunk prompts)",
         },
         "meta": {
-            "model": meta.get("model", "unknown"),
-            "provider": meta.get("provider", "unknown"),
-            "elapsed_sec": round(elapsed, 2),
+            "model": last_meta.get("model", "unknown"),
+            "provider": last_meta.get("provider", "unknown"),
+            "elapsed_sec": round(total_elapsed, 2),
             "provisions_assessed": len(confirmed_deviations),
-            "api_calls": 1,
-            "fallback_used": meta.get("fallback_used", False),
+            "chunks": len(chunks),
+            "api_calls": total_api_calls,
+            "fallback_used": last_meta.get("fallback_used", False),
         },
     }

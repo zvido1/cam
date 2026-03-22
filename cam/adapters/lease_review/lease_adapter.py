@@ -312,6 +312,24 @@ def run_lease_analysis(
     # during extraction. Convert them to CUSTOM-XX provision entries so Stage 2
     # evaluators can assess them.
     raw_discoveries = extraction.get("discovered_provisions", [])
+
+    # Deduplicate across chunks: each chunk independently discovers provisions,
+    # so the same clause (e.g. "Relocation") can appear 3-4 times. Keep the
+    # instance with the most clause_text content.
+    if raw_discoveries:
+        seen_names: dict = {}
+        for disc in raw_discoveries:
+            name_key = (disc.get("clause_name") or disc.get("article_label") or "").lower().strip()
+            if not name_key:
+                continue
+            existing = seen_names.get(name_key)
+            if existing is None or len(disc.get("clause_text", "")) > len(existing.get("clause_text", "")):
+                seen_names[name_key] = disc
+        deduped_discoveries = list(seen_names.values())
+        if len(deduped_discoveries) < len(raw_discoveries):
+            print(f"[lease_adapter] Deduped discovered provisions: {len(raw_discoveries)} → {len(deduped_discoveries)}", flush=True)
+        raw_discoveries = deduped_discoveries
+
     if raw_discoveries:
         print(f"[lease_adapter] Injecting {len(raw_discoveries)} discovered provision(s) as CUSTOM-XX entries", flush=True)
         for idx, disc in enumerate(raw_discoveries, start=1):

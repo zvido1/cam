@@ -18,7 +18,7 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
 
-def _format_comment_text(provision: dict) -> str:
+def _format_comment_text(provision: dict, resolution: dict = None) -> str:
     """Format the comment text for a provision finding."""
     pid = provision.get("provision_id", "?")
     pname = provision.get("provision_name", "")
@@ -59,6 +59,30 @@ def _format_comment_text(provision: dict) -> str:
             "attorney_review_required": "Attorney review required",
         }
         lines.append(f"\u2192 {action_labels.get(action, action)}")
+
+    # Lawyer's resolutions from CAM review session
+    if resolution:
+        lines.append("")
+        lines.append("\u2014 Lawyer's Review \u2014")
+        status = resolution.get("status", "")
+        status_labels = {
+            "accepted": "Accepted as-is",
+            "needs_negotiation": "Needs Negotiation",
+            "not_applicable": "Not Applicable",
+            "resolved": "Resolved",
+        }
+        if status:
+            lines.append(f"Decision: {status_labels.get(status, status)}")
+        concern = resolution.get("concern_state", "")
+        concern_reason = resolution.get("concern_reason", "")
+        if concern == "flagged" and concern_reason:
+            lines.append(f"Concern: {concern_reason}")
+        notes = resolution.get("notes", [])
+        if notes:
+            for note in notes:
+                text = note.get("text", "") if isinstance(note, dict) else str(note)
+                if text:
+                    lines.append(f"Note: {text}")
 
     return "\n".join(lines)
 
@@ -321,6 +345,7 @@ def annotate_docx(
     original_docx_path: str,
     results: dict,
     output_path: str,
+    resolutions: dict = None,
 ) -> str:
     """Insert Word comments on deviating provisions in tenant DOCX.
 
@@ -347,7 +372,15 @@ def annotate_docx(
         if provision.get("final_verdict") not in ("DEVIATES", "UNCLEAR"):
             continue
 
-        comment_text = _format_comment_text(provision)
+        # Look up resolution for this provision (keyed by tenant_idx:provision_id)
+        resolution = None
+        if resolutions:
+            pid = provision.get("provision_id", "")
+            # Try both keying formats used by job_manager
+            resolution = (resolutions.get(f"0:{pid}") or
+                          resolutions.get(pid) or
+                          None)
+        comment_text = _format_comment_text(provision, resolution)
         search_text = provision.get("tenant_text", "")
 
         # Find the paragraph containing this provision

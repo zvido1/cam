@@ -1178,8 +1178,13 @@ async def create_lease_job(
 
 
 @app.get("/api/jobs/{job_id}/results/{tenant_index}/annotated")
-def download_annotated(job_id: str, tenant_index: int):
-    """Download the annotated document (DOCX or PDF) for a tenant."""
+def download_annotated(job_id: str, tenant_index: int, with_resolutions: bool = True):
+    """Download the annotated document (DOCX or PDF) for a tenant.
+
+    If with_resolutions=True (default), regenerates the DOCX on-demand so it
+    includes the lawyer's latest CAM review decisions and notes.
+    PDF annotated files are always served as-is (no regeneration).
+    """
     job = job_manager.get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -1197,11 +1202,38 @@ def download_annotated(job_id: str, tenant_index: int):
     if not annotated_path or not Path(annotated_path).exists():
         raise HTTPException(status_code=404, detail="Annotated document not available")
 
+    ext = Path(annotated_path).suffix.lower()
     filename = f"annotated_{tenant['filename']}"
-    # Match the extension of the annotated file
-    ext = Path(annotated_path).suffix
-    if not filename.endswith(ext):
+    if not filename.lower().endswith(ext):
         filename = Path(filename).stem + ext
+
+    # For DOCX: regenerate on-demand with latest resolutions
+    if with_resolutions and ext == ".docx":
+        result_path = tenant.get("result_path")
+        upload_path = tenant.get("upload_path")
+        resolutions = job.get("resolutions", {})
+
+        if result_path and Path(result_path).exists() and upload_path and Path(upload_path).exists():
+            try:
+                from cam.adapters.lease_review.lease_docx_annotator import annotate_docx
+                pipeline_results = json.loads(Path(result_path).read_text(encoding="utf-8"))
+
+                # Write to a temp path alongside the original
+                regen_path = Path(annotated_path).parent / f"annotated_latest_{Path(tenant['filename']).stem}.docx"
+                annotate_docx(
+                    original_docx_path=upload_path,
+                    results=pipeline_results,
+                    output_path=str(regen_path),
+                    resolutions=resolutions,
+                )
+                return FileResponse(
+                    path=str(regen_path),
+                    filename=filename,
+                    media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+            except Exception as e:
+                logger.warning(f"Annotated DOCX regeneration failed, falling back to cached: {e}")
+                # Fall through to serve cached file
 
     return FileResponse(
         path=annotated_path,

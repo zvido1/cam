@@ -721,7 +721,7 @@ def _generate_fallback_synopsis_pdf(
         leftMargin=72, rightMargin=72, topMargin=72, bottomMargin=72,
     )
     elements = []
-    elements.append(Paragraph("LEASE ANALYSIS SYNOPSIS", styles["SynopsisTitle"]))
+    elements.append(Paragraph("CAM ANALYSIS SYNOPSIS", styles["SynopsisTitle"]))
     elements.append(Paragraph("(Simplified layout)", styles["SynopsisSubtitle"]))
     elements.append(Spacer(1, 10))
 
@@ -820,7 +820,7 @@ def _generate_combined_synopsis_inner(
     # PAGE 1: HEADER + DEAL OVERVIEW + ANALYSIS RESULTS
     # ════════════════════════════════════════════════
 
-    elements.append(Paragraph("LEASE ANALYSIS SYNOPSIS", styles["SynopsisTitle"]))
+    elements.append(Paragraph("CAM ANALYSIS SYNOPSIS", styles["SynopsisTitle"]))
     subtitle_parts = [_esc_xml(date_str)]
     if job_id:
         subtitle_parts.append(_esc_xml(job_id))
@@ -830,7 +830,7 @@ def _generate_combined_synopsis_inner(
     # ── Deal Overview section ──
     elements.append(HRFlowable(width="100%", thickness=1.5, color=HexColor("#1a365d"),
                                 spaceBefore=2, spaceAfter=6))
-    elements.append(Paragraph("BASE LEASE TERMS", styles["SynopsisHeading"]))
+    elements.append(Paragraph("REFERENCE DOCUMENT OVERVIEW", styles["SynopsisHeading"]))
     elements.append(Paragraph(
         "<i>Standard template -- deviations from these terms are flagged below</i>",
         styles["SmallMuted"],
@@ -918,10 +918,10 @@ def _generate_combined_synopsis_inner(
 
     elements.append(Spacer(1, 14))
 
-    # ── Analysis Results summary ──
+    # ── Run Synopsis summary ──
     elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
                                 spaceBefore=4, spaceAfter=6))
-    elements.append(Paragraph("ANALYSIS RESULTS", styles["SynopsisHeading"]))
+    elements.append(Paragraph("RUN SYNOPSIS", styles["SynopsisHeading"]))
 
     elements.append(Paragraph(
         f"{total_deviations} deviation{'s' if total_deviations != 1 else ''} "
@@ -941,7 +941,7 @@ def _generate_combined_synopsis_inner(
 
     elements.append(Spacer(1, 12))
 
-    # ── Provisions Checklist (traffic-light grid, matches screen) ──
+    # ── Provision Checklist (traffic-light grid, matches screen) ──
     # For single tenant, show from the first result; for multi-tenant, aggregate
     all_provisions_for_checklist = []
     if len(tenant_results) == 1:
@@ -974,7 +974,7 @@ def _generate_combined_synopsis_inner(
     if all_provisions_for_checklist:
         elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
                                     spaceBefore=4, spaceAfter=6))
-        elements.append(Paragraph("PROVISIONS CHECKLIST", styles["SynopsisHeading"]))
+        elements.append(Paragraph("PROVISION CHECKLIST", styles["SynopsisHeading"]))
 
         # Group by severity bucket
         sev_groups = {"CRITICAL": [], "HIGH": [], "MEDIUM": [], "LOW": [], "CONFORMS": [], "UNCLEAR": []}
@@ -1018,7 +1018,7 @@ def _generate_combined_synopsis_inner(
     if len(tenant_results) > 1:
         elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
                                     spaceBefore=4, spaceAfter=6))
-        elements.append(Paragraph("LEASE ANALYSIS RESULTS", styles["SynopsisHeading"]))
+        elements.append(Paragraph("CONTRACT STATUS SNAPSHOT", styles["SynopsisHeading"]))
 
         # Sort by severity (most severe first)
         batch_sorted = sorted(
@@ -1054,7 +1054,7 @@ def _generate_combined_synopsis_inner(
 
         elements.append(Spacer(1, 8))
 
-    # ── Cross-Tenant Issue Matrix (multi-tenant only) ──
+    # ── Cross-Contract Issue Matrix (multi-tenant only) ──
     if len(tenant_results) > 1:
         # Aggregate: for each provision_id, which tenants have it as DEVIATES?
         issue_map = {}  # pid -> { pname, severity, tenants: [filename] }
@@ -1084,7 +1084,7 @@ def _generate_combined_synopsis_inner(
         if issue_map or clean_tenants:
             elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
                                         spaceBefore=4, spaceAfter=6))
-            elements.append(Paragraph("CROSS-TENANT ISSUE MATRIX", styles["SynopsisHeading"]))
+            elements.append(Paragraph("CROSS-CONTRACT ISSUE MATRIX", styles["SynopsisHeading"]))
 
             issues = sorted(
                 issue_map.items(),
@@ -1113,12 +1113,12 @@ def _generate_combined_synopsis_inner(
             elements.append(Spacer(1, 8))
 
     # ════════════════════════════════════════════════
-    # PAGE 2+: FINDINGS (plain language, per tenant)
+    # PAGE 2+: Contract Findings (plain language, per contract)
     # ════════════════════════════════════════════════
 
     elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
                                 spaceBefore=4, spaceAfter=6))
-    elements.append(Paragraph("FINDINGS", styles["SynopsisHeading"]))
+    elements.append(Paragraph("CONTRACT FINDINGS", styles["SynopsisHeading"]))
 
     sorted_results = sorted(
         tenant_results,
@@ -1330,12 +1330,12 @@ def _generate_combined_synopsis_inner(
             elements.extend(finding_els[3:])
 
     # ════════════════════════════════════════════════
-    # LAST PAGE: TECHNICAL APPENDIX
+    # LAST PAGE: Run Details
     # ════════════════════════════════════════════════
 
     elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
                                 spaceBefore=16, spaceAfter=8))
-    elements.append(Paragraph("TECHNICAL APPENDIX", styles["SynopsisHeading"]))
+    elements.append(Paragraph("RUN DETAILS", styles["SynopsisHeading"]))
     elements.append(Spacer(1, 4))
 
     elements.append(Paragraph("Models Used:", styles["SmallMuted"]))
