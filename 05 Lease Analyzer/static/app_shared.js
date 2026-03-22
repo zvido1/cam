@@ -138,11 +138,17 @@ function getTenantProgressFraction(tenant, jobStatus) {
             if (s < stage) completedWeight += PROCESSING_STAGE_WEIGHTS[s] || 0;
         });
         const currentWeight = PROCESSING_STAGE_WEIGHTS[stage] || 0.08;
-        return Math.max(0, Math.min(1, completedWeight + (currentWeight * 0.5)));
+        // Stage 1 (extraction) is weighted heavily but takes a long time.
+        // Show only a small initial credit (5%) when stage 1 just starts,
+        // not half its weight (which would jump to 23% immediately).
+        const inProgressCredit = (stage === 1 && completedWeight === 0)
+            ? 0.05
+            : currentWeight * 0.5;
+        return Math.max(0, Math.min(1, completedWeight + inProgressCredit));
     }
 
     if (effectiveStatus === "processing") {
-        return 0.08;
+        return 0.02;
     }
 
     return 0;

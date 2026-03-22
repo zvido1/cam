@@ -14,7 +14,7 @@ import time
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,6 +37,87 @@ logger = logging.getLogger(__name__)
 # ── CAM Knowledge Base — loaded once at startup, injected into all chat prompts ──
 _KNOWLEDGE_PATH = Path(__file__).parent / "cam_knowledge.txt"
 CAM_KNOWLEDGE = _KNOWLEDGE_PATH.read_text(encoding="utf-8") if _KNOWLEDGE_PATH.exists() else ""
+
+
+def _normalize_followups(items: Any, limit: int = 3) -> List[str]:
+    """Return up to `limit` clean follow-up question strings."""
+    if not isinstance(items, list):
+        return []
+    cleaned: List[str] = []
+    for item in items:
+        if not isinstance(item, str):
+            continue
+        text = " ".join(item.strip().split())
+        if not text:
+            continue
+        if len(text) > 120:
+            text = text[:117].rstrip() + "..."
+        cleaned.append(text)
+        if len(cleaned) >= limit:
+            break
+    return cleaned
+
+
+def _parse_chat_json_payload(raw_text: str) -> Optional[Dict[str, Any]]:
+    """Parse a JSON object from a model response, tolerating fenced blocks."""
+    if not raw_text:
+        return None
+    text = raw_text.strip()
+    if text.startswith("```"):
+        text = text.strip("`")
+        if text.lower().startswith("json"):
+            text = text[4:].strip()
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return None
+    try:
+        parsed = json.loads(text[start:end + 1])
+        return parsed if isinstance(parsed, dict) else None
+    except json.JSONDecodeError:
+        return None
+
+
+def _call_chat_with_followups(call_llm, provider: str, system_prompt: str, user_prompt: str, temperature: float = 0.3) -> Dict[str, Any]:
+    """Call the model and ask for a main response plus suggested follow-up questions."""
+    format_prompt = (
+        f"{user_prompt}\n\n"
+        "Return valid JSON only with this shape:\n"
+        "{\n"
+        '  "response": "main answer as a plain string",\n'
+        '  "suggested_followups": ["short follow-up question", "short follow-up question", "short follow-up question"]\n'
+        "}\n"
+        "Rules for suggested_followups:\n"
+        "- Provide 2 or 3 short, natural follow-up questions.\n"
+        "- Make them useful for the current screen and answer.\n"
+        "- Do not invent UI elements or unsupported actions.\n"
+        "- Keep each follow-up under 12 words when possible.\n"
+        "- If no good follow-ups exist, return an empty array.\n"
+    )
+    result = call_llm(
+        provider=provider,
+        system_prompt=system_prompt,
+        user_prompt=format_prompt,
+        temperature=temperature,
+    )
+    raw_content = result.get("content", "")
+    payload = _parse_chat_json_payload(raw_content)
+    if payload:
+        response_text = str(payload.get("response", "") or "").strip()
+        followups = _normalize_followups(payload.get("suggested_followups", []))
+        if response_text:
+            return {
+                "content": response_text,
+                "suggested_followups": followups,
+                "model": result.get("model", ""),
+                "raw_content": raw_content,
+            }
+    return {
+        "content": raw_content,
+        "suggested_followups": [],
+        "model": result.get("model", ""),
+        "raw_content": raw_content,
+    }
 
 # ── FastAPI app ──
 app = FastAPI(
@@ -1328,6 +1409,7 @@ async def chat_with_analysis(job_id: str, body: dict):
     synthesizer = body.get("synthesizer", "claude")
     provision_id = body.get("provision_id")  # optional scope
     tenant_idx = body.get("tenant_idx")  # optional int — scope to one tenant
+    ui_context = body.get("ui_context", {}) or {}
     history = body.get("history", [])
 
     # Load tenant results for context
@@ -1381,6 +1463,36 @@ async def chat_with_analysis(job_id: str, body: dict):
                 pass
 
     analysis_context = "\n".join(context_parts)
+    ui_context_lines = []
+    if ui_context:
+        screen = ui_context.get("screen")
+        if screen:
+            ui_context_lines.append(f"Current screen: {screen}")
+        top_tab = ui_context.get("active_top_tab") or {}
+        if top_tab.get("label"):
+            ui_context_lines.append(f"Active top tab: {top_tab.get('label')} ({top_tab.get('id', '')})")
+        result_tab = ui_context.get("active_results_tab") or {}
+        if result_tab.get("label"):
+            ui_context_lines.append(f"Active detail tab: {result_tab.get('label')} ({result_tab.get('id', '')})")
+        if "contract_detail_open" in ui_context:
+            ui_context_lines.append(f"Contract detail open: {'yes' if ui_context.get('contract_detail_open') else 'no'}")
+        current_contract = ui_context.get("current_contract") or {}
+        if current_contract.get("label"):
+            ui_context_lines.append(f"Current contract: {current_contract.get('label')}")
+        chat_scope = ui_context.get("chat_scope") or {}
+        if chat_scope.get("contract_label"):
+            ui_context_lines.append(f"Chat scope contract: {chat_scope.get('contract_label')}")
+        if chat_scope.get("provision_label"):
+            ui_context_lines.append(f"Chat scope provision: {chat_scope.get('provision_label')}")
+        views = ui_context.get("available_views") or []
+        if views:
+            ui_context_lines.append("Available views:")
+            for view in views:
+                label = view.get("label") or view.get("id") or "View"
+                purpose = view.get("purpose") or ""
+                ui_context_lines.append(f"- {label}: {purpose}".rstrip(": "))
+    ui_context_block = "\n".join(ui_context_lines)
+    ui_context_prompt = f"UI CONTEXT:\n{ui_context_block}\n\n" if ui_context_block else ""
 
     system_prompt = (
         f"You are a specialized assistant for {domain_label}. "
@@ -1406,6 +1518,12 @@ async def chat_with_analysis(job_id: str, body: dict):
         "- In multi-model responses, refer to models by name (Claude, GPT-5.2, Grok, Gemini).\n"
         "- When disclaiming, do it once, briefly, at the end — not at the start, not repeatedly.\n\n"
 
+        "- If UI CONTEXT is provided, use the exact visible screen and tab labels from it.\n"
+        "- Only reference views, tabs, or interface elements that appear in UI CONTEXT.\n"
+        "- When the user asks where to find something, answer using UI CONTEXT first.\n"
+        "- If the user is already on the correct screen or tab, say so directly.\n\n"
+
+        f"{ui_context_prompt}"
         f"CAM KNOWLEDGE BASE (use this to answer any questions about CAM, scores, signals, pipeline stages, or provisions):\n{CAM_KNOWLEDGE}\n\n"
 
         f"ANALYSIS CONTEXT:\n{analysis_context}"
@@ -1509,7 +1627,8 @@ async def chat_with_analysis(job_id: str, body: dict):
                 synthesizer_provider = model_map.get(synthesizer, "anthropic")
                 model_labels_display = {"claude": "Claude", "gpt": "GPT-5.2", "grok": "Grok", "gemini": "Gemini"}
                 try:
-                    synthesis_result = call_llm(
+                    synthesis_result = _call_chat_with_followups(
+                        call_llm=call_llm,
                         provider=synthesizer_provider,
                         system_prompt=system_prompt,
                         user_prompt=synthesis_prompt,
@@ -1517,6 +1636,7 @@ async def chat_with_analysis(job_id: str, body: dict):
                     )
                     return {
                         "synthesized_response": synthesis_result.get("content", ""),
+                        "suggested_followups": synthesis_result.get("suggested_followups", []),
                         "synthesized_by": model_labels_display.get(synthesizer, synthesizer),
                         "mode": "multi",
                         "individual_responses": responses,
@@ -1533,7 +1653,8 @@ async def chat_with_analysis(job_id: str, body: dict):
             # Single model — use selected model from picker (default: Claude)
             selected_model = body.get("model", "claude")
             provider = model_map.get(selected_model, "claude")
-            result = call_llm(
+            result = _call_chat_with_followups(
+                call_llm=call_llm,
                 provider=provider,
                 system_prompt=system_prompt,
                 user_prompt=full_prompt,
@@ -1542,6 +1663,7 @@ async def chat_with_analysis(job_id: str, body: dict):
 
             return {
                 "response": result.get("content", ""),
+                "suggested_followups": result.get("suggested_followups", []),
                 "mode": "single",
                 "model_label": _friendly_model_label(result.get("model", ""), selected_model),
                 "model_key": selected_model,
@@ -1566,12 +1688,60 @@ async def chat_general(request: Request):
         raise HTTPException(status_code=400, detail="Question is required")
 
     context = body.get("context", {})
+    ui_context = body.get("ui_context", {}) or {}
     history = body.get("history", [])
+    screen = ui_context.get("screen") or "upload"
 
-    system_prompt = (
+    ui_context_lines = []
+    if ui_context:
+        screen = ui_context.get("screen")
+        if screen:
+            ui_context_lines.append(f"Current screen: {screen}")
+        if "template_loaded" in ui_context:
+            ui_context_lines.append(f"Reference file loaded: {'yes' if ui_context.get('template_loaded') else 'no'}")
+        if "tenant_count" in ui_context:
+            ui_context_lines.append(f"Tenant file count: {ui_context.get('tenant_count')}")
+        if "analyze_enabled" in ui_context:
+            ui_context_lines.append(f"Analyze enabled: {'yes' if ui_context.get('analyze_enabled') else 'no'}")
+        if ui_context.get("job_status"):
+            ui_context_lines.append(f"Job status: {ui_context.get('job_status')}")
+        if "completed_contract_count" in ui_context:
+            ui_context_lines.append(f"Completed contracts: {ui_context.get('completed_contract_count')}")
+        if "remaining_contract_count" in ui_context:
+            ui_context_lines.append(f"Remaining contracts: {ui_context.get('remaining_contract_count')}")
+        views = ui_context.get("available_views") or []
+        if views:
+            ui_context_lines.append("Available views:")
+            for view in views:
+                label = view.get("label") or view.get("id") or "View"
+                purpose = view.get("purpose") or ""
+                ui_context_lines.append(f"- {label}: {purpose}".rstrip(": "))
+    ui_context_block = "\n".join(ui_context_lines)
+    ui_context_prompt = f"UI CONTEXT:\n{ui_context_block}\n\n" if ui_context_block else ""
+
+    screen_intro = (
+        "You are a lease analysis guidance assistant for CAM, a commercial lease "
+        "deviation analyzer. The user is on the processing screen while CAM analyzes "
+        "one or more tenant leases against a standard reference contract.\n\n"
+        "ON THIS SCREEN, PRIORITIZE:\n"
+        "- Explaining what CAM is doing now in plain language\n"
+        "- Setting expectations for what the user will see when results are ready\n"
+        "- Helping the user understand whether they can review partial results yet\n"
+        "- Answering broader lease and provision questions while they wait\n\n"
+        if screen == "processing"
+        else
         "You are a lease analysis guidance assistant for CAM, a commercial lease "
         "deviation analyzer. The user is on the upload page preparing to analyze "
         "one or more tenant leases against a standard reference contract.\n\n"
+        "ON THIS SCREEN, PRIORITIZE:\n"
+        "- Explaining what CAM does with the uploaded leases\n"
+        "- Helping the user understand what to upload and which provisions to review\n"
+        "- Telling the user what to do before they click 'Analyze Leases'\n"
+        "- Answering broader lease and provision questions before analysis starts\n\n"
+    )
+
+    system_prompt = (
+        screen_intro +
 
         "THE CURRENT UI FLOW (describe this accurately when asked how to get started):\n"
         "Step 1 — Upload two things:\n"
@@ -1645,6 +1815,9 @@ async def chat_general(request: Request):
         f"CAM KNOWLEDGE BASE (use this to answer any questions about CAM, scores, signals, pipeline stages, or provisions):\n{CAM_KNOWLEDGE}\n\n"
     )
 
+    if ui_context_prompt:
+        system_prompt += ui_context_prompt
+
     # Add upload context if available
     selected = context.get("selected_provisions", [])
     if selected:
@@ -1659,11 +1832,17 @@ async def chat_general(request: Request):
     system_prompt += (
         "\nRESPONSE GUIDELINES:\n"
         "- Be helpful and conversational. This is a guidance tool, not legal advice.\n"
+        "- Lead with two things whenever possible: what CAM is doing here, and what the user should do or expect next.\n"
         "- When asked 'how do I get started' or similar, describe the actual flow above concisely.\n"
         "- 100-200 words unless more detail is requested.\n"
         "- Reference provision IDs (LP-XX) when relevant.\n"
         "- No markdown code blocks or code fences. Use plain text formatting.\n"
         "- One brief disclaimer at the end if relevant — never at the start.\n"
+        "- If UI CONTEXT is provided, use the exact labels and screen state from it.\n"
+        "- Only reference views or interface elements that appear in UI CONTEXT.\n"
+        "- When the user asks what to do next, base the answer on UI CONTEXT first.\n"
+        "- On the processing screen, be explicit about whether results may still be in progress and what the next visible milestone is.\n"
+        "- On the upload screen, be explicit about what is still missing before analysis can start when UI CONTEXT indicates it.\n"
         "- Never start with 'That's a great question' or similar affirmations.\n"
         "- When asked why CAM is unique, explain the multi-model disagreement approach "
         "in plain language. Do NOT describe it as just 'deviation analysis'.\n"
@@ -1692,7 +1871,8 @@ async def chat_general(request: Request):
 
     try:
         from cam.core.llm import call_llm
-        result = call_llm(
+        result = _call_chat_with_followups(
+            call_llm=call_llm,
             provider="google",
             system_prompt=system_prompt,
             user_prompt=full_prompt,
@@ -1700,6 +1880,7 @@ async def chat_general(request: Request):
         )
         return {
             "response": result.get("content", ""),
+            "suggested_followups": result.get("suggested_followups", []),
             "model": result.get("model", ""),
         }
     except Exception as e:

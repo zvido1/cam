@@ -2639,7 +2639,28 @@ async function pollJobStatus() {
             pollNotFoundCount = (pollNotFoundCount || 0) + 1;
             if (pollNotFoundCount >= 3) {
                 stopPolling();
-                showExpiredPage("This job is no longer available. It may have been cleaned up or the server was restarted.");
+                // Show a clear server-restart message on the processing screen
+                // rather than navigating away — the user can simply re-upload
+                const heroShell = $("#processing-hero-shell") || document.querySelector(".processing-hero-shell");
+                const statusCard = document.querySelector(".processing-status-card");
+                if (statusCard) {
+                    statusCard.innerHTML = `
+                        <div class="processing-kicker" style="color:var(--error,#dc2626);">Analysis interrupted</div>
+                        <div class="processing-title">Server restarted mid-run</div>
+                        <div class="processing-subtitle" style="max-width:480px;">
+                            The server was restarted while your analysis was running &mdash; likely because a code change was saved during processing.
+                            Your results were not saved.
+                        </div>
+                        <div class="processing-subtitle" style="margin-top:1rem;">
+                            <strong>To avoid this:</strong> run the server without <code>--reload</code> during long uploads.
+                        </div>
+                        <div style="margin-top:1.5rem;">
+                            <button class="btn btn-primary" onclick="window.CAM.resetApp(); return false;">Start Over</button>
+                        </div>
+                    `;
+                } else {
+                    showExpiredPage("The server was restarted while your analysis was running. Results were not saved. Please start over.");
+                }
             }
             return;
         }
@@ -8783,36 +8804,36 @@ function renderAnalysisChatWelcome() {
     const isDraftMode = isScoped && chatStarterMode === "draft";
     const starters = isDraftMode
         ? [
+            "What is CAM trying to fix in this provision?",
             "Draft balanced replacement language for this provision",
             "Make this more landlord-friendly",
-            "Make this more tenant-friendly",
             "Narrow the change to just one point",
             "Draft a reasonable fallback position",
             "Draft a compromise clause I can mark up",
         ]
         : isScoped
         ? [
-            "Summarize this issue in practical terms",
-            "What is the real negotiation risk here?",
-            "What should I push back on?",
+            "What did CAM conclude here?",
+            "Why was this flagged?",
+            "How confident is this result?",
+            "What should I do next on this issue?",
             "Draft replacement language for this provision",
-            "What is a reasonable fallback position?",
         ]
         : [
-            "What are the biggest issues in this lease?",
-            "Which provisions should I review first?",
-            "Summarize the main risks for me",
-            "What should I negotiate hardest?",
+            "What did CAM find in this lease?",
+            "Which findings should I review first?",
+            "What should I do next with these results?",
+            "What are the biggest negotiation risks?",
         ];
 
     const welcome = document.createElement("div");
     welcome.className = "chat-analysis-welcome";
     welcome.innerHTML =
         (isDraftMode
-            ? "Use chat to draft and refine replacement language for this provision. Pick a drafting direction below or type your own request."
+            ? "Use chat to understand what CAM wants changed, then draft and refine replacement language for this provision."
             : isScoped
-            ? "Use chat to analyze this issue, test negotiation ideas, or draft replacement language."
-            : "Ask about the analysis, compare risks, or get drafting and negotiation guidance.") +
+            ? "Use chat to understand this issue, why CAM flagged it, and what a practical next step looks like."
+            : "Use chat to understand what CAM found, decide what to review first, and plan your next move.") +
         '<div class="chat-analysis-starters">' +
         starters.map(s => `<button class="chat-analysis-starter" onclick="window.CAM.askAnalysisQuestion(this.textContent)">${esc(s)}</button>`).join("") +
         '</div>';
@@ -9052,6 +9073,31 @@ function formatChatResponse(text) {
     return text;
 }
 
+function appendSuggestedFollowups(msgEl, followups, askFnName, wrapperClass, buttonClass) {
+    if (!msgEl || !Array.isArray(followups) || followups.length === 0 || !askFnName) return;
+
+    const valid = followups
+        .map(item => typeof item === "string" ? item.trim() : "")
+        .filter(Boolean)
+        .slice(0, 3);
+    if (valid.length === 0) return;
+
+    const wrap = document.createElement("div");
+    wrap.className = wrapperClass;
+    valid.forEach(question => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = buttonClass;
+        btn.textContent = question;
+        btn.addEventListener("click", () => {
+            const fn = window.CAM?.[askFnName];
+            if (typeof fn === "function") fn(question);
+        });
+        wrap.appendChild(btn);
+    });
+    msgEl.appendChild(wrap);
+}
+
 function canSaveChatNote() {
     return chatScopeProvisionId !== "" && chatScopeTenantIdx !== "";
 }
@@ -9133,6 +9179,7 @@ async function sendChatMessage() {
             synthesizer: synthesizerModel,
             provision_id: activeProvisionId,
             tenant_idx: activeTenantIdx,    // NEW — pass to backend
+            ui_context: buildResultsChatUIContext(),
             history: chatHistory,
         };
         // Item 5: Send model for single mode
@@ -9166,6 +9213,13 @@ async function sendChatMessage() {
             const content = document.createElement("div");
             content.innerHTML = linkifyChatProvisions(formatChatResponse(data.synthesized_response));
             aiMsg.appendChild(content);
+            appendSuggestedFollowups(
+                aiMsg,
+                data.suggested_followups || [],
+                "askAnalysisQuestion",
+                "chat-analysis-starters",
+                "chat-analysis-starter"
+            );
             appendChatNoteAction(aiMsg, data.synthesized_response || "");
             messagesEl.appendChild(aiMsg);
 
@@ -9255,6 +9309,13 @@ async function sendChatMessage() {
             const content = document.createElement("div");
             content.innerHTML = linkifyChatProvisions(formatChatResponse(data.response || ""));
             aiMsg.appendChild(content);
+            appendSuggestedFollowups(
+                aiMsg,
+                data.suggested_followups || [],
+                "askAnalysisQuestion",
+                "chat-analysis-starters",
+                "chat-analysis-starter"
+            );
             appendChatNoteAction(aiMsg, data.response || "");
             messagesEl.appendChild(aiMsg);
 
@@ -12470,15 +12531,15 @@ function renderHelpChatWelcome() {
     messagesEl.innerHTML = "";
 
     const starters = [
-        "How do I get started?",
-        "Why is CAM unique?",
-        "What does LP-07 Common Area Maintenance mean?",
+        "What does CAM do with these leases?",
+        "What do I need before I click Analyze Leases?",
+        "Which provisions should I keep selected?",
         "Ask any lease-related question...",
     ];
 
     const welcome = document.createElement("div");
     welcome.className = "help-chat-welcome";
-    welcome.innerHTML = "Ask me anything about lease analysis, provisions, or what to look for." +
+    welcome.innerHTML = "Use chat to understand what CAM will analyze, what to upload, and what to do before you run the review." +
         '<div class="help-chat-starters">' +
         starters.map(s => {
             if (s.endsWith("...")) {
@@ -12496,14 +12557,14 @@ function refreshHelpChatStarters() {
     if (!welcome) return;
 
     const starters = [
-        "How do I get started?",
-        "What does LP-07 Common Area Maintenance mean?",
-        "Why is CAM unique?",
+        "What does CAM do with these leases?",
+        "What do I need before I click Analyze Leases?",
+        "Which provisions should I keep selected?",
     ];
 
     starters.push("Ask any lease-related question...");
 
-    welcome.innerHTML = "Ask me anything about lease analysis, provisions, or what to look for." +
+    welcome.innerHTML = "Use chat to understand what CAM will analyze, what to upload, and what to do before you run the review." +
         '<div class="help-chat-starters">' +
         starters.map(s => {
             if (s.endsWith("...")) {
@@ -12539,6 +12600,94 @@ function gatherUploadContext() {
     return ctx;
 }
 
+function getResultsChatUIViewMap() {
+    return [
+        { id: "overview", label: "Run Synopsis", purpose: "Portfolio-level summary across all analyzed leases" },
+        { id: "contracts", label: "Contracts", purpose: "Contract cards and contract-level entry point" },
+        { id: "findings", label: "Contract Summary", purpose: "Deviations, conforming provisions, and contract summary" },
+        { id: "docview", label: "Document Comparison", purpose: "Reference and tenant text in context" },
+        { id: "audittrail", label: "CAM Audit Trail", purpose: "Reviewer reasoning, challenge review, confidence, and scoring trace" }
+    ];
+}
+
+function buildResultsChatUIContext() {
+    const currentContract = currentResults && currentResults.tenants && currentResults.tenants[currentTenantIndex];
+    const currentContractLabel = currentContract
+        ? (formatTenantName(currentContract.filename) || currentContract.filename || `Contract ${currentTenantIndex + 1}`)
+        : "";
+    const topTabId = activeTopTab === "contracts" ? "contracts" : "overview";
+    const topTabLabel = topTabId === "contracts" ? "Contracts" : "Run Synopsis";
+    const resultsTabLabels = {
+        findings: "Contract Summary",
+        docview: "Document Comparison",
+        audittrail: "CAM Audit Trail"
+    };
+    const scopedTenantIdx = chatScopeTenantIdx !== "" ? parseInt(chatScopeTenantIdx, 10) : null;
+    const scopedContract = scopedTenantIdx != null && currentResults && currentResults.tenants
+        ? currentResults.tenants[scopedTenantIdx]
+        : null;
+    const scopedContractLabel = scopedContract
+        ? (formatTenantName(scopedContract.filename) || scopedContract.filename || `Contract ${scopedTenantIdx + 1}`)
+        : "";
+    const scopedProvisionLabel = (() => {
+        if (!chatScopeProvisionId) return "";
+        const tenantIdx = scopedTenantIdx != null ? scopedTenantIdx : currentTenantIndex;
+        const tenant = currentResults && currentResults.tenants && currentResults.tenants[tenantIdx];
+        const provisions = tenant && tenant.results && tenant.results.provisions ? tenant.results.provisions : [];
+        const match = provisions.find(p => p.provision_id === chatScopeProvisionId);
+        return match ? `${match.provision_id} ${match.provision_name || ""}`.trim() : chatScopeProvisionId;
+    })();
+
+    return {
+        screen: "results",
+        active_top_tab: { id: topTabId, label: topTabLabel },
+        active_results_tab: activeResultsTab ? {
+            id: activeResultsTab,
+            label: resultsTabLabels[activeResultsTab] || activeResultsTab
+        } : null,
+        contract_detail_open: !!contractDetailOpen,
+        current_contract: currentContract ? {
+            tenant_idx: currentTenantIndex,
+            label: currentContractLabel
+        } : null,
+        chat_scope: {
+            contract_label: scopedContractLabel,
+            provision_label: scopedProvisionLabel
+        },
+        available_views: getResultsChatUIViewMap()
+    };
+}
+
+function buildGeneralChatUIContext(screen) {
+    if (screen === "processing") {
+        const tenants = (currentJobData && currentJobData.input_config && currentJobData.input_config.tenants) || [];
+        const completedContractCount = tenants.filter(t => t && t.status === "completed").length;
+        return {
+            screen: "processing",
+            job_status: (currentJobData && currentJobData.status) || "",
+            completed_contract_count: completedContractCount,
+            remaining_contract_count: Math.max(0, tenants.length - completedContractCount),
+            available_views: [
+                { id: "upload", label: "Upload" },
+                { id: "processing", label: "Processing" },
+                { id: "results", label: "Results" }
+            ]
+        };
+    }
+
+    return {
+        screen: "upload",
+        template_loaded: !!templateFile,
+        tenant_count: tenantFiles.length,
+        analyze_enabled: !(($("#analyze-btn") || {}).disabled),
+        available_views: [
+            { id: "upload", label: "Upload" },
+            { id: "processing", label: "Processing" },
+            { id: "results", label: "Results" }
+        ]
+    };
+}
+
 async function sendHelpChatMessage() {
     const input = $("#help-chat-input");
     const messagesEl = $("#help-chat-messages");
@@ -12546,10 +12695,6 @@ async function sendHelpChatMessage() {
 
     const question = input.value.trim();
     if (!question) return;
-
-    // Remove welcome message on first real question
-    const welcome = messagesEl.querySelector(".help-chat-welcome");
-    if (welcome) welcome.remove();
 
     // Show user message
     const userMsg = document.createElement("div");
@@ -12577,6 +12722,7 @@ async function sendHelpChatMessage() {
             body: JSON.stringify({
                 question,
                 context,
+                ui_context: buildGeneralChatUIContext("upload"),
                 history: helpChatHistory.slice(-10),
             }),
         });
@@ -12593,6 +12739,13 @@ async function sendHelpChatMessage() {
         const aiMsg = document.createElement("div");
         aiMsg.className = "chat-msg chat-msg-ai";
         aiMsg.innerHTML = formatChatResponse(data.response || "");
+        appendSuggestedFollowups(
+            aiMsg,
+            data.suggested_followups || [],
+            "askHelpQuestion",
+            "help-chat-starters",
+            "help-chat-starter"
+        );
         messagesEl.appendChild(aiMsg);
         messagesEl.scrollTop = messagesEl.scrollHeight;
 
@@ -12716,7 +12869,7 @@ function _startCarouselTimer() {
     if (_carouselTimer) clearInterval(_carouselTimer);
     _carouselTimer = setInterval(() => {
         carouselGoTo((_carouselIndex + 1) % _carouselTotal);
-    }, 11000);
+    }, 14000);
 }
 
 function carouselGoTo(idx) {
@@ -12778,15 +12931,15 @@ function renderProcessingChatWelcome() {
     messagesEl.innerHTML = "";
 
     const starters = [
-        "What makes CAM different?",
-        "What is common area maintenance in a lease?",
-        "What provisions matter most?",
+        "What is CAM doing right now?",
+        "What should I expect when results are ready?",
+        "Can I review anything yet?",
         "Ask anything about leases...",
     ];
 
     const welcome = document.createElement("div");
     welcome.className = "processing-chat-welcome";
-    welcome.innerHTML = "While you wait, ask me anything about CAM, lease analysis, or commercial real estate provisions." +
+    welcome.innerHTML = "Use chat to understand what CAM is doing now, what will appear in results, and what to review next." +
         '<div class="processing-chat-starters">' +
         starters.map(s => {
             if (s.endsWith("...")) {
@@ -12804,10 +12957,6 @@ async function sendProcessingChatMessage() {
 
     const question = input.value.trim();
     if (!question) return;
-
-    // Remove welcome message on first real question
-    const welcome = messagesEl.querySelector(".processing-chat-welcome");
-    if (welcome) welcome.remove();
 
     // Show user message
     const userMsg = document.createElement("div");
@@ -12834,6 +12983,7 @@ async function sendProcessingChatMessage() {
             body: JSON.stringify({
                 question,
                 context: { phase: "processing", job_id: currentJobId || "" },
+                ui_context: buildGeneralChatUIContext("processing"),
                 history: processingChatHistory.slice(-10),
             }),
         });
@@ -12850,6 +13000,13 @@ async function sendProcessingChatMessage() {
         const aiMsg = document.createElement("div");
         aiMsg.className = "chat-msg chat-msg-ai";
         aiMsg.innerHTML = formatChatResponse(data.response || "");
+        appendSuggestedFollowups(
+            aiMsg,
+            data.suggested_followups || [],
+            "askProcessingQuestion",
+            "processing-chat-starters",
+            "processing-chat-starter"
+        );
         messagesEl.appendChild(aiMsg);
         messagesEl.scrollTop = messagesEl.scrollHeight;
 
