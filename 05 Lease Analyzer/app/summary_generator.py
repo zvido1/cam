@@ -991,7 +991,7 @@ def _generate_combined_synopsis_inner(
             else:
                 sev_groups["CONFORMS"].append(p)
 
-        sev_icons = {"CRITICAL": "[!]", "HIGH": "[!]", "MEDIUM": "[*]", "LOW": "[-]", "CONFORMS": "[OK]", "UNCLEAR": "[?]"}
+        sev_icons = {"CRITICAL": "\u2715", "HIGH": "\u25cf", "MEDIUM": "\u25cb", "LOW": "\u2013", "CONFORMS": "\u2713", "UNCLEAR": "\u25ca"}
         sev_checklist_colors = {
             "CRITICAL": "#dc2626", "HIGH": "#c2410c", "MEDIUM": "#d97706",
             "LOW": "#64748b", "CONFORMS": "#16a34a", "UNCLEAR": "#7c3aed",

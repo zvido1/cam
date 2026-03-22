@@ -1623,8 +1623,8 @@ function buildProcessingChecklistSteps(job, tenant) {
     const steps = [
         {
             stage: 1,
-            title: "Parse and map the lease",
-            meta: provisionCount ? `Building the review set for ${formatProvisionCountLabel(provisionCount)}.` : "Preparing the lease for structured review.",
+            title: "Parse, extract, and map the lease",
+            meta: provisionCount ? `Extracting and aligning ${formatProvisionCountLabel(provisionCount)} — large leases may discover additional clauses beyond the standard checklist.` : "Extracting provisions and aligning tenant lease to the reference. Large leases split into multiple extraction passes.",
         },
         {
             stage: 2,
@@ -1688,8 +1688,8 @@ function renderProcessingChecklist(job) {
         <div class="processing-checklist-group ${referenceComplete ? "complete" : "current"}">
             <div class="processing-checklist-group-header">
                 <div>
-                    <div class="processing-checklist-group-title">Reference lease baseline</div>
-                    <div class="processing-checklist-group-meta">${referenceProvisionLabel ? `${referenceProvisionLabel} selected for review.` : "Preparing the baseline for comparison."}</div>
+                    <div class="processing-checklist-group-title">Reference Lease</div>
+                    <div class="processing-checklist-group-meta">${referenceProvisionLabel ? `${referenceProvisionLabel} in standard checklist — additional provisions discovered automatically.` : "Preparing the reference lease for comparison."}</div>
                 </div>
                 <div class="processing-checklist-group-badge">${referenceComplete ? "Ready" : "Starting"}</div>
             </div>
@@ -1698,14 +1698,14 @@ function renderProcessingChecklist(job) {
                     <div class="processing-checklist-icon">${referenceComplete ? "✓" : "●"}</div>
                     <div>
                         <div class="processing-checklist-step-title">Parse the reference lease</div>
-                        <div class="processing-checklist-step-meta">CAM loads the standard lease once and uses it as the comparison baseline for every contract.</div>
+                        <div class="processing-checklist-step-meta">CAM reads the reference lease and uses it as the comparison baseline for every tenant contract in this job.</div>
                     </div>
                 </div>
                 <div class="processing-checklist-step ${referenceComplete ? "is-complete" : "is-pending"}">
                     <div class="processing-checklist-icon">${referenceComplete ? "✓" : "○"}</div>
                     <div>
-                        <div class="processing-checklist-step-title">Find baseline provisions and added clauses</div>
-                        <div class="processing-checklist-step-meta">${referenceProvisionLabel ? `Preparing the baseline structure for ${referenceProvisionLabel}.` : "Preparing the baseline clause structure for comparison."}</div>
+                        <div class="processing-checklist-step-title">Extract provisions and discover additions</div>
+                        <div class="processing-checklist-step-meta">${referenceProvisionLabel ? `Checking the standard ${referenceProvisionLabel} plus any additional clauses found in the tenant lease.` : "Extracting provisions and identifying non-standard clauses for comparison."}</div>
                     </div>
                 </div>
             </div>
@@ -1724,8 +1724,8 @@ function renderProcessingChecklist(job) {
         const metaText = status === "completed"
             ? `${completedSteps}/${totalSteps} complete${provisionLabel ? ` • ${provisionLabel} reviewed` : ""}`
             : status === "processing"
-                ? `${completedSteps}/${totalSteps} complete${provisionLabel ? ` • ${provisionLabel} in scope` : ""}`
-                : `Queued${provisionLabel ? ` • ${provisionLabel} in scope` : ""}`;
+                ? `${completedSteps}/${totalSteps} complete${provisionLabel ? ` • ${provisionLabel} in checklist — may grow during extraction` : ""}`
+                : `Queued${provisionLabel ? ` • ${provisionLabel} in checklist` : ""}`;
         const badgeText = status === "completed" ? "Complete" : status === "processing" ? `Step ${Number(tenant.current_stage) || 1} of ${Number(tenant.total_stages) || 6}` : "Queued";
 
         html += `
@@ -5540,7 +5540,7 @@ function applyContractClauseFilters() {
         const isRead = isNoted(tenantIdx, pid);
 
         const provisionOk = contractClauseProvisionFilter.size === 0 || contractClauseProvisionFilter.has(pid);
-        const severityOk = contractClauseSeverityFilter.size === 0 || contractClauseSeverityFilter.has(severity);
+        const severityOk = contractClauseSeverityFilter.size === 0 || contractClauseSeverityFilter.has(severity) || !severity;
         const statusOk = contractClauseStatusFilter === 'all' || resolution === contractClauseStatusFilter;
         const readOk = contractClauseReadFilter === 'all'
             || (contractClauseReadFilter === 'read' && isRead)

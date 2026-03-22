@@ -195,13 +195,34 @@ def _insert_summary_section(doc, results):
     body = doc.element.body
     insert_before = body[0] if len(body) > 0 else None
 
-    def _add_para(text, size=9, bold=False, color=None, space_after=2):
+    def _add_para(text, size=9, bold=False, color=None, space_after=2,
+                   shading=None, border_color=None, indent=0):
+        """Add a paragraph. shading=fill hex, border_color=left border hex."""
         p = OxmlElement("w:p")
         ppr = OxmlElement("w:pPr")
-        # Space after
         spacing = OxmlElement("w:spacing")
         spacing.set(qn("w:after"), str(space_after * 20))
         ppr.append(spacing)
+        if indent:
+            ind = OxmlElement("w:ind")
+            ind.set(qn("w:left"), str(indent))
+            ppr.append(ind)
+        if shading:
+            shd = OxmlElement("w:shd")
+            shd.set(qn("w:val"), "clear")
+            shd.set(qn("w:color"), "auto")
+            shd.set(qn("w:fill"), shading)
+            ppr.append(shd)
+        if border_color:
+            pbdr = OxmlElement("w:pBdr")
+            for side in ["top", "left", "bottom", "right"]:
+                bd = OxmlElement(f"w:{side}")
+                bd.set(qn("w:val"), "single")
+                bd.set(qn("w:sz"), "4" if side != "left" else "12")
+                bd.set(qn("w:space"), "1")
+                bd.set(qn("w:color"), border_color if side == "left" else "E5E7EB")
+                pbdr.append(bd)
+            ppr.append(pbdr)
         p.append(ppr)
         run = OxmlElement("w:r")
         rpr = OxmlElement("w:rPr")
@@ -265,9 +286,15 @@ def _insert_summary_section(doc, results):
             "LOW": "64748B", "CONFORMS": "16A34A",
         }
         sev_markers = {
-            "CRITICAL": "[!] CRITICAL", "HIGH": "[!] HIGH",
-            "MEDIUM": "[*] MEDIUM", "LOW": "[-] LOW",
-            "CONFORMS": "[OK] CONFORMS",
+            "CRITICAL": "\u2715 CRITICAL",   # ✕
+            "HIGH":     "\u25CF HIGH",        # ●
+            "MEDIUM":   "\u25CB MEDIUM",      # ○
+            "LOW":      "\u2013 LOW",         # –
+            "CONFORMS": "\u2713 CONFORMS",   # ✓
+        }
+        sev_shading = {
+            "CRITICAL": "FEF2F2", "HIGH": "FFF7ED", "MEDIUM": "FFFBEB",
+            "LOW": "F8FAFC", "CONFORMS": "F0FDF4",
         }
         for sev_key in ["CRITICAL", "HIGH", "MEDIUM", "LOW", "CONFORMS"]:
             items = sev_groups[sev_key]
@@ -277,7 +304,13 @@ def _insert_summary_section(doc, results):
                 f"{p.get('provision_id', '')} {(p.get('provision_name', '') or '').split(' ', 1)[-1]}"
                 for p in items
             )
-            _add_para(f"  {sev_markers[sev_key]}: {names}", size=9, color=sev_colors[sev_key])
+            _add_para(
+                f"  {sev_markers[sev_key]}: {names}",
+                size=9, color=sev_colors[sev_key],
+                shading=sev_shading[sev_key],
+                border_color=sev_colors[sev_key],
+                space_after=1,
+            )
 
         _add_para("", size=4, space_after=6)
 

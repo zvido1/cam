@@ -13,46 +13,79 @@ import fitz  # PyMuPDF
 from cam.adapters.lease_review.lease_report_generator import _sanitize_for_pdf
 
 
-def _format_annotation_text(provision: dict) -> str:
-    """Format the annotation text for a provision finding."""
+def _format_annotation_text(provision: dict, resolution: dict = None) -> str:
+    """Format the sticky note text for a PDF provision finding."""
     pid = provision.get("provision_id", "?")
     pname = provision.get("provision_name", "")
-    verdict = provision.get("final_verdict", "?")
     severity = provision.get("severity", "")
     pattern = provision.get("agreement_pattern", "")
+    risk_headline = provision.get("risk_headline", "")
 
-    lines = [f"[CAM \u2014 {pid} {pname}]"]
-    lines.append(f"Status: {verdict} ({severity})")
-    lines.append(f"Agreement: {pattern}")
+    sev_markers = {
+        "CRITICAL": "\u2715 CRITICAL",
+        "HIGH": "\u25cf HIGH",
+        "MEDIUM": "\u25cb MEDIUM",
+        "LOW": "\u2013 LOW",
+    }
+    sev_label = sev_markers.get(severity, severity)
+
+    lines = [f"CAM \u2014 {pid} {pname} [{sev_label}]"]
+    if pattern:
+        lines.append(f"Evaluators: {pattern}")
     lines.append("")
+
+    # Lead with risk headline if available
+    if risk_headline:
+        lines.append(risk_headline)
+        lines.append("")
 
     # Challenge details or cascade mechanism
     if provision.get("cascade_verdict") == "CASCADE_MATERIAL":
-        lines.append(f"Definition cascade: {provision.get('cascade_mechanism', '')}")
+        cascade_src = provision.get("cascade_source", {})
+        if cascade_src and cascade_src.get("term"):
+            lines.append(f"Definition cascade from: \"{cascade_src['term']}\"")
+        lines.append(provision.get("cascade_mechanism", ""))
         lines.append(f"Impact: {provision.get('cascade_impact', '')}")
     elif provision.get("challenge_details"):
         lines.append(provision["challenge_details"])
     elif provision.get("severity_reasoning"):
         lines.append(provision["severity_reasoning"])
 
-    lines.append("")
-
-    # Fragility signals
-    frag = provision.get("fragility", {})
-    if frag.get("signals"):
-        lines.append(f"Fragility: {', '.join(frag['signals'])}")
-
     # Recommended action
     action = provision.get("recommended_action", "")
     if action and action != "no_action":
         action_labels = {
             "note_for_awareness": "Note for awareness",
-            "attorney_review_recommended": "Attorney review recommended",
-            "attorney_review_required": "Attorney review required",
+            "attorney_review_recommended": "\u2192 Attorney review recommended",
+            "attorney_review_required": "\u2192 Attorney review required",
         }
-        lines.append(f"\u2192 {action_labels.get(action, action)}")
+        lines.append("")
+        lines.append(action_labels.get(action, action))
 
-    return "\n".join(lines)
+    # Lawyer's resolutions from CAM review session
+    if resolution:
+        lines.append("")
+        lines.append("\u2014 Lawyer's Review \u2014")
+        status = resolution.get("status", "")
+        status_labels = {
+            "accepted": "Accepted as-is",
+            "needs_negotiation": "Needs Negotiation",
+            "not_applicable": "Not Applicable",
+            "resolved": "Resolved",
+        }
+        if status:
+            lines.append(f"Decision: {status_labels.get(status, status)}")
+        concern = resolution.get("concern_state", "")
+        concern_reason = resolution.get("concern_reason", "")
+        if concern == "flagged" and concern_reason:
+            lines.append(f"Concern: {concern_reason}")
+        notes = resolution.get("notes", [])
+        for note in notes:
+            text = note.get("text", "") if isinstance(note, dict) else str(note)
+            if text:
+                lines.append(f"Note: {text}")
+
+    return "\n".join(line for line in lines if line is not None)
 
 
 def _severity_color(severity: str) -> tuple:
@@ -71,6 +104,7 @@ def annotate_pdf(
     original_pdf_path: str,
     results: dict,
     output_path: str,
+    resolutions: dict = None,
 ) -> str:
     """Add highlights and sticky notes on deviating provisions in tenant PDF.
 
@@ -78,6 +112,7 @@ def annotate_pdf(
         original_pdf_path: Path to the original tenant PDF file.
         results: Pipeline results dict (with "provisions" list).
         output_path: Path for the annotated output PDF.
+        resolutions: Optional job resolutions dict with lawyer decisions/notes.
 
     Returns:
         Path to the annotated PDF file.
@@ -93,7 +128,13 @@ def annotate_pdf(
 
         pid = provision.get("provision_id", "?")
         severity = provision.get("severity", "MEDIUM")
-        comment_text = _sanitize_for_pdf(_format_annotation_text(provision))
+
+        # Look up resolution for this provision
+        resolution = None
+        if resolutions:
+            resolution = resolutions.get(f"0:{pid}") or resolutions.get(pid)
+
+        comment_text = _sanitize_for_pdf(_format_annotation_text(provision, resolution))
         highlight_color = _severity_color(severity)
 
         # Build search text — use first ~80 chars of tenant text
