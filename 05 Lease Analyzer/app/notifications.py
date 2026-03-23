@@ -272,10 +272,11 @@ def _send_via_gmail_api(
         if attachments:
             valid, _ = _filter_attachments(attachments)
             for p in valid:
+                safe_name = _sanitize_attachment_filename(p.name)
                 part = MIMEBase("application", "octet-stream")
                 part.set_payload(p.read_bytes())
                 encoders.encode_base64(part)
-                part.add_header("Content-Disposition", f"attachment; filename={p.name}")
+                part.add_header("Content-Disposition", f'attachment; filename="{safe_name}"')
                 msg.attach(part)
             logger.info(f"Attaching {len(valid)} file(s) via Gmail API")
 
@@ -316,10 +317,11 @@ def _send_via_smtp(
         if attachments:
             valid, _ = _filter_attachments(attachments)
             for p in valid:
+                safe_name = _sanitize_attachment_filename(p.name)
                 part = MIMEBase("application", "octet-stream")
                 part.set_payload(p.read_bytes())
                 encoders.encode_base64(part)
-                part.add_header("Content-Disposition", f"attachment; filename={p.name}")
+                part.add_header("Content-Disposition", f'attachment; filename="{safe_name}"')
                 msg.attach(part)
 
         port = int(config.get("SMTP_PORT", 587))
@@ -341,6 +343,28 @@ def _send_via_smtp(
     except Exception as e:
         logger.error(f"SMTP failed to {to_email}: {e}")
         return False
+
+
+def _sanitize_attachment_filename(filename: str) -> str:
+    """Sanitize filename for safe use in email Content-Disposition headers.
+    Replaces Unicode characters that cause Gmail to show 'noname' attachments.
+    """
+    replacements = {
+        '\u2014': '-',   # em dash
+        '\u2013': '-',   # en dash
+        '\u2018': "'",   # left single quote
+        '\u2019': "'",   # right single quote
+        '\u201c': '"',   # left double quote
+        '\u201d': '"',   # right double quote
+        '\u2026': '...',  # ellipsis
+    }
+    for char, replacement in replacements.items():
+        filename = filename.replace(char, replacement)
+    # Remove any remaining non-ASCII characters
+    filename = filename.encode('ascii', 'ignore').decode('ascii')
+    # Clean up any double spaces or leading/trailing spaces
+    filename = ' '.join(filename.split())
+    return filename or 'attachment'
 
 
 def _filter_attachments(attachments: List[str]) -> tuple:
