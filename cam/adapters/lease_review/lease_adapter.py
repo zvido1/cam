@@ -312,6 +312,7 @@ def run_lease_analysis(
     # during extraction. Convert them to CUSTOM-XX provision entries so Stage 2
     # evaluators can assess them.
     raw_discoveries = extraction.get("discovered_provisions", [])
+    raw_discoveries_before_dedup = len(raw_discoveries)
 
     # Deduplicate across chunks: each chunk independently discovers provisions,
     # so the same clause (e.g. "Relocation") can appear 3-4 times. Keep the
@@ -362,6 +363,9 @@ def run_lease_analysis(
         tenant_text=tenant_text,
     )
 
+    gap_repair_start = time.time()
+    gap_repair_call_count = 0
+
     if coverage_gaps:
         print(f"[lease_adapter] Coverage audit: {len(coverage_gaps)} gap(s) detected", flush=True)
         print(f"[lease_adapter] {format_gap_report(coverage_gaps)}", flush=True)
@@ -392,6 +396,7 @@ def run_lease_analysis(
                 tenant_text=tenant_text,
                 config=cfg,
             )
+            gap_repair_call_count += 1
             repaired_sections.add(section_ref)
             if recovered:
                 prov["tenant_text"] = (prov.get("tenant_text", "") or "").rstrip()
@@ -429,6 +434,15 @@ def run_lease_analysis(
         print("[lease_adapter] Coverage audit: PASS — all sections accounted for", flush=True)
 
     extraction["coverage_gaps"] = coverage_gaps
+
+    # ── Update extraction meta with telemetry sub-fields ──
+    gap_repair_elapsed = time.time() - gap_repair_start
+    extraction["meta"]["gap_repair_elapsed_sec"] = round(gap_repair_elapsed, 2)
+    extraction["meta"]["gap_repair_calls"] = gap_repair_call_count
+    extraction["meta"]["total_stage1_elapsed_sec"] = round(
+        extraction["meta"].get("elapsed_sec", 0) + gap_repair_elapsed, 2)
+    extraction["meta"]["discovered_raw_count"] = raw_discoveries_before_dedup
+    extraction["meta"]["discovered_deduped_count"] = len(raw_discoveries)
 
     # ── Input Freeze (Step 192) ──
     # Mark all provisions as frozen. Evaluation must not run on non-frozen provisions.
@@ -865,6 +879,13 @@ def run_lease_analysis(
         result["output_files"] = {"error": str(e)}
 
     print(f"[lease_adapter] Pipeline complete: {total_api_calls} API calls in {round(pipeline_elapsed, 1)}s", flush=True)
+
+    # ── Telemetry ──
+    try:
+        from cam.adapters.lease_review.lease_telemetry import emit as emit_telemetry
+        emit_telemetry(result, cfg)
+    except Exception as e:
+        print(f"[lease_adapter] Telemetry emit failed (non-fatal): {e}", flush=True)
 
     return result
 

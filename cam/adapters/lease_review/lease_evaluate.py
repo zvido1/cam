@@ -538,6 +538,9 @@ def evaluate_provisions(
         "all_discoveries": all_discoveries,
         "meta": {
             "total_elapsed_sec": round(stage_elapsed, 2),
+            "evaluator_a_elapsed_sec": round(evaluator_results.get("A", {}).get("elapsed_sec", 0), 2),
+            "evaluator_b_elapsed_sec": round(evaluator_results.get("B", {}).get("elapsed_sec", 0), 2),
+            "evaluator_c_elapsed_sec": round(evaluator_results.get("C", {}).get("elapsed_sec", 0), 2),
             "api_calls": succeeded,
             "evaluator_count": succeeded,
             "degraded": succeeded < 3,

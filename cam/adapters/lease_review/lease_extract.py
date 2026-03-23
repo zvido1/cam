@@ -518,6 +518,14 @@ def _run_extraction_call(
             "fallback_used": fallback_used,
             "elapsed_sec": round(elapsed, 2),
             "errors": errors,
+            # Telemetry sub-fields — populated by lease_adapter after gap repair
+            "gap_repair_elapsed_sec": 0,
+            "gap_repair_calls": 0,
+            "total_stage1_elapsed_sec": 0,
+            "discovered_raw_count": 0,
+            "discovered_deduped_count": 0,
+            "fallback_chunk_count": 0,
+            "fallback_model": "",
         },
     }
 
@@ -567,6 +575,9 @@ def _extract_chunked(
     chunk_models = []
     any_fallback = False
 
+    fallback_chunk_count = 0
+    fallback_model = ""
+
     for r in results:
         merged_provisions.extend(r["provisions"])
         merged_errors.extend(r["meta"]["errors"])
@@ -574,6 +585,8 @@ def _extract_chunked(
         chunk_models.append(r["meta"]["model"])
         if r["meta"]["fallback_used"]:
             any_fallback = True
+            fallback_chunk_count += 1
+            fallback_model = r["meta"]["model"]
 
     print(f"[lease_extract] Chunked extraction complete: "
           f"{len(merged_provisions)} provisions total, {round(total_elapsed, 1)}s combined", flush=True)
@@ -594,6 +607,14 @@ def _extract_chunked(
             "chunked": True,
             "num_chunks": actual_chunks,
             "chunk_models": chunk_models,
+            # Telemetry sub-fields — populated by lease_adapter after gap repair
+            "gap_repair_elapsed_sec": 0,
+            "gap_repair_calls": 0,
+            "total_stage1_elapsed_sec": 0,
+            "discovered_raw_count": 0,
+            "discovered_deduped_count": 0,
+            "fallback_chunk_count": fallback_chunk_count,
+            "fallback_model": fallback_model,
         },
     }
 
