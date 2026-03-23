@@ -347,10 +347,16 @@ def _filter_attachments(attachments: List[str]) -> tuple:
     """Filter to valid files within size limit. Returns (valid_paths, reason)."""
     total_size = 0
     valid = []
-    for filepath in attachments:
+    for filepath in (attachments or []):
+        if not filepath:  # skip None and empty strings
+            continue
         p = Path(filepath)
-        if p.exists():
-            total_size += p.stat().st_size
+        if p.exists() and p.is_file():  # is_file() prevents Path("") matching cwd
+            size = p.stat().st_size
+            if size == 0:  # skip empty files — they show as "noname" in Gmail
+                logger.warning(f"Skipping empty attachment: {p.name}")
+                continue
+            total_size += size
             valid.append(p)
     if total_size > MAX_ATTACHMENT_BYTES:
         logger.warning(f"Attachments too large ({total_size/1024/1024:.1f} MB) — summary only")
