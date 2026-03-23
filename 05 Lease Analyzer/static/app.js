@@ -5034,8 +5034,21 @@ function renderContractPickerFilterBar() {
 }
 
 function getAvailableClauseFilterValues(provisions) {
-    const deviations = getDeviationWorkflowProvisions(provisions, currentTenantIndex);
-    const conforming = (provisions || []).filter(function(p) {
+    const rawProvisions = provisions || [];
+    const deviations = rawProvisions
+        .filter(function(p) {
+            return p
+                && p.provision_id !== "LP-00"
+                && (p.final_verdict === "DEVIATES"
+                    || p.final_verdict === "UNCLEAR"
+                    || isManualEscalatedProvision(p, currentTenantIndex));
+        })
+        .map(function(p) {
+            return isManualEscalatedProvision(p, currentTenantIndex)
+                ? buildManualEscalatedProvision(p, currentTenantIndex)
+                : p;
+        });
+    const conforming = rawProvisions.filter(function(p) {
         return p && p.provision_id !== "LP-00" && p.final_verdict === "CONFORMS" && !isManualEscalatedProvision(p, currentTenantIndex);
     });
     const severitySet = new Set();
@@ -5988,11 +6001,42 @@ function getProviderShortNames(modelsUsed) {
  * Splits on \n\n into paragraphs, converts **bold** to <strong>, wraps in <p> tags.
  * Formatting is produced by the models — this just renders it.
  */
-function renderDetailText(text) {
+function formatDetailMarkdown(text) {
     if (!text) return "";
-    const formatted = formatChatResponse(text).trim();
-    if (!formatted) return "";
-    return `<div class="detail-text-body">${formatted}</div>`;
+    const normalized = String(text).replace(/\r\n?/g, "\n").trim();
+    if (!normalized) return "";
+    return normalized
+        .split(/\n{2,}/)
+        .map((block) => {
+            const strongTokens = [];
+            const withTokens = block.trim().replace(/\*\*(.+?)\*\*/g, (_, content) => {
+                const idx = strongTokens.length;
+                strongTokens.push(content);
+                return `%%DETAIL_STRONG_${idx}%%`;
+            });
+            let escaped = esc(withTokens)
+                .replace(/\n/g, "<br>");
+            strongTokens.forEach((content, idx) => {
+                escaped = escaped.replace(`%%DETAIL_STRONG_${idx}%%`, `<strong>${esc(content)}</strong>`);
+            });
+            return escaped ? `<p>${escaped}</p>` : "";
+        })
+        .join("");
+}
+
+function renderDetailText(text) {
+    return formatDetailMarkdown(text);
+}
+
+function hydrateRenderedDetailMarkdown(root) {
+    if (!root) return;
+    root.querySelectorAll(".detail-text:not(.interpretation-note-body)").forEach((el) => {
+        if (!el) return;
+        if (el.querySelector("strong")) return;
+        const raw = el.textContent || "";
+        if (!raw.includes("**")) return;
+        el.innerHTML = renderDetailText(raw);
+    });
 }
 
 function linkifyProvisions(text, analyzedPids, currentPid) {
@@ -7414,9 +7458,9 @@ function legacyRenderSidebarTOC(sidebar, fullText, scrollTargetPrefix, options =
 
     let tocHtml = `<div class="fulldoc-sidebar-divider"></div>
         <div class="sidebar-toc-toggle" id="toc-toggle-${scrollTargetPrefix}">
-            <span class="toc-arrow">&#9654;</span> TABLE OF CONTENTS
+            <span class="toc-arrow">&#9660;</span> TABLE OF CONTENTS
         </div>
-        <div class="sidebar-toc-content hidden" id="toc-content-${scrollTargetPrefix}">`;
+        <div class="sidebar-toc-content" id="toc-content-${scrollTargetPrefix}">`;
 
     outline.forEach((entry, i) => {
         const entryClass = entry.type === "section" ? " sidebar-toc-item-section" : " sidebar-toc-item-article";
@@ -7510,9 +7554,9 @@ function renderSidebarTOC(sidebar, fullText, scrollTargetPrefix, options = {}) {
 
     let tocHtml = `<div class="fulldoc-sidebar-divider"></div>
         <div class="sidebar-toc-toggle" id="toc-toggle-${scrollTargetPrefix}">
-            <span class="toc-arrow">&#9654;</span> TABLE OF CONTENTS
+            <span class="toc-arrow">&#9660;</span> TABLE OF CONTENTS
         </div>
-        <div class="sidebar-toc-content hidden" id="toc-content-${scrollTargetPrefix}">`;
+        <div class="sidebar-toc-content" id="toc-content-${scrollTargetPrefix}">`;
 
     if (articleGroups.some((group) => group.sections.length > 0)) {
         tocHtml += `<button type="button" class="sidebar-toc-expand-all" data-expanded="false">Expand All Sections</button>`;
@@ -7832,6 +7876,7 @@ function legacyRenderSideBySideView() {
     const container = $("#docview-container");
     container.className = "docview-container docview-container-sbs";
     container.innerHTML = html;
+    hydrateRenderedDetailMarkdown(container);
 
     // Shared back-to-summary handler
     function handleBackToSummary() {
@@ -7886,6 +7931,7 @@ function renderSideBySideView() {
     const container = $("#docview-container");
     container.className = "docview-container docview-container-sbs";
     container.innerHTML = html;
+    hydrateRenderedDetailMarkdown(container);
 
     function handleBackToSummary() {
         switchResultsTab("findings");
@@ -11839,7 +11885,7 @@ function buildContractFilterDropdown() {
     var wrap = document.getElementById('snapshot-contract-filter-wrap');
     if (!dropdown || !btn || !currentResults || !currentResults.tenants) return;
 
-    // Determine which tenants pass Severity + Status filters (before contract name filter)
+    // Determine which tenants pass the current non-contract filters.
     var tenants = currentResults.tenants;
     var eligibleIndices = [];
     tenants.forEach(function(t, i) {
@@ -11883,7 +11929,19 @@ function buildContractFilterDropdown() {
         else if (snapshotStatusFilter === 'resolved') statusOk = resolution === 'resolved';
         else if (snapshotStatusFilter === 'clear') statusOk = isClean;
 
-        if (sevOk && confOk && statusOk) eligibleIndices.push(i);
+        var searchOk = true;
+        if (snapshotSearch) {
+            var q = snapshotSearch.toLowerCase();
+            var meta = t.results && t.results.contract_metadata ? t.results.contract_metadata : {};
+            var name = formatTenantName(t.filename || ('Contract ' + (i + 1)));
+            var tenantName = (meta.tenant_name || '').trim();
+            var propertyDesc = (meta.property_description || '').trim();
+            searchOk = name.toLowerCase().indexOf(q) !== -1
+                || tenantName.toLowerCase().indexOf(q) !== -1
+                || propertyDesc.toLowerCase().indexOf(q) !== -1;
+        }
+
+        if (sevOk && confOk && statusOk && searchOk) eligibleIndices.push(i);
     });
 
     // Build checkbox list
@@ -11992,6 +12050,15 @@ function renderRunSnapshot() {
     if (contractsTab) contractsTab.classList.remove('hidden');
 
     const tenants = currentResults.tenants;
+    function getSnapshotSeverityRank(severity) {
+        const idx = SEVERITY_ORDER.indexOf((severity || "").toUpperCase());
+        return idx === -1 ? 99 : idx;
+    }
+    function normalizeSnapshotSeverity(severity, fallback) {
+        const sev = (severity || "").toUpperCase();
+        if (SEVERITY_ORDER.includes(sev)) return sev;
+        return fallback || "LOW";
+    }
 
     // ── Step 124: Build enriched card data for pipeline ──
     var allCards = tenants.map(function(t, i) {
@@ -11999,13 +12066,16 @@ function renderRunSnapshot() {
         var provisions = t.results && t.results.provisions ? t.results.provisions : [];
         var deviations = getDeviationWorkflowProvisions(provisions, i);
         var highestSev = s ? getHighestSeverity(s) : null;
+        highestSev = highestSev === "CONFORMS" ? null : normalizeSnapshotSeverity(highestSev, null);
         if (deviations.length > 0) {
             highestSev = deviations.reduce(function(best, p) {
-                if (!best) return p.severity || "MEDIUM";
-                return SEVERITY_ORDER.indexOf(p.severity || "LOW") <= SEVERITY_ORDER.indexOf(best) ? (p.severity || best) : best;
+                var nextSev = normalizeSnapshotSeverity(p.severity, null);
+                if (!nextSev) return best;
+                if (!best) return nextSev;
+                return getSnapshotSeverityRank(nextSev) <= getSnapshotSeverityRank(best) ? nextSev : best;
             }, highestSev);
         }
-        var sevScore = highestSev ? (SEVERITY_ORDER.indexOf(highestSev) + 1 || 99) : 99;
+        var sevScore = highestSev ? (getSnapshotSeverityRank(highestSev) + 1) : 99;
         var isClean = deviations.length === 0 && s;
         var resolution = getContractResolution(i);
         var name = formatTenantName(t.filename || "");
@@ -12026,7 +12096,16 @@ function renderRunSnapshot() {
     // ── Enrich cards with confidence signals ──
     allCards.forEach(function(c) {
         c.confSignals = new Set();
-        c.sevLabel = c.isClean ? 'CLEAR' : (c.highestSev || 'MEDIUM').toUpperCase();
+        c.sevSet = new Set();
+        if (c.isClean) {
+            c.sevSet.add('CLEAR');
+        } else {
+            Object.keys(c.sevCounts || {}).forEach(function(key) {
+                if ((c.sevCounts[key] || 0) > 0) c.sevSet.add(normalizeSnapshotSeverity(key, null));
+            });
+            if (c.sevSet.size === 0) c.sevSet.add(normalizeSnapshotSeverity(c.highestSev, 'LOW'));
+        }
+        c.sevLabel = c.isClean ? 'CLEAR' : normalizeSnapshotSeverity(c.highestSev, 'LOW');
         c.deviations.forEach(function(p) {
             var sig = p.cam_score ? p.cam_score.governance_signal : '';
             if (sig) c.confSignals.add(sig);
@@ -12036,7 +12115,10 @@ function renderRunSnapshot() {
     // ── Filter helpers ──
     function passesSev(c) {
         if (snapshotSeverityFilter.size === 0) return true;
-        return snapshotSeverityFilter.has(c.sevLabel);
+        for (var sev of snapshotSeverityFilter) {
+            if ((c.sevSet || new Set()).has(sev)) return true;
+        }
+        return false;
     }
     function passesConf(c) {
         if (snapshotConfidenceFilter.size === 0) return true;
@@ -12063,21 +12145,26 @@ function renderRunSnapshot() {
     }
 
     // ── Cascading available values (each computed with all OTHER filters applied) ──
+    function hasSnapshotNarrowing() {
+        return snapshotSeverityFilter.size > 0
+            || snapshotConfidenceFilter.size > 0
+            || snapshotStatusFilter !== 'all'
+            || snapshotContractFilter.size > 0
+            || !!snapshotSearch;
+    }
     var _snapAvailSev = new Set();
     var _snapAvailConf = new Set();
     var _snapAvailStatus = new Set();
+    var _useCascadingAvail = hasSnapshotNarrowing();
     allCards.forEach(function(c) {
-        // Available severities: passes conf + status + contract + search
-        if (passesConf(c) && passesStatus(c) && passesContract(c) && passesSearch(c)) {
-            _snapAvailSev.add(c.sevLabel);
+        if (!_useCascadingAvail || (passesConf(c) && passesStatus(c) && passesContract(c) && passesSearch(c))) {
+            (c.sevSet || new Set()).forEach(function(sev) { _snapAvailSev.add(sev); });
         }
-        // Available confidences: passes sev + status + contract + search
-        if (passesSev(c) && passesStatus(c) && passesContract(c) && passesSearch(c)) {
+        if (!_useCascadingAvail || (passesSev(c) && passesStatus(c) && passesContract(c) && passesSearch(c))) {
             c.confSignals.forEach(function(sig) { _snapAvailConf.add(sig); });
-            if (c.isClean) _snapAvailConf.add('_CLEAR'); // mark that clear contracts exist
+            if (c.isClean) _snapAvailConf.add('_CLEAR');
         }
-        // Available statuses: passes sev + conf + contract + search
-        if (passesSev(c) && passesConf(c) && passesContract(c) && passesSearch(c)) {
+        if (!_useCascadingAvail || (passesSev(c) && passesConf(c) && passesContract(c) && passesSearch(c))) {
             if (c.isClean) _snapAvailStatus.add('clear');
             if (c.resolution === 'unreviewed') _snapAvailStatus.add('unreviewed');
             if (c.resolution === 'resolved') _snapAvailStatus.add('resolved');
