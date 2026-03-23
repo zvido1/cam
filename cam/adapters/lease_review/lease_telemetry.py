@@ -127,7 +127,11 @@ def emit(
                 "custom_discovered_raw": stage_data.get("extraction_meta", {}).get("discovered_raw_count", 0),
                 "custom_discovered_deduped": stage_data.get("extraction_meta", {}).get("discovered_deduped_count", 0),
                 "gap_repairs": completeness.get("gaps_resolved_by_reextraction", 0),
-                "unclaimed_articles_injected": completeness.get("unclaimed_article_gaps", 0),
+                "unclaimed_articles_injected": sum(
+                    1 for p in provisions
+                    if p.get("provision_id", "").startswith("CUSTOM")
+                    and "Unaccounted Article" in (p.get("provision_name") or "")
+                ),
                 "total_evaluated": len(provisions),
                 "completeness_score": completeness.get("completeness_score", 0),
                 "completeness_status": completeness.get("status", ""),
