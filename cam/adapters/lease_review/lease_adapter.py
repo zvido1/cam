@@ -572,6 +572,38 @@ def run_lease_analysis(
 
         print(f"[lease_adapter] LP-00 configured: mode={identity_check}, template_type={template_type}", flush=True)
 
+    # ── Provision Scope Filter (Step 239) ──
+    # The extraction cache returns all 18 provisions regardless of the user's
+    # selection. Apply a filter here — after all Stage 1 work is complete —
+    # to drop LP-XX provisions that were not in the selected set.
+    #
+    # Always-keep rules:
+    #   - LP-00 (always_on — metadata + identity check)
+    #   - Any CUSTOM-XX (discovered non-standard articles + user custom provisions)
+    #
+    # The `provisions` parameter contains the dicts that get_active_provisions()
+    # built from selected_ids, so extract the IDs from it as the authoritative set.
+    _selected_ids = {p.get("id") or p.get("provision_id") for p in (provisions or [])}
+    if _selected_ids:
+        _before = len(extraction["provisions"])
+        extraction["provisions"] = [
+            p for p in extraction["provisions"]
+            if (
+                p.get("provision_id", "").startswith("CUSTOM")  # discovered / injected
+                or p.get("provision_id") == "LP-00"             # always-on
+                or p.get("provision_id") in _selected_ids       # explicitly selected
+            )
+        ]
+        _after = len(extraction["provisions"])
+        if _after < _before:
+            print(
+                f"[lease_adapter] Scope filter: {_before} → {_after} provisions "
+                f"(dropped {_before - _after} unselected LP-XX entries)",
+                flush=True,
+            )
+        else:
+            print(f"[lease_adapter] Scope filter: all {_after} provisions in scope (no filtering needed)", flush=True)
+
     # ── Stage 4: Fragility Detection (pure Python, 0 API calls) ──
     # Run BEFORE evaluators — costs nothing and gives triage more info
     if progress_callback:
