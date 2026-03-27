@@ -42,7 +42,9 @@ def get_config() -> dict:
         # Access control
         "ACCESS_CODE": os.getenv("ACCESS_CODE", "cam_demo_2026"),
 
-        # Email — Gmail API (preferred) or SMTP fallback
+        # Email — SendGrid (preferred) → Gmail API → SMTP fallback
+        "SENDGRID_API_KEY": os.getenv("SENDGRID_API_KEY", ""),
+        "SENDGRID_FROM_EMAIL": os.getenv("SENDGRID_FROM_EMAIL", ""),
         "GMAIL_CLIENT_ID": os.getenv("GMAIL_CLIENT_ID", ""),
         "GMAIL_CLIENT_SECRET": os.getenv("GMAIL_CLIENT_SECRET", ""),
         "GMAIL_REFRESH_TOKEN": os.getenv("GMAIL_REFRESH_TOKEN", ""),
@@ -90,3 +92,10 @@ def gmail_api_configured(config: dict = None) -> bool:
         and config.get("GMAIL_REFRESH_TOKEN")
         and config.get("GMAIL_USER")
     )
+
+
+def sendgrid_configured(config: dict = None) -> bool:
+    """Check if SendGrid API key is configured."""
+    if config is None:
+        config = get_config()
+    return bool(config.get("SENDGRID_API_KEY"))

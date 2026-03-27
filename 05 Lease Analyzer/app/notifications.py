@@ -1,8 +1,8 @@
 """
 CAM Lease Analyzer Web App — Email Notifications
 
-Sends email via Gmail API (OAuth2) if configured, falls back to SMTP.
-If neither is configured, logs the notification instead.
+Sends email via SendGrid (preferred), Gmail API (OAuth2), or SMTP fallback.
+If none is configured, logs the notification instead.
 """
 
 import base64
@@ -17,7 +17,7 @@ from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 from typing import List, Optional
 
-from app.config import get_config, email_configured, gmail_api_configured
+from app.config import get_config, email_configured, gmail_api_configured, sendgrid_configured
 
 logger = logging.getLogger(__name__)
 
@@ -218,20 +218,87 @@ def _send_email(
     html: Optional[str] = None,
     attachments: Optional[List[str]] = None,
 ) -> bool:
-    """Send email via Gmail API if configured, else SMTP, else log."""
+    """Send email via SendGrid → Gmail API → SMTP → log fallback."""
     config = get_config()
 
-    if not email_configured(config):
+    if not email_configured(config) and not sendgrid_configured(config):
         logger.info(
             f"Email not configured — logging notification:\n"
             f"  To: {to_email}\n  Subject: {subject}\n  Body:\n{body}"
         )
         return True
 
+    if sendgrid_configured(config):
+        return _send_via_sendgrid(to_email, subject, body, html, attachments, config)
+
     if gmail_api_configured(config):
         return _send_via_gmail_api(to_email, subject, body, html, attachments, config)
-    else:
-        return _send_via_smtp(to_email, subject, body, html, attachments, config)
+
+    return _send_via_smtp(to_email, subject, body, html, attachments, config)
+
+
+def _send_via_sendgrid(
+    to_email: str,
+    subject: str,
+    plain: str,
+    html: Optional[str],
+    attachments: Optional[List[str]],
+    config: dict,
+) -> bool:
+    """Send email using SendGrid REST API (stdlib only — no pip dependency)."""
+    try:
+        import urllib.request
+        import json as _json
+
+        from_email = config.get("SENDGRID_FROM_EMAIL") or config.get("NOTIFICATION_FROM") or "noreply@vered.ai"
+
+        payload = {
+            "personalizations": [{"to": [{"email": to_email}]}],
+            "from": {"email": from_email},
+            "subject": subject,
+            "content": [
+                {"type": "text/plain", "value": plain},
+            ],
+        }
+        if html:
+            payload["content"].append({"type": "text/html", "value": html})
+
+        # Attachments
+        if attachments:
+            valid, _ = _filter_attachments(attachments)
+            if valid:
+                import base64 as _b64
+                sg_attachments = []
+                for p in valid:
+                    safe_name = _sanitize_attachment_filename(p.name)
+                    encoded = _b64.b64encode(p.read_bytes()).decode()
+                    sg_attachments.append({
+                        "content": encoded,
+                        "filename": safe_name,
+                        "type": "application/octet-stream",
+                        "disposition": "attachment",
+                    })
+                if sg_attachments:
+                    payload["attachments"] = sg_attachments
+
+        data = _json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.sendgrid.com/v3/mail/send",
+            data=data,
+            headers={
+                "Authorization": f"Bearer {config['SENDGRID_API_KEY']}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req) as resp:
+            status = resp.status
+            logger.info(f"SendGrid: sent to {to_email} — HTTP {status}")
+            return status in (200, 202)
+
+    except Exception as e:
+        logger.error(f"SendGrid failed to {to_email}: {e} — falling back to SMTP")
+        return _send_via_smtp(to_email, subject, plain, html, attachments, config)
 
 
 def _send_via_gmail_api(
