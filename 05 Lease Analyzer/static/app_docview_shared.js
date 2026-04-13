@@ -57,6 +57,11 @@
             </button>`
         ).join("");
 
+        const _ca = helpers.coverageAssessment || [];
+        const _cov = _ca.find(function(a) { return a.issue_area_id === pid; });
+        const covLinkHtml = (!_cov || _cov.coverage_state === 'covered' || _cov.coverage_state === 'not_applicable') ? '' :
+            `<a class="card-docview-link card-docview-link--btn" href="#" onclick="window.CAM.jumpToCoverageProvision('${esc(pid)}'); return false;" title="Jump to this gap in Coverage &amp; Gaps">&#9680; Coverage Gap</a>`;
+
         return `
             <div class="resolution-bar docview-resolution-bar" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}">
                 <div class="res-status-row finding-workflow-row">
@@ -90,6 +95,7 @@
                            title="View full CAM analysis in Audit Trail">
                             Open CAM Audit Trail
                         </a>
+                        ${covLinkHtml}
                     </div>
                 </div>
                 <div class="res-notes-panel hidden docview-res-notes-panel" id="docview-res-notes-${suffix}">
@@ -116,6 +122,12 @@
         const getConformingConcernState = helpers.getConformingConcernState;
         const pid = provision.provision_id;
         const concernState = getConformingConcernState(tenantIdx, pid);
+
+        const _ca = helpers.coverageAssessment || [];
+        const _cov = _ca.find(function(a) { return a.issue_area_id === pid; });
+        const covLinkHtml = (!_cov || _cov.coverage_state === 'covered' || _cov.coverage_state === 'not_applicable') ? '' :
+            `<a class="card-docview-link card-docview-link--btn" href="#" onclick="window.CAM.jumpToCoverageProvision('${esc(pid)}'); return false;" title="Jump to this gap in Coverage &amp; Gaps">&#9680; Coverage Gap</a>`;
+
         return `
             <div class="conforming-concern-bar docview-concern-bar">
                 <span class="conforming-concern-label">Mark:</span>
@@ -141,6 +153,7 @@
                        title="View full CAM analysis in Audit Trail">
                         Open CAM Audit Trail
                     </a>
+                    ${covLinkHtml}
                 </div>
             </div>
         `;

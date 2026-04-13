@@ -1191,6 +1191,51 @@ def delete_job(job_id: str):
     logger.info(f"Job deleted by user: {job_id}")
 
 
+
+# ── Coverage Resolution Workflow ──
+
+def get_cov_resolutions(job_id: str) -> dict:
+    """Return the coverage resolutions dict. Keys are 'cov:{tenant_idx}:{provision_id}'."""
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if not job:
+            return {}
+        return dict(job.get("cov_resolutions", {}))
+
+
+def set_cov_resolution(
+    job_id: str,
+    tenant_idx: int,
+    provision_id: str,
+    status: str,
+) -> dict | None:
+    """
+    Set coverage workflow status for a provision.
+    status: 'open' | 'reviewed' | 'flagged' | 'accepted'
+    Returns the updated entry, or None if job not found.
+    """
+    from datetime import datetime, timezone
+    key = f"cov:{tenant_idx}:{provision_id}"
+    now = datetime.now(timezone.utc).isoformat()
+
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if not job:
+            return None
+        if "cov_resolutions" not in job:
+            job["cov_resolutions"] = {}
+        entry = job["cov_resolutions"].setdefault(key, {
+            "status": "open",
+            "updated_at": now,
+        })
+        entry["status"] = status
+        entry["updated_at"] = now
+        result = dict(entry)
+
+    save_job_results(job_id)
+    return result
+
+
 # ── Background processing ──
 
 def start_processing(job_id: str) -> None:

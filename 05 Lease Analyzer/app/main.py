@@ -470,6 +470,41 @@ async def update_resolution(job_id: str, request: Request):
     return {"ok": True, "resolution": result}
 
 
+
+# ══════════════════════════════════════════════════════════════════════════════
+# COVERAGE RESOLUTION WORKFLOW
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.get("/api/jobs/{job_id}/cov-resolutions")
+def get_cov_resolutions(job_id: str):
+    """Return all coverage resolution states for a job."""
+    cov_resolutions = job_manager.get_cov_resolutions(job_id)
+    return {"ok": True, "cov_resolutions": cov_resolutions}
+
+
+@app.post("/api/jobs/{job_id}/cov-resolution")
+async def update_cov_resolution(job_id: str, request: Request):
+    """Set coverage workflow status for one provision."""
+    body = await request.json()
+    tenant_idx = body.get("tenant_idx")
+    provision_id = body.get("provision_id")
+    status = body.get("status", "open")
+
+    if tenant_idx is None or not provision_id:
+        raise HTTPException(status_code=400, detail="tenant_idx and provision_id required")
+
+    valid_statuses = ("open", "reviewed", "flagged", "accepted")
+    if status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"status must be one of {valid_statuses}")
+
+    result = job_manager.set_cov_resolution(
+        job_id, int(tenant_idx), provision_id, status
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return {"ok": True, "cov_resolution": result}
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # PRE-SCAN ENDPOINTS (050)
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1207,32 +1242,46 @@ def download_annotated(job_id: str, tenant_index: int, with_resolutions: bool = 
     if not filename.lower().endswith(ext):
         filename = Path(filename).stem + ext
 
-    # For DOCX: regenerate on-demand with latest resolutions
-    if with_resolutions and ext == ".docx":
+    # For DOCX or PDF: regenerate on-demand with latest resolutions
+    if with_resolutions and ext in (".docx", ".pdf"):
         result_path = tenant.get("result_path")
         upload_path = tenant.get("upload_path")
         resolutions = job.get("resolutions", {})
 
         if result_path and Path(result_path).exists() and upload_path and Path(upload_path).exists():
             try:
-                from cam.adapters.lease_review.lease_docx_annotator import annotate_docx
                 pipeline_results = json.loads(Path(result_path).read_text(encoding="utf-8"))
 
-                # Write to a temp path alongside the original
-                regen_path = Path(annotated_path).parent / f"annotated_latest_{Path(tenant['filename']).stem}.docx"
-                annotate_docx(
-                    original_docx_path=upload_path,
-                    results=pipeline_results,
-                    output_path=str(regen_path),
-                    resolutions=resolutions,
-                )
-                return FileResponse(
-                    path=str(regen_path),
-                    filename=filename,
-                    media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                )
+                if ext == ".docx":
+                    from cam.adapters.lease_review.lease_docx_annotator import annotate_docx
+                    regen_path = Path(annotated_path).parent / f"annotated_latest_{Path(tenant['filename']).stem}.docx"
+                    annotate_docx(
+                        original_docx_path=upload_path,
+                        results=pipeline_results,
+                        output_path=str(regen_path),
+                        resolutions=resolutions,
+                    )
+                    return FileResponse(
+                        path=str(regen_path),
+                        filename=filename,
+                        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    )
+                else:  # .pdf
+                    from cam.adapters.lease_review.lease_pdf_annotator import annotate_pdf
+                    regen_path = Path(annotated_path).parent / f"annotated_latest_{Path(tenant['filename']).stem}.pdf"
+                    annotate_pdf(
+                        original_pdf_path=upload_path,
+                        results=pipeline_results,
+                        output_path=str(regen_path),
+                        resolutions=resolutions,
+                    )
+                    return FileResponse(
+                        path=str(regen_path),
+                        filename=filename,
+                        media_type="application/pdf",
+                    )
             except Exception as e:
-                logger.warning(f"Annotated DOCX regeneration failed, falling back to cached: {e}")
+                logger.warning(f"Annotated document regeneration failed, falling back to cached: {e}")
                 # Fall through to serve cached file
 
     return FileResponse(

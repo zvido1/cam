@@ -1,4 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
+﻿/* ═══════════════════════════════════════════════════════════════
    CAM Lease Analyzer — Frontend Application
    Single-page app with 5 states: gate, select, upload, processing, results
    ═══════════════════════════════════════════════════════════════ */
@@ -145,6 +145,7 @@ const buildDocviewDeviationControls = CAMDocviewShared.buildDocviewDeviationCont
             getDocviewDomIdSuffix,
             buildDraftDecisionControls: buildDocviewDraftDecisionControls,
             formatResTimestamp,
+            coverageAssessment: ((currentResults && currentResults.tenants && currentResults.tenants[tenantIdx]) || {}).results && currentResults.tenants[tenantIdx].results.coverage_assessment || [],
         });
     }
     : function() { return ""; };
@@ -153,6 +154,7 @@ const buildDocviewConformingControls = CAMDocviewShared.buildDocviewConformingCo
         return CAMDocviewShared.buildDocviewConformingControls(provision, tenantIdx, {
             esc,
             getConformingConcernState,
+            coverageAssessment: ((currentResults && currentResults.tenants && currentResults.tenants[tenantIdx]) || {}).results && currentResults.tenants[tenantIdx].results.coverage_assessment || [],
         });
     }
     : function() { return ""; };
@@ -183,10 +185,12 @@ const buildSideBySideDocviewMarkup = CAMDocviewRenderShared.buildSideBySideDocvi
 const CAMSummaryShared = window.CAMSummaryShared || {};
 const buildConformingItem = CAMSummaryShared.buildConformingItem
     ? function(provision, options) {
+        const _ti = options.tenantIdx != null ? options.tenantIdx : currentTenantIndex;
         return CAMSummaryShared.buildConformingItem(provision, options, {
             esc,
             isNoted,
             getDissentingEvaluators,
+            coverageAssessment: ((currentResults && currentResults.tenants && currentResults.tenants[_ti]) || {}).results && currentResults.tenants[_ti].results.coverage_assessment || [],
         });
     }
     : function() { return ""; };
@@ -2647,7 +2651,7 @@ async function pollJobStatus() {
                     statusCard.innerHTML = `
                         <div class="processing-kicker" style="color:var(--error,#dc2626);">Analysis interrupted</div>
                         <div class="processing-title">Server restarted mid-run</div>
-                        <div class="processing-subtitle" style="max-width:480px;">
+                        <div class="processing-subtitle" style="max-width:30rem;">
                             The server was restarted while your analysis was running &mdash; likely because a code change was saved during processing.
                             Your results were not saved.
                         </div>
@@ -2723,7 +2727,7 @@ function showExpiredPage(message) {
         <div style="text-align:center; padding:4rem 2rem;">
             <div style="font-size:3rem; margin-bottom:1rem;">\uD83D\uDD12</div>
             <h2 style="margin-bottom:0.5rem;">Analysis Unavailable</h2>
-            <p style="color:var(--text-muted); max-width:480px; margin:0 auto 2rem;">
+            <p style="color:var(--text-muted); max-width:30rem; margin:0 auto 2rem;">
                 ${esc(msg)}
             </p>
             <a href="/" class="btn btn-primary">Start New Analysis</a>
@@ -2868,9 +2872,9 @@ function renderResults() {
     if (backBtn) backBtn.onclick = closeContractDetail;
 
     // Wire detail sub-tab clicks (now in top nav)
-    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail").forEach(function(btn) {
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage").forEach(function(btn) {
         btn.onclick = function() {
-            var _l = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail' };
+            var _l = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail', coverage: 'Coverage & Gaps' };
             setSubheader(_l[btn.dataset.tab] || btn.dataset.tab);
             if (!contractDetailOpen) {
                 showNoContractPlaceholder(btn.dataset.tab);
@@ -2888,7 +2892,7 @@ function renderResults() {
         Number.isInteger(currentTenantIndex) &&
         currentTenantIndex >= 0 &&
         currentTenantIndex < currentResults.tenants.length &&
-        (activeTopTab === "findings" || activeTopTab === "docview" || activeTopTab === "audittrail")
+        (activeTopTab === "findings" || activeTopTab === "docview" || activeTopTab === "audittrail" || activeTopTab === "coverage")
     ) {
         openContractDetail(currentTenantIndex);
     } else {
@@ -2921,7 +2925,7 @@ function renderNavSidebar() {
                 '<div class="nav-sidebar-header-main">Open Issues</div>' +
                 '<label class="nav-legend-toggle"><input type="checkbox" id="nav-legend-checkbox"' + (legendChecked ? ' checked' : '') + '> Legend</label>' +
             '</div>' +
-            '<div class="nav-sidebar-header-meta">' + esc(String(tenants.length)) + ' lease' + (tenants.length === 1 ? '' : 's') + ' \u2022 ' + esc(String(totalIssues)) + ' issue' + (totalIssues === 1 ? '' : 's') + '</div>';
+            '<div class="nav-sidebar-header-meta">' + esc(String(tenants.length)) + ' lease' + (tenants.length === 1 ? '' : 's') + ' \u2022 ' + esc(String(totalIssues)) + ' issue' + (totalIssues === 1 ? '' : 's') + '</div>'
     }
 
     // Collect all severity+signal combinations from unresolved issues
@@ -3116,6 +3120,32 @@ function renderNavSidebar() {
             if ((s121.low || 0) > 0) chips.push('<span class="nav-count-chip low">' + esc(String(s121.low)) + ' low</span>');
             countsRow.innerHTML = chips.join('');
             tenantEl.appendChild(countsRow);
+        }
+
+        // Coverage gap callout inside contract box
+        const _covCa = (tenant.results && tenant.results.coverage_assessment) || [];
+        const _covCount = _covCa.filter(a =>
+            a.partial_class === 'partial_material' ||
+            a.coverage_state === 'covered_unfavorable' ||
+            a.coverage_state === 'missing'
+        ).length;
+        if (_covCount > 0) {
+            const covCallout = document.createElement('div');
+            covCallout.className = 'nav-coverage-callout';
+            covCallout.title = 'View Coverage & Gaps';
+            covCallout.textContent = '\u25D1 Coverage: ' + _covCount + ' area' + (_covCount === 1 ? '' : 's') + ' need attention';
+            const _covTi = i;
+            covCallout.onclick = function(e) {
+                e.stopPropagation();
+                // openContractDetail is internal; switchResultsTab is internal
+                if (typeof openContractDetail === 'function') {
+                    openContractDetail(_covTi);
+                }
+                setTimeout(function() {
+                    if (typeof switchResultsTab === 'function') switchResultsTab('coverage');
+                }, 200);
+            };
+            tenantEl.appendChild(covCallout);
         }
 
         // ── OPEN ISSUES section (deviations sorted by severity) ──────────────
@@ -3675,6 +3705,7 @@ function legacyBuildDocviewDeviationControls(provision, tenantIdx) {
                        title="View full CAM analysis in Audit Trail">
                         Open CAM Audit Trail
                     </a>
+                    ${(function(){const _cca=((currentResults.tenants[tenantIdx]||{}).results||{}).coverage_assessment||[];const _cc=_cca.find(function(a){return a.issue_area_id===pid;});if(!_cc||(_cc.coverage_state==='covered')||(_cc.coverage_state==='not_applicable')) return '';return '<a class="card-docview-link card-docview-link--btn" href="#" data-cov-pid="' + esc(pid) + '" onclick="window.CAM.jumpToCoverageProvision(this.dataset.covPid); return false;" title="Jump to Coverage &amp; Gaps">&#9680; Coverage Gap</a>\'; return false;" title="View coverage gap">\u25D1 Coverage Gap</a>';})()}
                 </div>
             </div>
             <div class="res-notes-panel hidden docview-res-notes-panel" id="docview-res-notes-${suffix}">
@@ -3724,6 +3755,7 @@ function legacyBuildDocviewConformingControls(provision, tenantIdx) {
                    title="View full CAM analysis in Audit Trail">
                     Open CAM Audit Trail
                 </a>
+                ${(function(){const _cca=((currentResults.tenants[tenantIdx]||{}).results||{}).coverage_assessment||[];const _cc=_cca.find(function(a){return a.issue_area_id===pid;});if(!_cc||(_cc.coverage_state==='covered')||(_cc.coverage_state==='not_applicable')) return '';return '<a class="card-docview-link card-docview-link--btn" href="#" data-cov-pid="' + esc(pid) + '" onclick="window.CAM.jumpToCoverageProvision(this.dataset.covPid); return false;" title="Jump to Coverage &amp; Gaps">&#9680; Coverage Gap</a>\'; return false;" title="View coverage gap">\u25D1 Coverage Gap</a>';})()}
             </div>
         </div>
     `;
@@ -4870,10 +4902,18 @@ function jumpToFinding(pid) {
 async function loadResolutions() {
     if (!currentJobId) return;
     try {
-        const resp = await fetch(`/api/jobs/${currentJobId}/resolutions`);
+        const [resp, covResp] = await Promise.all([
+            fetch(`/api/jobs/${currentJobId}/resolutions`),
+            fetch(`/api/jobs/${currentJobId}/cov-resolutions`),
+        ]);
         if (resp.ok) {
             const data = await resp.json();
             resolutionState = data.resolutions || {};
+        }
+        if (covResp.ok) {
+            const covData = await covResp.json();
+            const incoming = covData.cov_resolutions || {};
+            Object.assign(_covResState, incoming);
         }
     } catch (e) { /* silent */ }
 }
@@ -6259,6 +6299,7 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
                    title="View full CAM analysis in Audit Trail">
                     Open CAM Audit Trail
                 </a>
+                ${(function(){const _cca=((currentResults.tenants[tenantIdx]||{}).results||{}).coverage_assessment||[];const _cc=_cca.find(function(a){return a.issue_area_id===pid;});if(!_cc||(_cc.coverage_state==='covered')||(_cc.coverage_state==='not_applicable')) return '';return '<a class="card-docview-link card-docview-link--btn" href="#" data-cov-pid="' + esc(pid) + '" onclick="window.CAM.jumpToCoverageProvision(this.dataset.covPid); return false;" title="Jump to Coverage &amp; Gaps">&#9680; Coverage Gap</a>\'; return false;" title="View coverage gap">\u25D1 Coverage Gap</a>';})()}
             </div>
         `;
 
@@ -6729,9 +6770,9 @@ function renderConforming(provisions, modelsUsed) {
 
         // Concern indicator on the summary line
         const concernBadge = concernState === "flag"
-            ? ` <span style="font-size:0.7rem;background:#fee2e2;color:#991b1b;padding:1px 6px;border-radius:3px;font-weight:600;">\u26A0 Flagged</span>`
+            ? ` <span style="font-size:0.7rem;background:#fee2e2;color:#991b1b;padding:0.0625rem 0.375rem;border-radius:0.1875rem;font-weight:600;">\u26A0 Flagged</span>`
             : concernState === "concern"
-            ? ` <span style="font-size:0.7rem;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:3px;font-weight:600;">\uD83D\uDCCB Concern noted</span>`
+            ? ` <span style="font-size:0.7rem;background:#fef3c7;color:#92400e;padding:0.0625rem 0.375rem;border-radius:0.1875rem;font-weight:600;">\uD83D\uDCCB Concern noted</span>`
             : "";
 
         const summaryMeta = providers.length > 0 ? providers.join(", ") : "";
@@ -6998,7 +7039,8 @@ function showNoContractPlaceholder(tab) {
 var TAB_SUBHEADER_LABELS = {
     findings:   'Contract Summary',
     docview:    'Document Comparison',
-    audittrail: 'Audit Trail'
+    audittrail: 'Audit Trail',
+    coverage:   'Coverage & Gaps'
 };
 
 function setDocviewStickyControlsVisible(isVisible) {
@@ -7036,9 +7078,11 @@ function switchResultsTab(tab) {
             var _fTab = document.getElementById('findings-tab');
             var _dTab = document.getElementById('docview-tab');
             var _aTab = document.getElementById('audittrail-tab');
+            var _cTab = document.getElementById('coverage-tab');
             if (_fTab) _fTab.classList.add('hidden');
             if (_dTab) _dTab.classList.add('hidden');
             if (_aTab) _aTab.classList.remove('hidden');
+            if (_cTab) _cTab.classList.add('hidden');
             setDocviewStickyControlsVisible(false);
             activeResultsTab = 'audittrail';
             renderAuditTrail(true);
@@ -7050,13 +7094,13 @@ function switchResultsTab(tab) {
     }
 
     activeResultsTab = tab;
-    if (tab === "findings" || tab === "docview" || tab === "audittrail") {
+    if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage") {
         activeTopTab = tab;
     }
     setSubheader(TAB_SUBHEADER_LABELS[tab] || tab);
 
     // Update tab bar active state (Step 129 fix: $ → $ for querySelectorAll)
-    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail").forEach(t => {
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage").forEach(t => {
         t.classList.toggle("active", t.dataset.tab === tab);
     });
 
@@ -7064,22 +7108,33 @@ function switchResultsTab(tab) {
     const findingsTab = $("#findings-tab");
     const docviewTab = $("#docview-tab");
     const auditTab = $("#audittrail-tab");
+    const coverageTab = $("#coverage-tab");
 
     if (tab === "findings") {
         findingsTab.classList.remove("hidden");
         docviewTab.classList.add("hidden");
         auditTab.classList.add("hidden");
+        if (coverageTab) coverageTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
     } else if (tab === "audittrail") {
         findingsTab.classList.add("hidden");
         docviewTab.classList.add("hidden");
         auditTab.classList.remove("hidden");
+        if (coverageTab) coverageTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
         renderAuditTrail();
+    } else if (tab === "coverage") {
+        findingsTab.classList.add("hidden");
+        docviewTab.classList.add("hidden");
+        auditTab.classList.add("hidden");
+        if (coverageTab) coverageTab.classList.remove("hidden");
+        setDocviewStickyControlsVisible(false);
+        renderCoveragePanel();
     } else {
         findingsTab.classList.add("hidden");
         docviewTab.classList.remove("hidden");
         auditTab.classList.add("hidden");
+        if (coverageTab) coverageTab.classList.add("hidden");
         setDocviewStickyControlsVisible(true);
         renderDocumentView();
     }
@@ -7865,9 +7920,27 @@ function legacyRenderSideBySideView() {
         }
 
         if (isDeviationWorkflowProvision(p, currentTenantIndex)) {
-            html += `<div class="docview-row-controls" style="grid-column: 1 / -1;">${buildDocviewDeviationControls(p, currentTenantIndex)}</div>`;
+            html += `<div class="docview-row-controls" style="grid-column: 1 / -1;">${buildDocviewDeviationControls(p, currentTenantIndex, {
+                    esc,
+                    resolutionState,
+                    getDocviewDomIdSuffix,
+                    buildDraftDecisionControls: buildDocviewDraftDecisionControls,
+                    formatResTimestamp,
+                    getConformingConcernState,
+                    getFinalDraftDecision,
+                    coverageAssessment: ((currentResults && currentResults.tenants && currentResults.tenants[currentTenantIndex]) || {}).results && currentResults.tenants[currentTenantIndex].results.coverage_assessment || [],
+                })}</div>`;
         } else {
-            html += `<div class="docview-row-controls" style="grid-column: 1 / -1;">${buildDocviewConformingControls(p, currentTenantIndex)}</div>`;
+            html += `<div class="docview-row-controls" style="grid-column: 1 / -1;">${buildDocviewConformingControls(p, currentTenantIndex, {
+                    esc,
+                    resolutionState,
+                    getDocviewDomIdSuffix,
+                    buildDraftDecisionControls: buildDocviewDraftDecisionControls,
+                    formatResTimestamp,
+                    getConformingConcernState,
+                    getFinalDraftDecision,
+                    coverageAssessment: ((currentResults && currentResults.tenants && currentResults.tenants[currentTenantIndex]) || {}).results && currentResults.tenants[currentTenantIndex].results.coverage_assessment || [],
+                })}</div>`;
         }
 
     });
@@ -10726,7 +10799,7 @@ function renderAuditTrail(allTenants) {
             </div>
             <div class="audit-provision-detail hidden" id="audit-detail-${idx}">
                 ${buildAuditDetailV2(p, modelsUsed, stageData, idx)}
-            </div>
+                            </div>
         </div>`;
     });
     html += `</div>`;
@@ -11841,8 +11914,8 @@ function switchTopTab(tab) {
         return;
     }
 
-    // Contract detail tabs — findings / docview / audittrail
-    if (tab === 'findings' || tab === 'docview' || tab === 'audittrail') {
+    // Contract detail tabs — findings / docview / audittrail / coverage
+    if (tab === 'findings' || tab === 'docview' || tab === 'audittrail' || tab === 'coverage') {
         activeTopTab = tab;
         activeResultsTab = tab;
         persistResultsViewState();
@@ -13955,6 +14028,399 @@ window.CAM = {
     toggleDemoTenantPicker,
     loadDemoTenants,
 };
+
+// ── Step 245: Coverage & Gaps Panel ──
+function buildCovToolbar(a, tenantIdx) {
+    const pid = a.issue_area_id || '';
+    const state = a.coverage_state || '';
+    const pcls = a.partial_class || '';
+
+    // Only show full toolbar on high-priority items
+    const showStatus = (state === 'covered_unfavorable' || pcls === 'partial_material');
+    const showTools = showStatus || pcls === 'partial_review';
+    if (!showTools) return '';
+
+    const res = _getCovRes(tenantIdx, pid);
+    const resStatus = res.status || 'open';
+    const noteCount = (res.notes || []).length;
+
+    const statusDefs = [
+        { key: 'reviewed',    label: 'Reviewed',              cls: 'cov-pill-reviewed' },
+        { key: 'flagged',     label: 'Flag for Negotiation',  cls: 'cov-pill-flagged' },
+        { key: 'accepted',    label: 'Accepted Risk',         cls: 'cov-pill-accepted' },
+    ];
+
+    const pillsHtml = showStatus ? statusDefs.map(s =>
+        `<button class="cov-pill ${s.cls}${resStatus === s.key ? ' cov-pill-active' : ''}"
+            data-status="${s.key}" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}"
+            onclick="window.CAM._setCovStatus('${esc(pid)}', ${tenantIdx}, '${s.key}'); event.stopPropagation();">
+            ${s.label}
+        </button>`
+    ).join('') : '';
+
+    const notesHtml = `<button class="cov-notes-btn res-notes-toggle" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}"
+        onclick="window.CAM._toggleCovNotes('${esc(pid)}', ${tenantIdx}); event.stopPropagation();">
+        📝 Notes${noteCount > 0 ? ` <span class="res-note-count">${noteCount}</span>` : ''}
+    </button>`;
+
+    const isMissingAdvisor = state === 'missing';
+    const advisorLabel = isMissingAdvisor ? '💡 Draft Missing Clause' : '💡 AI Advisor';
+    const advisorCls = isMissingAdvisor ? 'res-advisor-btn cov-advisor-primary' : 'res-advisor-btn';
+    const advisorHtml = `<button class="${advisorCls}"
+        onclick="window.CAM._openCovAdvisor('${esc(pid)}', ${tenantIdx}, '${esc(a.issue_area_name || pid)}', '${esc((a.exposure_statement || '').replace(/'/g, ''))}', ${isMissingAdvisor}); event.stopPropagation();">
+        ${advisorLabel}
+    </button>`;
+
+    const isMissing = state === 'missing';
+    const docLabel = isMissing ? 'View Template Clause' : 'Document Comparison';
+    const navHtml = `<div class="workflow-open-actions workflow-group">
+        ${!isMissing ? `<a class="card-docview-link card-docview-link--btn" href="#"
+           onclick="window.CAM.openDocviewSummary(${tenantIdx}, '${esc(pid)}'); return false;">Lease Summary</a>` : ''}
+        <a class="card-docview-link card-docview-link--btn" href="#"
+           onclick="window.CAM.jumpToDocview('${esc(pid)}'); return false;">${docLabel}</a>
+        <a class="card-audit-link card-audit-link--btn" href="#"
+           onclick="window.CAM.jumpToAuditProvision(${tenantIdx}, '${esc(pid)}'); return false;">CAM Audit Trail</a>
+    </div>`;
+
+    const notesPanel = `<div class="cov-notes-panel res-notes-panel hidden" id="cov-notes-${tenantIdx}-${esc(pid)}">
+        <div class="res-note-input-row cov-note-input-row">
+            <textarea class="res-note-input" id="cov-note-input-${tenantIdx}-${esc(pid)}"
+                placeholder="Add a note…" rows="2"></textarea>
+            <button class="res-note-save-btn"
+                onclick="window.CAM._saveCovNote('${esc(pid)}', ${tenantIdx})">Save</button>
+        </div>
+    </div>`;
+
+    return `<div class="cov-toolbar resolution-bar finding-workflow-row" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}">
+        ${showStatus ? `<div class="workflow-group workflow-group-status"><span class="res-label">Status:</span><div class="res-pills">${pillsHtml}</div></div><div class="workflow-divider"></div>` : ''}
+        <div class="workflow-group workflow-group-tools"><span class="res-tools-label">Tools:</span>${notesHtml}${advisorHtml}</div>
+        <div class="workflow-divider workflow-divider-spacer"></div>
+        ${navHtml}
+    </div>
+    ${notesPanel}`;
+}
+
+function renderCoveragePanel() {
+    const tab = $("#coverage-tab");
+    if (!tab) return;
+
+    const tenantIdx = currentTenantIndex;
+    const tenant = (currentResults && currentResults.tenants) ? currentResults.tenants[tenantIdx] : null;
+    const pr = tenant && tenant.results ? tenant.results : null;
+    const ca = pr && pr.coverage_assessment ? pr.coverage_assessment : null;
+
+    _coverageTierFilter = 'all';
+
+    if (!ca || ca.length === 0) {
+        tab.innerHTML = '<div class="coverage-empty"><p>Coverage analysis not available for this run.</p></div>';
+        return;
+    }
+
+    // Build set of provision IDs in the pipeline (for nav links)
+    const _pipelineProvIds = new Set((pr && pr.provisions || []).map(p => p.provision_id).filter(Boolean));
+
+    const problems = ca.filter(a => a.coverage_state === "covered_unfavorable" || a.partial_class === "partial_material" || a.coverage_state === "missing");
+    const review   = ca.filter(a => a.partial_class === "partial_review");
+    const covered  = ca.filter(a => a.coverage_state === "covered");
+    const typical  = ca.filter(a => a.partial_class === "partial_typical");
+    const other    = ca.filter(a => !problems.includes(a) && !review.includes(a) && !covered.includes(a) && !typical.includes(a));
+
+    const STATE_LABELS = {
+        "covered":             { label: "\u2713 Covered",     cls: "cv-badge-ok" },
+        "covered_unfavorable": { label: "\u26A0 Unfavorable", cls: "cv-badge-unfav" },
+        "partial":             { label: "\u25D1 Partial",     cls: "cv-badge-partial" },
+        "missing":             { label: "\u2717 Missing",     cls: "cv-badge-missing" },
+        "not_applicable":      { label: "\u2014 N/A",         cls: "cv-badge-na" },
+    };
+
+    function buildItem(a, tier) {
+        const pid = a.issue_area_id || "";
+        const name = a.issue_area_name || pid;
+        const state = a.coverage_state || "";
+        const pcls = a.partial_class || "";
+        const stmt = a.exposure_statement || "";
+        const src = a.exposure_source || "";
+        const missing = a.elements_missing || [];
+        const nsSignals = (a.negative_space_signals || []).filter(s =>
+            s.signal_type === "broken_xref" || s.signal_type === "missing_exhibit" || s.signal_type === "reserved_section"
+        );
+
+        const stateInfo = STATE_LABELS[state] || { label: state, cls: "cv-badge-na" };
+        let pclsBadge = "";
+        if (pcls === "partial_material") pclsBadge = '<span class="cv-pcls-badge cv-pcls-material">Needs attention</span>';
+        else if (pcls === "partial_review") pclsBadge = '<span class="cv-pcls-badge cv-pcls-review">Worth reviewing</span>';
+
+        const missingHtml = missing.length > 0
+            ? '<div class="cv-missing-elements"><span class="cv-missing-label">Missing:</span>' +
+              missing.slice(0, 3).map(m => `<span class="cv-missing-item">${esc(m)}</span>`).join("") +
+              (missing.length > 3 ? `<span class="cv-missing-more">+${missing.length - 3} more</span>` : "") +
+              '</div>'
+            : "";
+
+        const nsHtml = nsSignals.length > 0
+            ? '<div class="cv-ns-signals">' +
+              nsSignals.slice(0, 2).map(s => `<span class="cv-ns-signal">${esc(s.description || s.signal_type)}</span>`).join("") +
+              '</div>'
+            : "";
+
+        const srcNote = src === "model" ? '<span class="cv-source-model">AI assessed</span>' : "";
+
+        const toolbarHtml = buildCovToolbar(a, tenantIdx);
+
+        return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
+            <div class="cv-item-header">
+                <span class="cv-item-id">${esc(pid)}</span>
+                <span class="cv-item-name">${esc(name)}</span>
+                <span class="cv-badge ${stateInfo.cls}">${stateInfo.label}</span>
+                ${pclsBadge}
+            </div>
+            ${stmt ? `<div class="cv-item-stmt">${esc(stmt)} ${srcNote}</div>` : ""}
+            ${state === 'missing' ? '<div class="cv-missing-provision-note">⚠ This provision is absent from the lease. Use <strong>Draft Missing Clause</strong> to request language from the landlord.</div>' : ''}
+            ${missingHtml}
+            ${nsHtml}
+            ${toolbarHtml}
+        </div>`;
+    }
+
+    const totalAttention = problems.length + review.length;
+    const allGoodCount = [...covered, ...typical, ...other].length;
+    // Expose _covResState for status filter function
+    window._covResStateRef = _covResState;
+    _coverageStatusFilter = 'all';
+
+    let html = `<div class="coverage-summary-bar">
+        <span class="coverage-summary-label">Show:</span>
+        <button id="cv-stat-all" class="btn btn-outline cv-tier-btn cv-tier-btn-active" data-tier="all" onclick="window.CAM._applyCoverageTierFilter('all')">All</button>
+        <button class="btn btn-outline cv-tier-btn" data-tier="problems" onclick="window.CAM._applyCoverageTierFilter('problems')">${problems.length} Need Attention</button>
+        <button class="btn btn-outline cv-tier-btn" data-tier="review" onclick="window.CAM._applyCoverageTierFilter('review')">${review.length} Worth Reviewing</button>
+        <button class="btn btn-outline cv-tier-btn" data-tier="covered" onclick="window.CAM._applyCoverageTierFilter('covered')">${allGoodCount} Covered</button>
+        <span class="cv-filter-divider">|</span>
+        <span class="coverage-summary-label">Status:</span>
+        <button class="btn btn-outline cv-status-filter-btn cv-tier-btn-active" data-status="all" onclick="window.CAM._applyCoverageStatusFilter('all')">All</button>
+        <button class="btn btn-outline cv-status-filter-btn" data-status="open" onclick="window.CAM._applyCoverageStatusFilter('open')">Unreviewed</button>
+        <button class="btn btn-outline cv-status-filter-btn" data-status="flagged" onclick="window.CAM._applyCoverageStatusFilter('flagged')">Flagged</button>
+        <button class="btn btn-outline cv-status-filter-btn" data-status="accepted" onclick="window.CAM._applyCoverageStatusFilter('accepted')">Accepted Risk</button>
+        <button class="btn btn-outline cv-status-filter-btn" data-status="reviewed" onclick="window.CAM._applyCoverageStatusFilter('reviewed')">Reviewed</button>
+    </div>`;
+
+    if (totalAttention === 0) {
+        html += '<div class="coverage-all-clear">\u2705 No high-priority gaps detected across all material issue areas.</div>';
+    }
+
+    if (problems.length > 0) {
+        html += `<div class="cv-section" id="cv-section-problems"><div class="cv-section-header cv-section-problems">Needs Attention (${problems.length})</div>${problems.map(a => buildItem(a, "problem")).join("")}</div>`;
+    }
+    if (review.length > 0) {
+        html += `<div class="cv-section" id="cv-section-review"><div class="cv-section-header cv-section-review">Worth Reviewing (${review.length})</div>${review.map(a => buildItem(a, "review")).join("")}</div>`;
+    }
+
+    const allGood = [...covered, ...typical, ...other];
+    if (allGood.length > 0) {
+        html += `<div class="cv-section" id="cv-section-covered">
+            <div class="cv-section-header cv-section-ok" style="cursor:pointer" onclick="
+                var list=document.getElementById('cv-ok-list');
+                var arrow=document.getElementById('cv-ok-arrow');
+                if(list){list.classList.toggle('hidden');}
+                if(arrow){arrow.textContent=list&&list.classList.contains('hidden')?'\u25B6':'\u25BC';}
+            ">
+                <span id="cv-ok-arrow">\u25B6</span> Adequately Covered (${allGood.length}) <span class="cv-section-toggle-hint">click to expand</span>
+            </div>
+            <div id="cv-ok-list" class="hidden">${allGood.map(a => buildItem(a, "ok")).join("")}</div>
+        </div>`;
+    }
+
+    tab.innerHTML = html;
+}
+// ── Coverage resolution state (separate from deviation resolutionState) ──
+// Keyed by 'cov:tenantIdx:pid' to avoid collision with deviation workflow
+const _covResState = {};
+
+function _getCovRes(tenantIdx, pid) {
+    const key = 'cov:' + tenantIdx + ':' + pid;
+    return _covResState[key] || { status: 'open', notes: [] };
+}
+
+function _setCovStatus(pid, tenantIdx, status) {
+    const key = 'cov:' + tenantIdx + ':' + pid;
+    if (!_covResState[key]) _covResState[key] = { status: 'open', notes: [] };
+    // Toggle: clicking active status resets to open
+    const newStatus = (_covResState[key].status === status) ? 'open' : status;
+    _covResState[key].status = newStatus;
+    // Update pills in DOM
+    document.querySelectorAll(`.cov-pill[data-pid="${pid}"][data-tenant-idx="${tenantIdx}"]`).forEach(btn => {
+        btn.classList.toggle('cov-pill-active', btn.dataset.status === newStatus);
+    });
+    // Persist to server
+    if (currentJobId) {
+        fetch(`/api/jobs/${currentJobId}/cov-resolution`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenant_idx: tenantIdx, provision_id: pid, status: newStatus }),
+        }).catch(() => {}); // silent failure
+    }
+}
+
+function _toggleCovNotes(pid, tenantIdx) {
+    const panel = document.getElementById('cov-notes-' + tenantIdx + '-' + pid);
+    if (panel) panel.classList.toggle('hidden');
+}
+
+function _saveCovNote(pid, tenantIdx) {
+    const input = document.getElementById('cov-note-input-' + tenantIdx + '-' + pid);
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+    const key = 'cov:' + tenantIdx + ':' + pid;
+    if (!_covResState[key]) _covResState[key] = { status: 'open', notes: [] };
+    _covResState[key].notes.push({ text: text, timestamp: new Date().toISOString() });
+    input.value = '';
+    _renderCovNotes(pid, tenantIdx);
+    _updateCovNoteCount(pid, tenantIdx);
+}
+
+function _deleteCovNote(pid, tenantIdx, noteIdx) {
+    const key = 'cov:' + tenantIdx + ':' + pid;
+    if (_covResState[key] && _covResState[key].notes) {
+        _covResState[key].notes.splice(noteIdx, 1);
+        _renderCovNotes(pid, tenantIdx);
+        _updateCovNoteCount(pid, tenantIdx);
+    }
+}
+
+function _renderCovNotes(pid, tenantIdx) {
+    const panel = document.getElementById('cov-notes-' + tenantIdx + '-' + pid);
+    if (!panel) return;
+    const key = 'cov:' + tenantIdx + ':' + pid;
+    const notes = (_covResState[key] || {}).notes || [];
+    const inputRow = panel.querySelector('.cov-note-input-row');
+    panel.querySelectorAll('.cov-note-entry').forEach(el => el.remove());
+    notes.forEach((note, noteIdx) => {
+        const div = document.createElement('div');
+        div.className = 'cov-note-entry';
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'res-note-delete';
+        deleteBtn.textContent = 'Delete';
+        const _pid = pid, _ti = tenantIdx, _ni = noteIdx;
+        deleteBtn.onclick = function(e) { e.stopPropagation(); window.CAM._deleteCovNote(_pid, _ti, _ni); };
+        const tsSpan = document.createElement('span');
+        tsSpan.className = 'res-note-ts';
+        tsSpan.textContent = formatResTimestamp(note.timestamp);
+        const textSpan = document.createElement('span');
+        textSpan.className = 'res-note-text';
+        textSpan.textContent = note.text;
+        div.appendChild(tsSpan);
+        div.appendChild(textSpan);
+        div.appendChild(deleteBtn);
+        if (inputRow) panel.insertBefore(div, inputRow);
+        else panel.appendChild(div);
+    });
+}
+function _updateCovNoteCount(pid, tenantIdx) {
+    const btn = document.querySelector('.cov-notes-btn[data-pid="' + pid + '"][data-tenant-idx="' + tenantIdx + '"]');
+    if (!btn) return;
+    const key = 'cov:' + tenantIdx + ':' + pid;
+    const count = ((_covResState[key] || {}).notes || []).length;
+    btn.innerHTML = '📝 Notes' + (count > 0 ? ' <span class="res-note-count">' + count + '</span>' : '');
+}
+
+let _coverageTierFilter = 'all';
+let _coverageStatusFilter = 'all'; // 'all' | 'open' | 'flagged' | 'accepted' | 'reviewed'
+
+function _applyCoverageStatusFilter(status) {
+    _coverageStatusFilter = (_coverageStatusFilter === status) ? 'all' : status;
+    // Update button active states
+    document.querySelectorAll('.cv-status-filter-btn').forEach(btn => {
+        btn.classList.toggle('cv-tier-btn-active', btn.dataset.status === _coverageStatusFilter);
+    });
+    // Show/hide items based on status
+    const tenantIdx = currentTenantIndex;
+    document.querySelectorAll('.cv-item').forEach(item => {
+        const pid = item.dataset.pid;
+        if (!pid || _coverageStatusFilter === 'all') {
+            item.classList.remove('hidden');
+            return;
+        }
+        const key = 'cov:' + tenantIdx + ':' + pid;
+        const itemStatus = (window._covResStateRef && window._covResStateRef[key] || {}).status || 'open';
+        item.classList.toggle('hidden', itemStatus !== _coverageStatusFilter);
+    });
+}
+
+function _applyCoverageTierFilter(tier) {
+    _coverageTierFilter = (_coverageTierFilter === tier) ? 'all' : tier;
+    const sections = {
+        problems: document.getElementById('cv-section-problems'),
+        review:   document.getElementById('cv-section-review'),
+        covered:  document.getElementById('cv-section-covered'),
+    };
+    const all = _coverageTierFilter === 'all';
+    Object.entries(sections).forEach(([key, el]) => {
+        if (!el) return;
+        el.classList.toggle('hidden', !all && _coverageTierFilter !== key);
+    });
+    document.querySelectorAll('.cv-tier-btn').forEach(btn => {
+        const isActive = btn.dataset.tier === _coverageTierFilter;
+        btn.classList.toggle('cv-tier-btn-active', isActive);
+    });
+}
+
+window.CAM = window.CAM || {};
+window.CAM.renderCoveragePanel = renderCoveragePanel;
+window.CAM._applyCoverageTierFilter = _applyCoverageTierFilter;
+function _openCovAdvisor(pid, tenantIdx, provName, stmt, isMissing) {
+    let question;
+    if (isMissing) {
+        question = 'The ' + provName + ' clause is completely absent from this lease. ' +
+            (stmt ? 'The risk is: ' + stmt + ' ' : '') +
+            'What standard language should I request the landlord include, and what are the most important terms to negotiate for this provision?';
+    } else {
+        question = 'I\'m reviewing the ' + provName + ' provision. ' +
+            (stmt ? 'Coverage analysis: ' + stmt + ' ' : '') +
+            'What should I negotiate or flag for this clause?';
+    }
+    if (typeof askAboutFinding === 'function') {
+        askAboutFinding(pid, Number(tenantIdx), question, 'coverage');
+    }
+}
+window.CAM._setCovStatus = _setCovStatus;
+
+function jumpToCoverageProvision(pid) {
+    // Reset tier filter so the item is visible regardless of current filter
+    _coverageTierFilter = 'all';
+    switchResultsTab('coverage');
+    waitForResultsTarget(function() {
+        // Re-render coverage panel if needed to ensure data-pid attrs exist
+        const el = document.querySelector('.cv-item[data-pid="' + CSS.escape(pid) + '"]');
+        return el;
+    }, { attempts: 25, delay: 100 }).then(function(el) {
+        if (!el) return;
+        // If inside a hidden section (tier filter or collapsed "Adequately Covered"), reveal it
+        const hiddenParent = el.closest('.hidden');
+        if (hiddenParent) hiddenParent.classList.remove('hidden');
+        const okList = document.getElementById('cv-ok-list');
+        if (okList && okList.classList.contains('hidden') && okList.contains(el)) {
+            okList.classList.remove('hidden');
+            const arrow = document.getElementById('cv-ok-arrow');
+            if (arrow) arrow.textContent = '\u25BC';
+        }
+        setTimeout(function() {
+            scrollResultsTargetIntoView(el, 8);
+            flashResultsTarget(el, 2000);
+        }, 150);
+    });
+}
+window.CAM.switchResultsTab = switchResultsTab;
+window.CAM.jumpToCoverageProvision = jumpToCoverageProvision;
+window.CAM._toggleCovNotes = _toggleCovNotes;
+window.CAM._saveCovNote = _saveCovNote;
+window.CAM._deleteCovNote = _deleteCovNote;
+window.CAM._openCovAdvisor = _openCovAdvisor;
+window.CAM.openDocviewSummary = openDocviewSummary;
+window.CAM.jumpToDocview = jumpToDocview;
+window.CAM.jumpToAuditProvision = jumpToAuditProvision;
+window.CAM._applyCoverageTierFilter = _applyCoverageTierFilter;
+window.CAM._applyCoverageStatusFilter = _applyCoverageStatusFilter;
+window.CAM.renderCoveragePanel = renderCoveragePanel;
 
 // ── Boot ──
 document.addEventListener("DOMContentLoaded", init);

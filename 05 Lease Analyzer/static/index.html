@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAM - Shopping Center Lease Review</title>
-    <link rel="stylesheet" href="/static/style.css?v=279">
+    <link rel="stylesheet" href="/static/style.css?v=323">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -477,6 +477,7 @@
                         <div class="top-tab-divider" id="contract-tab-divider"></div>
                         <button class="top-tab" data-tab="findings" id="contract-tab-findings">Lease Summary</button>
                         <button class="top-tab" data-tab="docview" id="contract-tab-docview">Document Comparison</button>
+                        <button class="top-tab" data-tab="coverage" id="contract-tab-coverage">Coverage &amp; Gaps</button>
                         <button class="top-tab" data-tab="audittrail" id="contract-tab-audittrail">CAM Audit Trail</button>
                     </div>
                     <div class="top-tab-actions" id="top-tab-actions">
@@ -767,6 +768,11 @@
                         <!-- content rendered by renderAuditTrail() -->
                     </div>
 
+                    <!-- ═══ COVERAGE & GAPS TAB (Step 245) ═══ -->
+                    <div id="coverage-tab" class="hidden">
+                        <!-- content rendered by renderCoveragePanel() -->
+                    </div>
+
                     </div><!-- /contract-detail-view -->
 
                 </div>
@@ -1021,10 +1027,10 @@
     <script src="/static/app_shared.js?v=2"></script>
     <script src="/static/app_audit_shared.js?v=12"></script>
     <script src="/static/app_workflow_shared.js?v=2"></script>
-    <script src="/static/app_docview_shared.js?v=1"></script>
+    <script src="/static/app_docview_shared.js?v=9"></script>
     <script src="/static/app_docview_render_shared.js?v=3"></script>
-    <script src="/static/app_summary_shared.js?v=1"></script>
+    <script src="/static/app_summary_shared.js?v=9"></script>
     <script src="/static/app_notes_shared.js?v=1"></script>
-    <script src="/static/app.js?v=299"></script>
+    <script src="/static/app.js?v=323"></script>
 </body>
 </html>

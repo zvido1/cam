@@ -1,0 +1,792 @@
+{
+  "schema_version": "1.1.2",
+  "created": "2026-03-27",
+  "updated": "2026-03-27",
+  "contract_type": "retail_lease",
+  "display_name": "Retail / Commercial Lease",
+  "description": "Issue-area knowledge schema for retail and commercial lease analysis. Defines expected coverage, applicability gating, exposure statements, caution signals, and negative-space clues.",
+  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language.",
+
+  "coverage_states": {
+    "covered":                  "Provision present and consistent with standard form",
+    "covered_unfavorable":      "Present but materially one-sided against tenant",
+    "partial":                  "Some expected elements present, others missing or weakened",
+    "ambiguous":                "Present but interpretation-dependent; practical effect unclear",
+    "missing":                  "Issue area expected in this lease but provision is absent",
+    "broken_xref":              "Provision references a section, exhibit, or defined term not found in the document",
+    "potentially_unenforceable":"Structural or legal defect that may limit enforceability",
+    "review_needed":            "Insufficient evidence to assert a state; surface for human judgment",
+    "not_applicable":           "Issue area does not apply to this lease based on exclusion clues or document type",
+    "applicability_unclear":    "Cannot determine whether this issue area should be present; needs human judgment"
+  },
+
+  "applicability_levels": {
+    "required":    "Expected in every retail/commercial lease of this type",
+    "conditional": "Expected only when specific indicators are present in the document",
+    "optional":    "May or may not be present; absence is not a concern without other signals"
+  },
+
+  "caution_signal_definitions": {
+    "common_dispute_area":      "Frequently litigated provision type; outcome heavily fact-dependent",
+    "governing_law_sensitive":  "Practical effect varies significantly by jurisdiction",
+    "landlord_leverage_point":  "Landlord typically holds stronger enforcement position if disputed",
+    "tenant_leverage_point":    "Tenant holds strong position; landlord enforcement limited",
+    "potentially_unenforceable":"Known structural defect or clause pattern with enforceability concerns",
+    "cascade_risk":             "Change to this provision may silently affect other provisions via cross-reference"
+  },
+
+  "issue_areas": [
+    {
+      "id": "LP-01",
+      "name": "Rent & Payment Terms",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-02", "LP-07"],
+      "expected_elements": [
+        "base rent amount or formula",
+        "payment due date (day of month)",
+        "late payment fee or penalty mechanism",
+        "grace period for late payment",
+        "accepted payment methods",
+        "additional rent definition (what constitutes additional rent)"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No rent provision found in document",
+        "partial":             "Base rent defined but late fee, due date, or additional rent definition absent",
+        "broken_xref":         "References rent schedule or exhibit not present in document",
+        "covered_unfavorable": "Late fee grace period removed or shortened below 5 days"
+      },
+      "risk_if_missing": "No enforceable rent obligation; landlord has no clear basis for payment demand or default notice",
+      "exposure_statement": "Tenant's payment obligation and enforcement timeline undefined; creates ambiguity in default proceedings",
+      "caution_signals": ["common_dispute_area"],
+      "negative_space_clues": [
+        "Section marked 'Reserved' or 'Intentionally Omitted'",
+        "Reference to 'Exhibit A — Rent Schedule' with no Exhibit A attached",
+        "Blank dollar amount placeholder not filled in"
+      ],
+      "common_tenant_modifications": [
+        "Grace period extensions (5 days → 10 days)",
+        "Reduced late fee percentage",
+        "Removal of additional rent catch-all definition"
+      ]
+    },
+    {
+      "id": "LP-02",
+      "name": "Rent Escalation",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": ["flat rent", "no annual increase", "rent shall not increase", "fixed rent for the term"],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-01"],
+      "notes": "Absence may be intentional (flat-rent leases).",
+      "expected_elements": [
+        "annual increase mechanism (fixed percentage or CPI)",
+        "escalation cap or ceiling",
+        "effective date of first escalation",
+        "calculation methodology"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No escalation provision found and no flat-rent exclusion language present",
+        "partial":             "Escalation mechanism defined but cap or calculation method absent",
+        "ambiguous":           "CPI reference present but index not specified",
+        "covered_unfavorable": "No cap on CPI increases",
+        "not_applicable":      "Document explicitly states rent is fixed for the full term"
+      },
+      "risk_if_missing": "Rent frozen at initial amount for entire term; landlord loses inflation protection",
+      "exposure_statement": "No rent escalation mechanism; landlord bears full inflation risk or tenant bears uncapped exposure",
+      "caution_signals": ["governing_law_sensitive"],
+      "negative_space_clues": [
+        "Escalation section header present but body blank or marked Reserved",
+        "Cross-reference to CPI index definition absent from Definitions article"
+      ],
+      "common_tenant_modifications": [
+        "CPI cap addition (e.g. maximum 3% per year)",
+        "Fixed-percentage substituted for uncapped CPI",
+        "First escalation deferred one year"
+      ]
+    },
+    {
+      "id": "LP-03",
+      "name": "Lease Term & Renewal",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-18"],
+      "expected_elements": [
+        "initial term duration",
+        "commencement date or conditions",
+        "expiration date",
+        "renewal option count and duration",
+        "renewal notice period and deadline",
+        "rent at renewal (formula or fair market value mechanism)"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No term provision found",
+        "partial":             "Term defined but renewal options, notice periods, or renewal rent mechanism absent",
+        "ambiguous":           "Renewal at 'fair market value' with no determination mechanism defined",
+        "broken_xref":         "References commencement conditions defined in Work Letter or exhibit not present",
+        "covered_unfavorable": "Renewal notice period unusually short (under 90 days)"
+      },
+      "risk_if_missing": "Lease duration undefined; tenancy may be at-will or interpreted as month-to-month",
+      "exposure_statement": "Term and renewal rights unclear; tenant may lose right to remain in premises or face holdover penalties",
+      "caution_signals": ["common_dispute_area", "landlord_leverage_point"],
+      "negative_space_clues": [
+        "Renewal option section header with body struck or marked Reserved",
+        "Reference to 'Option to Renew' in Table of Contents but section absent from body"
+      ],
+      "common_tenant_modifications": [
+        "Extended notice period for renewal (90 days → 12 months)",
+        "Added renewal options (1 → 2 or 3)",
+        "Capped renewal rent at fixed percentage over expiring rent"
+      ]
+    },
+    {
+      "id": "LP-04",
+      "name": "Security Deposit",
+      "applicability": "conditional",
+      "activation_clues": [
+        "security deposit",
+        "deposit",
+        "letter of credit",
+        "LOC",
+        "cash deposit"
+      ],
+      "exclusion_clues": ["no security deposit", "no deposit required", "deposit waived", "deposit: none"],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": ["LP-11"],
+      "notes": "Bare 'security' removed from activation_clues v1.1.1 — too broad.",
+      "expected_elements": [
+        "deposit amount",
+        "return deadline after lease expiration",
+        "permitted deduction conditions",
+        "interest obligation (if any)",
+        "letter of credit alternative conditions"
+      ],
+      "coverage_state_rules": {
+        "missing":             "Deposit referenced in lease header or recitals but no deposit provision found",
+        "partial":             "Amount defined but return timeline or deduction conditions absent",
+        "covered_unfavorable": "Return deadline unusually long (over 60 days)",
+        "not_applicable":      "No deposit references found anywhere in document"
+      },
+      "risk_if_missing": "If deposit was negotiated, landlord has no documented security mechanism",
+      "exposure_statement": "Deposit obligation referenced but terms undefined; return and deduction rights unprotected",
+      "caution_signals": ["governing_law_sensitive"],
+      "negative_space_clues": [
+        "Deposit amount shown as blank or $0.00 in lease summary",
+        "Letter of credit alternative referenced but terms not defined"
+      ],
+      "common_tenant_modifications": [
+        "Reduced deposit amount",
+        "Burn-down schedule (deposit reduces over time)",
+        "Shortened return deadline"
+      ]
+    },
+    {
+      "id": "LP-05",
+      "name": "Permitted Use",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-14"],
+      "notes": "Cascade risk: force majeure definition changes can alter continuous operation obligations.",
+      "expected_elements": [
+        "specific permitted use description",
+        "exclusive use right scope (if any)",
+        "continuous operation obligation",
+        "prohibited use restrictions",
+        "co-tenancy or anchor dependency language"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No permitted use provision",
+        "partial":             "Use defined but exclusive rights, continuous operation, or restrictions absent",
+        "ambiguous":           "Use defined broadly without specific business description",
+        "broken_xref":         "Exclusive use cross-references definition not present in document",
+        "covered_unfavorable": "Continuous operation obligation present with no force majeure carve-out"
+      },
+      "risk_if_missing": "No restriction on how tenant uses space; may conflict with other tenant exclusives in the center",
+      "exposure_statement": "Use restrictions absent or undefined; tenant may face exclusive use violations or continuous operation penalties",
+      "caution_signals": ["common_dispute_area", "cascade_risk"],
+      "negative_space_clues": [
+        "Exclusive use clause header present but body blank",
+        "Reference to 'Exhibit B — Exclusive Use Area' with no exhibit attached"
+      ],
+      "common_tenant_modifications": [
+        "Broadened permitted use description",
+        "Weakened continuous operation obligation (shall → may)",
+        "Added co-tenancy condition tied to anchor tenant"
+      ]
+    },
+    {
+      "id": "LP-06",
+      "name": "Maintenance & Repairs",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-07", "LP-10"],
+      "expected_elements": [
+        "tenant maintenance obligations (interior, non-structural)",
+        "landlord maintenance obligations (structural, roof, exterior)",
+        "HVAC responsibility allocation",
+        "repair response time obligations",
+        "damage and destruction repair process"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No maintenance allocation provision",
+        "partial":             "General allocation present but HVAC, structural, or response times absent",
+        "covered_unfavorable": "Tenant bears HVAC replacement cost with no age or condition cap",
+        "ambiguous":           "HVAC responsibility stated as 'shared' without clear allocation formula"
+      },
+      "risk_if_missing": "Maintenance obligations default to tenant under many jurisdictions",
+      "exposure_statement": "Maintenance allocation undefined; tenant may bear unexpected capital repair costs including structural and HVAC replacement",
+      "caution_signals": ["common_dispute_area", "governing_law_sensitive"],
+      "negative_space_clues": [
+        "HVAC section header present but body struck or blank",
+        "Landlord repair obligation section marked Reserved"
+      ],
+      "common_tenant_modifications": [
+        "Landlord bears HVAC replacement cost above threshold amount",
+        "Structural repair obligation shifted to landlord"
+      ]
+    },
+    {
+      "id": "LP-07",
+      "name": "Common Area Maintenance (CAM)",
+      "applicability": "conditional",
+      "activation_clues": [
+        "common area", "CAM", "CAM charges", "operating expenses",
+        "triple net", "NNN", "proportionate share", "shared expenses", "common facilities"
+      ],
+      "exclusion_clues": [
+        "gross lease", "full service lease", "all-inclusive rent",
+        "no additional charges", "landlord pays all operating"
+      ],
+      "default_when_unclear": "applicability_unclear",
+      "related_issue_areas": ["LP-01", "LP-06"],
+      "notes": "Not applicable in gross or full-service leases.",
+      "expected_elements": [
+        "tenant's proportionate share calculation method",
+        "included expense categories",
+        "excluded expense categories",
+        "annual CAM increase cap",
+        "tenant audit rights",
+        "reconciliation timeline"
+      ],
+      "coverage_state_rules": {
+        "missing":             "CAM references present in lease but no CAM provision found",
+        "partial":             "Share calculation present but exclusions, cap, or audit rights absent",
+        "covered_unfavorable": "No annual CAM cap; audit rights absent or time-limited to 30 days",
+        "ambiguous":           "Proportionate share defined by landlord's reasonable determination with no formula",
+        "not_applicable":      "Gross or full-service lease structure confirmed"
+      },
+      "risk_if_missing": "Tenant may owe undefined share of all building operating expenses with no audit protection",
+      "exposure_statement": "CAM exposure uncapped and unauditable; tenant cannot verify or challenge operating expense pass-throughs",
+      "caution_signals": ["common_dispute_area", "landlord_leverage_point"],
+      "negative_space_clues": [
+        "CAM cap provision header present but percentage blank",
+        "Audit rights section marked Reserved or Intentionally Omitted",
+        "Excluded expenses list cross-references exhibit not attached"
+      ],
+      "common_tenant_modifications": [
+        "5% annual CAM increase cap added",
+        "Capital expenditure exclusion added",
+        "Management fee cap (typically 15% of operating expenses)"
+      ]
+    },
+    {
+      "id": "LP-08",
+      "name": "Insurance Requirements",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-13"],
+      "expected_elements": [
+        "tenant commercial general liability minimum ($1M per occurrence, $2M aggregate standard)",
+        "property insurance obligation",
+        "business interruption coverage",
+        "landlord as additional insured",
+        "certificate of insurance delivery obligation",
+        "waiver of subrogation"
+      ],
+      "coverage_state_rules": {
+        "missing":                "No insurance provision",
+        "partial":                "Liability minimum present but additional insured, property coverage, or waiver of subrogation absent",
+        "covered_unfavorable":    "Coverage minimums unusually high; waiver of subrogation absent",
+        "potentially_unenforceable": "Named insured requirement conflicts with standard policy structure"
+      },
+      "risk_if_missing": "Tenant may operate uninsured; landlord has no recourse against tenant insurer for losses",
+      "exposure_statement": "Insurance obligations undefined; landlord has no protection against tenant-caused losses and no subrogation waiver",
+      "caution_signals": ["potentially_unenforceable"],
+      "negative_space_clues": [
+        "Waiver of subrogation section present but obligation direction reversed or blank",
+        "Certificate delivery obligation cross-references deleted notice section"
+      ],
+      "common_tenant_modifications": [
+        "Reduced minimum coverage amounts",
+        "Removal of business interruption requirement",
+        "Mutual waiver of subrogation (one-way → two-way)"
+      ]
+    },
+    {
+      "id": "LP-09",
+      "name": "Subletting & Assignment",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-03", "LP-11"],
+      "expected_elements": [
+        "landlord consent requirement",
+        "grounds for withholding consent (reasonableness standard)",
+        "affiliate exception (no consent required for related entities)",
+        "profit sharing on sublet above base rent",
+        "recapture right (landlord can terminate and lease directly)",
+        "assignment in connection with sale of business"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No assignment provision",
+        "partial":             "Consent requirement present but affiliate exception, recapture, or profit sharing absent",
+        "covered_unfavorable": "Landlord consent in sole and absolute discretion; no affiliate exception",
+        "broken_xref":         "Affiliate defined by cross-reference to definition section not present in document"
+      },
+      "risk_if_missing": "Assignment rights undefined; tenant unable to sell business or transfer lease in routine transactions",
+      "exposure_statement": "Assignment rights absent or over-restricted; tenant cannot execute routine business transactions including sale of business",
+      "caution_signals": ["common_dispute_area", "landlord_leverage_point"],
+      "negative_space_clues": [
+        "Affiliate exception section marked Reserved",
+        "Sale-of-business exception cross-references deleted exhibit"
+      ],
+      "common_tenant_modifications": [
+        "Reasonableness standard added ('not unreasonably withheld, conditioned, or delayed')",
+        "Affiliate exception broadened (parent, subsidiary, successor entities)",
+        "Sale-of-business exception expanded to include asset sales"
+      ]
+    },
+    {
+      "id": "LP-10",
+      "name": "Alterations & Improvements",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-06"],
+      "expected_elements": [
+        "threshold for required landlord approval (dollar amount or scope)",
+        "landlord contribution to tenant improvements (if any)",
+        "ownership of improvements at lease end",
+        "removal obligation at lease expiration",
+        "lien discharge or bond requirement"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No alteration provision",
+        "partial":             "Approval threshold present but removal obligation, ownership, or lien discharge absent",
+        "covered_unfavorable": "Landlord may require removal of all tenant improvements at discretion",
+        "broken_xref":         "Tenant improvement allowance cross-references Work Letter exhibit not attached"
+      },
+      "risk_if_missing": "Tenant may not make any alterations without implied landlord consent; improvements may revert to landlord",
+      "exposure_statement": "Alteration rights undefined; tenant faces removal obligation uncertainty and potential forfeiture of improvement investment",
+      "caution_signals": ["common_dispute_area"],
+      "negative_space_clues": [
+        "Tenant improvement allowance section marked Reserved or amount is $0",
+        "Work Letter cross-referenced but exhibit absent from document"
+      ],
+      "common_tenant_modifications": [
+        "Approval threshold increased (above $10,000 or $25,000)",
+        "Removal obligation limited to trade fixtures only",
+        "Landlord required to designate removal items at time of approval"
+      ]
+    },
+    {
+      "id": "LP-11",
+      "name": "Default & Remedies",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-01", "LP-09", "LP-12"],
+      "expected_elements": [
+        "monetary default definition and cure period (typically 5 days)",
+        "non-monetary default definition and cure period (typically 30 days)",
+        "notice requirement before default declaration",
+        "landlord termination right",
+        "landlord re-entry right",
+        "tenant's right to cure third-party defaults",
+        "rent acceleration on default"
+      ],
+      "coverage_state_rules": {
+        "missing":                "No default provision",
+        "partial":                "Monetary default present but non-monetary default, notice requirement, or cure period absent",
+        "covered_unfavorable":    "Cure period unusually short; no notice requirement before landlord re-entry",
+        "broken_xref":            "Remedies cross-reference deleted exhibit or section",
+        "potentially_unenforceable": "Self-help re-entry provision without court order"
+      },
+      "risk_if_missing": "Landlord remedies limited to common law; no contractual right to accelerate rent or re-enter",
+      "exposure_statement": "Default and remedy framework absent or incomplete; landlord enforcement position significantly weakened",
+      "caution_signals": ["common_dispute_area", "governing_law_sensitive", "potentially_unenforceable"],
+      "negative_space_clues": [
+        "Remedy section header present but acceleration clause absent",
+        "Notice requirement section marked Reserved"
+      ],
+      "common_tenant_modifications": [
+        "Extended cure periods (5 days → 10 days monetary; 30 days → 45 days non-monetary)",
+        "Notice required before every default declaration",
+        "Added third-party cure right (mortgagee or guarantor may cure)"
+      ]
+    },
+    {
+      "id": "LP-12",
+      "name": "Early Termination",
+      "applicability": "optional",
+      "activation_clues": [
+        "early termination right",
+        "early termination option",
+        "right to terminate early",
+        "break option",
+        "break clause",
+        "kick-out clause",
+        "co-tenancy termination",
+        "go dark",
+        "termination option",
+        "termination fee"
+      ],
+      "exclusion_clues": [
+        "no right to terminate prior to expiration",
+        "tenant may not terminate early",
+        "no early termination"
+      ],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": ["LP-03", "LP-11"],
+      "notes": "Absence is normal and expected. Activation clues tightened v1.1.2 to prevent false positives on default/remedies language.",
+      "expected_elements": [
+        "triggering conditions for early termination right",
+        "notice period required",
+        "termination fee or penalty formula",
+        "unamortized tenant improvement cost recovery",
+        "co-tenancy termination trigger (if applicable)"
+      ],
+      "coverage_state_rules": {
+        "missing":             "Termination right referenced elsewhere in lease but no termination provision found",
+        "partial":             "Termination right exists but penalty formula, notice period, or survival obligations absent",
+        "covered_unfavorable": "Termination fee includes unamortized brokerage commissions",
+        "broken_xref":         "Termination fee formula cross-references amortization schedule exhibit not attached",
+        "not_applicable":      "No termination right language anywhere in document; absence is by design"
+      },
+      "risk_if_missing": "Tenant has no exit mechanism; full remaining lease obligations survive business failure or relocation",
+      "exposure_statement": "No early exit right; tenant bears full term obligation regardless of operational changes",
+      "caution_signals": ["common_dispute_area"],
+      "negative_space_clues": [
+        "Early termination section present but triggering conditions blank",
+        "Co-tenancy termination right cross-references anchor tenant definition not in document"
+      ],
+      "common_tenant_modifications": [
+        "Added termination right after Year 3 or Year 5",
+        "Termination fee capped at 6-12 months rent",
+        "Co-tenancy clause added (right to terminate if anchor tenant leaves)"
+      ]
+    },
+    {
+      "id": "LP-13",
+      "name": "Indemnification & Liability",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-08", "LP-11"],
+      "expected_elements": [
+        "tenant indemnification of landlord scope",
+        "landlord indemnification of tenant scope",
+        "mutual vs one-way indemnification structure",
+        "cap on liability (if any)",
+        "exclusion of consequential or punitive damages",
+        "carve-outs for indemnitee negligence"
+      ],
+      "coverage_state_rules": {
+        "missing":                "No indemnification provision",
+        "partial":                "One-way indemnification present (tenant → landlord only) without reciprocal protection",
+        "covered_unfavorable":    "No liability cap; consequential damages not excluded",
+        "potentially_unenforceable": "Indemnification for indemnitee's own gross negligence"
+      },
+      "risk_if_missing": "Liability defaults to common law negligence standards",
+      "exposure_statement": "Indemnification absent or one-sided; tenant bears uncapped liability exposure with no landlord reciprocal protection",
+      "caution_signals": ["common_dispute_area", "governing_law_sensitive", "potentially_unenforceable"],
+      "negative_space_clues": [
+        "Landlord indemnification section marked Reserved or deleted",
+        "Liability cap provision header present but amount blank"
+      ],
+      "common_tenant_modifications": [
+        "Added mutual/reciprocal indemnification",
+        "Added cap on total liability (typically 12-24 months rent)",
+        "Excluded consequential, punitive, and special damages"
+      ]
+    },
+    {
+      "id": "LP-14",
+      "name": "Force Majeure",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-05", "LP-03"],
+      "notes": "Cascade risk: definition expansions silently affect LP-05 continuous operation obligations.",
+      "expected_elements": [
+        "definition of qualifying force majeure events",
+        "scope of excused obligations (which parties, which obligations)",
+        "rent abatement during force majeure period",
+        "notice requirement to invoke",
+        "termination right if force majeure exceeds threshold period"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No force majeure provision",
+        "partial":             "Events defined but rent abatement, notice requirement, or termination right absent",
+        "covered_unfavorable": "Force majeure excludes rent obligations entirely",
+        "ambiguous":           "Force majeure definition includes catch-all language without enumeration"
+      },
+      "risk_if_missing": "No excused performance; common law impossibility doctrine rarely applies to commercial leases",
+      "exposure_statement": "Force majeure protection absent; tenant obligated to pay rent and perform during events entirely outside its control",
+      "caution_signals": ["common_dispute_area", "cascade_risk"],
+      "negative_space_clues": [
+        "Force majeure section present but rent abatement carve-out blank or deleted",
+        "Event list ends with 'including without limitation' with body truncated"
+      ],
+      "common_tenant_modifications": [
+        "Added pandemics, cyberattacks, supply chain disruptions to event list",
+        "Added rent abatement for force majeure periods exceeding 30 days",
+        "Added termination right if force majeure exceeds 180 days"
+      ]
+    },
+    {
+      "id": "LP-15",
+      "name": "Signage Rights",
+      "applicability": "conditional",
+      "activation_clues": [
+        "sign", "signage", "exterior sign", "pylon", "monument sign",
+        "directory", "facade", "storefront identification"
+      ],
+      "exclusion_clues": [
+        "no signage rights", "tenant shall have no right to install signs", "interior office sublease"
+      ],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": [],
+      "notes": "Retail tenants almost always have signage rights.",
+      "expected_elements": [
+        "exterior signage right (storefront/facade)",
+        "pylon or monument sign right",
+        "directory listing right",
+        "approval process and timeline",
+        "landlord's right to modify or remove",
+        "compliance with code and center standards"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No signage provision in a retail lease",
+        "partial":             "Storefront signage addressed but pylon, directory, or approval process absent",
+        "covered_unfavorable": "Landlord may modify or remove signage at any time without notice",
+        "ambiguous":           "Right to 'reasonable signage' without specification",
+        "not_applicable":      "Non-retail context confirmed; signage not expected"
+      },
+      "risk_if_missing": "Tenant has no right to exterior signage; landlord can deny any brand identification at premises",
+      "exposure_statement": "Signage rights undefined; tenant's brand visibility at premises unprotected and subject to landlord discretion",
+      "caution_signals": [],
+      "negative_space_clues": [
+        "Signage specification cross-references Sign Criteria exhibit not attached",
+        "Pylon sign right granted but panel dimensions blank"
+      ],
+      "common_tenant_modifications": [
+        "Added pylon sign panel right",
+        "Minimum sign dimensions specified",
+        "Approval timeline specified (30 days; deemed approved if no response)"
+      ]
+    },
+    {
+      "id": "LP-16",
+      "name": "Parking",
+      "applicability": "conditional",
+      "activation_clues": [
+        "parking", "parking spaces", "spaces", "garage",
+        "parking area", "parking lot", "surface parking", "reserved spaces"
+      ],
+      "exclusion_clues": [
+        "no parking", "street parking only", "parking not included", "tenant is responsible for own parking"
+      ],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": [],
+      "expected_elements": [
+        "parking space allocation (count or ratio per square foot)",
+        "reserved vs unreserved designation",
+        "parking cost (included in rent or separately charged)",
+        "landlord's right to modify parking area",
+        "visitor / customer parking access",
+        "exclusive parking protection"
+      ],
+      "coverage_state_rules": {
+        "missing":             "Parking referenced in lease but no parking provision found",
+        "partial":             "Spaces allocated but cost, reservation status, or modification rights absent",
+        "covered_unfavorable": "Landlord may reduce parking allocation or convert to paid parking at any time",
+        "ambiguous":           "Parking 'in common with other tenants' without space count or ratio",
+        "not_applicable":      "No parking references in document"
+      },
+      "risk_if_missing": "No contractual parking rights; landlord may charge for or eliminate parking access",
+      "exposure_statement": "Parking rights undefined or unprotected; tenant customers and employees may face parking restrictions without recourse",
+      "caution_signals": [],
+      "negative_space_clues": [
+        "Parking Exhibit referenced but not attached",
+        "Reserved space locations cross-reference site plan not included in document"
+      ],
+      "common_tenant_modifications": [
+        "Minimum space count guaranteed regardless of center reconfiguration",
+        "Cost of reserved spaces capped or included in base rent"
+      ]
+    },
+    {
+      "id": "LP-17",
+      "name": "Dispute Resolution",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-11"],
+      "expected_elements": [
+        "dispute resolution mechanism (mediation, arbitration, or litigation)",
+        "governing law (state)",
+        "venue / jurisdiction",
+        "attorney fee allocation (one-way or prevailing party)",
+        "jury trial waiver",
+        "time limit for bringing claims"
+      ],
+      "coverage_state_rules": {
+        "missing":                "No dispute resolution provision",
+        "partial":                "Governing law present but venue, attorney fee allocation, or jury waiver absent",
+        "covered_unfavorable":    "Attorney fees one-way (landlord only); jury trial waived by tenant only",
+        "potentially_unenforceable": "Mandatory arbitration clause may be unenforceable against certain tenant types"
+      },
+      "risk_if_missing": "Dispute venue and cost allocation undefined; may favor party with greater litigation resources",
+      "exposure_statement": "Dispute framework absent; attorney fee allocation and venue undefined, creating uncertainty in enforcement cost",
+      "caution_signals": ["common_dispute_area", "governing_law_sensitive", "potentially_unenforceable"],
+      "negative_space_clues": [
+        "Attorney fee allocation section blank or marked Reserved",
+        "Jury trial waiver section marked Intentionally Omitted"
+      ],
+      "common_tenant_modifications": [
+        "Prevailing party fee allocation made mutual (not landlord-only)",
+        "Jury trial waiver made mutual",
+        "Venue changed to tenant's county"
+      ]
+    },
+    {
+      "id": "LP-18",
+      "name": "Holdover Provisions",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-03"],
+      "expected_elements": [
+        "holdover rent rate (typically 150% of final month's rent)",
+        "month-to-month vs tenancy-at-sufferance characterization",
+        "notice required to terminate holdover",
+        "landlord's right to collect consequential damages from holdover",
+        "conversion to new lease conditions"
+      ],
+      "coverage_state_rules": {
+        "missing":                "No holdover provision; holdover tenancy governed by state law default",
+        "partial":                "Holdover rate defined but notice requirement or tenancy characterization absent",
+        "covered_unfavorable":    "Holdover converts automatically to new 12-month term; consequential damages unlimited",
+        "potentially_unenforceable": "Holdover rate above 200% may be characterized as penalty clause"
+      },
+      "risk_if_missing": "Holdover defaults to state law; tenant may create new full-term tenancy by staying even one day past expiration",
+      "exposure_statement": "Holdover protection undefined; tenant faces unlimited consequential damage exposure and potential automatic lease renewal",
+      "caution_signals": ["governing_law_sensitive", "potentially_unenforceable"],
+      "negative_space_clues": [
+        "Holdover rate multiplier blank",
+        "Consequential damages section marked Reserved"
+      ],
+      "common_tenant_modifications": [
+        "Holdover rate reduced (200% → 150%)",
+        "Consequential damages excluded",
+        "Month-to-month characterization confirmed (prevents automatic term renewal)"
+      ]
+    }
+  ],
+
+  "discovered_provision_patterns": {
+    "description": "Common non-standard provisions discovered in tenant leases during CAM analysis (CUSTOM-XX entries).",
+    "patterns": [
+      {
+        "name": "Co-Tenancy",
+        "applicability": "optional",
+        "activation_clues": ["co-tenancy", "anchor tenant", "co-anchor", "occupancy threshold"],
+        "coverage_concern": "Tenant seeks rent reduction or termination right tied to anchor tenant presence",
+        "caution_signals": ["common_dispute_area", "landlord_leverage_point"]
+      },
+      {
+        "name": "Percentage Rent",
+        "applicability": "optional",
+        "activation_clues": ["percentage rent", "gross sales", "natural breakpoint", "percentage of gross"],
+        "coverage_concern": "Revenue-based rent above natural breakpoint; calculation methodology and reporting obligations critical",
+        "caution_signals": ["common_dispute_area"]
+      },
+      {
+        "name": "Guaranty",
+        "applicability": "conditional",
+        "activation_clues": ["guaranty", "guarantor", "personal guarantee", "corporate guarantee", "guarantee of lease"],
+        "coverage_concern": "Personal or corporate guarantee of tenant obligations; scope and duration of guarantor liability requires review",
+        "caution_signals": ["governing_law_sensitive", "potentially_unenforceable"]
+      },
+      {
+        "name": "SNDA",
+        "applicability": "conditional",
+        "activation_clues": ["SNDA", "subordination", "non-disturbance", "attornment", "lender", "mortgagee"],
+        "coverage_concern": "Tenant's right to remain in occupancy if landlord's lender forecloses",
+        "caution_signals": ["landlord_leverage_point"]
+      },
+      {
+        "name": "Hazardous Materials",
+        "applicability": "conditional",
+        "activation_clues": ["hazardous", "hazmat", "environmental", "toxic", "contaminant", "remediation"],
+        "coverage_concern": "Tenant's environmental obligations; definition of prohibited substances and remediation responsibilities",
+        "caution_signals": ["governing_law_sensitive", "potentially_unenforceable"]
+      },
+      {
+        "name": "Radius Restriction",
+        "applicability": "optional",
+        "activation_clues": ["radius", "competing location", "radius restriction", "competing store", "prohibited area"],
+        "coverage_concern": "Restriction on tenant operating competing locations within defined radius",
+        "caution_signals": ["potentially_unenforceable", "governing_law_sensitive"]
+      },
+      {
+        "name": "Relocation",
+        "applicability": "optional",
+        "activation_clues": ["relocation", "relocate", "substitute premises", "alternate space"],
+        "coverage_concern": "Landlord's right to relocate tenant to different premises",
+        "caution_signals": ["landlord_leverage_point"]
+      },
+      {
+        "name": "Continuous Operations",
+        "applicability": "conditional",
+        "activation_clues": ["continuous operation", "go dark", "operating hours", "hours of operation", "remain open"],
+        "coverage_concern": "Obligation to remain open and operating specific hours; penalties for going dark",
+        "caution_signals": ["common_dispute_area"]
+      }
+    ]
+  },
+
+  "schema_validation_rules": {
+    "description": "Rules for validating this schema file.",
+    "checks": [
+      "every issue_area has applicability field (required/conditional/optional)",
+      "every conditional issue_area has at least one activation_clue",
+      "every issue_area has default_when_unclear field",
+      "every issue_area has at least one expected_element",
+      "every issue_area has exposure_statement",
+      "every issue_area has risk_if_missing",
+      "coverage_state_rules reference only valid coverage states from coverage_states dict",
+      "caution_signals reference only valid keys from caution_signal_definitions",
+      "no duplicate issue_area ids",
+      "every discovered_provision_pattern has applicability and activation_clues"
+    ]
+  }
+}

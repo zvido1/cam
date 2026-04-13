@@ -35,9 +35,9 @@
     --high-bg: #fff7ed;
     --medium-bg: #fffbeb;
     --low-bg: #f1f5f9;
-    --radius-sm: 4px;
-    --radius: 8px;
-    --radius-lg: 12px;
+    --radius-sm: 0.25rem;
+    --radius: 0.5rem;
+    --radius-lg: 0.75rem;
     --shadow: 0 1px 3px rgba(0,0,0,0.1);
     --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
@@ -135,7 +135,7 @@ html:has(#state-results:not(.hidden)) {
     background: rgba(255, 255, 255, 0.96);
     border-bottom: 1px solid var(--border);
     position: fixed;
-    top: 60px;
+    top: 3.75rem;
     left: 0;
     right: 0;
     z-index: 95;
@@ -149,7 +149,7 @@ html:has(#state-results:not(.hidden)) {
     margin-left: auto;
     font-size: 0.75rem;
     padding: 0.25rem 0.75rem;
-    height: 28px;
+    height: 1.75rem;
     align-self: center;
     flex-shrink: 0;
 }
@@ -367,7 +367,7 @@ html:has(#state-results:not(.hidden)) {
 
 textarea.input-field {
     resize: vertical;
-    min-height: 80px;
+    min-height: 5rem;
 }
 
 /* ── Cards ── */
@@ -427,7 +427,7 @@ textarea.input-field {
     box-shadow: var(--shadow-lg);
     padding: 3rem;
     width: 100%;
-    max-width: min(32vw, 420px);
+    max-width: min(32vw, 26.25rem);
     text-align: center;
 }
 
@@ -595,18 +595,18 @@ textarea.input-field {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 6px;
+    gap: 0.375rem;
     white-space: nowrap;
     overflow: hidden;
     margin-bottom: 0.5rem;
 }
 .upload-col-title {
     font-weight: 600;
-    font-size: 13px;
+    font-size: 0.8125rem;
     white-space: nowrap;
 }
 .upload-col-subtitle {
-    font-size: 11px;
+    font-size: 0.6875rem;
     color: var(--text-muted, #64748b);
     white-space: nowrap;
 }
@@ -641,7 +641,7 @@ textarea.input-field {
     cursor: pointer;
     transition: all var(--transition);
     background: var(--bg);
-    min-height: 120px;
+    min-height: 7.5rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -800,7 +800,7 @@ textarea.input-field {
     font-size: 0.8125rem;
     cursor: pointer;
     padding: 0.25rem 0.375rem;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     transition: background var(--transition);
 }
 .provision-list label:hover {
@@ -838,7 +838,7 @@ textarea.input-field {
     padding: 0.375rem 0.5rem;
     font-size: 0.75rem;
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 0.25rem;
 }
 
 /* Estimate & submit area */
@@ -862,7 +862,7 @@ textarea.input-field {
     color: var(--accent);
     background: rgba(26, 54, 93, 0.05);
     border-left: 3px solid var(--accent);
-    border-radius: 0 4px 4px 0;
+    border-radius: 0 0.25rem 0.25rem 0;
     min-height: 1.6rem;
 }
 
@@ -871,9 +871,9 @@ textarea.input-field {
 #template-summary-card {
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px 20px;
-    margin: 12px 0;
+    border-radius: 0.5rem;
+    padding: 1rem 1.25rem;
+    margin: 0.75rem 0;
 }
 .tscard-header {
     font-size: 0.75rem;
@@ -881,18 +881,18 @@ textarea.input-field {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--accent);
-    margin-bottom: 10px;
+    margin-bottom: 0.625rem;
 }
 .tscard-fields {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 24px;
-    margin-bottom: 14px;
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 0.875rem;
 }
 .tscard-field {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0.125rem;
 }
 .tscard-label {
     font-size: 0.7rem;
@@ -914,9 +914,9 @@ textarea.input-field {
 .tscard-identity-row {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 1rem;
     flex-wrap: wrap;
-    padding-top: 12px;
+    padding-top: 0.75rem;
     border-top: 1px solid var(--border);
 }
 .tscard-identity-label {
@@ -927,14 +927,14 @@ textarea.input-field {
 .tscard-check {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 0.3125rem;
     font-size: 0.82rem;
     color: var(--text);
     cursor: pointer;
 }
 .tscard-check input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
+    width: 0.875rem;
+    height: 0.875rem;
     cursor: pointer;
 }
 
@@ -991,7 +991,7 @@ textarea.input-field {
         padding: 1.2rem 1.1rem 1rem;
     }
     .processing-chat-panel {
-        min-height: 420px;
+        min-height: 26.25rem;
         height: auto;
     }
 }
@@ -1023,7 +1023,7 @@ textarea.input-field {
 .processing-status-card {
     background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 18px;
+    border-radius: 1.125rem;
     box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
     padding: 1.5rem 1.75rem 1.25rem;
     min-height: 0;
@@ -1033,7 +1033,7 @@ textarea.input-field {
     width: 100%;
     margin-left: 0;
     margin-right: 0;
-    min-height: 500px;
+    min-height: 31.25rem;
     height: 100%;
 }
 
@@ -1042,7 +1042,7 @@ textarea.input-field {
     margin-bottom: 1.4rem;
     padding: 0.95rem 1rem 0.9rem;
     border: 1px solid #dbe4f0;
-    border-radius: 12px;
+    border-radius: 0.75rem;
     background: #f7faff;
 }
 .job-progress-label {
@@ -1052,7 +1052,7 @@ textarea.input-field {
     margin-bottom: 0.5rem;
 }
 .job-progress-bar {
-    height: 8px;
+    height: 0.5rem;
     background: #e6edf7;
     border-radius: 999px;
     overflow: hidden;
@@ -1067,7 +1067,7 @@ textarea.input-field {
 .tenant-progress {
     margin-bottom: 1rem;
     padding: 0.85rem 1rem;
-    border-radius: 14px;
+    border-radius: 0.875rem;
     background: #f8fafc;
     border: 1px solid #e7edf5;
 }
@@ -1087,7 +1087,7 @@ textarea.input-field {
 }
 
 .progress-bar {
-    height: 9px;
+    height: 0.5625rem;
     background: #e5ecf5;
     border-radius: 999px;
     overflow: hidden;
@@ -1113,7 +1113,7 @@ textarea.input-field {
     margin: 1rem 0 1.1rem;
     padding: 0.9rem 1rem;
     border: 1px solid #d8e2f2;
-    border-radius: 14px;
+    border-radius: 0.875rem;
     background: linear-gradient(180deg, #f8fbff 0%, #f1f6ff 100%);
 }
 
@@ -1156,7 +1156,7 @@ textarea.input-field {
     margin: 1rem 0 0;
     padding: 1.1rem 1.15rem 1rem;
     border: 1px solid #d8e2f2;
-    border-radius: 16px;
+    border-radius: 1rem;
     background: linear-gradient(180deg, #f8fbff 0%, #f1f6ff 100%);
 }
 
@@ -1217,7 +1217,7 @@ textarea.input-field {
     flex-direction: column;
     align-items: flex-end;
     gap: 0.45rem;
-    min-width: 180px;
+    min-width: 11.25rem;
 }
 
 .processing-hero-percent {
@@ -1249,7 +1249,7 @@ textarea.input-field {
 }
 
 .processing-hero-bar-track {
-    height: 12px;
+    height: 0.75rem;
     background: #e6edf7;
     border-radius: 999px;
     overflow: hidden;
@@ -1332,7 +1332,7 @@ textarea.input-field {
 .processing-detail-card {
     background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
     border: 1px solid var(--border, #e5e7eb);
-    border-radius: 16px;
+    border-radius: 1rem;
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
     overflow: hidden;
 }
@@ -1361,7 +1361,7 @@ textarea.input-field {
     margin-top: 1rem;
     padding: 0.95rem 1rem;
     border: 1px solid #d6e3fb;
-    border-radius: 14px;
+    border-radius: 0.875rem;
     background: #f8fbff;
     display: flex;
     justify-content: space-between;
@@ -1411,7 +1411,7 @@ textarea.input-field {
 
 .processing-checklist-group {
     border: 1px solid #e4ebf5;
-    border-radius: 14px;
+    border-radius: 0.875rem;
     background: #f8fbff;
     padding: 0.9rem 0.95rem;
 }
@@ -1507,7 +1507,7 @@ textarea.input-field {
 .processing-checklist-empty {
     padding: 0.9rem 0.95rem;
     border: 1px dashed #d7e2ef;
-    border-radius: 14px;
+    border-radius: 0.875rem;
     background: #fbfdff;
     color: var(--text-muted);
     font-size: 0.88rem;
@@ -1527,7 +1527,7 @@ textarea.input-field {
     gap: 1rem;
     padding: 0.85rem 0.95rem;
     border: 1px solid #d8e2f2;
-    border-radius: 14px;
+    border-radius: 0.875rem;
     background: #f8fbff;
 }
 
@@ -1547,7 +1547,7 @@ textarea.input-field {
     margin-top: 1rem;
     padding: 0.9rem 0.95rem;
     border: 1px dashed #d7e2ef;
-    border-radius: 14px;
+    border-radius: 0.875rem;
     background: #fbfdff;
     color: var(--text-muted);
     font-size: 0.88rem;
@@ -1573,7 +1573,7 @@ textarea.input-field {
 
 .processing-tenant-card {
     padding: 1.05rem 1.1rem;
-    border-radius: 14px;
+    border-radius: 0.875rem;
     background: #f8fafc;
     border: 1px solid #e7edf5;
 }
@@ -1741,7 +1741,7 @@ textarea.input-field {
     font-size: 0.6875rem;
     font-weight: 600;
     padding: 0.125rem 0.5rem;
-    border-radius: 3px;
+    border-radius: 0.1875rem;
     text-transform: uppercase;
 }
 
@@ -1928,7 +1928,7 @@ textarea.input-field {
     font-size: 0.75rem;
     font-weight: 600;
     padding: 0.125rem 0.5rem;
-    border-radius: 10px;
+    border-radius: 0.625rem;
 }
 .action-immediate {
     background: var(--danger-bg);
@@ -1959,7 +1959,7 @@ textarea.input-field {
     align-items: center;
     gap: 0.25rem;
     padding: 0.125rem 0.5rem;
-    border-radius: 12px;
+    border-radius: 0.75rem;
     font-size: 0.75rem;
     font-weight: 600;
     white-space: nowrap;
@@ -2006,7 +2006,7 @@ textarea.input-field {
     border-radius: var(--radius);
     background: var(--bg);
     font-family: var(--font);
-    min-width: 250px;
+    min-width: 15.625rem;
 }
 
 /* Contract summary container */
@@ -2019,7 +2019,7 @@ textarea.input-field {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 0.75rem;
     padding: 0 0 0.9rem;
     border: none;
     background: transparent;
@@ -2045,8 +2045,8 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 1.5rem;
+    height: 1.5rem;
     border-radius: 999px;
     border: 1px solid #cbd5e1;
     background: #ffffff;
@@ -2093,16 +2093,16 @@ textarea.input-field {
 .contract-clause-filter-layout {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0.5rem;
     align-items: stretch;
 }
 .contract-clause-filter-toprow {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 0.75rem;
     width: 100%;
-    padding: 2px 0 6px;
+    padding: 0.125rem 0 0.375rem;
     border-bottom: 1px solid var(--border, #e2e8f0);
 }
 .contract-clause-filter-controls {
@@ -2126,13 +2126,13 @@ textarea.input-field {
     flex-wrap: nowrap;
     justify-content: flex-end;
     align-items: center;
-    gap: 10px;
+    gap: 0.625rem;
 }
 .contract-clause-filter-select {
     min-width: 0;
     padding: 0.45rem 0.7rem;
     border: 1px solid var(--border, #d1d5db);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     background: #fff;
     font-size: 0.8rem;
     color: var(--text, #1e293b);
@@ -2140,7 +2140,7 @@ textarea.input-field {
 .contract-clause-filter-reset {
     padding: 0.45rem 0.8rem;
     border: 1px solid #cbd5e1;
-    border-radius: 8px;
+    border-radius: 0.5rem;
     background: #fff;
     color: var(--primary, #1a365d);
     font-size: 0.8rem;
@@ -2195,7 +2195,7 @@ textarea.input-field {
     padding: 0.25rem 0.625rem;
     background: var(--warning-bg);
     border: 1px solid var(--warning);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--warning);
@@ -2270,7 +2270,7 @@ textarea.input-field {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 0.75rem;
     padding: 0.75rem 1rem;
     background: var(--bg-alt);
     border-bottom: 1px solid var(--border);
@@ -2280,7 +2280,7 @@ textarea.input-field {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
+    gap: 0.75rem;
     min-width: 0;
     flex: 1 1 auto;
 }
@@ -2388,7 +2388,7 @@ textarea.input-field {
     font-size: 0.8125rem;
     line-height: 1.6;
     white-space: pre-wrap;
-    max-height: 300px;
+    max-height: 18.75rem;
     overflow-y: auto;
 }
 .expandable-content.open {
@@ -2428,7 +2428,7 @@ textarea.input-field {
     font-size: 0.8125rem;
     font-family: var(--font);
     resize: vertical;
-    min-height: 48px;
+    min-height: 3rem;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -2463,7 +2463,7 @@ textarea.input-field {
 .qfb {
     font-size: 0.75rem;
     font-weight: 600;
-    padding: 3px 10px;
+    padding: 0.1875rem 0.625rem;
     border-radius: 999px;
     border: 1px solid var(--border, #e2e8f0);
     background: var(--bg, #ffffff);
@@ -2518,7 +2518,7 @@ textarea.input-field {
     font-size: 0.78rem;
     color: #78350f;
     flex: 1;
-    min-width: 200px;
+    min-width: 12.5rem;
 }
 .qfb-followup-btns {
     display: flex;
@@ -2601,7 +2601,7 @@ textarea.input-field {
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     padding: 2rem;
-    max-width: 640px;
+    max-width: 40rem;
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
@@ -2630,8 +2630,8 @@ textarea.input-field {
 /* ── Loading spinner ── */
 .spinner {
     display: inline-block;
-    width: 20px;
-    height: 20px;
+    width: 1.25rem;
+    height: 1.25rem;
     border: 2px solid var(--border);
     border-top-color: var(--accent);
     border-radius: 50%;
@@ -2648,7 +2648,7 @@ textarea.input-field {
 
 .finding-card {
     background: var(--bg, #ffffff);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, 0.5rem);
     border: 1px solid var(--border, #e2e8f0);
     border-left: 4px solid var(--border, #e2e8f0);
     margin-bottom: 1rem;
@@ -2688,8 +2688,8 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 1.75rem;
+    height: 1.75rem;
     border-radius: 999px;
     border: 1px solid #cbd5e1;
     background: #ffffff;
@@ -2736,12 +2736,12 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 210px;
-    min-height: 30px;
+    width: 13.125rem;
+    min-height: 1.875rem;
     margin-top: 0;
     padding: 0.3rem 0.85rem;
     border: 1.5px solid var(--accent, #4f46e5);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     background: var(--accent, #4f46e5);
     font-size: 0.76rem;
     font-weight: 600;
@@ -2836,9 +2836,9 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 22px;
-    height: 22px;
-    padding: 0 6px;
+    min-width: 1.375rem;
+    height: 1.375rem;
+    padding: 0 0.375rem;
     background: var(--primary, #1a365d);
     color: white;
     border-radius: 999px;
@@ -2851,7 +2851,7 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    padding: 3px 10px;
+    padding: 0.1875rem 0.625rem;
     background: #fff7ed;
     color: #c2410c;
     border: 1.5px solid #fed7aa;
@@ -2947,7 +2947,7 @@ textarea.input-field {
     padding: 0.5rem 0.75rem;
     background: var(--bg, #fff);
     border-left: 2px solid #86efac; /* green — matches CONFORMS */
-    border-radius: 0 4px 4px 0;
+    border-radius: 0 0.25rem 0.25rem 0;
     color: var(--text, #1e293b);
 }
 /* Concern bar — compact version of resolution bar for CONFORMS */
@@ -3002,7 +3002,7 @@ textarea.input-field {
 .conforming-concern-btn {
     padding: 0.2rem 0.6rem;
     border: 1.5px solid var(--border, #cbd5e1);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     background: var(--surface, #fff);
     font-size: 0.75rem;
     cursor: pointer;
@@ -3035,7 +3035,7 @@ textarea.input-field {
     font-size: 0.75rem;
     color: var(--warning, #d97706);
     cursor: pointer;
-    padding: 2px 8px;
+    padding: 0.125rem 0.5rem;
     border-radius: 999px;
     background: #fffbeb;
     border: 1px solid #fde68a;
@@ -3055,7 +3055,7 @@ textarea.input-field {
     background: #fffbeb;
     border: 1px solid #fde68a;
     border-left: 3px solid var(--warning, #d97706);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, 0.5rem);
     font-size: 0.8125rem;
 }
 .dissent-panel-header {
@@ -3101,7 +3101,7 @@ textarea.input-field {
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 6px 10px;
+    padding: 0.375rem 0.625rem;
     background: var(--bg-alt, #f8fafc);
     border-top: 1px solid var(--border, #e2e8f0);
     flex-wrap: wrap;
@@ -3119,13 +3119,13 @@ textarea.input-field {
 
 .chat-scope-select {
     font-size: 0.75rem;
-    padding: 3px 6px;
+    padding: 0.1875rem 0.375rem;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: var(--radius-sm, 4px);
+    border-radius: var(--radius-sm, 0.25rem);
     background: var(--bg, #ffffff);
     color: var(--text, #1e293b);
     cursor: pointer;
-    max-width: 130px;
+    max-width: 8.125rem;
 }
 .chat-scope-select:focus {
     outline: none;
@@ -3135,7 +3135,7 @@ textarea.input-field {
 .chat-scope-reset {
     font-size: 0.6875rem;
     font-weight: 600;
-    padding: 2px 8px;
+    padding: 0.125rem 0.5rem;
     border-radius: 999px;
     border: 1px solid var(--border, #e2e8f0);
     background: transparent;
@@ -3150,7 +3150,7 @@ textarea.input-field {
 }
 
 .chat-scope-indicator {
-    padding: 3px 10px;
+    padding: 0.1875rem 0.625rem;
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--primary, #1a365d);
@@ -3164,13 +3164,13 @@ textarea.input-field {
    ══════════════════════════════════════════════════════ */
 
 .model-version {
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 400;
     color: var(--text-muted, #94a3b8);
 }
 
 .fallback-note {
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 500;
     color: var(--warning, #d97706);
 }
@@ -3184,7 +3184,7 @@ textarea.input-field {
     font-size: 0.8125rem;
     font-weight: 500;
     text-decoration: none;
-    padding: 1px 0;
+    padding: 0.0625rem 0;
     border-bottom: 1px dotted currentColor;
     transition: opacity 0.15s;
 }
@@ -3204,7 +3204,7 @@ textarea.input-field {
    ══════════════════════════════════════════════════════ */
 
 .chat-synth-hint {
-    font-size: 11px;
+    font-size: 0.6875rem;
     color: var(--text-muted, #94a3b8);
     font-style: italic;
     align-self: center;
@@ -3217,19 +3217,19 @@ textarea.input-field {
 .badge-split {
     display: inline-flex;
     align-items: center;
-    padding: 2px 7px;
+    padding: 0.125rem 0.4375rem;
     border-radius: 999px;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 500;
     background: var(--bg-alt, #f1f5f9);
     color: var(--text-muted, #64748b);
     border: 1px solid var(--border, #e2e8f0);
-    gap: 4px;
+    gap: 0.25rem;
 }
 
 .badge-split::before {
     content: "\26A1";
-    font-size: 10px;
+    font-size: 0.625rem;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -3319,7 +3319,7 @@ textarea.input-field {
     font-size: 0.75rem;
     font-weight: 700;
     padding: 0.125rem 0.5rem;
-    border-radius: 10px;
+    border-radius: 0.625rem;
 }
 .evaluator-verdict.verdict-DEVIATES {
     background: var(--danger-bg);
@@ -3465,7 +3465,7 @@ textarea.input-field {
 .crossref-item {
     padding: 0.5rem 0.625rem;
     background: rgba(255,255,255,0.6);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     font-size: 0.8125rem;
 }
 .crossref-term {
@@ -3516,13 +3516,13 @@ textarea.input-field {
 }
 
 .confidence-name {
-    flex: 0 0 220px;
+    flex: 0 0 13.75rem;
     font-weight: 500;
     color: var(--text);
 }
 
 .confidence-verdict {
-    flex: 0 0 80px;
+    flex: 0 0 5rem;
     font-size: 0.75rem;
     font-weight: 700;
     text-align: center;
@@ -3530,29 +3530,29 @@ textarea.input-field {
 
 .confidence-bar-wrap {
     flex: 1;
-    height: 8px;
+    height: 0.5rem;
     background: var(--border);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     overflow: hidden;
 }
 
 .confidence-bar-fill {
     height: 100%;
     background: var(--accent);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     transition: width 0.3s ease;
 }
 
 .confidence-pct {
-    flex: 0 0 40px;
+    flex: 0 0 2.5rem;
     text-align: right;
     font-weight: 600;
     color: var(--text);
 }
 
 @media (max-width: 600px) {
-    .confidence-name { flex: 0 0 120px; font-size: 0.75rem; }
-    .confidence-verdict { flex: 0 0 60px; }
+    .confidence-name { flex: 0 0 7.5rem; font-size: 0.75rem; }
+    .confidence-verdict { flex: 0 0 3.75rem; }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -3884,12 +3884,12 @@ textarea.input-field {
 .legend-item {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 0.3125rem;
     white-space: nowrap;
 }
 .legend-dot {
-    width: 10px;
-    height: 10px;
+    width: 0.625rem;
+    height: 0.625rem;
     border-radius: 50%;
     flex-shrink: 0;
 }
@@ -3904,18 +3904,18 @@ textarea.input-field {
 .identity-block {
     background: var(--bg-alt, #f8fafc);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 16px;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
 }
 .identity-block-title {
     font-weight: 600;
-    font-size: 13px;
-    margin-bottom: 8px;
+    font-size: 0.8125rem;
+    margin-bottom: 0.5rem;
     color: var(--text, #1e293b);
 }
 .identity-raw {
-    font-size: 12px;
+    font-size: 0.75rem;
     white-space: pre-wrap;
     color: var(--text-muted, #64748b);
     margin: 0;
@@ -3928,7 +3928,7 @@ textarea.input-field {
 
 .results-tab-bar {
     display: flex;
-    gap: 8px;
+    gap: 0.5rem;
     margin: 1.25rem 0 1.5rem;
     padding: 0;
     border-bottom: none;
@@ -4095,8 +4095,8 @@ textarea.input-field {
 }
 
 .docview-header-toggle {
-    width: 32px;
-    height: 32px;
+    width: 2rem;
+    height: 2rem;
     border-radius: 999px;
     border: 1px solid #cbd5e1;
     background: #ffffff;
@@ -4319,7 +4319,7 @@ textarea.input-field {
     white-space: pre-wrap;
     word-wrap: break-word;
     border-top: 1px solid var(--border);
-    min-height: 60px;
+    min-height: 3.75rem;
 }
 
 /* Template column (left) gets a right border */
@@ -4367,7 +4367,7 @@ textarea.input-field {
 
 @keyframes docview-slide-in {
     from { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; }
-    to { opacity: 1; max-height: 600px; }
+    to { opacity: 1; max-height: 37.5rem; }
 }
 
 .docview-analysis-header {
@@ -4516,8 +4516,8 @@ textarea.input-field {
 
 /* Sidebar */
 .docview-sidebar {
-    width: 220px;
-    min-width: 200px;
+    width: 13.75rem;
+    min-width: 12.5rem;
     background: var(--bg-alt);
     border-right: 1px solid var(--border);
     overflow-y: auto;
@@ -4567,18 +4567,18 @@ textarea.input-field {
     opacity: 0.7;
 }
 .fulldoc-sidebar-divider {
-    height: 1px;
+    height: 0.0625rem;
     background: var(--border);
     margin: 0.375rem 0.75rem;
 }
 .fulldoc-dot {
-    width: 8px;
-    height: 8px;
+    width: 0.5rem;
+    height: 0.5rem;
     border-radius: 50%;
     flex-shrink: 0;
     display: inline-block;
     font-size: 0.5rem;
-    line-height: 8px;
+    line-height: 0.5rem;
     text-align: center;
 }
 .fulldoc-dot-CRITICAL { background: #e11d48; }
@@ -4612,9 +4612,9 @@ textarea.input-field {
 
 /* Highlighted provision text */
 .fulldoc-highlight {
-    border-radius: 2px;
-    padding: 1px 0;
-    scroll-margin-top: 60px;
+    border-radius: 0.125rem;
+    padding: 0.0625rem 0;
+    scroll-margin-top: 3.75rem;
 }
 .fulldoc-hl-CRITICAL { background: rgba(254, 202, 202, 0.5); }
 .fulldoc-hl-HIGH { background: rgba(254, 215, 170, 0.5); }
@@ -4627,8 +4627,8 @@ textarea.input-field {
     flex-wrap: wrap;
     align-items: baseline;
     gap: 0.25rem 0.5rem;
-    margin: 4px 0;
-    padding: 4px 10px;
+    margin: 0.25rem 0;
+    padding: 0.25rem 0.625rem;
     border-radius: var(--radius-sm);
     border-left: 3px solid var(--border);
     background: var(--bg-alt);
@@ -4675,7 +4675,7 @@ textarea.input-field {
     .docview-sidebar {
         width: 100%;
         min-width: unset;
-        max-height: 200px;
+        max-height: 12.5rem;
         border-right: none;
         border-bottom: 1px solid var(--border);
     }
@@ -4709,7 +4709,7 @@ textarea.input-field {
     line-height: 1.6;
     padding: 0.5rem 0.75rem;
     background: var(--bg);
-    border-radius: var(--radius-sm, 4px);
+    border-radius: var(--radius-sm, 0.25rem);
     border-left: 2px solid var(--border);
     /* No max-height — expands to full clause length */
 }
@@ -4740,14 +4740,14 @@ textarea.input-field {
     color: #991b1b;
     text-decoration: line-through;
     text-decoration-color: #dc2626;
-    border-radius: 2px;
-    padding: 0 1px;
+    border-radius: 0.125rem;
+    padding: 0 0.0625rem;
 }
 .diff-added {
     background: #fef9c3;
     color: #713f12;
-    border-radius: 2px;
-    padding: 0 1px;
+    border-radius: 0.125rem;
+    padding: 0 0.0625rem;
     font-weight: 500;
 }
 
@@ -4757,9 +4757,9 @@ textarea.input-field {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding: 1px 5px;
+    padding: 0.0625rem 0.3125rem;
     border-radius: 999px;
-    margin-left: 6px;
+    margin-left: 0.375rem;
     vertical-align: middle;
 }
 .diff-legend--removed {
@@ -4900,7 +4900,7 @@ textarea.input-field {
     font-family: var(--font);
     padding: 0.25rem 0.375rem;
     background: transparent;
-    min-width: 120px;
+    min-width: 7.5rem;
 }
 .docview-search-count {
     font-size: 0.75rem;
@@ -4937,14 +4937,14 @@ textarea.input-field {
 /* Search match highlights */
 .search-match {
     background: #fde68a;
-    border-radius: 2px;
-    padding: 0 1px;
+    border-radius: 0.125rem;
+    padding: 0 0.0625rem;
 }
 .search-match-active {
     background: #f59e0b;
     outline: 2px solid #d97706;
-    border-radius: 2px;
-    padding: 0 1px;
+    border-radius: 0.125rem;
+    padding: 0 0.0625rem;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -5076,7 +5076,7 @@ textarea.input-field {
 .xtenant-issue {
     font-size: 0.8125rem;
     font-weight: 600;
-    min-width: 180px;
+    min-width: 11.25rem;
     flex-shrink: 0;
 }
 .xtenant-chips {
@@ -5113,7 +5113,7 @@ textarea.input-field {
     display: grid;
     grid-template-columns: 18% minmax(0, 1fr) 18%;
     grid-template-rows: auto auto 1fr;
-    column-gap: 16px;
+    column-gap: 1rem;
     row-gap: 0;
     flex: 1;
     height: 100%;
@@ -5162,7 +5162,7 @@ textarea.input-field {
 }
 
 .nav-sidebar-header {
-    padding: 14px 8px 12px;
+    padding: 0.875rem 0.5rem 0.75rem;
     color: var(--text, #1e293b);
     border-bottom: 1px solid var(--border, #e2e8f0);
     position: sticky;
@@ -5179,21 +5179,21 @@ textarea.input-field {
     text-transform: uppercase;
     letter-spacing: 0.09em;
     color: #64748b;
-    padding-left: 16px;
+    padding-left: 1rem;
 }
 
 .nav-sidebar-header-top {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-right: 8px;
+    padding-right: 0.5rem;
 }
 .nav-sidebar-header-meta {
-    margin-top: 4px;
+    margin-top: 0.25rem;
     font-size: 0.76rem;
     font-weight: 600;
     color: #334155;
-    padding-left: 16px;
+    padding-left: 1rem;
 }
 
 /* ── Sidebar Legend ── */
@@ -5258,7 +5258,7 @@ textarea.input-field {
 }
 
 .nav-sidebar-content {
-    padding: 10px 8px 12px;
+    padding: 0.625rem 0.5rem 0.75rem;
     flex: 1;
     overflow-y: auto;
     min-height: 0;
@@ -5268,7 +5268,7 @@ textarea.input-field {
 
 .nav-sidebar::-webkit-scrollbar,
 .nav-sidebar-content::-webkit-scrollbar {
-    width: 11px;
+    width: 0.6875rem;
 }
 
 .nav-sidebar::-webkit-scrollbar-track,
@@ -5290,9 +5290,9 @@ textarea.input-field {
 }
 
 .nav-tenant {
-    margin: 0 0 10px;
-    padding: 8px 0 6px;
-    border-radius: 12px;
+    margin: 0 0 0.625rem;
+    padding: 0.5rem 0 0.375rem;
+    border-radius: 0.75rem;
     border: 1px solid var(--border, #e2e8f0);
     border-left: 4px solid #cbd5e1;
     background: #ffffff;
@@ -5312,9 +5312,9 @@ textarea.input-field {
     content: "";
     position: absolute;
     left: 0;
-    top: 46px;
+    top: 2.875rem;
     bottom: 0;
-    width: 4px;
+    width: 0.25rem;
     background: #cbd5e1;
 }
 
@@ -5340,9 +5340,9 @@ textarea.input-field {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    padding: 8px 14px 6px;
-    font-size: 13px;
+    gap: 0.5rem;
+    padding: 0.5rem 0.875rem 0.375rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     cursor: pointer;
     color: var(--text, #1e293b);
@@ -5354,7 +5354,7 @@ textarea.input-field {
 .nav-tenant-title-wrap {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
     min-width: 0;
 }
 
@@ -5380,9 +5380,9 @@ textarea.input-field {
     background: #243b6b;
     box-shadow: none;
     color: #ffffff;
-    padding-top: 14px;
-    padding-bottom: 14px;
-    gap: 8px;
+    padding-top: 0.875rem;
+    padding-bottom: 0.875rem;
+    gap: 0.5rem;
 }
 
 .nav-tenant-label.active .nav-tenant-title-text {
@@ -5395,7 +5395,7 @@ textarea.input-field {
 
 .nav-tenant.active .nav-tenant-header-status {
     display: block;
-    margin-left: 22px;
+    margin-left: 1.375rem;
     padding: 0;
     color: #ffffff;
     font-size: 0.72rem;
@@ -5414,21 +5414,21 @@ textarea.input-field {
 }
 
 .nav-tenant-status {
-    font-size: 12px;
+    font-size: 0.75rem;
 }
 
 .nav-provisions {
-    padding: 2px 0 6px 27px;
+    padding: 0.125rem 0 0.375rem 1.6875rem;
 }
 
 .nav-provision-item {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 6px;
-    margin: 2px;
-    font-size: 11px;
-    border-radius: 3px;
+    gap: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    margin: 0.125rem;
+    font-size: 0.6875rem;
+    border-radius: 0.1875rem;
     cursor: pointer;
     color: var(--text-muted, #64748b);
     transition: background 0.15s;
@@ -5445,8 +5445,8 @@ textarea.input-field {
 
 /* Severity dots in nav */
 .nav-dot {
-    width: 6px;
-    height: 6px;
+    width: 0.375rem;
+    height: 0.375rem;
     border-radius: 50%;
     display: inline-block;
     flex-shrink: 0;
@@ -5458,7 +5458,7 @@ textarea.input-field {
 
 /* ── New sidebar section headers ── */
 .nav-section-header {
-    padding: 8px 12px 4px;
+    padding: 0.5rem 0.75rem 0.25rem;
     font-size: 0.625rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -5466,9 +5466,9 @@ textarea.input-field {
     color: var(--text-muted, #94a3b8);
 }
 .nav-section-header--all {
-    margin-top: 4px;
+    margin-top: 0.25rem;
     border-top: 1px solid var(--border, #e2e8f0);
-    padding-top: 6px;
+    padding-top: 0.375rem;
 }
 .nav-section-toggle {
     cursor: pointer;
@@ -5493,17 +5493,17 @@ textarea.input-field {
 
 /* ── Open Issues list ── */
 .nav-issues-list {
-    padding: 3px 8px 5px;
+    padding: 0.1875rem 0.5rem 0.3125rem;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0.125rem;
 }
 .nav-issue-item {
     display: flex;
     flex-direction: column;
     gap: 0;
-    padding: 3px 9px;
-    border-radius: 10px;
+    padding: 0.1875rem 0.5625rem;
+    border-radius: 0.625rem;
     cursor: pointer;
     transition: background 0.15s, transform 0.15s, box-shadow 0.15s;
     border-left: 3px solid transparent;
@@ -5564,24 +5564,24 @@ textarea.input-field {
     background-image: linear-gradient(90deg, rgba(36, 59, 107, 0.065) 0%, rgba(255, 255, 255, 0) 52%);
 }
 .nav-issue-priority + .nav-issue-item:not(.nav-issue-priority) {
-    margin-top: 2px;
-    padding-top: 8px;
+    margin-top: 0.125rem;
+    padding-top: 0.5rem;
     border-top-color: rgba(226, 232, 240, 0.95);
 }
 
 .nav-issue-signal {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 0.375rem;
     flex: 0 0 auto;
     min-width: max-content;
-    padding-top: 1px;
+    padding-top: 0.0625rem;
 }
 
 .nav-issue-sev {
     font-size: 0.58rem;
     font-weight: 700;
-    padding: 2px 6px;
+    padding: 0.125rem 0.375rem;
     border-radius: 999px;
     flex-shrink: 0;
     letter-spacing: 0.045em;
@@ -5638,22 +5638,22 @@ textarea.input-field {
     line-height: 1.45;
     white-space: normal;
     word-break: break-word;
-    margin-top: 2px;
+    margin-top: 0.125rem;
 }
 
 /* ── All Provisions list ── */
 .nav-all-provisions {
-    padding: 2px 8px 8px;
+    padding: 0.125rem 0.5rem 0.5rem;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 0.1875rem;
 }
 .nav-all-item {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 4px 6px;
-    border-radius: 6px;
+    gap: 0.3125rem;
+    padding: 0.25rem 0.375rem;
+    border-radius: 0.375rem;
     cursor: pointer;
     transition: background 0.15s;
 }
@@ -5676,7 +5676,7 @@ textarea.input-field {
 .nav-all-icon {
     font-size: 0.65rem;
     flex-shrink: 0;
-    width: 10px;
+    width: 0.625rem;
     text-align: center;
 }
 .nav-all-check { color: #16a34a; }
@@ -5722,10 +5722,10 @@ textarea.input-field {
 
 .chat-panel-resize {
     position: absolute;
-    left: -3px;
+    left: -0.1875rem;
     top: 0;
     bottom: 0;
-    width: 6px;
+    width: 0.375rem;
     cursor: col-resize;
     z-index: 10;
     background: transparent;
@@ -5737,7 +5737,7 @@ textarea.input-field {
 }
 
 .chat-panel-header {
-    padding: 12px 16px;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border, #e2e8f0);
     display: flex;
     align-items: center;
@@ -5747,23 +5747,23 @@ textarea.input-field {
 
 .chat-panel-title {
     font-weight: 600;
-    font-size: 15px;
+    font-size: 0.9375rem;
 }
 
 .chat-header-actions {
     display: flex;
-    gap: 8px;
+    gap: 0.5rem;
     align-items: center;
 }
 
 .chat-header-btn {
     background: none;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     cursor: pointer;
     color: var(--text-muted);
-    padding: 4px 8px;
-    font-size: 14px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
 }
 .chat-header-btn:hover {
     background: var(--bg-alt);
@@ -5773,10 +5773,10 @@ textarea.input-field {
 .chat-close-btn {
     background: none;
     border: none;
-    font-size: 18px;
+    font-size: 1.125rem;
     cursor: pointer;
     color: var(--text-muted);
-    padding: 0 4px;
+    padding: 0 0.25rem;
     display: none;  /* hidden on wide screens */
 }
 
@@ -5784,23 +5784,23 @@ textarea.input-field {
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 16px;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    min-height: 300px;
+    gap: 0.75rem;
+    min-height: 18.75rem;
 }
 
 /* Input area pinned to top (above messages) */
 .chat-input-area {
-    padding: 12px 16px;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--border, #e2e8f0);
     flex-shrink: 0;
 }
 .chat-input-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 8px;
+    gap: 0.5rem;
     align-items: stretch;
 }
 .chat-input-row > * {
@@ -5809,15 +5809,15 @@ textarea.input-field {
 .chat-advisor-prompts {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px 0 10px;
+    gap: 0.5rem;
+    padding: 0.5rem 0 0.625rem;
 }
 .chat-advisor-prompts.hidden {
     display: none;
 }
 .chat-advisor-label {
     width: 100%;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 700;
     color: var(--text-muted, #64748b);
     text-transform: uppercase;
@@ -5826,12 +5826,12 @@ textarea.input-field {
 .chat-advisor-chip {
     display: inline-flex;
     align-items: center;
-    padding: 6px 10px;
+    padding: 0.375rem 0.625rem;
     border-radius: 999px;
     border: 1px solid #c7d2fe;
     background: #eef2ff;
     color: #3730a3;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.15s ease, border-color 0.15s ease;
@@ -5844,27 +5844,27 @@ textarea.input-field {
     flex: 1;
     min-height: 100%;
     box-sizing: border-box;
-    padding: 14px;
+    padding: 0.875rem;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 12px;
+    border-radius: 0.75rem;
     background: var(--bg-alt, #f8fafc);
     font-size: 0.8125rem;
     color: var(--text-muted, #64748b);
     line-height: 1.5;
 }
 .chat-analysis-starters {
-    margin-top: 10px;
+    margin-top: 0.625rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 0.5rem;
     align-content: flex-start;
 }
 .chat-analysis-starter {
     display: inline-block;
-    padding: 6px 12px;
+    padding: 0.375rem 0.75rem;
     font-size: 0.75rem;
     border: 1px solid #b7cdf8;
-    border-radius: 16px;
+    border-radius: 1rem;
     cursor: pointer;
     background: linear-gradient(180deg, #eef5ff 0%, #e3efff 100%);
     color: #1d4ed8;
@@ -5880,16 +5880,16 @@ textarea.input-field {
 .chat-input {
     width: 100%;
     min-width: 0;
-    padding: 8px 12px;
+    padding: 0.5rem 0.75rem;
     border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 14px;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
     font-family: var(--font);
     outline: none;
 }
 .chat-input-row .btn {
     width: auto;
-    min-width: 56px;
+    min-width: 3.5rem;
     white-space: nowrap;
 }
 .chat-input:focus {
@@ -5898,70 +5898,70 @@ textarea.input-field {
 }
 .chat-controls-row {
     display: flex;
-    gap: 8px;
+    gap: 0.5rem;
     align-items: center;
-    margin-top: 8px;
+    margin-top: 0.5rem;
 }
 .chat-mode-select {
-    font-size: 12px;
-    padding: 4px 8px;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     font-family: var(--font);
     background: var(--bg);
     cursor: pointer;
 }
 .chat-multi-options {
-    padding: 8px 0 4px;
+    padding: 0.5rem 0 0.25rem;
     border-top: 1px solid var(--border, #e2e8f0);
-    margin-top: 6px;
+    margin-top: 0.375rem;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0.375rem;
 }
 .chat-multi-label {
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 600;
     color: var(--text-muted, #64748b);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    margin-bottom: 2px;
+    margin-bottom: 0.125rem;
 }
 .chat-model-options {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 10px;
+    gap: 0.25rem 0.625rem;
 }
 .chat-model-options label {
     flex-shrink: 0;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: 0.75rem;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 0.25rem;
     cursor: pointer;
     color: var(--text, #1e293b);
 }
 .chat-multi-divider {
-    height: 1px;
+    height: 0.0625rem;
     background: var(--border, #e2e8f0);
-    margin: 2px 0;
+    margin: 0.125rem 0;
 }
 .chat-synth-row {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0.25rem;
 }
 .chat-synthesis-toggle {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 16px;
+    gap: 0.5rem 1rem;
 }
 .synth-option {
     display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 12px;
+    gap: 0.25rem;
+    font-size: 0.75rem;
     color: var(--text, #1e293b);
     cursor: pointer;
     white-space: nowrap;
@@ -5971,8 +5971,8 @@ textarea.input-field {
     accent-color: var(--primary, #2563eb);
 }
 .chat-disclaimer {
-    padding: 6px 16px;
-    font-size: 11px;
+    padding: 0.375rem 1rem;
+    font-size: 0.6875rem;
     color: var(--text-light, #94a3b8);
     border-top: 1px solid var(--border, #e2e8f0);
     flex-shrink: 0;
@@ -5985,14 +5985,14 @@ textarea.input-field {
 /* ── Mobile FAB (narrow screens only) ── */
 .chat-fab-mobile {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 56px;
-    height: 56px;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    width: 3.5rem;
+    height: 3.5rem;
     border-radius: 50%;
     background: var(--primary, #2563eb);
     color: white;
-    font-size: 24px;
+    font-size: 1.5rem;
     border: none;
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
@@ -6018,18 +6018,18 @@ textarea.input-field {
     }
     .top-tab-bar {
         display: flex;
-        padding: 12px 3%;
+        padding: 0.75rem 3%;
         margin: 0 2%;
         overflow-x: auto;
     }
     .top-tab-nav {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 0.5rem;
         justify-self: auto;
     }
     .tab-subheader {
-        padding: 10px 3%;
+        padding: 0.625rem 3%;
         margin: 0 2%;
     }
     .results-content {
@@ -6046,7 +6046,7 @@ textarea.input-field {
         right: 0;
         bottom: 0;
         width: 100%;
-        max-width: 400px;
+        max-width: 25rem;
         z-index: 1000;
         box-shadow: -4px 0 20px rgba(0,0,0,0.15);
     }
@@ -6093,20 +6093,20 @@ textarea.input-field {
     margin-bottom: 0.125rem;
 }
 .chat-msg-label {
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: 0.25rem;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 0.375rem;
 }
 .chat-msg-actions {
     display: flex;
     justify-content: flex-end;
-    margin-top: 8px;
+    margin-top: 0.5rem;
 }
 .chat-save-note-btn {
-    padding: 4px 10px;
+    padding: 0.25rem 0.625rem;
     border: 1px solid #cbd5e1;
     border-radius: 999px;
     background: #ffffff;
@@ -6150,8 +6150,8 @@ textarea.input-field {
 /* ── Multi-model colored dots ── */
 .chat-model-dot {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 0.5rem;
+    height: 0.5rem;
     border-radius: 50%;
 }
 .chat-model-dot.claude { background: #c77dba; }
@@ -6184,9 +6184,9 @@ textarea.input-field {
 .chat-code-block {
     background: var(--bg-alt, #f8fafc);
     border-left: 3px solid var(--border, #e2e8f0);
-    padding: 8px 12px;
-    margin: 8px 0;
-    font-size: 13px;
+    padding: 0.5rem 0.75rem;
+    margin: 0.5rem 0;
+    font-size: 0.8125rem;
     white-space: pre-wrap;
     font-family: inherit;  /* NOT monospace — this is contract language, not code */
 }
@@ -6204,7 +6204,7 @@ textarea.input-field {
 .help-chat-card .chat-messages {
     flex: 1;
     overflow-y: auto;
-    min-height: 200px;
+    min-height: 12.5rem;
 }
 .help-chat-card .chat-panel-header {
     display: flex;
@@ -6212,28 +6212,28 @@ textarea.input-field {
     justify-content: space-between;
 }
 .help-chat-input-area {
-    padding: 10px 16px;
+    padding: 0.625rem 1rem;
     border-bottom: 1px solid var(--border, #e2e8f0);
     flex-shrink: 0;
 }
 .help-chat-welcome {
-    padding: 16px;
+    padding: 1rem;
     font-size: 0.8125rem;
     color: var(--text-muted, #64748b);
     line-height: 1.5;
 }
 .help-chat-starters {
-    margin-top: 10px;
+    margin-top: 0.625rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 0.375rem;
 }
 .help-chat-starter {
     display: inline-block;
-    padding: 6px 12px;
+    padding: 0.375rem 0.75rem;
     font-size: 0.75rem;
     border: 1px solid #b7cdf8;
-    border-radius: 16px;
+    border-radius: 1rem;
     cursor: pointer;
     background: linear-gradient(180deg, #eef5ff 0%, #e3efff 100%);
     color: #1d4ed8;
@@ -6248,10 +6248,10 @@ textarea.input-field {
 }
 .help-chat-hint {
     display: block;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-style: italic;
     color: var(--text-muted, #94a3b8);
-    padding: 4px 2px;
+    padding: 0.25rem 0.125rem;
 }
 
 /* ── Delete Analysis button ── */
@@ -6259,10 +6259,10 @@ textarea.input-field {
     color: var(--danger, #dc2626);
     border: 1px solid var(--danger, #dc2626);
     background: transparent;
-    border-radius: 6px;
-    padding: 6px 12px;
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.75rem;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 .btn-danger-outline:hover {
     background: var(--danger, #dc2626);
@@ -6299,10 +6299,10 @@ textarea.input-field {
 /* Floating checkbox panel */
 .filter-dropdown-panel {
     position: fixed;
-    min-width: 200px;
+    min-width: 12.5rem;
     background: var(--bg, #ffffff);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, 0.5rem);
     box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     z-index: 500;
     padding: 0.375rem 0;
@@ -6315,7 +6315,7 @@ textarea.input-field {
 }
 .clause-filter-panel {
     position: fixed;
-    min-width: 180px;
+    min-width: 11.25rem;
     z-index: 600;
 }
 .clause-filter-trigger {
@@ -6332,7 +6332,7 @@ textarea.input-field {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 7px 14px;
+    padding: 0.4375rem 0.875rem;
     font-size: 0.8125rem;
     color: var(--text, #1e293b);
     cursor: pointer;
@@ -6345,14 +6345,14 @@ textarea.input-field {
 .filter-option-all {
     border-bottom: 1px solid var(--border, #e2e8f0);
     margin-bottom: 0.25rem;
-    padding-bottom: 9px;
+    padding-bottom: 0.5625rem;
     font-weight: 600;
     color: var(--text-muted, #64748b);
 }
 .filter-option input[type="checkbox"] {
     accent-color: var(--primary, #1a365d);
-    width: 14px;
-    height: 14px;
+    width: 0.875rem;
+    height: 0.875rem;
     cursor: pointer;
     flex-shrink: 0;
 }
@@ -6360,8 +6360,8 @@ textarea.input-field {
 /* Severity color dots */
 .sev-dot {
     display: inline-block;
-    width: 8px;
-    height: 8px;
+    width: 0.5rem;
+    height: 0.5rem;
     border-radius: 50%;
     flex-shrink: 0;
 }
@@ -6390,7 +6390,7 @@ textarea.input-field {
 .sev-breakdown {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 0.25rem;
     align-items: center;
 }
 
@@ -6408,7 +6408,7 @@ textarea.input-field {
 .contract-card {
     background: var(--bg, #ffffff);
     border: 1.5px solid var(--border, #e2e8f0);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, 0.5rem);
     overflow: hidden;
     transition: border-color 0.15s, box-shadow 0.15s;
     cursor: default;
@@ -6428,7 +6428,7 @@ textarea.input-field {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 14px;
+    padding: 0.625rem 0.875rem;
     cursor: pointer;
     background: var(--bg-alt, #f8fafc);
     border-bottom: 1px solid var(--border, #e2e8f0);
@@ -6447,8 +6447,8 @@ textarea.input-field {
 .contract-card-status {
     font-size: 0.75rem;
     font-weight: 600;
-    padding: 2px 10px;
-    border-radius: 4px;
+    padding: 0.125rem 0.625rem;
+    border-radius: 0.25rem;
     white-space: nowrap;
     cursor: default;
     pointer-events: none;
@@ -6462,7 +6462,7 @@ textarea.input-field {
 
 /* Clean contract line */
 .contract-card-clean {
-    padding: 8px 14px;
+    padding: 0.5rem 0.875rem;
     font-size: 0.8125rem;
     color: var(--text-muted, #64748b);
     font-style: italic;
@@ -6476,8 +6476,8 @@ textarea.input-field {
 .contract-deviation-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 7px 14px;
+    gap: 0.5rem;
+    padding: 0.4375rem 0.875rem;
     font-size: 0.8125rem;
     cursor: pointer;
     border-bottom: 1px solid var(--border, #f1f5f9);
@@ -6497,7 +6497,7 @@ textarea.input-field {
 .contract-dev-icon {
     font-size: 0.875rem;
     flex-shrink: 0;
-    width: 18px;
+    width: 1.125rem;
 }
 .contract-dev-label {
     flex: 1;
@@ -6521,21 +6521,21 @@ textarea.input-field {
 .discovered-badge {
     display: inline-flex;
     align-items: center;
-    gap: 3px;
-    padding: 2px 8px;
+    gap: 0.1875rem;
+    padding: 0.125rem 0.5rem;
     font-size: 0.6875rem;
     font-weight: 600;
     background: #f0fdf4;
     color: #15803d;
     border: 1px solid #bbf7d0;
     border-radius: 999px;
-    margin-left: 6px;
+    margin-left: 0.375rem;
     white-space: nowrap;
 }
 .discovered-inline {
     font-size: 0.75rem;
     opacity: 0.7;
-    margin-left: 3px;
+    margin-left: 0.1875rem;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -6546,7 +6546,7 @@ textarea.input-field {
     background: #f0f5ff;
     border: 1px solid #c7d7f9;
     border-left: 4px solid var(--primary, #1a365d);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, 0.5rem);
     padding: 1.25rem 1.5rem;
     margin-bottom: 1rem;
     position: relative;
@@ -6609,8 +6609,8 @@ textarea.input-field {
     font-size: 0.8125rem;
     color: var(--primary, #1a365d);
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: var(--radius-sm, 4px);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--radius-sm, 0.25rem);
     user-select: none;
 }
 .tech-details-toggle:hover {
@@ -6632,7 +6632,7 @@ textarea.input-field {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 10px 0;
+    padding: 0.625rem 0;
     border-top: 1px solid var(--border, #e2e8f0);
     border-bottom: 1px solid var(--border, #e2e8f0);
     margin-bottom: 0.75rem;
@@ -6644,7 +6644,7 @@ textarea.input-field {
    ══════════════════════════════════════════════════════ */
 
 .filter-provision-group-label {
-    padding: 6px 14px 3px;
+    padding: 0.375rem 0.875rem 0.1875rem;
     font-size: 0.6875rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -6652,7 +6652,7 @@ textarea.input-field {
     color: var(--text-muted, #64748b);
     background: var(--bg-alt, #f8fafc);
     border-bottom: 1px solid var(--border, #e2e8f0);
-    margin-top: 2px;
+    margin-top: 0.125rem;
 }
 .filter-provision-group-custom {
     color: #15803d;
@@ -6662,7 +6662,7 @@ textarea.input-field {
     font-weight: 700;
     color: var(--text-muted, #64748b);
     flex-shrink: 0;
-    min-width: 64px;
+    min-width: 4rem;
 }
 .filter-provision-pid-custom {
     color: #15803d;
@@ -6671,7 +6671,7 @@ textarea.input-field {
     color: var(--text, #1e293b);
 }
 #filter-provision-panel {
-    max-height: 320px;
+    max-height: 20rem;
     overflow-y: auto;
 }
 
@@ -6742,7 +6742,7 @@ textarea.input-field {
     text-decoration: none;
     padding: 0.25rem 0.5rem;
     border: 1px solid var(--primary, #6366f1);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     white-space: nowrap;
     flex-shrink: 0;
 }
@@ -6753,31 +6753,31 @@ textarea.input-field {
 
 .provisions-divider {
     border-top: 1px solid var(--border, #e2e8f0);
-    margin: 6px 0;
+    margin: 0.375rem 0;
 }
 .provision-section-label {
     list-style: none;
-    padding: 6px 8px 3px 8px;
+    padding: 0.375rem 0.5rem 0.1875rem 0.5rem;
     font-size: 0.7rem;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
     pointer-events: none;
-    margin-top: 4px;
+    margin-top: 0.25rem;
 }
 .provision-section-new {
     color: var(--primary, #6366f1);
     border-top: 1px solid var(--border, #e2e8f0);
-    margin-top: 8px;
-    padding-top: 8px;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
 }
 
 /* Full-width custom provision row */
 .custom-provision-add.full-width {
     width: 100%;
     display: flex;
-    gap: 8px;
-    margin-top: 12px;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
 }
 .custom-provision-add.full-width input {
     flex: 1;
@@ -6817,7 +6817,7 @@ textarea.input-field {
 
 .discovery-card {
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     padding: 1rem 1.25rem;
     margin-bottom: 0.75rem;
     background: var(--bg-alt, #f8fafc);
@@ -6854,7 +6854,7 @@ textarea.input-field {
     font-size: 0.82rem;
     background: var(--bg-card, #fff);
     padding: 0.5rem 0.75rem;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     margin-bottom: 0.5rem;
     white-space: pre-wrap;
     word-break: break-word;
@@ -6909,7 +6909,7 @@ textarea.input-field {
     margin: 0 0 0.75rem;
     background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
     border: 1px solid #e8edf5;
-    border-radius: 18px;
+    border-radius: 1.125rem;
     box-shadow: 0 10px 22px rgba(15, 23, 42, 0.04);
     overflow: hidden;
 }
@@ -6955,8 +6955,8 @@ textarea.input-field {
 }
 .cam-disclaimer-img {
     width: 100%;
-    max-width: 260px;
-    border-radius: 6px;
+    max-width: 16.25rem;
+    border-radius: 0.375rem;
     border: 1px solid var(--border, #e5e7eb);
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
@@ -6979,8 +6979,8 @@ textarea.input-field {
     background: none;
     border: 1px solid var(--border, #e5e7eb);
     border-radius: 50%;
-    width: 28px;
-    height: 28px;
+    width: 1.75rem;
+    height: 1.75rem;
     cursor: pointer;
     font-size: 0.875rem;
     color: var(--text-muted);
@@ -6997,12 +6997,12 @@ textarea.input-field {
 
 .cam-carousel-dots {
     display: flex;
-    gap: 6px;
+    gap: 0.375rem;
     align-items: center;
 }
 .cam-carousel-dot {
-    width: 7px;
-    height: 7px;
+    width: 0.4375rem;
+    height: 0.4375rem;
     border-radius: 50%;
     background: var(--border, #e5e7eb);
     cursor: pointer;
@@ -7018,10 +7018,10 @@ textarea.input-field {
     flex-direction: column;
     background: var(--bg-card, #fff);
     border: 1px solid var(--border, #e5e7eb);
-    border-radius: 18px;
+    border-radius: 1.125rem;
     height: 100%;
     max-height: none;
-    min-height: 500px;
+    min-height: 31.25rem;
     overflow: hidden;
     box-shadow: 0 16px 34px rgba(15, 23, 42, 0.06);
     width: 100%;
@@ -7030,7 +7030,7 @@ textarea.input-field {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 18px;
+    padding: 0.875rem 1.125rem;
     border-bottom: 1px solid var(--border, #e2e8f0);
     flex-shrink: 0;
     background: #fbfdff;
@@ -7040,7 +7040,7 @@ textarea.input-field {
     font-size: 1rem;
 }
 .processing-chat-input-area {
-    padding: 12px 18px;
+    padding: 0.75rem 1.125rem;
     border-bottom: 1px solid var(--border, #e2e8f0);
     flex-shrink: 0;
 }
@@ -7050,7 +7050,7 @@ textarea.input-field {
     min-height: 0;
 }
 .processing-chat-panel .chat-disclaimer {
-    padding: 6px 16px;
+    padding: 0.375rem 1rem;
     font-size: 0.6875rem;
     color: var(--text-muted, #94a3b8);
     border-top: 1px solid var(--border, #e2e8f0);
@@ -7058,23 +7058,23 @@ textarea.input-field {
     flex-shrink: 0;
 }
 .processing-chat-welcome {
-    padding: 16px;
+    padding: 1rem;
     font-size: 0.8125rem;
     color: var(--text-muted, #64748b);
     line-height: 1.5;
 }
 .processing-chat-starters {
-    margin-top: 10px;
+    margin-top: 0.625rem;
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 0.375rem;
 }
 .processing-chat-starter {
     display: inline-block;
-    padding: 6px 12px;
+    padding: 0.375rem 0.75rem;
     font-size: 0.75rem;
     border: 1px solid #b7cdf8;
-    border-radius: 16px;
+    border-radius: 1rem;
     cursor: pointer;
     background: linear-gradient(180deg, #eef5ff 0%, #e3efff 100%);
     color: #1d4ed8;
@@ -7091,23 +7091,23 @@ textarea.input-field {
 /* ── Audit Trail Tab ── */
 .audit-run-meta {
     display: grid;
-    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    grid-template-columns: repeat(3, minmax(13.75rem, 1fr));
     gap: 1rem;
     flex-wrap: wrap;
     padding: 0.35rem;
     background: linear-gradient(180deg, #f8fbff 0%, #f3f7fb 100%);
     border: 1px solid #dbe5f1;
-    border-radius: 12px;
+    border-radius: 0.75rem;
     margin-bottom: 1.25rem;
     font-size: 0.8rem;
     color: var(--text-secondary, #475569);
 }
 .audit-meta-section {
-    min-width: 200px;
+    min-width: 12.5rem;
     padding: 0.95rem 1rem;
     background: #fff;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 10px;
+    border-radius: 0.625rem;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 .audit-meta-tech {
@@ -7136,7 +7136,7 @@ textarea.input-field {
     margin-bottom: 0.5rem;
     background: #fff;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 10px;
+    border-radius: 0.625rem;
     font-size: 0.8rem;
 }
 .audit-controls-count {
@@ -7170,7 +7170,7 @@ textarea.input-field {
 }
 .audit-provision-row {
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 10px;
+    border-radius: 0.625rem;
     overflow: hidden;
     background: #fff;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
@@ -7291,8 +7291,8 @@ textarea.input-field {
 .audit-verdict {
     font-size: 0.7rem;
     font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
     white-space: nowrap;
     justify-self: start;
 }
@@ -7332,7 +7332,7 @@ textarea.input-field {
     gap: 1.5rem;
 }
 .audit-detail-section {
-    min-width: 220px;
+    min-width: 13.75rem;
     flex: 1;
 }
 .audit-detail-label {
@@ -7367,8 +7367,8 @@ textarea.input-field {
 .audit-eval-verdict {
     font-size: 0.7rem;
     font-weight: 600;
-    padding: 1px 5px;
-    border-radius: 3px;
+    padding: 0.0625rem 0.3125rem;
+    border-radius: 0.1875rem;
 }
 .audit-eval-conforms { background: #dcfce7; color: #166534; }
 .audit-eval-deviates { background: #fee2e2; color: #991b1b; }
@@ -7508,8 +7508,8 @@ textarea.input-field {
 }
 
 .workflow-divider {
-    width: 1px;
-    height: 24px;
+    width: 0.0625rem;
+    height: 1.5rem;
     background: #dbe3ee;
     border-radius: 999px;
     flex: 0 0 auto;
@@ -7531,8 +7531,8 @@ textarea.input-field {
 }
 
 .workflow-open-actions > a {
-    flex: 0 1 205px;
-    min-width: 205px;
+    flex: 0 1 12.8125rem;
+    min-width: 12.8125rem;
     width: auto;
     margin: 0 !important;
     align-self: center;
@@ -7575,7 +7575,7 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 30px;
+    min-height: 1.875rem;
     font-size: 0.76rem;
     font-weight: 600;
     padding: 0.2rem 0.65rem;
@@ -7602,11 +7602,11 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 30px;
+    min-height: 1.875rem;
     font-size: 0.76rem;
     font-weight: 600;
     padding: 0.3rem 0.85rem;
-    border-radius: 8px;
+    border-radius: 0.5rem;
     border: 1.5px solid #d1d5db;
     background: white;
     color: #374151;
@@ -7641,7 +7641,7 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 30px;
+    min-height: 1.875rem;
     line-height: 1;
 }
 
@@ -7701,7 +7701,7 @@ textarea.input-field {
     font-size: 0.68rem;
     color: #9ca3af;
     white-space: nowrap;
-    min-width: 90px;
+    min-width: 5.625rem;
     padding-top: 0.1rem;
 }
 .res-note-text {
@@ -7736,7 +7736,7 @@ textarea.input-field {
     flex: 1;
     font-size: 0.78rem;
     border: 1.5px solid #d1d5db;
-    border-radius: 6px;
+    border-radius: 0.375rem;
     padding: 0.4rem 0.6rem;
     resize: vertical;
     min-height: 2.5rem;
@@ -7747,7 +7747,7 @@ textarea.input-field {
     font-size: 0.75rem;
     font-weight: 600;
     padding: 0.35rem 0.75rem;
-    border-radius: 6px;
+    border-radius: 0.375rem;
     border: none;
     background: #6366f1;
     color: white;
@@ -7773,7 +7773,7 @@ textarea.input-field {
     font-size: 0.75rem;
     text-align: left;
     padding: 0.4rem 0.75rem;
-    border-radius: 6px;
+    border-radius: 0.375rem;
     border: 1.5px solid #c7d2fe;
     background: #eef2ff;
     color: #3730a3;
@@ -7812,8 +7812,8 @@ textarea.input-field {
 }
 .res-progress-bar-wrap {
     flex: 1;
-    max-width: 200px;
-    height: 6px;
+    max-width: 12.5rem;
+    height: 0.375rem;
     background: #e5e7eb;
     border-radius: 999px;
     overflow: hidden;
@@ -7840,9 +7840,9 @@ textarea.input-field {
 .top-tab-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 1.2%;
-    margin: 0 calc(1.8% + var(--scrollbar-w, 0px)) 0 1.8%;
+    gap: 0.5rem;
+    padding: 0.75rem 1.2%;
+    margin: 0 calc(1.8% + var(--scrollbar-w, 0)) 0 1.8%;
     z-index: 20;
     background: var(--bg, #ffffff);
     border-bottom: 1px solid var(--border, #e2e8f0);
@@ -7850,7 +7850,7 @@ textarea.input-field {
 .top-tab-nav {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
     flex: 1;
     min-width: 0;
 }
@@ -7869,7 +7869,7 @@ textarea.input-field {
     height: 2rem;
     border: none;
     background: transparent;
-    border-radius: 6px;
+    border-radius: 0.375rem;
     font-size: 1rem;
     cursor: pointer;
     color: var(--text-muted);
@@ -7885,7 +7885,7 @@ textarea.input-field {
     color: #b91c1c;
 }
 .tab-action-divider {
-    width: 1px;
+    width: 0.0625rem;
     height: 1.25rem;
     background: var(--border);
     margin: 0 0.25rem;
@@ -7916,9 +7916,9 @@ textarea.input-field {
 }
 
 .top-tab-divider {
-    width: 1px;
+    width: 0.0625rem;
     background: var(--border, #e2e8f0);
-    margin: 4px 4px;
+    margin: 0.25rem 0.25rem;
     align-self: stretch;
 }
 
@@ -7949,7 +7949,7 @@ textarea.input-field {
 .snapshot-card {
     background: var(--bg, #ffffff);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: var(--radius-lg, 12px);
+    border-radius: var(--radius-lg, 0.75rem);
     margin-bottom: 0;
     overflow: hidden;
     box-shadow: var(--shadow, 0 1px 3px rgba(0,0,0,0.06));
@@ -8106,10 +8106,10 @@ textarea.input-field {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     background: var(--bg, #ffffff);
     color: var(--text, #1e293b);
-    min-width: 260px;
+    min-width: 16.25rem;
     cursor: pointer;
     font-family: var(--font);
 }
@@ -8123,7 +8123,7 @@ textarea.input-field {
 .contract-selector-bar {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 0.375rem;
     padding: 0.5rem 0 0;
     background: #ffffff;
     margin-bottom: 0;
@@ -8133,8 +8133,8 @@ textarea.input-field {
 
 .contract-controls-row {
     display: grid;
-    grid-template-columns: minmax(220px, 0.92fr) minmax(0, 2.35fr);
-    gap: 14px 18px;
+    grid-template-columns: minmax(13.75rem, 0.92fr) minmax(0, 2.35fr);
+    gap: 0.875rem 1.125rem;
     align-items: start;
     width: 100%;
 }
@@ -8167,7 +8167,7 @@ textarea.input-field {
     font-size: 0.875rem;
     font-weight: 500;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     background: var(--bg, #ffffff);
     color: var(--text, #1e293b);
     min-width: 0;
@@ -8213,12 +8213,12 @@ textarea.input-field {
 
 .snapshot-contract-dropdown {
     position: absolute;
-    top: calc(100% + 6px);
+    top: calc(100% + 0.375rem);
     left: 0;
     z-index: 200;
     background: var(--bg, #ffffff);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 10px;
+    border-radius: 0.625rem;
     box-shadow: 0 4px 16px rgba(0,0,0,0.10);
     min-width: 20vw;
     max-width: 24vw;
@@ -8226,7 +8226,7 @@ textarea.input-field {
 }
 
 .snapshot-contract-dropdown-inner {
-    max-height: 280px;
+    max-height: 17.5rem;
     overflow-y: auto;
     padding: 0.375rem 0;
 }
@@ -8276,12 +8276,12 @@ textarea.input-field {
 .deal-brief-banner {
     background: var(--bg-card, #ffffff);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
-    padding: 14px 20px;
-    margin-bottom: 12px;
+    border-radius: 0.5rem;
+    padding: 0.875rem 1.25rem;
+    margin-bottom: 0.75rem;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 0.25rem;
 }
 
 .deal-brief-identity {
@@ -8309,7 +8309,7 @@ textarea.input-field {
 .provisions-scope-card {
     background: var(--bg, #ffffff);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: var(--radius-lg, 12px);
+    border-radius: var(--radius-lg, 0.75rem);
     padding: 1rem 1.25rem 1rem;
     margin-bottom: 1.25rem;
     box-shadow: var(--shadow, 0 1px 3px rgba(0,0,0,0.06));
@@ -8335,7 +8335,7 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     padding: 0.2rem 0.5rem;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     font-size: 0.72rem;
     font-weight: 500;
     font-family: var(--font);
@@ -8373,7 +8373,7 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     padding: 0.25rem 0.625rem;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     font-size: 0.75rem;
     font-family: var(--font);
     white-space: nowrap;
@@ -8418,8 +8418,8 @@ textarea.input-field {
 .snapshot-sev-badge {
     font-size: 0.6875rem;
     font-weight: 700;
-    padding: 2px 10px;
-    border-radius: 4px;
+    padding: 0.125rem 0.625rem;
+    border-radius: 0.25rem;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     cursor: default;
@@ -8434,8 +8434,8 @@ textarea.input-field {
 .snapshot-resolution-badge {
     font-size: 0.6875rem;
     font-weight: 600;
-    padding: 2px 10px;
-    border-radius: 4px;
+    padding: 0.125rem 0.625rem;
+    border-radius: 0.25rem;
     cursor: default;
     pointer-events: none;
     user-select: none;
@@ -8455,8 +8455,8 @@ textarea.input-field {
     margin: 0 0 0.75rem;
     border: 1px solid var(--border, #e2e8f0);
     border-top: none;
-    border-bottom-left-radius: 14px;
-    border-bottom-right-radius: 14px;
+    border-bottom-left-radius: 0.875rem;
+    border-bottom-right-radius: 0.875rem;
     box-shadow: 0 12px 22px -20px rgba(15, 23, 42, 0.38);
     isolation: isolate;
     overflow: hidden;
@@ -8482,13 +8482,13 @@ textarea.input-field {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 1rem;
 }
 
 .contract-final-draft-status {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 0.375rem;
     color: var(--text, #1e293b);
     font-size: 0.86rem;
     line-height: 1.35;
@@ -8501,7 +8501,7 @@ textarea.input-field {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 0.75rem;
     width: 100%;
 }
 
@@ -8521,7 +8521,7 @@ textarea.input-field {
 .results-content.results-content-detail #contract-summary-section {
     margin-left: 0;
     margin-right: 0;
-    border-radius: 14px;
+    border-radius: 0.875rem;
 }
 
 #contract-detail-view {
@@ -8541,7 +8541,7 @@ textarea.input-field {
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0.625rem;
     flex-wrap: wrap;
 }
 
@@ -8572,11 +8572,11 @@ textarea.input-field {
 .contract-res-bar {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 0.75rem;
     padding: 1rem 1.25rem;
     background: var(--bg-alt, #f8fafc);
     border: 1.5px solid var(--border, #e2e8f0);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, 0.5rem);
 }
 .contract-res-clean {
     background: #f0fdf4;
@@ -8603,7 +8603,7 @@ textarea.input-field {
 .noted-toggle {
     font-size: 0.6875rem;
     font-weight: 600;
-    padding: 2px 10px;
+    padding: 0.125rem 0.625rem;
     border-radius: 999px;
     border: 1.5px solid var(--border, #e2e8f0);
     background: var(--bg, #ffffff);
@@ -8628,7 +8628,7 @@ textarea.input-field {
     padding: 1rem 1.25rem;
     background: #f0fdf4;
     border: 1.5px solid #bbf7d0;
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, 0.5rem);
     color: #166534;
     font-weight: 600;
     font-size: 0.9375rem;
@@ -8644,7 +8644,7 @@ textarea.input-field {
     color: var(--text-muted, #64748b);
     padding: 0.625rem 0.75rem;
     background: var(--bg-alt, #f8fafc);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, 0.5rem);
     border: 1px solid var(--border, #e2e8f0);
     display: flex;
     align-items: center;
@@ -8711,7 +8711,7 @@ textarea.input-field {
 .nav-status-label {
     font-size: 0.6875rem;
     font-weight: 600;
-    padding: 0 14px 0.35rem;
+    padding: 0 0.875rem 0.35rem;
     letter-spacing: 0.01em;
 }
 .nav-status-processing {
@@ -8739,15 +8739,15 @@ textarea.input-field {
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 6px;
-    padding: 6px 14px 0.95rem;
-    margin-top: 8px;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem 0.95rem;
+    margin-top: 0.5rem;
 }
 
 .nav-count-chip {
     display: inline-flex;
     align-items: center;
-    padding: 3px 8px;
+    padding: 0.1875rem 0.5rem;
     border-radius: 999px;
     font-size: 0.66rem;
     font-weight: 700;
@@ -8820,12 +8820,12 @@ textarea.input-field {
     padding: 0.375rem 0.625rem;
     font-size: 0.8125rem;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, 0.5rem);
     background: var(--bg, #ffffff);
     color: var(--text, #1e293b);
     font-family: var(--font);
     cursor: pointer;
-    min-width: 130px;
+    min-width: 8.125rem;
 }
 .snapshot-toolbar-select:focus {
     outline: none;
@@ -8842,7 +8842,7 @@ textarea.input-field {
     padding: 0.375rem 0.75rem 0.375rem 2rem;
     font-size: 0.8125rem;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: var(--radius, 8px);
+    border-radius: var(--radius, 0.5rem);
     background: var(--bg, #ffffff);
     color: var(--text, #1e293b);
     font-family: var(--font);
@@ -8897,7 +8897,7 @@ textarea.input-field {
     padding: 1.25rem 1.25rem 1.75rem;
     background: #ffffff;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: var(--radius-lg, 12px);
+    border-radius: var(--radius-lg, 0.75rem);
 }
 
 #contract-summary-section > .section-header {
@@ -8991,8 +8991,8 @@ textarea.input-field {
     color: var(--text-muted);
     background: none;
     border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 2px 8px;
+    border-radius: 0.25rem;
+    padding: 0.125rem 0.5rem;
     cursor: pointer;
     margin-top: 0.5rem;
 }
@@ -9006,7 +9006,7 @@ textarea.input-field {
     box-sizing: border-box;
     padding: 0.625rem;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 0.375rem;
     background: var(--bg);
     color: var(--text);
     font-size: 0.875rem;
@@ -9029,7 +9029,7 @@ textarea.input-field {
 
 .rules-panel-item {
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 0.375rem;
     padding: 0.75rem;
     margin-bottom: 0.75rem;
     position: relative;
@@ -9052,8 +9052,8 @@ textarea.input-field {
     font-size: 0.75rem;
     background: var(--primary-light, rgba(59,130,246,0.1));
     color: var(--primary);
-    padding: 1px 6px;
-    border-radius: 4px;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 0.25rem;
 }
 
 .rules-panel-date {
@@ -9078,11 +9078,11 @@ textarea.input-field {
 .final-draft-bar {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 16px;
+    gap: 0.75rem;
+    padding: 0.625rem 1rem;
     background: var(--surface-2, #f8fafc);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     margin-top: 0;
     margin-bottom: 1.25rem;
     position: relative;
@@ -9090,11 +9090,11 @@ textarea.input-field {
 .fd-bar-label { font-weight: 600; font-size: 0.88rem; color: var(--text-muted, #64748b); }
 .fd-counter { font-size: 0.88rem; color: var(--text, #1e293b); flex: 1; }
 .fd-generate-btn {
-    padding: 6px 16px;
+    padding: 0.375rem 1rem;
     background: var(--accent, #1a365d);
     color: #fff;
     border: none;
-    border-radius: 6px;
+    border-radius: 0.375rem;
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
@@ -9107,7 +9107,7 @@ textarea.input-field {
 .fd-decision-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 0.5rem;
     padding: 0.6rem 1rem 0.5rem;
     border-top: 1px solid var(--border, #e2e8f0);
     margin-top: 0;
@@ -9119,10 +9119,10 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 30px;
+    min-height: 1.875rem;
     padding: 0.3rem 0.85rem;
     border: 1.5px solid var(--border, #cbd5e1);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     background: var(--surface, #fff);
     color: var(--text, #1e293b);
     font-size: 0.76rem;
@@ -9144,28 +9144,28 @@ textarea.input-field {
 
 /* ── Modify Panel ────────────────────────────────────── */
 .fd-modify-panel {
-    padding: 14px 16px 12px;
+    padding: 0.875rem 1rem 0.75rem;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 12px;
+    border-radius: 0.75rem;
     background: #ffffff;
-    margin: 10px 10px 14px;
+    margin: 0.625rem 0.625rem 0.875rem;
     box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
 }
 .fd-modify-cols {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 8px;
+    gap: 0.625rem;
+    margin-bottom: 0.5rem;
 }
-.fd-modify-col-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted, #64748b); margin-bottom: 3px; }
+.fd-modify-col-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted, #64748b); margin-bottom: 0.1875rem; }
 .fd-modify-col-text { font-size: 0.82rem; color: var(--text, #1e293b); line-height: 1.4; }
 .fd-modify-textarea {
     width: 100%;
     box-sizing: border-box;
     font-size: 0.85rem;
-    padding: 8px;
+    padding: 0.5rem;
     border: 1.5px solid var(--border, #cbd5e1);
-    border-radius: 6px;
+    border-radius: 0.375rem;
     resize: vertical;
     font-family: inherit;
     line-height: 1.4;
@@ -9174,14 +9174,14 @@ textarea.input-field {
 }
 .fd-modify-textarea:focus { outline: none; border-color: var(--accent, #1a365d); }
 .fd-ai-draft-btn {
-    padding: 5px 14px;
+    padding: 0.3125rem 0.875rem;
     background: #f0f9ff;
     border: 1.5px solid #7dd3fc;
-    border-radius: 5px;
+    border-radius: 0.3125rem;
     color: #0369a1;
     font-size: 0.8rem;
     font-weight: 600;
-    min-height: 32px;
+    min-height: 2rem;
     cursor: pointer;
 }
 .fd-ai-draft-btn:hover { background: #e0f2fe; }
@@ -9190,8 +9190,8 @@ textarea.input-field {
 .fd-modify-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
     align-items: center;
 }
 
@@ -9199,9 +9199,9 @@ textarea.input-field {
     background: #16a34a;
     color: #fff;
     border: none;
-    border-radius: 5px;
-    padding: 5px 14px;
-    min-height: 32px;
+    border-radius: 0.3125rem;
+    padding: 0.3125rem 0.875rem;
+    min-height: 2rem;
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
@@ -9214,9 +9214,9 @@ textarea.input-field {
     background: #ffffff;
     color: var(--primary, #1a365d);
     border: 1px solid #cbd5e1;
-    border-radius: 5px;
-    padding: 5px 12px;
-    min-height: 32px;
+    border-radius: 0.3125rem;
+    padding: 0.3125rem 0.75rem;
+    min-height: 2rem;
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
@@ -9235,9 +9235,9 @@ textarea.input-field {
     background: #ffffff;
     color: #1f2937;
     border: 1px solid #cbd5e1;
-    border-radius: 5px;
-    padding: 5px 12px;
-    min-height: 32px;
+    border-radius: 0.3125rem;
+    padding: 0.3125rem 0.75rem;
+    min-height: 2rem;
     font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
@@ -9252,9 +9252,9 @@ textarea.input-field {
     background: transparent;
     color: #6b7280;
     border: 1px solid #d1d5db;
-    border-radius: 5px;
-    padding: 5px 12px;
-    min-height: 32px;
+    border-radius: 0.3125rem;
+    padding: 0.3125rem 0.75rem;
+    min-height: 2rem;
     font-size: 0.8rem;
     cursor: pointer;
     transition: all 0.15s ease;
@@ -9271,9 +9271,9 @@ textarea.input-field {
     text-transform: uppercase;
     color: #fff;
     background: #374151;
-    padding: 10px 1.8%;
+    padding: 0.625rem 1.8%;
     z-index: 19;
-    margin: 0 calc(1.8% + var(--scrollbar-w, 0px)) 0 1.8%;
+    margin: 0 calc(1.8% + var(--scrollbar-w, 0)) 0 1.8%;
 }
 
 /* Section heading bars (Run Synopsis collapsible / legacy) */
@@ -9284,8 +9284,8 @@ textarea.input-field {
     text-transform: uppercase;
     color: #fff;
     background: #374151;
-    padding: 10px 16px;
-    margin: 16px -24px 20px -24px;
+    padding: 0.625rem 1rem;
+    margin: 1rem -1.5rem 1.25rem -1.5rem;
 }
 .section-heading:first-child {
     margin-top: 0;
@@ -9304,8 +9304,8 @@ textarea.input-field {
     text-transform: uppercase;
     color: #fff;
     background: #374151;
-    padding: 10px 16px;
-    margin: 28px -24px 20px -24px;
+    padding: 0.625rem 1rem;
+    margin: 1.75rem -1.5rem 1.25rem -1.5rem;
 }
 
 /* Collapsible section headings */
@@ -9322,7 +9322,7 @@ textarea.input-field {
 .section-toggle-icon {
     font-size: 0.85rem;
     opacity: 0.7;
-    margin-left: 8px;
+    margin-left: 0.5rem;
 }
 
 /* Snapshot card action-level badge */
@@ -9331,10 +9331,10 @@ textarea.input-field {
     align-items: center;
     font-size: 0.78rem;
     font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 12px;
+    padding: 0.1875rem 0.625rem;
+    border-radius: 0.75rem;
     white-space: nowrap;
-    margin-right: 4px;
+    margin-right: 0.25rem;
 }
 .action-badge-critical {
     background: #fee2e2;
@@ -9372,16 +9372,16 @@ textarea.input-field {
 .overview-chip-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    padding: 8px 16px 14px;
+    gap: 0.3125rem;
+    padding: 0.5rem 1rem 0.875rem;
 }
 .overview-chip {
     display: inline-flex;
     align-items: center;
     font-size: 0.72rem;
     font-weight: 600;
-    padding: 3px 9px;
-    border-radius: 12px;
+    padding: 0.1875rem 0.5625rem;
+    border-radius: 0.75rem;
     white-space: nowrap;
 }
 .chip-jumpable {
@@ -9423,7 +9423,7 @@ textarea.input-field {
     background: #2563eb;
     color: #fff;
     border: none;
-    border-radius: 6px;
+    border-radius: 0.375rem;
     padding: 0.35rem 1rem;
     font-size: 0.8125rem;
     font-weight: 600;
@@ -9447,13 +9447,13 @@ textarea.input-field {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 320px;
+    min-height: 20rem;
     padding: 2rem;
 }
 #no-contract-placeholder.hidden { display: none; }
 .ncp-inner {
     text-align: center;
-    max-width: 420px;
+    max-width: 26.25rem;
 }
 .ncp-icon {
     font-size: 2.5rem;
@@ -9517,7 +9517,7 @@ textarea.input-field {
     padding: 0.625rem 0.875rem;
     background: #f0f9ff;
     border: 1px solid #bae6fd;
-    border-radius: 8px;
+    border-radius: 0.5rem;
     font-size: 0.875rem;
     color: #0c4a6e;
     line-height: 1.55;
@@ -9538,11 +9538,11 @@ textarea.input-field {
 
 /* CAM badge — appears on nav sidebar provision labels */
 .cam-badge {
-    font-size: 10px;
+    font-size: 0.625rem;
     font-weight: 500;
-    padding: 1px 5px;
-    border-radius: 3px;
-    margin-left: 4px;
+    padding: 0.0625rem 0.3125rem;
+    border-radius: 0.1875rem;
+    margin-left: 0.25rem;
     white-space: nowrap;
 }
 .cam-verified  { background: #dcfce7; color: #15803d; }
@@ -9552,20 +9552,20 @@ textarea.input-field {
 
 /* Contract hero confidence line */
 .cam-confidence-line {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: #475569;
-    margin-top: 6px;
-    padding: 4px 0;
+    margin-top: 0.375rem;
+    padding: 0.25rem 0;
     border-top: 1px solid #f1f5f9;
 }
 .cam-confidence-line strong { color: #1e40af; }
 
 /* CAM score row in provision detail */
 .cam-score-line {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: #64748b;
-    margin-top: 8px;
-    padding-top: 8px;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
     border-top: 1px solid #f1f5f9;
 }
 .cam-val { font-weight: 600; color: #334155; }
@@ -9576,15 +9576,15 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 15px;
-    height: 15px;
-    font-size: 10px;
+    width: 0.9375rem;
+    height: 0.9375rem;
+    font-size: 0.625rem;
     font-weight: 700;
     color: #64748b;
     border: 1px solid #cbd5e1;
     border-radius: 50%;
     text-decoration: none;
-    margin-left: 5px;
+    margin-left: 0.3125rem;
     vertical-align: middle;
     line-height: 1;
 }
@@ -9603,7 +9603,7 @@ textarea.input-field {
 .analysis-completeness {
     font-size: 0.8125rem;
     padding: 0.25rem 0.75rem;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     margin-top: 0.25rem;
     display: inline-block;
 }
@@ -9616,7 +9616,7 @@ textarea.input-field {
     font-size: 0.75rem;
     padding: 0.375rem 0.625rem;
     margin-top: 0.5rem;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     display: flex;
     align-items: center;
     gap: 0.375rem;
@@ -9628,7 +9628,7 @@ textarea.input-field {
 .audit-integrity-label   { font-weight: 600; }
 .audit-integrity-status  { font-weight: 500; text-transform: capitalize; }
 .audit-integrity-ratio   { color: #64748b; }
-.audit-integrity-repair  { background: #fffbeb; color: #92400e; padding: 0 0.375rem; border-radius: 3px; font-weight: 500; }
+.audit-integrity-repair  { background: #fffbeb; color: #92400e; padding: 0 0.375rem; border-radius: 0.1875rem; font-weight: 500; }
 .audit-integrity-frozen  { color: #15803d; font-weight: 500; }
 
 /* Confidence indicator on provision pills (Step 184) */
@@ -9636,7 +9636,7 @@ textarea.input-field {
     font-size: 0.65rem;
     font-weight: 700;
     opacity: 0.7;
-    margin-left: 2px;
+    margin-left: 0.125rem;
     vertical-align: middle;
     cursor: default;
 }
@@ -9672,12 +9672,12 @@ textarea.input-field {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 210px;
-    min-height: 30px;
+    width: 13.125rem;
+    min-height: 1.875rem;
     margin-top: 0;
     padding: 0.3rem 0.85rem;
     border: 1.5px solid var(--accent, #4f46e5);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     background: var(--accent, #4f46e5);
     font-size: 0.76rem;
     font-weight: 600;
@@ -9730,8 +9730,8 @@ textarea.input-field {
     letter-spacing: 0.06em;
     color: var(--text-muted, #64748b);
     background: var(--bg-alt, #f1f5f9);
-    border-radius: 3px;
-    padding: 1px 6px;
+    border-radius: 0.1875rem;
+    padding: 0.0625rem 0.375rem;
 }
 .audit-stage-name {
     font-size: 0.875rem;
@@ -9781,7 +9781,7 @@ textarea.input-field {
     padding: 0.5rem 0.625rem;
     background: var(--bg, #ffffff);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 4px;
+    border-radius: 0.25rem;
     font-family: inherit;
 }
 
@@ -9791,7 +9791,7 @@ textarea.input-field {
     font-weight: 600;
     margin-top: 0.5rem;
     padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     display: inline-block;
 }
 .audit-triage-flagged { background: #fff7ed; color: #c2410c; }
@@ -9828,14 +9828,14 @@ textarea.input-field {
     background: var(--bg, #ffffff);
     border-left: 3px solid #e2e8f0;
     padding: 0.375rem 0.625rem;
-    border-radius: 0 4px 4px 0;
+    border-radius: 0 0.25rem 0.25rem 0;
     font-style: italic;
 }
 mark.audit-rule-highlight {
     background: #fef08a;  /* yellow highlight */
     color: inherit;
-    border-radius: 2px;
-    padding: 0 1px;
+    border-radius: 0.125rem;
+    padding: 0 0.0625rem;
     font-style: normal;
     font-weight: 500;
 }
@@ -9844,7 +9844,7 @@ mark.audit-rule-highlight {
 .audit-evaluators { display: flex; flex-direction: column; gap: 0.625rem; margin-bottom: 0.5rem; }
 .audit-eval-card {
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 6px;
+    border-radius: 0.375rem;
     overflow: hidden;
 }
 .audit-eval-header2 {
@@ -9871,8 +9871,8 @@ mark.audit-rule-highlight {
 .audit-eval-verdict2 {
     font-size: 0.7rem;
     font-weight: 700;
-    padding: 1px 6px;
-    border-radius: 3px;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 0.1875rem;
 }
 .audit-eval-deviates { background: #fee2e2; color: #991b1b; }
 .audit-eval-conforms { background: #dcfce7; color: #166534; }
@@ -9912,7 +9912,7 @@ mark.audit-rule-highlight {
     font-size: 0.8125rem;
     font-weight: 600;
     padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    border-radius: 0.25rem;
     margin-bottom: 0.5rem;
     display: inline-block;
 }
@@ -9972,7 +9972,7 @@ mark.audit-rule-highlight {
     padding: 0.625rem 0.75rem;
     background: var(--bg, #ffffff);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 4px;
+    border-radius: 0.25rem;
 }
 .audit-cam-row { display: flex; justify-content: space-between; gap: 1rem; }
 .audit-cam-label { color: var(--text-muted, #64748b); }
@@ -9994,7 +9994,7 @@ mark.audit-rule-highlight {
 .audit-proof-section {
     background: #fff;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 12px;
+    border-radius: 0.75rem;
     padding: 1rem 1.125rem;
 }
 .audit-proof-topline {
@@ -10041,7 +10041,7 @@ mark.audit-rule-highlight {
 .audit-proof-summary {
     background: linear-gradient(135deg, #f8fbff 0%, #f4f7fb 100%);
     border: 1px solid #d8e5fb;
-    border-radius: 12px;
+    border-radius: 0.75rem;
     padding: 0.9rem 1rem;
 }
 .audit-proof-summary-text,
@@ -10097,7 +10097,7 @@ mark.audit-rule-highlight {
 .audit-dimension-card,
 .audit-challenge-summary-card {
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 12px;
+    border-radius: 0.75rem;
     background: #f8fafc;
     padding: 0.85rem 0.95rem;
 }
@@ -10115,7 +10115,7 @@ mark.audit-rule-highlight {
 }
 .audit-score-track {
     margin-top: 0.6rem;
-    height: 9px;
+    height: 0.5625rem;
     border-radius: 999px;
     background: #e5e7eb;
     overflow: hidden;
@@ -10147,7 +10147,7 @@ mark.audit-rule-highlight {
 }
 .audit-technical-block {
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 12px;
+    border-radius: 0.75rem;
     background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
     padding: 0.8rem 0.95rem;
 }
@@ -10165,7 +10165,7 @@ mark.audit-rule-highlight {
 }
 .audit-technical-group {
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 12px;
+    border-radius: 0.75rem;
     background: #f8fafc;
     padding: 0.85rem;
 }
@@ -10179,7 +10179,7 @@ mark.audit-rule-highlight {
 }
 .audit-raw-record {
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 10px;
+    border-radius: 0.625rem;
     background: #f8fafc;
     padding: 0.75rem 0.85rem;
 }
@@ -10442,7 +10442,7 @@ mark.audit-rule-highlight {
     padding: 0.75rem 1rem;
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
-    border-radius: 8px;
+    border-radius: 0.5rem;
     line-height: 1.5;
 }
 
@@ -10457,12 +10457,12 @@ mark.audit-rule-highlight {
 .mobile-results-card {
     background: var(--bg, #fff);
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 16px;
+    border-radius: 1rem;
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);
     padding: 2rem 1.5rem;
     text-align: center;
     width: 100%;
-    max-width: 400px;
+    max-width: 25rem;
 }
 .mobile-results-icon {
     font-size: 2.5rem;
@@ -10490,7 +10490,7 @@ mark.audit-rule-highlight {
     font-size: 0.75rem;
     padding: 0.5rem 0.65rem;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     background: var(--bg-alt, #f8fafc);
     color: var(--text, #1e293b);
     min-width: 0;
@@ -10555,7 +10555,7 @@ mark.audit-rule-highlight {
     padding: 0.5rem 0.75rem;
     background: #fff;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     font-size: 0.8rem;
 }
 .adv3-confidence-explainer-badge {
@@ -10579,7 +10579,7 @@ mark.audit-rule-highlight {
 .adv3-interp-note {
     background: #fffbeb;
     border: 1px solid #fde68a;
-    border-radius: 8px;
+    border-radius: 0.5rem;
     padding: 0.75rem 0.9rem;
 }
 .adv3-interp-body p {
@@ -10598,7 +10598,7 @@ mark.audit-rule-highlight {
 .adv3-eval-card {
     background: #fff;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     padding: 0.65rem 0.85rem;
 }
 .adv3-eval-header {
@@ -10615,7 +10615,7 @@ mark.audit-rule-highlight {
 .adv3-eval-verdict {
     font-size: 0.72rem;
     font-weight: 700;
-    padding: 2px 8px;
+    padding: 0.125rem 0.5rem;
     border-radius: 999px;
 }
 .adv3-verdict-flag  { background: #fee2e2; color: #991b1b; }
@@ -10638,7 +10638,7 @@ mark.audit-rule-highlight {
 .adv3-challenge-card {
     background: #fff;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     padding: 0.65rem 0.85rem;
 }
 .adv3-challenge-text {
@@ -10649,7 +10649,7 @@ mark.audit-rule-highlight {
 /* Confidence scores — collapsed <details> */
 .adv3-scores-details {
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     background: #fff;
     overflow: hidden;
 }
@@ -10692,7 +10692,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
     align-items: center;
     font-size: 0.68rem;
     font-weight: 600;
-    padding: 2px 7px;
+    padding: 0.125rem 0.4375rem;
     border-radius: 999px;
     white-space: nowrap;
     border: 1.5px solid transparent;
@@ -10738,7 +10738,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
     align-items: flex-start;
     background: #f8fafc;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     padding: 0.85rem 1rem;
 }
 .about-cam-story-icon {
@@ -10788,7 +10788,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 .about-cam-score-block {
     background: #f8fafc;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     padding: 0.85rem 1rem;
     margin: 0.75rem 0;
 }
@@ -10833,7 +10833,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 
 .adv3-tech-details {
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 8px;
+    border-radius: 0.5rem;
     overflow: hidden;
     background: #fff;
 }
@@ -10886,7 +10886,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
     font-size: 0.75rem;
     background: #f8fafc;
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 6px;
+    border-radius: 0.375rem;
     padding: 0.6rem 0.75rem;
 }
 .adv3-tech-formula-row {
@@ -10912,7 +10912,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 }
 .adv3-tech-raw {
     border: 1px solid var(--border, #e2e8f0);
-    border-radius: 6px;
+    border-radius: 0.375rem;
     overflow: hidden;
 }
 .adv3-tech-raw > summary {
@@ -10934,7 +10934,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
     white-space: pre;
     color: var(--text, #1e293b);
     background: #fff;
-    max-height: 300px;
+    max-height: 18.75rem;
     overflow-y: auto;
 }
 .adv3-tech-list {
@@ -10998,7 +10998,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
     color: #92400e;
     background: #fffbeb;
     border: 1px solid #f59e0b;
-    border-radius: 5px;
+    border-radius: 0.3125rem;
     cursor: pointer;
     white-space: nowrap;
     transition: background 0.15s, color 0.15s;
@@ -11018,7 +11018,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 .aggressive-read-panel {
     margin: 0.5rem 0 0.25rem;
     border: 1px solid #f59e0b;
-    border-radius: 6px;
+    border-radius: 0.375rem;
     background: #fffdf0;
     font-size: 0.85rem;
     line-height: 1.55;
@@ -11097,7 +11097,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 
     /* ── Workflow Nav ── */
     .workflow-nav {
-        top: 42px;
+        top: 2.625rem;
     }
     .workflow-nav-inner {
         padding: 0.5rem 3%;
@@ -11143,7 +11143,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
     }
     .drop-zone {
         padding: 1.25rem;
-        min-height: 90px;
+        min-height: 5.625rem;
     }
     .drop-zone .drop-icon {
         font-size: 1.5rem;
@@ -11163,7 +11163,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
     }
     .processing-status-card {
         padding: 1rem 1rem 0.85rem;
-        border-radius: 12px;
+        border-radius: 0.75rem;
     }
     .processing-title {
         font-size: 1.3rem;
@@ -11234,3 +11234,137 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
         display: flex;
     }
 }
+
+/* ── Step 245: Coverage & Gaps Panel ── */
+#coverage-tab { padding: 1rem 1.25rem; }
+.coverage-empty { padding: 1.5rem; text-align: center; color: var(--text-muted); }
+.coverage-summary-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem;
+    padding: 0.75rem 1rem; margin-bottom: 1rem;
+    background: var(--bg-elevated, #f8f9fa); border: 1px solid var(--border, #e1e4e8); border-radius: 0.375rem;
+}
+.coverage-summary-label { font-weight: 600; color: var(--text); margin-right: 0.5rem; }
+.coverage-summary-stat { font-size: 0.9rem; padding: 0.25rem 0.625rem; border-radius: 0.75rem; font-weight: 500; }
+.coverage-stat-problem { background: #fee; color: #c33; }
+.coverage-stat-review  { background: #fff4e0; color: #b86500; }
+.coverage-stat-ok      { background: #e8f5e9; color: #2e7d32; }
+.coverage-stat-typical { background: #eef; color: #555; }
+.coverage-all-clear { padding: 1rem; background: #e8f5e9; color: #2e7d32; border-radius: 0.375rem; margin-bottom: 1rem; font-weight: 500; }
+
+.cv-section { margin-bottom: 1.25rem; border: 1px solid var(--border, #e1e4e8); border-radius: 0.375rem; overflow: hidden; }
+.cv-section-header { padding: 0.625rem 0.875rem; font-weight: 600; font-size: 0.95rem; border-bottom: 1px solid var(--border, #e1e4e8); }
+.cv-section-problems { background: #fee; color: #c33; }
+.cv-section-review   { background: #fff4e0; color: #b86500; }
+.cv-section-ok       { background: #f4f6f8; color: #555; }
+.cv-section-toggle-hint { font-weight: 400; font-size: 0.8rem; color: var(--text-muted); margin-left: 0.5rem; }
+
+.cv-item { padding: 0.75rem 0.875rem; border-bottom: 1px solid var(--border, #eee); background: var(--bg, #fff); }
+.cv-item:last-child { border-bottom: none; }
+.cv-item-problem { border-left: 3px solid #c33; }
+.cv-item-review  { border-left: 3px solid #b86500; }
+.cv-item-ok      { border-left: 3px solid #ccc; }
+.cv-item-header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.375rem; }
+.cv-item-id { font-family: monospace; font-size: 0.85rem; color: var(--text-muted); }
+.cv-item-name { font-weight: 600; color: var(--text); }
+.cv-badge { font-size: 0.75rem; padding: 0.125rem 0.5rem; border-radius: 0.625rem; font-weight: 500; }
+.cv-badge-ok      { background: #e8f5e9; color: #2e7d32; }
+.cv-badge-unfav   { background: #fee; color: #c33; }
+.cv-badge-partial { background: #fff4e0; color: #b86500; }
+.cv-badge-missing { background: #f4f4f4; color: #666; }
+.cv-badge-na      { background: #f0f0f0; color: #999; }
+.cv-pcls-badge { font-size: 0.7rem; padding: 0.125rem 0.4375rem; border-radius: 0.625rem; font-weight: 500; }
+.cv-pcls-material { background: #fee; color: #c33; }
+.cv-pcls-review   { background: #fff4e0; color: #b86500; }
+.cv-item-stmt { font-size: 0.88rem; color: var(--text); line-height: 1.4; margin: 0.25rem 0; }
+.cv-source-model { font-size: 0.75rem; color: var(--text-muted); font-style: italic; margin-left: 0.25rem; }
+.cv-missing-elements, .cv-ns-signals { margin-top: 0.375rem; font-size: 0.8rem; }
+.cv-missing-label { color: var(--text-muted); margin-right: 0.375rem; }
+.cv-missing-item, .cv-ns-signal { display: inline-block; padding: 0.125rem 0.4375rem; margin: 0.125rem 0.25rem 0.125rem 0; background: #f4f4f4; border-radius: 0.1875rem; color: #555; }
+.cv-missing-more { font-size: 0.78rem; color: var(--text-muted); font-style: italic; }
+
+/* Coverage nav links */
+.cv-item-nav { display: flex; align-items: center; gap: 0.375rem; margin-top: 0.5rem; padding-top: 0.375rem; border-top: 1px solid var(--border-light, #f1f5f9); }
+.cv-nav-link { font-size: 0.75rem; color: var(--primary); text-decoration: none; }
+.cv-nav-link:hover { text-decoration: underline; }
+.cv-nav-sep { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Coverage tier filter buttons */
+.cv-tier-btn { font-size: 0.8rem !important; padding: 0.25rem 0.75rem !important; margin: 0 !important; }
+.cv-tier-btn-active { background: var(--primary) !important; color: #fff !important; border-color: var(--primary) !important; }
+
+/* ── Coverage toolbar (Step 246) ── */
+.cov-toolbar { border-top: 1px solid var(--border-light, #f1f5f9); padding: 0.625rem 1.5rem; display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; background: var(--bg-secondary); }
+.cov-pill { font-size: 0.75rem; font-weight: 500; padding: 0.2rem 0.6rem; border-radius: 4px; border: 1px solid var(--border); background: transparent; cursor: pointer; color: var(--text-secondary); transition: all 0.15s; }
+.cov-pill:hover { border-color: var(--primary); color: var(--primary); }
+.cov-pill-active { background: var(--primary) !important; color: #fff !important; border-color: var(--primary) !important; }
+.cov-pill-flagged.cov-pill-active { background: #d97706 !important; border-color: #d97706 !important; }
+.cov-pill-accepted.cov-pill-active { background: #16a34a !important; border-color: #16a34a !important; }
+.cov-notes-btn { font-size: 0.8rem; }
+.cov-notes-panel { padding: 0.75rem 1.5rem; background: var(--bg-secondary); border-top: 1px solid var(--border-light, #f1f5f9); }
+.cov-note-input-row { display: flex; gap: 0.5rem; align-items: flex-start; }
+
+/* ── Sidebar coverage callout (Step 246) ── */
+.nav-coverage-callout { font-size: 0.75rem; color: #d97706; cursor: pointer; padding: 0.2rem 0; margin-top: 0.2rem; }
+.nav-coverage-callout:hover { text-decoration: underline; }
+
+/* ── Audit trail coverage block (Step 246b) ── */
+.audit-coverage-block { margin: 1rem 0 0; padding: 0.875rem 1rem; background: #fefce8; border: 1px solid #fde68a; border-radius: 6px; }
+.audit-coverage-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.375rem; flex-wrap: wrap; }
+.audit-coverage-label { font-size: 0.8rem; font-weight: 600; color: #92400e; }
+.audit-coverage-state-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 6px; border-radius: 3px; background: #fef3c7; color: #92400e; }
+.audit-cov-covered-unfavorable { background: #fee2e2; color: #991b1b; }
+.audit-cov-missing { background: #fce7f3; color: #9d174d; }
+.audit-coverage-stmt { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0.375rem; }
+.audit-coverage-link { font-size: 0.75rem; color: var(--primary); text-decoration: none; }
+.audit-coverage-link:hover { text-decoration: underline; }
+
+/* ── Finding card coverage link ── */
+.card-coverage-link--btn { font-size: 0.8rem; padding: 0.25rem 0.75rem; border: 1px solid #fde68a; background: #fefce8; color: #92400e; border-radius: 4px; text-decoration: none; white-space: nowrap; }
+.card-coverage-link--btn:hover { background: #fef3c7; }
+
+/* ── Sidebar coverage callout (inside contract box) ── */
+.nav-coverage-callout { font-size: 0.73rem; color: #d97706; cursor: pointer; padding: 0.15rem 0; margin-top: 0.25rem; display: block; }
+.nav-coverage-callout:hover { text-decoration: underline; }
+
+/* Fix: coverage callout indent in sidebar */
+.nav-coverage-callout { padding-left: 0.5rem !important; margin-left: 0.1rem; }
+
+/* Fix: coverage source label in audit trail */
+.audit-coverage-source { font-size: 0.68rem; color: var(--text-muted); font-style: italic; margin-left: auto; }
+
+/* Coverage status filter bar */
+.coverage-status-filter-bar { display: flex; align-items: center; gap: 0.375rem; padding: 0.5rem 0 0; flex-wrap: wrap; }
+.cv-status-filter-btn { font-size: 0.75rem !important; padding: 0.2rem 0.6rem !important; margin: 0 !important; }
+
+/* Merge coverage filter bars into one line */
+.coverage-status-filter-bar { display: none; } /* old two-row approach - hidden */
+.cv-filter-divider { color: var(--border); font-size: 1rem; padding: 0 0.25rem; user-select: none; }
+.cv-status-filter-btn { font-size: 0.75rem !important; padding: 0.2rem 0.6rem !important; margin: 0 !important; }
+
+/* Missing provision callout */
+.cv-missing-provision-note { font-size: 0.8rem; color: #92400e; background: #fefce8; border: 1px solid #fde68a; border-radius: 4px; padding: 0.375rem 0.625rem; margin: 0.375rem 0; }
+
+/* Draft Missing Clause — primary advisor button */
+.cov-advisor-primary { background: var(--primary) !important; color: #fff !important; border: none !important; border-radius: 4px !important; padding: 0.3rem 0.75rem !important; font-weight: 600 !important; cursor: pointer !important; }
+.cov-advisor-primary:hover { opacity: 0.88 !important; }
+
+/* Coverage Gap button — match the blue btn style */
+.card-coverage-link--btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.875rem;
+    background: var(--primary) !important;
+    color: #fff !important;
+    border: 1px solid var(--primary) !important;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.card-coverage-link--btn:hover { opacity: 0.88 !important; }
+
+/* Coverage item flash highlight */
+@keyframes cv-flash { 0%,100%{background:transparent} 30%,70%{background:#fef9c3} }
+.cv-item-flash { animation: cv-flash 1.8s ease; }

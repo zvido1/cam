@@ -806,6 +806,70 @@ def run_lease_analysis(
         flush=True
     )
 
+    # ── Coverage & Negative Space Assessment (Step 244 — shadow mode) ──
+    # Runs after all core pipeline stages. Writes coverage outputs into results
+    # without affecting disposition logic, scoring, or any existing pipeline behavior.
+    # Non-fatal: failure here does not abort the pipeline.
+    coverage_assessment = []
+    coverage_summary = {}
+    negative_space_by_provision = {}
+    try:
+        from cam.adapters.lease_review.lease_negative_space import (
+            detect_negative_space, summarize_negative_space,
+        )
+        from cam.adapters.lease_review.lease_coverage import (
+            assess_coverage, summarize_coverage,
+        )
+        negative_space_by_provision = detect_negative_space(dispositions, tenant_text)
+        coverage_assessment = assess_coverage(
+            dispositions, tenant_text, negative_space_by_provision
+        )
+        coverage_summary = summarize_coverage(coverage_assessment)
+        ns_summary = summarize_negative_space(negative_space_by_provision)
+        print(
+            f"[lease_adapter] Coverage assessment (shadow): "
+            f"{coverage_summary.get('covered_count', 0)} covered, "
+            f"{coverage_summary.get('attention_count', 0)} require attention, "
+            f"{coverage_summary.get('not_applicable_count', 0)} not applicable | "
+            f"neg-space: {ns_summary.get('total_signals', 0)} signals across "
+            f"{ns_summary.get('provisions_with_signals', 0)} provisions",
+            flush=True,
+        )
+    except Exception as e:
+        print(
+            f"[lease_adapter] Coverage assessment failed (non-fatal, shadow mode): {e}",
+            flush=True,
+        )
+        coverage_assessment = []
+        coverage_summary = {}
+        negative_space_by_provision = {}
+
+    # ── Exposure Engine (Step 243) ──
+    # Enriches coverage assessments with exposure statements.
+    # Schema text by default; model only for high-materiality cases.
+    # Adds exposure_statement, exposure_source, materiality, partial_class
+    # to each issue area assessment. Non-fatal.
+    exposure_summary = {}
+    if coverage_assessment:
+        try:
+            from cam.adapters.lease_review.lease_exposure import (
+                generate_exposure, summarize_exposure,
+            )
+            generate_exposure(coverage_assessment, cfg)
+            exposure_summary = summarize_exposure(coverage_assessment)
+            print(
+                f"[lease_adapter] Exposure: "
+                f"{exposure_summary.get('model_calls', 0)} model, "
+                f"{exposure_summary.get('schema_only', 0)} schema | "
+                f"material={exposure_summary.get('partial_material', 0)} "
+                f"review={exposure_summary.get('partial_review', 0)} "
+                f"typical={exposure_summary.get('partial_typical', 0)}",
+                flush=True,
+            )
+        except Exception as e:
+            print(f"[lease_adapter] Exposure engine failed (non-fatal): {e}", flush=True)
+            exposure_summary = {}
+
     # ── Interpretation Notes (0-N API calls, ASSERT_REVIEW_SIGNAL only) ──
     # Generate specific clause-level interpretation notes for provisions
     # flagged as "Check Interpretation" (high confidence but interpretation-sensitive).
@@ -864,6 +928,9 @@ def run_lease_analysis(
         "cam_contract_summary": cam_contract_summary,
         "analysis_completeness": analysis_completeness,
         "human_feedback": [],
+        "coverage_assessment": coverage_assessment,
+        "coverage_summary": coverage_summary,
+        "exposure_summary": exposure_summary,
         # Raw stage data for auditability
         "_stage_data": {
             "extraction_meta": extraction["meta"],
