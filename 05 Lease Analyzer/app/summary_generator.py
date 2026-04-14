@@ -1,3 +1,4 @@
+import re
 """
 CAM Lease Analyzer Web App — Summary Document Generator
 
@@ -453,6 +454,11 @@ def _sanitize_for_pdf(text: str) -> str:
     }
     for unicode_char, replacement in replacements.items():
         text = text.replace(unicode_char, replacement)
+    # Strip markdown bold/italic markers
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)  # **bold** -> bold
+    text = re.sub(r'\*(.+?)\*', r'\1', text)        # *italic* -> italic
+    text = re.sub(r'__(.+?)__', r'\1', text)          # __bold__ -> bold
+    text = re.sub(r'_(.+?)_', r'\1', text)            # _italic_ -> italic
     return text
 
 
@@ -1257,8 +1263,8 @@ def _generate_combined_synopsis_inner(
                     if ev_reason and ev_reason.strip() != "(evaluator unavailable)":
                         # Truncate long reasoning to ~200 chars for PDF conciseness
                         short_reason = ev_reason.strip()
-                        if len(short_reason) > 200:
-                            short_reason = short_reason[:197] + "..."
+                        if len(short_reason) > 120:
+                            short_reason = short_reason[:117] + "..."
                         finding_els.append(Paragraph(
                             f'<i>{_esc_xml(short_reason)}</i>',
                             styles["ClauseText"],
@@ -1266,14 +1272,21 @@ def _generate_combined_synopsis_inner(
 
             # Template vs Tenant language (matches screen's side-by-side view)
             if template_text or tenant_text:
+                # Truncate raw clause text — full text available in annotated document
                 if template_text:
+                    t_text = template_text.strip()
+                    if len(t_text) > 400:
+                        t_text = t_text[:397] + "..."
                     finding_els.append(Paragraph(
-                        f'<b>Standard Template:</b>  {_esc_xml(template_text)}',
+                        f'<b>Standard Clause:</b>  {_esc_xml(t_text)}',
                         styles["ClauseText"],
                     ))
                 if tenant_text:
+                    ten_text = tenant_text.strip()
+                    if len(ten_text) > 400:
+                        ten_text = ten_text[:397] + "..."
                     finding_els.append(Paragraph(
-                        f'<b>Tenant Lease:</b>  {_esc_xml(tenant_text)}',
+                        f'<b>Tenant Clause:</b>  {_esc_xml(ten_text)}',
                         styles["ClauseText"],
                     ))
 
@@ -1305,23 +1318,7 @@ def _generate_combined_synopsis_inner(
                         styles["ClauseText"],
                     ))
 
-            # Fragility signals (matches screen's fragility badge)
-            frag = d.get("fragility", {})
-            if frag.get("fragile") and frag.get("signals"):
-                signals_str = ", ".join(frag.get("signals", []))
-                finding_els.append(Paragraph(
-                    f'<font color="#7c3aed"><i>Fragility: {_esc_xml(signals_str)}</i></font>',
-                    styles["SmallMuted"],
-                ))
-
-            # Rules fired (from cam_metadata, matches Audit Trail tab)
-            cam_meta = d.get("cam_metadata", {})
-            rules_fired = cam_meta.get("rules_fired", [])
-            if rules_fired:
-                finding_els.append(Paragraph(
-                    f'<font color="#64748b"><i>Rules triggered: {_esc_xml(", ".join(rules_fired))}</i></font>',
-                    styles["SmallMuted"],
-                ))
+            # Fragility/rules omitted from client-facing PDF
 
             finding_els.append(Spacer(1, 6))
 
