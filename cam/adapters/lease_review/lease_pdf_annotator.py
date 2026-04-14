@@ -1,3 +1,4 @@
+import re
 """
 CAM Lease Review — PDF Annotator
 
@@ -85,7 +86,11 @@ def _format_annotation_text(provision: dict, resolution: dict = None) -> str:
             if text:
                 lines.append(f"Note: {text}")
 
-    return "\n".join(line for line in lines if line is not None)
+    result = "\n".join(line for line in lines if line is not None)
+    # Strip markdown bold/italic markers
+    result = re.sub(r'\*\*(.+?)\*\*', r'\1', result)
+    result = re.sub(r'\*(.+?)\*', r'\1', result)
+    return result
 
 
 def _severity_color(severity: str) -> tuple:
