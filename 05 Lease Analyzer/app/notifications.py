@@ -250,11 +250,18 @@ def _send_via_sendgrid(
         import urllib.request
         import json as _json
 
-        from_email = config.get("SENDGRID_FROM_EMAIL") or config.get("NOTIFICATION_FROM") or "noreply@vered.ai"
+        from_email_raw = config.get("SENDGRID_FROM_EMAIL") or config.get("NOTIFICATION_FROM") or "noreply@vered.ai"
+        # Support "Name <email>" format, or just an email address
+        if "<" in from_email_raw:
+            import re as _re
+            _m = _re.match(r"(.+?)<(.+?)>", from_email_raw)
+            from_email = {"email": _m.group(2).strip(), "name": _m.group(1).strip()} if _m else {"email": from_email_raw}
+        else:
+            from_email = {"email": from_email_raw, "name": "Vered.ai"}
 
         payload = {
             "personalizations": [{"to": [{"email": to_email}]}],
-            "from": {"email": from_email},
+            "from": from_email if isinstance(from_email, dict) else {"email": from_email},
             "subject": subject,
             "content": [
                 {"type": "text/plain", "value": plain},
