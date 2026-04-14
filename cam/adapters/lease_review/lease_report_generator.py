@@ -10,6 +10,7 @@ Coordinates all output generation after pipeline completes:
 
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -39,6 +40,12 @@ def _sanitize_for_pdf(text: str) -> str:
     }
     for old, new in replacements.items():
         text = text.replace(old, new)
+    # Strip markdown bold/italic markers - Helvetica won't render them and they
+    # leak through into the Findings section on the annotated PDF cover page.
+    text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+    text = re.sub(r'\*(.+?)\*', r'\1', text)
+    text = re.sub(r'__(.+?)__', r'\1', text)
+    text = re.sub(r'_(.+?)_', r'\1', text)
     return text
 
 

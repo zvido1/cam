@@ -105,11 +105,65 @@ def _severity_color(severity: str) -> tuple:
     return colors.get(severity, (1.0, 0.9, 0.0))  # Default yellow
 
 
+def _format_coverage_annotation_text(coverage_item: dict, cov_resolution: dict = None) -> str:
+    """Format the sticky note text for a coverage gap finding."""
+    pid = coverage_item.get("issue_area_id", "?")
+    pname = coverage_item.get("provision_name", "")
+    state = coverage_item.get("coverage_state", "")
+    materiality = coverage_item.get("materiality", "medium")
+    exposure = coverage_item.get("exposure_statement", "")
+    elements_missing = coverage_item.get("elements_missing", [])
+
+    state_labels = {
+        "partial": "INCOMPLETE",
+        "covered_unfavorable": "UNFAVORABLE TERMS",
+    }
+    mat_labels = {"high": "HIGH", "medium": "MEDIUM", "low": "LOW"}
+    state_label = state_labels.get(state, state.upper())
+    mat_label = mat_labels.get(materiality, materiality.upper())
+
+    lines = [f"[GAP] {pid} {pname} \u2014 {state_label} ({mat_label} materiality)"]
+    lines.append("")
+
+    if elements_missing:
+        missing_str = ", ".join(str(e) for e in elements_missing[:5])
+        lines.append(f"Missing: {missing_str}")
+        lines.append("")
+
+    if exposure:
+        lines.append(exposure)
+
+    # Lawyer's coverage resolution
+    if cov_resolution:
+        status = cov_resolution.get("status", "")
+        status_labels = {
+            "reviewed": "Reviewed",
+            "flagged": "Flagged for follow-up",
+            "accepted": "Risk accepted",
+        }
+        if status and status != "open":
+            lines.append("")
+            lines.append("\u2014 Lawyer's Review \u2014")
+            lines.append(f"Decision: {status_labels.get(status, status)}")
+
+    result = "\n".join(line for line in lines if line is not None)
+    # Strip markdown bold/italic markers (mirrors deviation annotation handling)
+    result = re.sub(r'\*\*(.+?)\*\*', r'\1', result)
+    result = re.sub(r'\*(.+?)\*', r'\1', result)
+    return result
+
+
+def _coverage_color() -> tuple:
+    """Distinct purple highlight for coverage gaps - visually separate from severity reds/oranges."""
+    return (0.88, 0.80, 1.0)  # Light purple
+
+
 def annotate_pdf(
     original_pdf_path: str,
     results: dict,
     output_path: str,
     resolutions: dict = None,
+    cov_resolutions: dict = None,
 ) -> str:
     """Add highlights and sticky notes on deviating provisions in tenant PDF.
 
@@ -210,11 +264,98 @@ def annotate_pdf(
                 text_not_found += 1
                 print(f"[pdf_annotator] Could not locate text for {pid}", flush=True)
 
+    # === Coverage gap annotations ===
+    # Drop [GAP] sticky notes on provisions that are present-but-incomplete or
+    # covered-but-unfavorable. Provisions that are entirely missing have no
+    # anchor in the PDF - those stay in the Synopsis only.
+    coverage_assessment = results.get("coverage_assessment", []) or []
+    provisions_by_id = {p.get("provision_id"): p for p in results.get("provisions", [])}
+
+    cov_annotations_added = 0
+    cov_not_found = 0
+    cov_color = _coverage_color()
+
+    for cov in coverage_assessment:
+        # Match UI bucketing (Coverage & Gaps page):
+        #   Need Attention = covered_unfavorable + partial_material + missing
+        #   Worth Reviewing = partial_review
+        # partial_typical items are treated as "Covered" in the UI and skipped here.
+        state = cov.get("coverage_state", "covered")
+        pcls = cov.get("partial_class", "")
+        is_attention = (
+            state == "covered_unfavorable"
+            or state == "missing"
+            or pcls == "partial_material"
+        )
+        is_review = pcls == "partial_review"
+        if not (is_attention or is_review):
+            continue
+        # "missing" provisions have no anchor in the PDF body - skip stickies
+        # for those (they still appear in the Synopsis).
+        if state == "missing":
+            continue
+
+        pid = cov.get("issue_area_id", "")
+        if not pid:
+            continue
+
+        # Look up the provision so we can anchor on its tenant text / section ref
+        prov = provisions_by_id.get(pid, {})
+        anchor_text = (prov.get("tenant_text", "") or "").strip()
+        section_ref = (prov.get("tenant_section_ref", "") or "").strip()
+
+        # Coverage resolution lookup mirrors the deviation pattern (tenant_idx 0)
+        cov_resolution = None
+        if cov_resolutions:
+            cov_resolution = (
+                cov_resolutions.get(f"cov:0:{pid}")
+                or cov_resolutions.get(f"cov:{pid}")
+            )
+
+        comment_text = _sanitize_for_pdf(_format_coverage_annotation_text(cov, cov_resolution))
+
+        # Try anchor text first, then section reference
+        found = False
+        for search_text in [anchor_text, section_ref]:
+            if found or not search_text:
+                continue
+            for search_len in [80, 50, 30]:
+                if found:
+                    break
+                search_key = search_text[:search_len].strip()
+                if not search_key or len(search_key) < 10:
+                    continue
+                for page in doc:
+                    text_instances = page.search_for(search_key)
+                    if text_instances:
+                        highlight = page.add_highlight_annot(text_instances)
+                        highlight.set_colors(stroke=cov_color)
+                        highlight.update()
+                        note_point = fitz.Point(
+                            text_instances[0].x0,
+                            max(0, text_instances[0].y0 - 5),
+                        )
+                        annot = page.add_text_annot(note_point, comment_text)
+                        annot.set_info(title="CAM \u2014 Coverage Gap")
+                        annot.update()
+                        cov_annotations_added += 1
+                        found = True
+                        break
+
+        if not found:
+            cov_not_found += 1
+            print(f"[pdf_annotator] Could not anchor coverage gap for {pid}", flush=True)
+
     # Save annotated PDF
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     doc.save(output_path)
     doc.close()
 
-    print(f"[pdf_annotator] Saved {output_path} ({annotations_added} annotations, {text_not_found} not found)", flush=True)
+    print(
+        f"[pdf_annotator] Saved {output_path} "
+        f"({annotations_added} deviations, {cov_annotations_added} coverage gaps, "
+        f"{text_not_found + cov_not_found} not found)",
+        flush=True,
+    )
 
     return output_path

@@ -1128,23 +1128,37 @@ def _generate_combined_synopsis_inner(
     # COVERAGE & GAPS SECTION
     # ════════════════════════════════════════════════
 
-    # Collect coverage issues across all tenants
+    # Collect coverage issues across all tenants.
+    # Filter to match UI "Coverage & Gaps" bucketing:
+    #   - Need Attention = covered_unfavorable + partial_material + missing
+    #   - Worth Reviewing = partial_review
+    # Items classified partial_typical are treated as "Covered" by the UI
+    # and intentionally excluded from the Synopsis to keep counts consistent.
     coverage_issues = []
     for tr in tenant_results:
         ca = tr.get("coverage_assessment", [])
         tenant_file = tr.get("tenant_file", "")
         for item in ca:
             state = item.get("coverage_state", "covered")
-            if state in ("missing", "partial", "covered_unfavorable"):
-                coverage_issues.append({
-                    "pid": item.get("issue_area_id", ""),
-                    "name": item.get("provision_name", item.get("issue_area_id", "")),
-                    "state": state,
-                    "materiality": item.get("materiality", "medium"),
-                    "exposure": item.get("exposure_statement", ""),
-                    "tenant": tenant_file,
-                    "elements_missing": item.get("elements_missing", []),
-                })
+            pcls = item.get("partial_class", "")
+            is_attention = (
+                state == "covered_unfavorable"
+                or state == "missing"
+                or pcls == "partial_material"
+            )
+            is_review = pcls == "partial_review"
+            if not (is_attention or is_review):
+                continue
+            coverage_issues.append({
+                "pid": item.get("issue_area_id", ""),
+                "name": item.get("provision_name", item.get("issue_area_id", "")),
+                "state": state,
+                "partial_class": pcls,
+                "materiality": item.get("materiality", "medium"),
+                "exposure": item.get("exposure_statement", ""),
+                "tenant": tenant_file,
+                "elements_missing": item.get("elements_missing", []),
+            })
 
     if coverage_issues:
         # Sort: high materiality first
@@ -1204,61 +1218,6 @@ def _generate_combined_synopsis_inner(
 
             elements.append(Spacer(1, 4))
 
-        elements.append(Spacer(1, 6))
-
-    # ════════════════════════════════════════════════
-    # COVERAGE & GAPS SECTION
-    # ════════════════════════════════════════════════
-    coverage_issues = []
-    for tr in tenant_results:
-        ca = tr.get("coverage_assessment", [])
-        for item in ca:
-            state = item.get("coverage_state", "covered")
-            if state in ("missing", "partial", "covered_unfavorable"):
-                coverage_issues.append({
-                    "pid": item.get("issue_area_id", ""),
-                    "name": item.get("provision_name", item.get("issue_area_id", "")),
-                    "state": state,
-                    "materiality": item.get("materiality", "medium"),
-                    "exposure": item.get("exposure_statement", ""),
-                    "elements_missing": item.get("elements_missing", []),
-                })
-
-    if coverage_issues:
-        mat_order = {"high": 0, "medium": 1, "low": 2}
-        coverage_issues.sort(key=lambda x: mat_order.get(x["materiality"], 1))
-        elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
-                                   spaceBefore=12, spaceAfter=8))
-        elements.append(Paragraph("COVERAGE & GAPS", styles["SynopsisHeading"]))
-        elements.append(Spacer(1, 4))
-        elements.append(Paragraph(
-            "The following provisions were present but incomplete, unfavorable, or missing entirely.",
-            styles["FindingBody"],
-        ))
-        elements.append(Spacer(1, 6))
-        state_labels = {"missing": "MISSING", "partial": "INCOMPLETE", "covered_unfavorable": "UNFAVORABLE TERMS"}
-        state_colors = {"missing": "#c2410c", "partial": "#856404", "covered_unfavorable": "#0369a1"}
-        mat_icons = {"high": "!", "medium": "~", "low": "-"}
-        for issue in coverage_issues:
-            state = issue["state"]
-            label = state_labels.get(state, state.upper())
-            color = state_colors.get(state, "#64748b")
-            icon = mat_icons.get(issue["materiality"], "~")
-            pid = issue["pid"]
-            name = issue["name"] or pid
-            exposure = _sanitize_for_pdf(issue["exposure"] or "")
-            missing_els = issue.get("elements_missing", [])
-            heading_line = (
-                f'[{icon}] <font color="{color}"><b>{_esc_xml(pid)} {_esc_xml(name)}</b></font>'
-                f' <font color="#64748b">-- {_esc_xml(label)}</font>'
-            )
-            elements.append(Paragraph(heading_line, styles["FindingBody"]))
-            if missing_els:
-                missing_str = ", ".join(_esc_xml(str(e)) for e in missing_els[:5])
-                elements.append(Paragraph(f'<i>Missing elements: {missing_str}</i>', styles["ClauseText"]))
-            if exposure:
-                elements.append(Paragraph(_esc_xml(exposure), styles["ClauseText"]))
-            elements.append(Spacer(1, 4))
         elements.append(Spacer(1, 6))
 
     elements.append(Paragraph("CONTRACT FINDINGS", styles["SynopsisHeading"]))

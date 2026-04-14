@@ -3124,16 +3124,23 @@ function renderNavSidebar() {
 
         // Coverage gap callout inside contract box
         const _covCa = (tenant.results && tenant.results.coverage_assessment) || [];
-        const _covCount = _covCa.filter(a =>
+        const _covAttention = _covCa.filter(a =>
             a.partial_class === 'partial_material' ||
             a.coverage_state === 'covered_unfavorable' ||
             a.coverage_state === 'missing'
         ).length;
+        const _covReview = _covCa.filter(a =>
+            a.partial_class === 'partial_review'
+        ).length;
+        const _covCount = _covAttention + _covReview;
         if (_covCount > 0) {
             const covCallout = document.createElement('div');
             covCallout.className = 'nav-coverage-callout';
             covCallout.title = 'View Coverage & Gaps';
-            covCallout.textContent = '\u25D1 Coverage: ' + _covCount + ' area' + (_covCount === 1 ? '' : 's') + ' need attention';
+            const _covParts = [];
+            if (_covAttention > 0) _covParts.push(_covAttention + ' need attention');
+            if (_covReview > 0) _covParts.push(_covReview + ' worth reviewing');
+            covCallout.textContent = '\u25D1 Coverage: ' + _covParts.join(', ');
             const _covTi = i;
             covCallout.onclick = function(e) {
                 e.stopPropagation();
