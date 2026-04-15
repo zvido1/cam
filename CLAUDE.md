@@ -25,6 +25,7 @@ When Tzvi says:
 - **Stability > elegance.** If something works but is ugly, leave it ugly.
 - **Ask, don't assume.** If an instruction is ambiguous, say so in your status file.
 - **Keep Tzvi in the loop.** If you have questions or encounter decisions during execution, ask Tzvi directly in the conversation — don't just bury them in the status file. He may not be a coder but he understands the architecture and can make decisions in real time.
+- **Step-suffix discipline.** If a step needs a `b`, `c`, `_fix`, or `_fix2` instruction, the chat-side instruction file MUST open with a one-line root-cause note: why was the prior pass insufficient? (ambiguous brief / missing context / builder error / scope miss / environment issue). The 014 and 039 series accumulated many suffixes without root-cause notes last quarter; this rule exists to stop unnamed drift.
 
 ## After Every Step
 When you finish a step, end your message to Tzvi with:
