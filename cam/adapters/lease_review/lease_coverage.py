@@ -241,6 +241,7 @@ _ELEMENT_KEYWORDS = {
     "definition of qualifying force majeure":   ["force majeure", "act of god", "fire", "flood", "war", "pandemic"],
     "scope of excused obligations":             ["excused", "suspended", "delayed", "shall not be liable"],
     "rent abatement during force majeure":      ["abatement", "abate", "reduce rent", "suspend rent"],
+    "partial rent abatement or adjustment for operational impairment": ["partial abatement", "proportionate abatement", "equitable abatement", "pro rata abatement", "partial rent reduction", "operational impairment", "partially untenantable"],
     "notice requirement to invoke":             ["notice", "notify", "written notice", "within"],
     "termination right if force majeure exceeds": ["terminate", "termination right", "180 days", "120 days"],
     "exterior signage right":                   ["exterior sign", "exterior storefront", "storefront", "facade", "storefront sign", "identification sign"],
@@ -373,6 +374,9 @@ _UNFAVORABLE_PATTERNS = {
     ],
     "LP-13": [
         (r"(?:no\s+cap|uncapped|unlimited).{0,50}(?:liability|damages)", "No liability cap"),
+    ],
+    "LP-14": [
+        (r"(?:wholly|totally)\s+untenantable", "Abatement limited to 'wholly/totally untenantable' standard with no partial-abatement mechanism for operational impairment"),
     ],
     "LP-17": [
         (r"attorney.{0,40}(?:landlord only|only landlord|landlord.s fees)", "One-sided attorney fee provision"),

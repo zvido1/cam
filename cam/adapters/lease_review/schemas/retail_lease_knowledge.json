@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.1.2",
+  "schema_version": "1.1.3",
   "created": "2026-03-27",
-  "updated": "2026-03-27",
+  "updated": "2026-04-19",
   "contract_type": "retail_lease",
   "display_name": "Retail / Commercial Lease",
   "description": "Issue-area knowledge schema for retail and commercial lease analysis. Defines expected coverage, applicability gating, exposure statements, caution signals, and negative-space clues.",
-  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language.",
+  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection.",
 
   "coverage_states": {
     "covered":                  "Provision present and consistent with standard form",
@@ -532,31 +532,35 @@
       "exclusion_clues": [],
       "default_when_unclear": "review_needed",
       "related_issue_areas": ["LP-05", "LP-03"],
-      "notes": "Cascade risk: definition expansions silently affect LP-05 continuous operation obligations.",
+      "notes": "Cascade risk: definition expansions silently affect LP-05 continuous operation obligations. v1.1.3: Added partial-abatement expected_element and 'wholly untenantable only' pattern to covered_unfavorable rule.",
       "expected_elements": [
         "definition of qualifying force majeure events",
         "scope of excused obligations (which parties, which obligations)",
         "rent abatement during force majeure period",
+        "partial rent abatement or adjustment for operational impairment",
         "notice requirement to invoke",
         "termination right if force majeure exceeds threshold period"
       ],
       "coverage_state_rules": {
         "missing":             "No force majeure provision",
         "partial":             "Events defined but rent abatement, notice requirement, or termination right absent",
-        "covered_unfavorable": "Force majeure excludes rent obligations entirely",
+        "covered_unfavorable": "Abatement limited to 'wholly untenantable' standard with no partial abatement for operational impairment; OR tenant required to vacate to claim any abatement; OR force majeure excludes rent obligations entirely",
         "ambiguous":           "Force majeure definition includes catch-all language without enumeration"
       },
       "risk_if_missing": "No excused performance; common law impossibility doctrine rarely applies to commercial leases",
-      "exposure_statement": "Force majeure protection absent; tenant obligated to pay rent and perform during events entirely outside its control",
+      "exposure_statement": "Force majeure protection absent or limited to total untenantability; tenant may be obligated to pay full rent during partial operational impairment (utility loss, restricted access, regulatory shutdown, HVAC failure) that leaves premises legally occupiable but operationally unusable for the tenant's permitted business",
       "caution_signals": ["common_dispute_area", "cascade_risk"],
       "negative_space_clues": [
         "Force majeure section present but rent abatement carve-out blank or deleted",
-        "Event list ends with 'including without limitation' with body truncated"
+        "Event list ends with 'including without limitation' with body truncated",
+        "Abatement available only if premises are 'wholly untenantable' with no partial-impairment mechanism",
+        "Abatement conditioned on tenant vacating the premises"
       ],
       "common_tenant_modifications": [
         "Added pandemics, cyberattacks, supply chain disruptions to event list",
         "Added rent abatement for force majeure periods exceeding 30 days",
-        "Added termination right if force majeure exceeds 180 days"
+        "Added termination right if force majeure exceeds 180 days",
+        "Added partial abatement mechanism for operational impairment short of total untenantability"
       ]
     },
     {
