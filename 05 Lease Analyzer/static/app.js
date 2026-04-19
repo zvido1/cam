@@ -11,7 +11,7 @@ const ANALYSIS_TYPES = [
     {
         id: "lease_review",
         domain: "Legal",
-        name: "Shopping Center Lease Review",
+        name: "CAM Demo",
         description: "Compare tenant leases against a standard template to detect deviations, assess risk, and generate annotated reports.",
         endpoint: "/api/jobs/lease",
         provisions_endpoint: "/api/provisions"
@@ -411,12 +411,12 @@ function showState(name) {
 
     const tagline = $("#header-tagline");
     if (name === "gate") {
-        tagline.textContent = "Shopping Center Lease Review";
+        tagline.textContent = "CAM Demo";
         $("#app-header").style.display = "none";
     } else {
         tagline.textContent = selectedAnalysisType
             ? selectedAnalysisType.name
-            : "Shopping Center Lease Review";
+            : "CAM Demo";
         $("#app-header").style.display = "";
     }
 
