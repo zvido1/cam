@@ -110,15 +110,28 @@ def _extract_section_headers(full_text: str) -> set:
     """
     Extract section numbers that appear as actual section headers in the document.
     These are sections that EXIST, not just references to sections.
-    Looks for patterns like "9.1", "ARTICLE IV", "Section 12.3 Title"
+    Handles three common header formats:
+      - "16.3 Rent During Force Majeure"            (number-first, no "Section" keyword)
+      - "Section 16.3. Rent During Force Majeure"   ("Section" keyword + number + period)
+      - "Section 16.3 Rent During Force Majeure"    ("Section" keyword + number, no period)
     """
     headers = set()
-    # Numbered section headers at start of line
+    # Pattern 1: number-first headers (legacy — preserved byte-for-byte)
     header_pattern = re.compile(
         r"^\s*(\d+(?:\.\d+)*)\s+[A-Z]",
         re.MULTILINE,
     )
     for m in header_pattern.finditer(full_text):
+        headers.add(m.group(1))
+    # Pattern 2 & 3: "Section N.N." / "Section N.N" headers (new)
+    # Period after number is optional. IGNORECASE on Section keyword only (leases
+    # vary between Section/section/SECTION). Capital letter or quote must follow
+    # to avoid matching inline prose references like "pursuant to Section 14.1 above".
+    section_keyword_pattern = re.compile(
+        r"^\s*Section\s+(\d+(?:\.\d+)*)\.?\s+[A-Z\"]",
+        re.MULTILINE | re.IGNORECASE,
+    )
+    for m in section_keyword_pattern.finditer(full_text):
         headers.add(m.group(1))
     return headers
 
@@ -464,3 +477,26 @@ if __name__ == "__main__":
     print(f"  High severity: {summary['high_severity_count']}")
     print(f"  By type: {summary['by_type']}")
     print(f"  Flagged provisions: {summary['flagged_provision_ids']}")
+
+    # ── Step 248 inline unit test: Section N.N. header format ─────────────────
+    # Ensures _extract_section_headers() now recognizes the "Section 16.3." style
+    # headers used in T-10 Article XVI (and inherited from the standard template).
+    print("\n[Step 248] Unit test — Section N.N. header recognition")
+    t10_article_xvi_fixture = """
+ARTICLE XVI — FORCE MAJEURE
+
+Section 16.1. Force Majeure. Neither party shall be in default.
+Section 16.2. Duration. If a Force Majeure Event prevents performance.
+Section 16.3. Rent During Force Majeure. Tenant's obligation to pay.
+"""
+    hdrs = _extract_section_headers(t10_article_xvi_fixture)
+    expected = {"16.1", "16.2", "16.3"}
+    missing = expected - hdrs
+    assert not missing, f"FAIL: missing headers {missing}; got {sorted(hdrs)}"
+    print(f"  PASS: detected Section N.N headers {sorted(expected)}")
+
+    # Legacy number-first format must still work
+    legacy_fixture = "\n9.1 Landlord Maintenance. Landlord shall maintain.\n"
+    legacy_hdrs = _extract_section_headers(legacy_fixture)
+    assert "9.1" in legacy_hdrs, f"FAIL: legacy regex broken, got {legacy_hdrs}"
+    print(f"  PASS: legacy number-first format preserved ({sorted(legacy_hdrs)})")
