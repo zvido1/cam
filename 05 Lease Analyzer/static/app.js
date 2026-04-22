@@ -2758,7 +2758,12 @@ function startExpiryCountdown(expiresAt) {
         const warning = remainMs < 3600000; // warning under 60 minutes
 
         let timeStr;
-        if (remainingMin > 60) {
+        if (remainingMin >= 1440) {
+            const days = Math.floor(remainingMin / 1440);
+            const hours = Math.floor((remainingMin % 1440) / 60);
+            const mins = remainingMin % 60;
+            timeStr = `${days}d ${hours}h ${mins}m`;
+        } else if (remainingMin > 60) {
             const hours = Math.floor(remainingMin / 60);
             const mins = remainingMin % 60;
             timeStr = `${hours}h ${mins}m`;
