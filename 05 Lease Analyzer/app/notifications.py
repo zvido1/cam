@@ -135,14 +135,14 @@ def _build_html_email(
 
       <!-- Expiry notice -->
       <div style="background:#fffbf0;border:1px solid #f0c040;border-radius:4px;padding:12px 16px;font-size:0.85rem;color:#856404;">
-        <strong>Note:</strong> Results are automatically purged from our servers after 24 hours.
+        <strong>Note:</strong> Results are automatically purged from our servers after 7 days.
       </div>
     </div>
 
     <!-- Footer -->
     <div style="background:#f8f9fa;padding:16px 32px;text-align:center;border-top:1px solid #eee;">
       <p style="margin:0;font-size:0.78rem;color:#95a5a6;">
-        Uploaded files deleted immediately. Analysis results purged after 24 hours.<br>
+        Uploaded files deleted immediately. Analysis results purged after 7 days.<br>
         © {current_year} Vered.ai · <a href="https://www.vered.ai" style="color:#95a5a6;">vered.ai</a>
       </p>
     </div>
