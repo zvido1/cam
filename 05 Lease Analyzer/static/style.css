@@ -487,6 +487,104 @@ textarea.input-field {
     display: flex;
     flex-direction: column;
 }
+
+/* Mode selector (Step 253) */
+.mode-selector-wrapper {
+    margin-bottom: 1rem;
+}
+.mode-selector-card {
+    padding: 0.875rem 1rem;
+}
+.mode-selector-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.625rem;
+}
+.mode-selector-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+@media (max-width: 700px) {
+    .mode-selector-options {
+        grid-template-columns: 1fr;
+    }
+}
+.mode-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+.mode-option:hover {
+    border-color: var(--primary);
+    background-color: var(--bg-subtle, #f7f7f9);
+}
+.mode-option input[type="radio"] {
+    margin-top: 0.2rem;
+    flex-shrink: 0;
+}
+.mode-option:has(input[type="radio"]:checked) {
+    border-color: var(--primary);
+    background-color: var(--bg-subtle, #f7f7f9);
+}
+.mode-option-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+.mode-option-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary, #1b1b22);
+}
+.mode-option-help {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+/* Mode C: template dropzone hidden */
+.upload-cols-grid.mode-analyze #template-dropzone-wrapper {
+    display: none;
+}
+.upload-cols-grid.mode-analyze {
+    grid-template-columns: 1fr;
+}
+
+/* Step 254: Mode C Audit Trail "this stage doesn't run in Analyze mode" message */
+.audit-mode-c-message {
+    background: var(--bg-subtle, #f7f7f9);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    max-width: 720px;
+    margin: 1rem 0;
+    color: var(--text-primary, #1b1b22);
+    line-height: 1.55;
+}
+.audit-mode-c-heading {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary, #1b1b22);
+    margin-bottom: 0.5rem;
+}
+.audit-mode-c-message p {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.925rem;
+}
+.audit-mode-c-message p:last-child {
+    margin-bottom: 0;
+}
+.audit-mode-c-message a {
+    color: var(--primary, #2563eb);
+    text-decoration: underline;
+}
 .upload-cols-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -11368,3 +11466,229 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 /* Coverage item flash highlight */
 @keyframes cv-flash { 0%,100%{background:transparent} 30%,70%{background:#fef9c3} }
 .cv-item-flash { animation: cv-flash 1.8s ease; }
+
+/* ══════════════════════════════════════════════════════
+   STEP 257 — MODE C RESULTS UX CLEANUP
+   Mode C (single-document analysis) has no template, so deviation-oriented
+   UI elements have no meaning. Coverage & Gaps tab is the primary output;
+   Audit Trail kept visible for extraction-stage info; Document Comparison
+   tab already hidden in Step 254. These rules hide the Mode-A artifacts that
+   would otherwise show empty/misleading content.
+   ══════════════════════════════════════════════════════ */
+body.mode-c #filter-bar,
+body.mode-c #deal-brief-banner,
+body.mode-c #provisions-checklist,
+body.mode-c #provisions-scope-card,
+body.mode-c #review-completion-banner,
+body.mode-c #results-legend {
+    display: none !important;
+}
+/* Step 258: #ai-summary-bar is intentionally NOT hidden in Mode C — it now
+   renders a coverage-oriented Mode C summary via renderModeCAISummaryBar(). */
+/* In-card workflow rows: hide "Open Document Comparison" buttons (target tab
+   is hidden in Mode C). "Open CAM Audit Trail" buttons stay visible. */
+body.mode-c .card-docview-link {
+    display: none !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   STEP 258 — MODE C AI SUMMARY BAR (Coverage Snapshot)
+   Replaces the Mode A deviation-counted summary with a coverage-oriented
+   four-bucket pill row. Buckets mirror the Coverage & Gaps tab framing
+   so the Overview → contract drilldown narrative stays consistent.
+   ══════════════════════════════════════════════════════ */
+.ai-summary-modec {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+}
+.ai-summary-modec-headline {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+.ai-summary-modec-headline strong {
+    font-size: 1rem;
+    color: var(--text-primary, #111);
+}
+.ai-summary-modec-meta {
+    font-size: 0.875rem;
+    color: var(--text-muted, #666);
+}
+.ai-summary-modec-stats {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.ai-summary-modec-stat {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    border: 1px solid transparent;
+}
+.ai-summary-modec-stat strong {
+    font-size: 1rem;
+    font-weight: 700;
+}
+.ai-summary-modec-stat--ok        { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+.ai-summary-modec-stat--attention { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+.ai-summary-modec-stat--review    { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.ai-summary-modec-stat--na        { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+.ai-summary-modec-cta {
+    font-size: 0.875rem;
+    color: var(--text-muted, #666);
+}
+
+/* ══════════════════════════════════════════════════════
+   STEP 259 — MODE C RUN SNAPSHOT CARDS
+   Mode C cards reuse the .snapshot-card base styles (already styled for Mode A)
+   plus a .snapshot-card-modec marker that drives a coverage-tier accent border.
+   The .modec-count-row is a horizontal pill row showing per-bucket counts;
+   styling mirrors the Step 258 AI Summary pills for a consistent visual
+   language between Overview → Leases → Coverage & Gaps.
+   ══════════════════════════════════════════════════════ */
+.snapshot-card-modec {
+    border-left: 4px solid #cbd5e1;
+}
+.snapshot-card-modec-problems { border-left-color: #dc2626; }
+.snapshot-card-modec-review   { border-left-color: #f59e0b; }
+.snapshot-card-modec-ok       { border-left-color: #10b981; }
+.snapshot-card-modec-empty    { border-left-color: #94a3b8; }
+
+.modec-count-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.5rem 0;
+    margin-bottom: 0.25rem;
+}
+.modec-count {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.8125rem;
+    border: 1px solid transparent;
+}
+.modec-count strong {
+    font-weight: 700;
+    font-size: 0.875rem;
+}
+.modec-count-ok      { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+.modec-count-attn    { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+.modec-count-review  { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+.modec-count-na      { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
+
+/* ══════════════════════════════════════════════════════
+   STEP 261 — PERSPECTIVE SELECTOR (upload page)
+   Three radios (tenant / landlord / neutral). Must select — no default.
+   Visually mirrors the mode-selector card so the two read as a related pair.
+   The 'required-indicator' class is toggled by JS to red-flag the card when
+   the user tries to submit without choosing.
+   ══════════════════════════════════════════════════════ */
+.perspective-selector-wrapper {
+    margin-bottom: 1rem;
+}
+.perspective-selector-card {
+    padding: 1rem 1.25rem;
+}
+.perspective-selector-card.required-indicator {
+    border: 1px solid #dc2626;
+    background: #fef2f2;
+}
+.perspective-selector-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.15rem;
+}
+.perspective-selector-help {
+    font-size: 0.8125rem;
+    color: var(--text-muted, #666);
+    margin-bottom: 0.6rem;
+}
+.perspective-selector-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+}
+@media (max-width: 720px) {
+    .perspective-selector-options { grid-template-columns: 1fr; }
+}
+.perspective-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #fff;
+    transition: border-color 0.15s, background 0.15s;
+}
+.perspective-option:hover {
+    border-color: #94a3b8;
+}
+.perspective-option input[type="radio"] {
+    margin-top: 0.2rem;
+}
+.perspective-option:has(input[type="radio"]:checked) {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+.perspective-option-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+.perspective-option-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+.perspective-option-help {
+    font-size: 0.78rem;
+    color: var(--text-muted, #666);
+    line-height: 1.35;
+}
+
+/* Results-page perspective indicator (small label shown alongside Coverage Snapshot
+   / AI Summary headlines so the user is always reminded of the analysis lens). */
+.perspective-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    color: var(--text-muted, #666);
+    padding: 0.15rem 0.55rem;
+    border-radius: 9999px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+}
+.perspective-indicator strong {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Step 263: Mode-aware results UI
+
+   Mode C (analyze single document) skips the multi-evaluator framework
+   (Stages 2/3/5), so the CAM Audit Trail tab has nothing meaningful to
+   show. Hide it when body.mode-c is set. (See applyModeAwareTabVisibility
+   in app.js, called from showState whenever state changes.)
+   ────────────────────────────────────────────────────────────────── */
+body.mode-c #contract-tab-audittrail {
+    display: none !important;
+}
+
+/* Coverage & Gaps panel renders a per-item "CAM Audit Trail" button in
+   buildCovToolbar (jumpToAuditProvision link). Hide those too in Mode C —
+   they jump to a tab that doesn't exist there. */
+body.mode-c .card-audit-link {
+    display: none !important;
+}

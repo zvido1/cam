@@ -303,6 +303,11 @@ def annotate_pdf(
         prov = provisions_by_id.get(pid, {})
         anchor_text = (prov.get("tenant_text", "") or "").strip()
         section_ref = (prov.get("tenant_section_ref", "") or "").strip()
+        # Step 254: Mode C runs without per-provision extraction in results[],
+        # so fall back to the issue-area name and id. The name (e.g. "Force
+        # Majeure", "Common Area Maintenance") and id (e.g. "LP-07") are
+        # usually in section headers and readily anchor-able.
+        issue_area_name = (cov.get("issue_area_name") or cov.get("provision_name") or "").strip()
 
         # Coverage resolution lookup mirrors the deviation pattern (tenant_idx 0)
         cov_resolution = None
@@ -314,16 +319,23 @@ def annotate_pdf(
 
         comment_text = _sanitize_for_pdf(_format_coverage_annotation_text(cov, cov_resolution))
 
-        # Try anchor text first, then section reference
+        # Try anchor text first, then section reference, then issue-area name, then id.
+        # Mode A typically resolves on anchor_text; Mode C falls through to name/id.
         found = False
-        for search_text in [anchor_text, section_ref]:
+        fallback_candidates = [
+            (anchor_text,       [80, 50, 30], 10),
+            (section_ref,       [80, 50, 30], 10),
+            (issue_area_name,   [60, 40, 20], 5),
+            (pid,               [10],         3),
+        ]
+        for search_text, search_lengths, min_len in fallback_candidates:
             if found or not search_text:
                 continue
-            for search_len in [80, 50, 30]:
+            for search_len in search_lengths:
                 if found:
                     break
                 search_key = search_text[:search_len].strip()
-                if not search_key or len(search_key) < 10:
+                if not search_key or len(search_key) < min_len:
                     continue
                 for page in doc:
                     text_instances = page.search_for(search_key)

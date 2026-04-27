@@ -29,12 +29,7 @@
                        title="View full CAM analysis in Audit Trail">
                         Open CAM Audit Trail
                     </a>
-                    ${(function() {
-                        const _ca = helpers.coverageAssessment || [];
-                        const _cov = _ca.find(function(a) { return a.issue_area_id === pid; });
-                        if (!_cov || _cov.coverage_state === 'covered' || _cov.coverage_state === 'not_applicable') return '';
-                        return `<a class="card-docview-link card-docview-link--btn" href="#" onclick="window.CAM.jumpToCoverageProvision('${esc(pid)}'); return false;" title="Jump to this gap in Coverage &amp; Gaps">&#9680; Coverage Gap</a>`;
-                    })()}
+                    ${window.CAMShared.buildCoverageGapLink(pid, helpers.coverageAssessment, esc)}
                 </div>
             </div>`;
     }

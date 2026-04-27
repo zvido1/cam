@@ -718,6 +718,11 @@ def _run_incremental_tenants(job_id: str, start_index: int) -> None:
                 "template_type": input_cfg.get("template_type", "blank_template"),
                 "identity_check": input_cfg.get("identity_check", "landlord_property"),
                 "access_code": input_cfg.get("access_code", ""),  # Step 140: for user rules
+                # Step 262: perspective lens propagated into pipeline cfg so that
+                # downstream prompts (lease_exposure) can frame risk against the
+                # selected party. Defaults to "tenant" for jobs created before
+                # Step 261 added the field.
+                "perspective": input_cfg.get("perspective", "tenant"),
             }
 
             result = run_lease_analysis(
@@ -731,15 +736,19 @@ def _run_incremental_tenants(job_id: str, start_index: int) -> None:
 
             result_path = str(results_dir / job_id / run_id / "pipeline_results.json")
             annotated_path = None
+            comparison_path = None
             output_files = result.get("output_files", {})
             if output_files.get("annotated_document"):
                 annotated_path = output_files["annotated_document"]
+            if output_files.get("comparison_view_pdf"):
+                comparison_path = output_files["comparison_view_pdf"]
 
             update_tenant_status(job_id, i, "completed", stage="done")
             with _jobs_lock:
                 t = _jobs[job_id]["input_config"]["tenants"][i]
                 t["result_path"] = result_path
                 t["annotated_path"] = annotated_path
+                t["comparison_view_path"] = comparison_path
             timing = _finalize_tenant_runtime(job_id, i)
             _append_job_event(
                 job_id,
@@ -884,6 +893,10 @@ def _run_provision_processing(job_id: str, new_provision_ids: list) -> None:
                 "output_dir": str(results_dir / job_id),
                 "_job_id": job_id,
                 "access_code": input_cfg.get("access_code", ""),  # Step 140: for user rules
+                # Step 262: perspective propagated even on incremental provision re-runs
+                # so newly-added provisions get the same perspective framing as the
+                # original run.
+                "perspective": input_cfg.get("perspective", "tenant"),
             }
 
             result = run_lease_analysis(
@@ -1268,7 +1281,9 @@ def _run_job_processing(job_id: str) -> None:
 
 def _process_lease_job(job_id: str, job: dict) -> None:
     """Process a lease review job — runs each tenant through the pipeline."""
-    from cam.adapters.lease_review.lease_adapter import run_lease_analysis
+    from cam.adapters.lease_review.lease_adapter import (
+        run_lease_analysis, run_lease_coverage_only,
+    )
     from cam.adapters.lease_review.lease_provision_taxonomy import get_active_provisions
     from app.notifications import send_job_complete_email, send_job_failed_email
 
@@ -1277,6 +1292,7 @@ def _process_lease_job(job_id: str, job: dict) -> None:
     input_cfg = job["input_config"]
     tenants = input_cfg.get("tenants", [])
     template_path = input_cfg.get("template_path")
+    mode = input_cfg.get("mode", "compare")
 
     # Build provision list
     selected_ids = input_cfg.get("provisions")
@@ -1345,33 +1361,76 @@ def _process_lease_job(job_id: str, job: dict) -> None:
                 "template_type": input_cfg.get("template_type", "blank_template"),
                 "identity_check": input_cfg.get("identity_check", "landlord_property"),
                 "access_code": input_cfg.get("access_code", ""),  # Step 140: for user rules
+                # Step 262: perspective lens (tenant / landlord / neutral) propagated
+                # into pipeline cfg. lease_exposure reads this to frame risk against
+                # the selected party. Defaults to "tenant" for backward compatibility
+                # with jobs created before Step 261 made it required.
+                "perspective": input_cfg.get("perspective", "tenant"),
             }
 
             def _progress_cb_with_tracking(stage, total_stages, detail):
                 _progress_cb(stage, total_stages, detail)
                 _track_stage_transition(job_id, i, stage, total_stages, detail)
 
-            result = run_lease_analysis(
-                template_path=template_path,
-                tenant_path=tenant_path,
-                provisions=active_provisions,
-                config=pipeline_config,
-                run_id=run_id,
-                progress_callback=_progress_cb_with_tracking,
-            )
+            if mode == "analyze":
+                result = run_lease_coverage_only(
+                    tenant_path=tenant_path,
+                    provisions=active_provisions,
+                    config=pipeline_config,
+                    run_id=run_id,
+                    progress_callback=_progress_cb_with_tracking,
+                )
+                # Step 254: Mode C also produces an annotated PDF (stickies on
+                # coverage gaps). run_lease_coverage_only intentionally does not
+                # invoke the report generator — we call it here so Mode A stays
+                # untouched.
+                try:
+                    from cam.adapters.lease_review.lease_report_generator import (
+                        generate_outputs as _generate_mode_c_outputs,
+                    )
+                    output_dir = results_dir / job_id / run_id
+                    outputs = _generate_mode_c_outputs(
+                        tenant_path, result, str(output_dir),
+                    )
+                    result["output_files"] = outputs
+                    # Persist updated pipeline_results.json with output_files.
+                    import json as _json
+                    out_path = output_dir / "pipeline_results.json"
+                    out_path.write_text(
+                        _json.dumps(result, indent=2, ensure_ascii=False),
+                        encoding="utf-8",
+                    )
+                except Exception as _gen_e:
+                    logger.error(
+                        f"Mode C output generation failed for {job_id} tenant {i}: {_gen_e}"
+                    )
+                    result["output_files"] = {"error": str(_gen_e)}
+            else:
+                result = run_lease_analysis(
+                    template_path=template_path,
+                    tenant_path=tenant_path,
+                    provisions=active_provisions,
+                    config=pipeline_config,
+                    run_id=run_id,
+                    progress_callback=_progress_cb_with_tracking,
+                )
 
             # Store result paths
             result_path = str(results_dir / job_id / run_id / "pipeline_results.json")
             annotated_path = None
+            comparison_path = None
             output_files = result.get("output_files", {})
             if output_files.get("annotated_document"):
                 annotated_path = output_files["annotated_document"]
+            if output_files.get("comparison_view_pdf"):
+                comparison_path = output_files["comparison_view_pdf"]
 
             update_tenant_status(job_id, i, "completed", stage="done")
             with _jobs_lock:
                 t = _jobs[job_id]["input_config"]["tenants"][i]
                 t["result_path"] = result_path
                 t["annotated_path"] = annotated_path
+                t["comparison_view_path"] = comparison_path
 
             all_failed = False
             logger.info(f"Completed {job_id} tenant {i}: {tenant_filename}")
@@ -1498,7 +1557,7 @@ def _process_lease_job(job_id: str, job: dict) -> None:
             tenant_filenames = [t.get("filename", "") for t in tenants if t.get("filename")]
             send_job_complete_email(email, job_id, job_url, summary,
                                    attachments=attachments, attachment_info=att_info,
-                                   tenant_names=tenant_filenames)
+                                   tenant_names=tenant_filenames, mode=mode)
 
 
 def _generate_email_attachments(

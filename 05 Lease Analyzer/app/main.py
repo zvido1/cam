@@ -78,6 +78,54 @@ def _parse_chat_json_payload(raw_text: str) -> Optional[Dict[str, Any]]:
         return None
 
 
+# Step 262: perspective addendum for chat SCOPE block. Tells the model whose
+# interests to frame coverage gaps and risks against. The string is appended
+# to both Mode A and Mode C scope blocks.
+def _build_perspective_addendum(perspective: str) -> str:
+    """Return a perspective-aware paragraph for the chat SCOPE block.
+
+    Note: the upstream coverage assessor uses tenant-leaning regex patterns to
+    classify states like 'covered_unfavorable'. The addendum below tells the
+    chat model how to RE-FRAME those classifications when the user is reviewing
+    on behalf of the landlord or as a neutral party. Coverage state values
+    themselves are unchanged.
+    """
+    p = (perspective or "tenant").lower()
+    if p == "landlord":
+        return (
+            "PERSPECTIVE: This analysis is being reviewed from the LANDLORD's perspective.\n"
+            "Frame all coverage gaps, exposure statements, and recommendations against\n"
+            "landlord interests. The underlying coverage state classifications (e.g.\n"
+            "'covered_unfavorable') were generated using rules that lean tenant-protective\n"
+            "— a clause flagged 'covered_unfavorable' may actually be FAVORABLE to the\n"
+            "landlord (e.g. waived audit rights, sole-discretion consent, narrow force\n"
+            "majeure). When that's the case, describe the landlord's UPSIDE plainly. When\n"
+            "a 'missing' or 'partial' element instead exposes the landlord (e.g. no\n"
+            "late-fee mechanism, no acceleration on default, no removal obligation at\n"
+            "expiration), describe that landlord-side risk directly. Do not advocate for\n"
+            "tenant interests in your answer. When asked 'what should I push for',\n"
+            "recommend changes that protect the landlord.\n\n"
+        )
+    if p == "neutral":
+        return (
+            "PERSPECTIVE: This analysis is being reviewed NEUTRALLY (commercially reasonable).\n"
+            "Do not advocate for either party. For each gap or unfavorable clause, identify\n"
+            "which party benefits and which is exposed. If a clause is one-sided in either\n"
+            "direction, name the imbalance plainly. If it's mutual, say so. The underlying\n"
+            "coverage state classifications were generated using rules that lean\n"
+            "tenant-protective — read past that bias and re-frame each finding even-handedly.\n"
+            "When asked 'what should I push for', describe a balanced compromise rather than\n"
+            "a one-sided ask.\n\n"
+        )
+    # Default: tenant. Matches the upstream rule set's bias, so no re-framing needed.
+    return (
+        "PERSPECTIVE: This analysis is being reviewed from the TENANT's perspective.\n"
+        "Frame coverage gaps, exposure statements, and recommendations against tenant\n"
+        "interests. When asked 'what should I push for', recommend changes that protect\n"
+        "the tenant.\n\n"
+    )
+
+
 def _call_chat_with_followups(call_llm, provider: str, system_prompt: str, user_prompt: str, temperature: float = 0.3) -> Dict[str, Any]:
     """Call the model and ask for a main response plus suggested follow-up questions."""
     format_prompt = (
@@ -357,6 +405,7 @@ def get_job_results(job_id: str):
             try:
                 data = json.loads(Path(result_path).read_text(encoding="utf-8"))
                 annotated = tenant.get("annotated_path")
+                comparison = tenant.get("comparison_view_path")
                 any_results_available = True
                 results.append({
                     "tenant_index": i,
@@ -364,6 +413,7 @@ def get_job_results(job_id: str):
                     "status": tenant["status"],
                     "results": data,
                     "has_annotated": bool(annotated and Path(annotated).exists()),
+                    "has_comparison_view": bool(comparison and Path(comparison).exists()),
                 })
             except (json.JSONDecodeError, OSError) as e:
                 results.append({
@@ -1035,7 +1085,7 @@ async def final_draft(request_body: dict):
 async def create_lease_job(
     access_code: str = Form(...),
     email: Optional[str] = Form(None),
-    template_file: UploadFile = File(...),
+    template_file: Optional[UploadFile] = File(None),
     tenant_files: List[UploadFile] = File(...),
     provisions: Optional[str] = Form(None),
     custom_provisions: Optional[str] = Form(None),
@@ -1046,6 +1096,11 @@ async def create_lease_job(
     strictness: Optional[str] = Form("standard"),
     template_type: Optional[str] = Form("blank_template"),
     identity_check: Optional[str] = Form("landlord_property"),
+    mode: Optional[str] = Form("compare"),
+    # Step 261: perspective (tenant / landlord / neutral) is required — the
+    # frontend gates submit on this. Backend validates and persists; prompts
+    # don't yet branch on it (Step 262 work).
+    perspective: Optional[str] = Form(None),
 ):
     """Create a lease analysis job with file uploads."""
     config = get_config()
@@ -1053,6 +1108,22 @@ async def create_lease_job(
     # Validate access code
     if config["ACCESS_CODE"] and access_code != config["ACCESS_CODE"]:
         raise HTTPException(status_code=401, detail="Invalid access code")
+
+    # Validate mode
+    if mode not in ("compare", "analyze"):
+        raise HTTPException(status_code=400, detail="mode must be 'compare' or 'analyze'")
+
+    # Step 261: validate perspective. Required — frontend gates on this, but the
+    # API enforces it independently in case a non-browser caller hits the endpoint.
+    if perspective not in ("tenant", "landlord", "neutral"):
+        raise HTTPException(
+            status_code=400,
+            detail="perspective is required and must be one of 'tenant', 'landlord', 'neutral'",
+        )
+
+    # Mode A (compare) requires a template; Mode C (analyze) does not.
+    if mode == "compare" and template_file is None:
+        raise HTTPException(status_code=400, detail="template_file is required for mode='compare'")
 
     # Validate strictness
     if strictness not in ("permissive", "standard", "strict"):
@@ -1116,10 +1187,12 @@ async def create_lease_job(
     upload_dir = Path(config["UPLOAD_DIR"]) / job_id
     upload_dir.mkdir(parents=True, exist_ok=True)
 
-    # Save template
-    template_save_path = upload_dir / template_file.filename
-    content = await template_file.read()
-    template_save_path.write_bytes(content)
+    # Save template (Mode A only; Mode C has no template)
+    template_save_path = None
+    if template_file is not None:
+        template_save_path = upload_dir / template_file.filename
+        content = await template_file.read()
+        template_save_path.write_bytes(content)
 
     # Save tenant files and build tenant list (with ZIP extraction)
     ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt"}
@@ -1180,8 +1253,8 @@ async def create_lease_job(
 
     # Build input config
     input_config = {
-        "template_file": template_file.filename,
-        "template_path": str(template_save_path),
+        "template_file": template_file.filename if template_file is not None else "",
+        "template_path": str(template_save_path) if template_save_path is not None else "",
         "tenants": tenants,
         "provisions": selected_ids,
         "custom_provisions": custom_provisions_list,
@@ -1193,6 +1266,10 @@ async def create_lease_job(
         "template_type": template_type,
         "identity_check": identity_check,
         "access_code": access_code,  # Step 140: for user rules injection
+        "mode": mode,
+        # Step 261: perspective lens (tenant / landlord / neutral). Persisted now;
+        # downstream prompts will branch on it in Step 262.
+        "perspective": perspective,
     }
 
     # Create job with the pre-generated ID (matches upload directory)
@@ -1290,6 +1367,44 @@ def download_annotated(job_id: str, tenant_index: int, with_resolutions: bool = 
         path=annotated_path,
         filename=filename,
         media_type="application/octet-stream",
+    )
+
+
+@app.get("/api/jobs/{job_id}/results/{tenant_index}/comparison")
+def download_comparison_view(job_id: str, tenant_index: int):
+    """Step 255: download the Aligned Provision Comparison View PDF for a tenant.
+
+    Mode A only — Mode C jobs do not generate this artifact, so the path will
+    be absent on the tenant record. Generation already happened during the
+    pipeline run (additive call inside `generate_outputs`); this endpoint just
+    serves the existing file.
+    """
+    job = job_manager.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.get("status") == "completed" and job_manager.is_job_expired(job):
+        return JSONResponse(status_code=410, content={"detail": "This analysis has expired."})
+
+    tenants = job.get("input_config", {}).get("tenants", [])
+    if tenant_index < 0 or tenant_index >= len(tenants):
+        raise HTTPException(status_code=404, detail="Invalid tenant index")
+
+    tenant = tenants[tenant_index]
+    comparison_path = tenant.get("comparison_view_path")
+
+    if not comparison_path or not Path(comparison_path).exists():
+        raise HTTPException(
+            status_code=404,
+            detail="Aligned Provision Comparison not available for this tenant",
+        )
+
+    tenant_stem = Path(tenant.get("filename", "lease")).stem or "lease"
+    filename = f"{tenant_stem}_Aligned_Provision_Comparison.pdf"
+    return FileResponse(
+        path=comparison_path,
+        filename=filename,
+        media_type="application/pdf",
     )
 
 
@@ -1497,6 +1612,16 @@ async def chat_with_analysis(job_id: str, body: dict):
 
     # Load tenant results for context
     domain_label = "Document Analysis"  # safe default
+    # Step 260: detect Mode C (single-doc coverage analysis) so we can build a
+    # coverage-shaped context and prompt instead of the deviation-shaped Mode A
+    # version. The mode field is set by the upload endpoint (Step 252).
+    is_mode_c = (job.get("input_config", {}) or {}).get("mode") == "analyze"
+    # Step 262: read perspective so the SCOPE block can frame coverage gaps
+    # and risk against the selected party (tenant / landlord / neutral).
+    # Older jobs without this field default to tenant for back-compat.
+    job_perspective = ((job.get("input_config", {}) or {}).get("perspective") or "tenant").lower()
+    if job_perspective not in ("tenant", "landlord", "neutral"):
+        job_perspective = "tenant"
     tenants = job.get("input_config", {}).get("tenants", [])
     context_parts = []
     for i, tenant in enumerate(tenants):
@@ -1514,11 +1639,52 @@ async def chat_with_analysis(job_id: str, body: dict):
                 context_parts.append(f"\n--- Tenant: {tenant_file} ---")
 
                 if provision_id:
-                    # Scope to specific provision
-                    for p in data.get("provisions", []):
-                        if p.get("provision_id") == provision_id:
-                            context_parts.append(json.dumps(p, indent=2, default=str))
-                            break
+                    # Scope to specific provision (Mode C: match by issue_area_id)
+                    if is_mode_c:
+                        for a in data.get("coverage_assessment", []):
+                            if a.get("issue_area_id") == provision_id:
+                                context_parts.append(json.dumps(a, indent=2, default=str))
+                                break
+                    else:
+                        for p in data.get("provisions", []):
+                            if p.get("provision_id") == provision_id:
+                                context_parts.append(json.dumps(p, indent=2, default=str))
+                                break
+                elif is_mode_c:
+                    # Mode C: build summary from coverage_assessment instead of provisions.
+                    # Each item carries coverage_state (covered / partial / missing /
+                    # covered_unfavorable / not_applicable), an optional partial_class
+                    # (partial_material vs partial_review), an exposure_statement (why this
+                    # gap matters in lawyer-facing language), and optional elements_missing
+                    # / negative_space_signals lists.
+                    ca_list = data.get("coverage_assessment", []) or []
+                    for a in ca_list:
+                        iaid = a.get("issue_area_id", "")
+                        iname = a.get("issue_area_name", iaid)
+                        state = a.get("coverage_state", "")
+                        pclass = a.get("partial_class", "")
+                        stmt = (a.get("exposure_statement", "") or "").strip()
+                        missing = a.get("elements_missing", []) or []
+                        ns_signals = a.get("negative_space_signals", []) or []
+                        head = f"  {iaid}: {iname} — coverage_state={state}"
+                        if pclass:
+                            head += f", partial_class={pclass}"
+                        body_lines = [head]
+                        if stmt:
+                            body_lines.append(f"    Exposure: {stmt}")
+                        if missing:
+                            body_lines.append(f"    Missing elements: {', '.join(str(m) for m in missing[:5])}")
+                        if ns_signals:
+                            ns_summary = ", ".join(
+                                str(s.get("signal_type", "") or s.get("description", ""))
+                                for s in ns_signals[:3]
+                            )
+                            if ns_summary:
+                                body_lines.append(f"    Negative space: {ns_summary}")
+                        context_parts.append("\n".join(body_lines))
+                    meta = data.get("contract_metadata", {})
+                    if meta:
+                        context_parts.append(f"  Contract: {json.dumps(meta, default=str)}")
                 else:
                     # Include all provisions summary
                     for p in data.get("provisions", []):
@@ -1577,14 +1743,52 @@ async def chat_with_analysis(job_id: str, body: dict):
     ui_context_block = "\n".join(ui_context_lines)
     ui_context_prompt = f"UI CONTEXT:\n{ui_context_block}\n\n" if ui_context_block else ""
 
+    # Step 260: Mode C uses a coverage-oriented SCOPE block; Mode A keeps the
+    # deviation-oriented one. Built as a separate variable to keep the prompt
+    # concatenation readable.
+    if is_mode_c:
+        scope_block = (
+            "SCOPE (Mode C — single-document coverage analysis):\n"
+            "There is no reference template for this run. Findings are framed as coverage of an\n"
+            "issue-area schema (typically 18 commercial-lease issue areas). Each issue area has:\n"
+            "  - coverage_state: 'covered' (clause is present and favorable),\n"
+            "    'covered_unfavorable' (clause is present but problematic for the tenant),\n"
+            "    'partial' (clause is present but incomplete),\n"
+            "    'missing' (clause is absent),\n"
+            "    'not_applicable' (issue does not apply to this lease type).\n"
+            "  - partial_class (only when state=partial): 'partial_material' = needs attention,\n"
+            "    'partial_review' = worth reviewing.\n"
+            "  - exposure_statement: lawyer-facing explanation of why the gap matters.\n"
+            "  - elements_missing: bullet list of specific clause elements that are absent.\n"
+            "  - negative_space_signals: structural absence cues (broken cross-references,\n"
+            "    missing exhibits, reserved sections).\n\n"
+            "User-facing buckets the UI uses (mirror these in your answers):\n"
+            "  - 'need attention' = covered_unfavorable, missing, or partial_material\n"
+            "  - 'worth reviewing' = partial_review\n"
+            "  - 'covered' = covered\n"
+            "  - 'not applicable' = not_applicable\n\n"
+            "Answer questions about which issue areas have coverage gaps, what language the user\n"
+            "should push for, what the risk is of leaving a gap unaddressed, and how to negotiate\n"
+            "missing or unfavorable clauses. Do NOT use Mode A vocabulary like 'deviation',\n"
+            "'flagged', 'severity (Critical/High/Medium/Low)', 'evaluator agreement', or 'reference\n"
+            "language' — those concepts don't apply here. When asked 'what should I do', anchor\n"
+            "the answer in the actual coverage_state and exposure_statement of the issue areas.\n\n"
+            + _build_perspective_addendum(job_perspective)
+        )
+    else:
+        scope_block = (
+            "SCOPE:\n"
+            "Answer questions about the documents, findings, provisions, deviations, risk implications, "
+            "negotiation strategy, and legal concepts relevant to this analysis. "
+            + _build_perspective_addendum(job_perspective)
+        )
+
     system_prompt = (
         f"You are a specialized assistant for {domain_label}. "
         f"You have access to the structured analysis findings for the document(s) in this session, "
         f"provided below as ANALYSIS CONTEXT.\n\n"
 
-        "SCOPE:\n"
-        "Answer questions about the documents, findings, provisions, deviations, risk implications, "
-        "negotiation strategy, and legal concepts relevant to this analysis. "
+        + scope_block +
         "If asked whether to sign, proceed, or how to approach a negotiation, engage fully — "
         "use the actual findings to give a substantive answer. "
         "You are not a licensed attorney and this is not legal advice; say so naturally at the end "

@@ -424,7 +424,9 @@ function showState(name) {
 
     // Step 139: Manage step2 active/inactive state (step2 always visible, just inactive until template processed)
     if (name === "upload") {
-        if (templateSummary || addMoreMode === "addmore") {
+        // Step 256 fix: Mode C (analyze) has no Step 1 (template upload),
+        // so Step 2 must be active immediately rather than gated on templateSummary.
+        if (templateSummary || addMoreMode === "addmore" || getSelectedMode() === "analyze") {
             activateStep2();
         } else {
             deactivateStep2();
@@ -439,6 +441,9 @@ function showState(name) {
 
     syncEmailState();
     updateWorkflowNav();
+    // Step 263: keep audit-trail tab visibility in sync with the current
+    // job's mode (Mode C hides it because the multi-evaluator pipeline doesn't run).
+    applyModeAwareTabVisibility();
 }
 
 /**
@@ -665,6 +670,18 @@ function setupEventListeners() {
     // Upload zones
     setupDropZone("template-drop", "template-input", handleTemplateFiles);
     setupDropZone("tenant-drop", "tenant-input", handleTenantFiles);
+
+    // Mode selector (Step 253)
+    document.querySelectorAll('input[name="analysis-mode"]').forEach(radio => {
+        radio.addEventListener("change", handleModeChange);
+    });
+
+    // Perspective selector (Step 261) — must select; flashes red if user tries
+    // to submit without choosing. Wiring is identical to mode radios except it
+    // also clears the required-indicator class on first selection.
+    document.querySelectorAll('input[name="analysis-perspective"]').forEach(radio => {
+        radio.addEventListener("change", handlePerspectiveChange);
+    });
 
     // Help chat
     initHelpChat();
@@ -1206,7 +1223,7 @@ function clearTemplateFile() {
     const gateErrorEl = $("#template-gate-error");
     if (gateErrorEl) gateErrorEl.classList.add("hidden");
     const stepLabel = $("#upload-step-label");
-    if (stepLabel) stepLabel.textContent = "Step 1: Upload your reference lease";
+    if (stepLabel) stepLabel.textContent = "Step 3: Upload your reference lease";
     const subtitle = $("#upload-subtitle");
     if (subtitle) subtitle.textContent = "Upload your reference lease (standard template or prior executed lease).";
 
@@ -1377,97 +1394,13 @@ const LEGACY_PROCESSING_STAGE_WEIGHTS = {
     6: 0.06, // finalization / outputs
 };
 
-function legacyCalcEstimate(provCount, idChecks, numLeases, selectedIds) {
-    const idCheckCount = idChecks
-        ? [idChecks.landlord, idChecks.property, idChecks.tenant].filter(Boolean).length
-        : 0;
 
-    let variableSecs = 0;
-    if (selectedIds && selectedIds.length > 0) {
-        // Weighted sum: each provision contributes flag_rate × 29s
-        selectedIds.forEach(pid => {
-            const rate = LEGACY_PROVISION_FLAG_RATES[pid] !== undefined
-                ? LEGACY_PROVISION_FLAG_RATES[pid]
-                : 0.85; // CUSTOM/ADDED provisions: assume high flag rate
-            variableSecs += rate * LEGACY_VARIABLE_COST_PER_FLAGGED;
-        });
-    } else {
-        // Fallback: no IDs known, use count × median flag rate (~0.35)
-        variableSecs = provCount * 0.35 * LEGACY_VARIABLE_COST_PER_FLAGGED;
-    }
 
-    // Gap repair buffer: when Gemini misses subsections, it runs sequential re-extraction
-    // calls (one per missed section, ~15s each). Complex leases commonly trigger 10-15 repairs.
-    // Add 120s buffer for full provision set, 60s for smaller selections.
-    const identitySecs = idCheckCount * 10;
-    const gapRepairBuffer = provCount >= 12 ? 120 : 60;
-    const parsingSecs = LEGACY_EXTRACTION_BASE_SECS + identitySecs;
-    const provisionSecs = variableSecs;
-    const bufferSecs = gapRepairBuffer;
-    const secsPerLease = Math.max(60, parsingSecs + provisionSecs + bufferSecs);
-    const minsPerLease = Math.ceil(secsPerLease / 60);
-    const totalMins = Math.max(1, numLeases * minsPerLease);
 
-    const provLabel = `${provCount} provision${provCount !== 1 ? "s" : ""}`;
-    const idLabel = idCheckCount > 0 ? ` + ${idCheckCount} identity check${idCheckCount !== 1 ? "s" : ""}` : "";
-    const leaseLabel = `${numLeases} lease${numLeases > 1 ? "s" : ""}`;
-    const detail = `${leaseLabel} \u00d7 ${provLabel}${idLabel}`;
 
-    return { mins: totalMins, detail, secsPerLease, parsingSecs, provisionSecs, bufferSecs };
-}
 
-function legacyFormatDurationShort(totalSecs) {
-    const secs = Math.max(0, Math.round(totalSecs || 0));
-    const mins = Math.floor(secs / 60);
-    const remSecs = secs % 60;
-    return mins > 0 ? `${mins}m ${remSecs}s` : `${remSecs}s`;
-}
 
-function legacyFormatDurationApprox(totalSecs) {
-    const mins = Math.max(1, Math.round((totalSecs || 0) / 60));
-    return mins === 1 ? "~1 minute" : `~${mins} minutes`;
-}
 
-function legacyGetProcessingStageCopy(stage, detail) {
-    const fallbackDetail = detail || "";
-    switch (Number(stage) || 0) {
-        case 1:
-            return {
-                headline: "Parsing and mapping the lease documents",
-                detail: fallbackDetail || "CAM is extracting the clause structure, including LP-00, and aligning the tenant lease to the standard form."
-            };
-        case 2:
-            return {
-                headline: "Checking clause patterns and rule triggers",
-                detail: fallbackDetail || "CAM is looking for structured signals that suggest a provision may deviate from the standard lease."
-            };
-        case 3:
-            return {
-                headline: "Reviewing provisions with multiple AI evaluators",
-                detail: fallbackDetail || "CAM is asking separate evaluators to compare provisions independently and explain what changed."
-            };
-        case 4:
-            return {
-                headline: "Testing evaluator agreement and challenge paths",
-                detail: fallbackDetail || "CAM is checking whether the finding holds up when evaluator conclusions are challenged."
-            };
-        case 5:
-            return {
-                headline: "Assessing business risk and severity",
-                detail: fallbackDetail || "CAM is turning the confirmed clause changes into practical risk levels and attorney action signals."
-            };
-        case 6:
-            return {
-                headline: "Finalizing findings and generating outputs",
-                detail: fallbackDetail || "CAM is locking in final verdicts, summaries, and deliverables."
-            };
-        default:
-            return {
-                headline: "Preparing the analysis",
-                detail: fallbackDetail || "CAM is starting the lease review workflow."
-            };
-    }
-}
 
 function renderProcessingOverview(job, tenants) {
     const panel = $("#processing-overview-status");
@@ -1515,17 +1448,21 @@ function renderProcessingOverview(job, tenants) {
         ? "1 contract still processing"
         : `${remainingCount} contracts still processing`;
 
+    // Step 254: Mode C runs a 3-stage pipeline (parse, extract, coverage);
+    // Mode A runs 6. Adjust the "X of Y stages" rollup so it reads correctly.
+    const _isModeCRollup = job && job.input_config && job.input_config.mode === "analyze";
+    const _stagesPerTenant = _isModeCRollup ? 3 : 6;
     const currentStageNum = leadTenant
         ? (Number(leadTenant.current_stage) || 1)
-        : (completedCount === totalCount ? 6 : 1);
+        : (completedCount === totalCount ? _stagesPerTenant : 1);
     const totalStageCount = leadTenant
-        ? (Number(leadTenant.total_stages) || 6)
-        : 6;
+        ? (Number(leadTenant.total_stages) || _stagesPerTenant)
+        : _stagesPerTenant;
     const primaryReadyTenant = completedTenants[0] || null;
-    const overallStagesTotal = totalCount * 6;
+    const overallStagesTotal = totalCount * _stagesPerTenant;
     const overallStagesDone = tenants.reduce((sum, tenant) => {
         const effectiveStatus = (tenant.status === "queued" && job.status === "processing") ? "processing" : tenant.status;
-        if (effectiveStatus === "completed") return sum + 6;
+        if (effectiveStatus === "completed") return sum + _stagesPerTenant;
         if (effectiveStatus === "processing") return sum + Math.max(0, Number(tenant.current_stage) || 0);
         return sum;
     }, 0);
@@ -1624,6 +1561,35 @@ function buildProcessingChecklistSteps(job, tenant) {
     const stageActive = (stageNum) => !isComplete && tenantStatus === "processing" && currentStage === stageNum;
     const stagePending = (stageNum) => !stageDone(stageNum) && !stageActive(stageNum);
 
+    // Step 254: Mode C runs a 3-stage pipeline (parse → extract → coverage).
+    // The backend progress_callback fires (1,3), (2,3), (3,3) — match that here
+    // so the checklist doesn't show Mode-A-only stages as pending forever.
+    const isModeC = job && job.input_config && job.input_config.mode === "analyze";
+    if (isModeC) {
+        const modeCSteps = [
+            {
+                stage: 1,
+                title: "Parse document",
+                meta: "Reading the uploaded lease and preparing it for schema-driven analysis.",
+            },
+            {
+                stage: 2,
+                title: "Extract provisions",
+                meta: "Extracting 18 issue-area clauses from the document (Gemini 3.1 Pro).",
+            },
+            {
+                stage: 3,
+                title: "Analyze coverage",
+                meta: "Assessing coverage, negative space, and exposure for each issue area.",
+            },
+        ];
+        return modeCSteps.map((step) => ({
+            ...step,
+            state: stageDone(step.stage) ? "complete" : stageActive(step.stage) ? "active" : "pending",
+            icon: stageDone(step.stage) ? "✓" : stageActive(step.stage) ? "●" : "○",
+        }));
+    }
+
     const steps = [
         {
             stage: 1,
@@ -1688,7 +1654,10 @@ function renderProcessingChecklist(job) {
         ? [tenants[leadTenantIndex], ...tenants.filter((_, idx) => idx !== leadTenantIndex)]
         : tenants.slice();
 
-    let html = `
+    // Step 254: Mode C has no reference lease — skip the reference-prep group.
+    const isModeC = job && job.input_config && job.input_config.mode === "analyze";
+
+    let html = isModeC ? "" : `
         <div class="processing-checklist-group ${referenceComplete ? "complete" : "current"}">
             <div class="processing-checklist-group-header">
                 <div>
@@ -1730,7 +1699,8 @@ function renderProcessingChecklist(job) {
             : status === "processing"
                 ? `${completedSteps}/${totalSteps} complete${provisionLabel ? ` • ${provisionLabel} in checklist — may grow during extraction` : ""}`
                 : `Queued${provisionLabel ? ` • ${provisionLabel} in checklist` : ""}`;
-        const badgeText = status === "completed" ? "Complete" : status === "processing" ? `Step ${Number(tenant.current_stage) || 1} of ${Number(tenant.total_stages) || 6}` : "Queued";
+        const defaultStages = isModeC ? 3 : 6;
+        const badgeText = status === "completed" ? "Complete" : status === "processing" ? `Step ${Number(tenant.current_stage) || 1} of ${Number(tenant.total_stages) || defaultStages}` : "Queued";
 
         html += `
             <div class="processing-checklist-group ${groupState}">
@@ -1793,36 +1763,84 @@ function stopEstimateCountdown() {
     }
 }
 
-function legacyGetTenantProgressFraction(tenant, jobStatus = "") {
-    const effectiveStatus = (tenant.status === "queued" && jobStatus === "processing")
-        ? "processing"
-        : tenant.status;
 
-    if (effectiveStatus === "completed" || effectiveStatus === "failed" || effectiveStatus === "cancelled") {
-        return 1;
+
+// Mode selector helpers (Step 253)
+function getSelectedMode() {
+    const checked = document.querySelector('input[name="analysis-mode"]:checked');
+    return (checked && checked.value) || "compare";
+}
+
+// Step 261: Perspective selector helpers. Returns null when no radio is
+// selected (the user MUST pick one — there is no default). Submit logic
+// uses the null return to gate submission and flash the card red.
+function getSelectedPerspective() {
+    const checked = document.querySelector('input[name="analysis-perspective"]:checked');
+    return (checked && checked.value) || null;
+}
+const PERSPECTIVE_LABELS = {
+    tenant:   "tenant",
+    landlord: "landlord",
+    neutral:  "neutral / commercially reasonable",
+};
+function getPerspectiveLabel(value) {
+    return PERSPECTIVE_LABELS[value] || value || "";
+}
+function handlePerspectiveChange() {
+    // Remove the red required-indicator the moment the user picks something.
+    const card = document.querySelector(".perspective-selector-card");
+    if (card) card.classList.remove("required-indicator");
+    updateSubmitState();
+}
+
+function handleModeChange() {
+    const mode = getSelectedMode();
+    const grid = document.querySelector(".upload-cols-grid");
+    if (grid) {
+        grid.classList.toggle("mode-analyze", mode === "analyze");
     }
-
-    if (effectiveStatus === "processing" && tenant.current_stage && tenant.total_stages) {
-        const stage = Number(tenant.current_stage) || 0;
-        const orderedStages = Object.keys(LEGACY_PROCESSING_STAGE_WEIGHTS)
-            .map(Number)
-            .sort((a, b) => a - b);
-        let completedWeight = 0;
-        orderedStages.forEach((s) => {
-            if (s < stage) completedWeight += LEGACY_PROCESSING_STAGE_WEIGHTS[s] || 0;
-        });
-        const currentWeight = LEGACY_PROCESSING_STAGE_WEIGHTS[stage] || 0.08;
-        // We do not have within-stage telemetry, so place active work roughly
-        // around the midpoint of the current stage instead of treating every
-        // stage as an equal 1/6 step.
-        return Math.max(0, Math.min(1, completedWeight + (currentWeight * 0.5)));
+    // Step 254: relabel the upload-page provisions sidebar when mode changes.
+    const sidebarTitle = document.querySelector(".provisions-panel-title");
+    const sidebarSubtitle = document.querySelector(".provisions-subtitle");
+    if (sidebarTitle) {
+        sidebarTitle.textContent = mode === "analyze"
+            ? "Issue Areas to Assess"
+            : "Provisions to Check";
     }
-
-    if (effectiveStatus === "processing") {
-        return 0.08;
+    if (sidebarSubtitle) {
+        sidebarSubtitle.textContent = mode === "analyze"
+            ? "These issue areas will be assessed for coverage in the uploaded document."
+            : "Select provisions to check, then click Review Leases. CAM also discovers additional provisions automatically.";
     }
+    // Step 263: relabel the tenant-leases card so the step number is correct.
+    // Mode A has Step 3 = reference lease, so tenant leases are Step 4.
+    // Mode C has no reference lease, so the single uploaded document is Step 3.
+    const tenantStepLabel = document.getElementById("tenant-step-label");
+    if (tenantStepLabel) {
+        tenantStepLabel.textContent = mode === "analyze"
+            ? "Step 3: Upload the lease to analyze"
+            : "Step 4: Upload Tenant Leases";
+    }
+    // Step 256 fix: keep Step 2 gating in sync with mode change.
+    // Mode C never has Step 1, so Step 2 must be active. Mode A re-gates on templateSummary.
+    if (mode === "analyze" || templateSummary || addMoreMode === "addmore") {
+        activateStep2();
+    } else {
+        deactivateStep2();
+    }
+    updateSubmitState();
+}
 
-    return 0;
+// Step 263: keep Mode-aware UI tweaks (currently: hide CAM Audit Trail tab in
+// Mode C since the multi-evaluator framework doesn't run there) in sync with
+// the active job. Toggles a `mode-c` class on <body>; CSS hides the audit tab
+// when set. Safe to call any time — if currentJobData isn't loaded yet, just
+// clears the class.
+function applyModeAwareTabVisibility() {
+    const isModeC = !!(currentJobData
+        && currentJobData.input_config
+        && currentJobData.input_config.mode === "analyze");
+    document.body.classList.toggle("mode-c", isModeC);
 }
 
 function updateSubmitState() {
@@ -1854,9 +1872,13 @@ function updateSubmitState() {
         return;
     }
 
+    // Step 253: Mode C (analyze) does not require a template file.
+    const analysisMode = getSelectedMode();
     const hasTemplate = templateFile !== null;
     const hasTenants  = tenantFiles.length > 0;
-    const filesReady  = hasTemplate && hasTenants;
+    const filesReady  = analysisMode === "analyze"
+        ? hasTenants
+        : (hasTemplate && hasTenants);
 
     // Check email confirmation match
     const emailVal = ($("#email-input") || {}).value || "";
@@ -1873,18 +1895,25 @@ function updateSubmitState() {
 
     const checkedCount = document.querySelectorAll("#provision-list input[type=checkbox]:checked").length;
     const provisionsReady = checkedCount > 0;
-    const ready = filesReady && emailOk && provisionsReady;
+    // Step 261: perspective is required — no default. Gate submit on it.
+    const perspectiveSelected = getSelectedPerspective() !== null;
+    const ready = filesReady && emailOk && provisionsReady && perspectiveSelected;
     btn.disabled = !ready;
 
     btn.textContent = "Review Leases";
 
     if (filesReady && !provisionsReady) {
         est.textContent = "Select at least one provision to analyze";
+    } else if (filesReady && provisionsReady && !perspectiveSelected) {
+        // Step 261: nudge the user to pick a perspective once everything else is ready.
+        est.textContent = "Choose a perspective above to continue";
     } else if (filesReady) {
         est.textContent = "";
+    } else if (analysisMode === "analyze" && tenantFiles.length === 0) {
+        est.textContent = "Upload at least one lease to analyze";
     } else if (!templateFile && tenantFiles.length === 0) {
         est.textContent = "";
-    } else if (!templateFile) {
+    } else if (!templateFile && analysisMode !== "analyze") {
         est.textContent = "Upload a reference lease to continue";
     } else {
         est.textContent = "Upload at least one tenant lease to continue";
@@ -2110,7 +2139,21 @@ async function handleSubmit() {
         }
 
         // ── Normal submission ──
-        if (!templateFile || tenantFiles.length === 0) return;
+        const submitMode = getSelectedMode();
+        // Step 261: perspective is mandatory. If the user somehow reached submit
+        // without picking one (e.g. via a stale enabled state), bail and red-flag
+        // the card. updateSubmitState should already prevent this on the happy path.
+        const submitPerspective = getSelectedPerspective();
+        if (!submitPerspective) {
+            const card = document.querySelector(".perspective-selector-card");
+            if (card) card.classList.add("required-indicator");
+            const wrap = document.getElementById("perspective-selector-wrapper");
+            if (wrap) wrap.scrollIntoView({ behavior: "smooth", block: "center" });
+            updateSubmitState();
+            return;
+        }
+        if (tenantFiles.length === 0) return;
+        if (submitMode !== "analyze" && !templateFile) return;
 
         // Step 138: Derive identity_check from inline checkboxes (replaces modal)
         let identityCheck = "clauses_only";
@@ -2125,7 +2168,14 @@ async function handleSubmit() {
         const _uploadEmail = $("#email-input").value.trim();
         formData.append("email", _uploadEmail);
         if (_uploadEmail) setJobEmail(_uploadEmail);
-        formData.append("template_file", templateFile);
+
+        // Step 253: in Mode C (analyze), template is optional/ignored.
+        formData.append("mode", submitMode);
+        // Step 261: persist perspective alongside mode so the backend can branch on it.
+        formData.append("perspective", submitPerspective);
+        if (submitMode !== "analyze" && templateFile) {
+            formData.append("template_file", templateFile);
+        }
 
         tenantFiles.forEach(f => {
             formData.append("tenant_files", f);
@@ -2813,8 +2863,71 @@ async function loadResults() {
     }
 }
 
+// Step 254: returns true iff this job's results are Mode C (analyze).
+// Uses input_config.mode from the job API (which Step 252 persists) and
+// falls back to the per-tenant results.mode for safety.
+function isJobModeC() {
+    if (currentJobData && currentJobData.input_config && currentJobData.input_config.mode === "analyze") {
+        return true;
+    }
+    if (currentResults && currentResults.tenants) {
+        const first = currentResults.tenants.find(t => t && t.results && t.results.mode);
+        if (first && first.results.mode === "analyze") return true;
+    }
+    return false;
+}
+
+// Step 261: returns the perspective the job was run with ("tenant" / "landlord"
+// / "neutral") or null for jobs created before Step 261. Used by results-page
+// renderers (AI Summary bar) and chat ui_context.
+function getJobPerspective() {
+    if (currentJobData && currentJobData.input_config && currentJobData.input_config.perspective) {
+        return currentJobData.input_config.perspective;
+    }
+    if (currentResults && currentResults.tenants) {
+        const first = currentResults.tenants.find(t => t && t.results && t.results.perspective);
+        if (first && first.results.perspective) return first.results.perspective;
+    }
+    return null;
+}
+
+// Step 261: small pill HTML for the results-page perspective indicator. Returns
+// empty string if no perspective is set (older jobs) so callers can drop it in
+// without conditional logic.
+function getPerspectiveIndicatorHtml() {
+    const p = getJobPerspective();
+    if (!p) return "";
+    const label = getPerspectiveLabel(p);
+    return '<span class="perspective-indicator" title="This run was analyzed from the ' + esc(label) + ' perspective.">Analyzed from <strong>' + esc(label) + '</strong> perspective</span>';
+}
+
+// Step 254: apply mode-specific UI rules. Step 257 expanded to hide Lease
+// Summary + Document Comparison sub-tabs in Mode C; the Coverage & Gaps tab
+// becomes the primary contract view, with Audit Trail kept for extraction info.
+// Called from renderResults() and kept idempotent so re-renders stay in sync.
+function applyModeSpecificUI() {
+    const isC = isJobModeC();
+    document.body.classList.toggle("mode-c", isC);
+    // Step 257: hide Mode-A-only sub-tab buttons.
+    // Lease Summary's empty state in Mode C reads "fully conforms with no deviations"
+    // — misleading because there is no template to deviate from. Document Comparison
+    // was hidden in Step 254 (no template = nothing to compare).
+    const findingsBtn = document.getElementById("contract-tab-findings");
+    const docviewBtn = document.getElementById("contract-tab-docview");
+    if (findingsBtn) findingsBtn.classList.toggle("hidden", isC);
+    if (docviewBtn) docviewBtn.classList.toggle("hidden", isC);
+    // Step 257: if persisted activeResultsTab points at a now-hidden tab, coerce
+    // to coverage. This catches users who switched mode mid-session, or whose
+    // sessionStorage retained "findings"/"docview" from a prior Mode A run.
+    if (isC && (activeResultsTab === "findings" || activeResultsTab === "docview")) {
+        activeResultsTab = "coverage";
+    }
+}
+
 function renderResults() {
     if (!currentResults || !currentResults.tenants) return;
+
+    applyModeSpecificUI();
 
     // Load job data if we don't have it
     if (!currentJobData) {
@@ -2823,6 +2936,7 @@ function renderResults() {
             .then(job => {
                 currentJobData = job;
                 if (job.expires_at) startExpiryCountdown(job.expires_at);
+                applyModeSpecificUI();  // Step 254: re-apply once mode is known
             })
             .catch(() => {});
     } else {
@@ -3403,51 +3517,15 @@ function setConformingConcernEntry(tenantIdx, pid, state, reason) {
     persistConformingConcerns();
 }
 
-function legacyIsManualEscalatedProvision(p, tenantIdx = currentTenantIndex) {
-    if (!p || p.provision_id === "LP-00" || p.final_verdict !== "CONFORMS") return false;
-    return getConformingConcernState(tenantIdx, p.provision_id) === "flag";
-}
 
-function legacyIsDeviationWorkflowProvision(p, tenantIdx = currentTenantIndex) {
-    if (!p || p.provision_id === "LP-00") return false;
-    return p.final_verdict === "DEVIATES" || p.final_verdict === "UNCLEAR" || isManualEscalatedProvision(p, tenantIdx);
-}
 
-function legacyBuildManualEscalatedProvision(p, tenantIdx = currentTenantIndex) {
-    const pid = p.provision_id || "";
-    const reason = getConformingConcernReason(tenantIdx, pid);
-    return {
-        ...p,
-        final_verdict: "DEVIATES",
-        severity: (p.severity || "MEDIUM").toUpperCase(),
-        risk_headline: reason || "Manually escalated from conforming provision",
-        challenge_details: reason || "Reviewer manually escalated this conforming clause into the deviation workflow.",
-        recommended_action: "Review this manually escalated clause using the same workflow tools as other deviations.",
-        manual_escalation: true,
-    };
-}
 
-function legacyGetDeviationWorkflowProvisions(provisions, tenantIdx = currentTenantIndex) {
-    const base = [];
-    (provisions || []).forEach((p) => {
-        if (!p || p.provision_id === "LP-00") return;
-        if (p.final_verdict === "DEVIATES" || p.final_verdict === "UNCLEAR") {
-            base.push(p);
-            return;
-        }
-        if (isManualEscalatedProvision(p, tenantIdx)) {
-            base.push(buildManualEscalatedProvision(p, tenantIdx));
-        }
-    });
-    return base;
-}
 
-function legacyGetDocviewWorkflowProvisions(provisions, tenantIdx = currentTenantIndex) {
-    return (provisions || []).map((p) => {
-        if (isManualEscalatedProvision(p, tenantIdx)) return buildManualEscalatedProvision(p, tenantIdx);
-        return p;
-    });
-}
+
+
+
+
+
 
 function getDocviewDomIdSuffix(pid, tenantIdx) {
     return `${tenantIdx}-${String(pid || "").replace(/[^a-zA-Z0-9_-]/g, "_")}`;
@@ -3475,54 +3553,15 @@ function getTenantDeviationWorkflowItems(tenantIdx = currentTenantIndex) {
     return getDeviationWorkflowProvisions(getTenantRawProvisions(tenantIdx), tenantIdx);
 }
 
-function legacyGetResultsScrollContainer() {
-    return document.getElementById("results-content") || document.querySelector(".results-content");
-}
 
-function legacyGetContractDetailStickyHeight() {
-    const stickyShell = document.querySelector(".contract-detail-sticky-shell");
-    return stickyShell ? stickyShell.getBoundingClientRect().height : 0;
-}
 
-function legacyScrollResultsTargetIntoView(target, extraOffset = 12) {
-    if (!target) return;
-    const resultsContent = legacyGetResultsScrollContainer();
-    const stickyHeight = legacyGetContractDetailStickyHeight();
-    if (resultsContent) {
-        const panelRect = resultsContent.getBoundingClientRect();
-        const targetRect = target.getBoundingClientRect();
-        const nextTop = resultsContent.scrollTop + (targetRect.top - panelRect.top) - stickyHeight - extraOffset;
-        resultsContent.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
-        return;
-    }
-    const top = window.scrollY + target.getBoundingClientRect().top - stickyHeight - extraOffset;
-    window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
-}
 
-function legacyFlashResultsTarget(target, duration = 1500) {
-    if (!target) return;
-    target.classList.add("highlight-flash");
-    setTimeout(() => target.classList.remove("highlight-flash"), duration);
-}
 
-function legacyWaitForResultsTarget(findFn, options) {
-    const opts = options || {};
-    const attempts = opts.attempts || 14;
-    const delay = opts.delay || 80;
-    return new Promise((resolve) => {
-        let remaining = attempts;
-        const tick = () => {
-            const target = findFn();
-            if (target || remaining <= 0) {
-                resolve(target || null);
-                return;
-            }
-            remaining -= 1;
-            setTimeout(tick, delay);
-        };
-        tick();
-    });
-}
+
+
+
+
+
 
 function ensureSummaryProvisionVisible(pid) {
     let targetCard = document.getElementById(`dev-${pid}`);
@@ -3633,145 +3672,11 @@ function serializeProvisionForAuditExport(p, tenantIdx) {
     };
 }
 
-function legacyBuildDocviewDraftDecisionControls(provision, tenantIdx) {
-    if (!provision || provision.final_verdict !== "DEVIATES") return "";
-    const pid = provision.provision_id || "";
-    const dec = getFinalDraftDecision(tenantIdx, pid);
-    const activeChoice = dec ? dec.choice : null;
-    const hasSavedCustom = activeChoice === "custom" && dec && dec.text;
-    const modifyLabel = hasSavedCustom ? "Keep Modified ✓" : "Modify in Summary…";
-    return `
-        <span class="fd-decision-label">Draft Decision:</span>
-        <button class="fd-btn${activeChoice === 'template' ? ' fd-btn-active' : ''}" data-choice="template"
-            onclick="window.CAM.fdChooseSimple(${tenantIdx}, '${esc(pid)}', 'template'); event.stopPropagation();">
-            Keep Reference Draft
-        </button>
-        <button class="fd-btn${activeChoice === 'tenant' ? ' fd-btn-active' : ''}" data-choice="tenant"
-            onclick="window.CAM.fdChooseSimple(${tenantIdx}, '${esc(pid)}', 'tenant'); event.stopPropagation();">
-            Keep Tenant Draft
-        </button>
-        <button class="fd-btn${activeChoice === 'custom' ? ' fd-btn-active' : ''}" data-choice="custom"
-            onclick="window.CAM.openDocviewModify(${tenantIdx}, '${esc(pid)}'); event.stopPropagation();">
-            ${modifyLabel}
-        </button>
-    `;
-}
 
-function legacyBuildDocviewDeviationControls(provision, tenantIdx) {
-    if (!provision) return "";
-    const pid = provision.provision_id || "";
-    const suffix = getDocviewDomIdSuffix(pid, tenantIdx);
-    const resKey = `${tenantIdx}:${pid}`;
-    const res = resolutionState[resKey] || { status: "open", notes: [] };
-    const resStatus = res.status || "open";
-    const resNotes = res.notes || [];
-    const noteCount = resNotes.length;
-    const noteCountHtml = noteCount > 0 ? `<span class="res-note-count">${noteCount} note${noteCount !== 1 ? "s" : ""}</span>` : "";
-    const statusDefs = [
-        { key: "open", label: "Open", cls: "res-open" },
-        { key: "in_review", label: "In Review", cls: "res-inreview" },
-        { key: "escalated", label: "Escalate to Client", cls: "res-escalated" },
-        { key: "not_a_deviation", label: "Not a Deviation", cls: "res-notdeviation" },
-        { key: "resolved", label: "Resolved", cls: "res-resolved" },
-    ];
-    const statusPillsHtml = statusDefs.map((s) =>
-        `<button class="res-pill ${s.cls}${resStatus === s.key ? " res-pill-active" : ""}"
-            data-status="${s.key}" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}"
-            onclick="window.CAM.setResolutionStatus('${esc(pid)}', ${tenantIdx}, '${s.key}', this)">
-            ${s.label}
-        </button>`
-    ).join("");
 
-    return `
-        <div class="resolution-bar docview-resolution-bar" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}">
-            <div class="res-status-row finding-workflow-row">
-                <div class="workflow-group workflow-group-status">
-                    <span class="res-label">Status:</span>
-                    <div class="res-pills">${statusPillsHtml}</div>
-                </div>
-                <div class="workflow-divider" aria-hidden="true"></div>
-                <div class="workflow-group workflow-group-decision">
-                    ${buildDocviewDraftDecisionControls(provision, tenantIdx)}
-                </div>
-                <div class="workflow-divider" aria-hidden="true"></div>
-                <div class="workflow-group workflow-group-tools">
-                    <span class="res-tools-label">Tools:</span>
-                    <button class="res-notes-toggle" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}"
-                        onclick="window.CAM.toggleDocviewResolutionNotes('${esc(pid)}', ${tenantIdx}); event.stopPropagation();">
-                        📝 Notes${noteCountHtml ? ` ${noteCountHtml}` : ""}
-                    </button>
-                    <button class="res-advisor-btn" onclick="window.CAM.openResolutionAdvisor('${esc(pid)}', ${tenantIdx}); event.stopPropagation();">
-                        💡 AI Advisor
-                    </button>
-                </div>
-                <div class="workflow-divider workflow-divider-spacer" aria-hidden="true"></div>
-                <div class="workflow-open-actions workflow-group">
-                    <a class="docview-link card-docview-link card-docview-link--btn"
-                       href="#"
-                       onclick="window.CAM.openDocviewSummary(${tenantIdx}, '${esc(pid)}'); return false;">
-                        Open Lease Summary
-                    </a>
-                    <a class="card-audit-link card-audit-link--btn"
-                       href="#"
-                       onclick="window.CAM.jumpToAuditProvision(${tenantIdx}, '${esc(pid)}'); return false;"
-                       title="View full CAM analysis in Audit Trail">
-                        Open CAM Audit Trail
-                    </a>
-                    ${(function(){const _cca=((currentResults.tenants[tenantIdx]||{}).results||{}).coverage_assessment||[];const _cc=_cca.find(function(a){return a.issue_area_id===pid;});if(!_cc||(_cc.coverage_state==='covered')||(_cc.coverage_state==='not_applicable')) return '';return '<a class="card-docview-link card-docview-link--btn" href="#" data-cov-pid="' + esc(pid) + '" onclick="window.CAM.jumpToCoverageProvision(this.dataset.covPid); return false;" title="Jump to Coverage &amp; Gaps">&#9680; Coverage Gap</a>\'; return false;" title="View coverage gap">\u25D1 Coverage Gap</a>';})()}
-                </div>
-            </div>
-            <div class="res-notes-panel hidden docview-res-notes-panel" id="docview-res-notes-${suffix}">
-                ${resNotes.map((n, noteIdx) => `
-                    <div class="res-note-entry">
-                        <span class="res-note-ts">${formatResTimestamp(n.timestamp)}</span>
-                        <span class="res-note-text">${esc(n.text)}</span>
-                        <button class="res-note-delete" onclick="window.CAM.deleteDocviewResolutionNote('${esc(pid)}', ${tenantIdx}, ${noteIdx}); event.stopPropagation();">Delete</button>
-                    </div>`).join("")}
-                <div class="res-note-input-row">
-                    <textarea class="res-note-input" id="docview-res-input-${suffix}"
-                        placeholder="Add a note…" rows="2"></textarea>
-                    <button class="res-note-save-btn"
-                        onclick="window.CAM.saveDocviewResolutionNote('${esc(pid)}', ${tenantIdx})">Save</button>
-                </div>
-            </div>
-        </div>
-    `;
-}
 
-function legacyBuildDocviewConformingControls(provision, tenantIdx) {
-    if (!provision || !provision.provision_id || provision.provision_id === "LP-00") return "";
-    const pid = provision.provision_id;
-    const concernState = getConformingConcernState(tenantIdx, pid);
-    return `
-        <div class="conforming-concern-bar docview-concern-bar">
-            <span class="conforming-concern-label">Mark:</span>
-            <button class="conforming-concern-btn${concernState === 'concern' ? ' concern-active' : ''}"
-                onclick="window.CAM.handleConformingConcernAction('${esc(pid)}', 'concern'); event.stopPropagation();">
-                📝 Note a concern
-            </button>
-            <button class="conforming-concern-btn${concernState === 'flag' ? ' flag-active' : ''}"
-                onclick="window.CAM.handleConformingConcernAction('${esc(pid)}', 'flag'); event.stopPropagation();">
-                ⚠ Escalate as Deviation
-            </button>
-            ${concernState !== 'none' ? `<button class="conforming-concern-btn"
-                onclick="window.CAM.handleConformingConcernAction('${esc(pid)}', 'clear'); event.stopPropagation();">✕ Clear</button>` : ""}
-            <div class="workflow-open-actions workflow-group">
-                <a class="docview-link card-docview-link card-docview-link--btn"
-                   href="#"
-                   onclick="window.CAM.openDocviewSummary(${tenantIdx}, '${esc(pid)}'); return false;">
-                    Open Lease Summary
-                </a>
-                <a class="card-audit-link card-audit-link--btn"
-                   href="#"
-                   onclick="window.CAM.jumpToAuditProvision(${tenantIdx}, '${esc(pid)}'); return false;"
-                   title="View full CAM analysis in Audit Trail">
-                    Open CAM Audit Trail
-                </a>
-                ${(function(){const _cca=((currentResults.tenants[tenantIdx]||{}).results||{}).coverage_assessment||[];const _cc=_cca.find(function(a){return a.issue_area_id===pid;});if(!_cc||(_cc.coverage_state==='covered')||(_cc.coverage_state==='not_applicable')) return '';return '<a class="card-docview-link card-docview-link--btn" href="#" data-cov-pid="' + esc(pid) + '" onclick="window.CAM.jumpToCoverageProvision(this.dataset.covPid); return false;" title="Jump to Coverage &amp; Gaps">&#9680; Coverage Gap</a>\'; return false;" title="View coverage gap">\u25D1 Coverage Gap</a>';})()}
-            </div>
-        </div>
-    `;
-}
+
+
 
 async function scrollToTenant(index) {
     // Step 116: Navigate to contract detail via Contracts tab
@@ -3811,34 +3716,9 @@ function openDocviewSummary(tenantIdx, pid) {
     });
 }
 
-function legacyUpdateDocviewResolutionNoteCount(pid, tenantIdx) {
-    const key = `${tenantIdx}:${pid}`;
-    const count = ((resolutionState[key] || {}).notes || []).length;
-    const toggleBtn = document.querySelector(`.docview-resolution-bar .res-notes-toggle[data-pid="${pid}"][data-tenant-idx="${tenantIdx}"]`);
-    if (!toggleBtn) return;
-    if (count > 0) {
-        toggleBtn.innerHTML = `📝 Notes <span class="res-note-count">${count} note${count > 1 ? "s" : ""}</span>`;
-    } else {
-        toggleBtn.innerHTML = `📝 Notes`;
-    }
-}
 
-function legacyRenderDocviewResolutionNotesPanel(pid, tenantIdx) {
-    const suffix = getDocviewDomIdSuffix(pid, tenantIdx);
-    const panel = document.getElementById(`docview-res-notes-${suffix}`);
-    if (!panel) return;
-    const key = `${tenantIdx}:${pid}`;
-    const notes = ((resolutionState[key] || {}).notes || []);
-    const inputRow = panel.querySelector(".res-note-input-row");
-    panel.querySelectorAll(".res-note-entry").forEach((el) => el.remove());
-    notes.forEach((note, noteIdx) => {
-        const noteDiv = document.createElement("div");
-        noteDiv.className = "res-note-entry";
-        noteDiv.innerHTML = `<span class="res-note-ts">${formatResTimestamp(note.timestamp)}</span><span class="res-note-text">${esc(note.text)}</span><button class="res-note-delete" onclick="window.CAM.deleteDocviewResolutionNote('${esc(pid)}', ${tenantIdx}, ${noteIdx}); event.stopPropagation();">Delete</button>`;
-        if (inputRow) panel.insertBefore(noteDiv, inputRow);
-        else panel.appendChild(noteDiv);
-    });
-}
+
+
 
 function updateDocviewResolutionNoteCount(pid, tenantIdx) {
     const key = `${tenantIdx}:${pid}`;
@@ -4101,6 +3981,16 @@ async function renderAISummaryBar() {
     if (!bar || !currentResults || !currentResults.tenants) return;
 
     bar.classList.remove("hidden");
+
+    // Step 258: Mode C analyzes a single document against an issue-area schema
+    // — there is no template, so deviation-based summary copy doesn't apply.
+    // Short-circuit to a coverage-oriented summary before the Mode A pipeline
+    // runs (which would either render nothing or blow up on missing severity
+    // counts in the Mode C results shape).
+    if (isJobModeC()) {
+        renderModeCAISummaryBar(bar);
+        return;
+    }
 
     // ── Stats line ──
     const tenants = currentResults.tenants;
@@ -4401,6 +4291,63 @@ function renderCrossTenantMatrix() {
             jumpToFinding(pid);
         });
     });
+}
+
+// Step 258: Mode C variant of the AI Summary bar. Aggregates coverage_assessment
+// across all tenants in the job and renders a four-bucket pill row that mirrors
+// the Coverage & Gaps tab's framing (covered / need attention / worth reviewing /
+// not applicable). Synchronous — no model call — because all data is already on
+// currentResults; the Mode A version makes an LLM call which is overkill here.
+function renderModeCAISummaryBar(bar) {
+    if (!bar) return;
+    const tenants = (currentResults && currentResults.tenants) || [];
+
+    let totalAreas = 0;
+    let covered = 0;
+    let needAttention = 0;
+    let worthReview = 0;
+    let notApplicable = 0;
+
+    tenants.forEach(function(t) {
+        const ca = (t && t.results && t.results.coverage_assessment) || [];
+        ca.forEach(function(a) {
+            totalAreas++;
+            const state = a.coverage_state;
+            const pclass = a.partial_class;
+            if (state === "covered") {
+                covered++;
+            } else if (state === "not_applicable") {
+                notApplicable++;
+            } else if (state === "partial" && pclass === "partial_review") {
+                worthReview++;
+            } else {
+                // covered_unfavorable, missing, partial_material, or unknown partial
+                needAttention++;
+            }
+        });
+    });
+
+    const docCount = tenants.length;
+    const meta = docCount === 1
+        ? `${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed`
+        : `${docCount} documents — ${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed`;
+
+    bar.innerHTML = `
+        <div class="ai-summary-modec">
+            <div class="ai-summary-modec-headline">
+                <strong>Coverage Snapshot</strong>
+                <span class="ai-summary-modec-meta">${esc(meta)}</span>
+                ${getPerspectiveIndicatorHtml()}
+            </div>
+            <div class="ai-summary-modec-stats">
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--ok"><strong>${covered}</strong> <span>covered</span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--attention"><strong>${needAttention}</strong> <span>need attention</span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--review"><strong>${worthReview}</strong> <span>worth reviewing</span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${notApplicable}</strong> <span>not applicable</span></span>
+            </div>
+            <div class="ai-summary-modec-cta">Open <strong>Coverage &amp; Gaps</strong> on any contract for the full breakdown.</div>
+        </div>
+    `;
 }
 
 // ── Step 132: Deal Brief Banner on Analysis Overview ──
@@ -5308,6 +5255,16 @@ function renderContractClauseFilterBar(provisions) {
             &#128196; Download Working Draft
         </button>`
         : '';
+    // Step 255: Aligned Provision Comparison View — Mode A only.
+    // Server omits has_comparison_view in Mode C, so the button never appears
+    // there even before the isJobModeC() guard kicks in.
+    const comparisonButton = tenant && tenant.has_comparison_view && !isJobModeC()
+        ? `<button type="button" class="btn btn-secondary btn-sm contract-comparison-btn"
+            title="Open the Aligned Provision Comparison PDF — view template and tenant clause-by-clause"
+            onclick="window.CAM.downloadFile('/api/jobs/${currentJobId}/results/${currentTenantIndex}/comparison')">
+            &#128196; Aligned Provision Comparison
+        </button>`
+        : '';
 
     // Provision filter dropdown
     const provEntries = [...available.provisions.entries()].sort(function(a, b) {
@@ -5344,6 +5301,7 @@ function renderContractClauseFilterBar(provisions) {
             <div class="contract-clause-filter-toprow">
                 <div class="contract-clause-filter-actions">
                     ${annotatedButton}
+                    ${comparisonButton}
                     <button type="button" class="fd-generate-btn contract-final-draft-btn" id="fd-generate-btn" disabled
                         onclick="window.CAM.generateFinalDraft()">Generate Final Draft \u2193</button>
                 </div>
@@ -6311,7 +6269,7 @@ function renderDeviations(provisions, modelsUsed, tenantIdx, discoveries) {
                    title="View full CAM analysis in Audit Trail">
                     Open CAM Audit Trail
                 </a>
-                ${(function(){const _cca=((currentResults.tenants[tenantIdx]||{}).results||{}).coverage_assessment||[];const _cc=_cca.find(function(a){return a.issue_area_id===pid;});if(!_cc||(_cc.coverage_state==='covered')||(_cc.coverage_state==='not_applicable')) return '';return '<a class="card-docview-link card-docview-link--btn" href="#" data-cov-pid="' + esc(pid) + '" onclick="window.CAM.jumpToCoverageProvision(this.dataset.covPid); return false;" title="Jump to Coverage &amp; Gaps">&#9680; Coverage Gap</a>\'; return false;" title="View coverage gap">\u25D1 Coverage Gap</a>';})()}
+                ${window.CAMShared.buildCoverageGapLink(pid, ((currentResults.tenants[tenantIdx]||{}).results||{}).coverage_assessment, esc)}
             </div>
         `;
 
@@ -7062,6 +7020,12 @@ function setDocviewStickyControlsVisible(isVisible) {
 }
 
 function switchResultsTab(tab) {
+    // Step 254: Document Comparison is hidden in Mode C; redirect to Coverage & Gaps
+    // if restoreResultsViewState or a stale link tries to open it.
+    if (tab === "docview" && isJobModeC()) {
+        tab = "coverage";
+    }
+
     // Guard — if no contract is open:
     // Audit Trail can show the full run view; other tabs need a contract
     if (!contractDetailOpen) {
@@ -8999,7 +8963,32 @@ function renderAnalysisChatWelcome() {
 
     const isScoped = chatScopeTenantIdx !== "" || chatScopeProvisionId !== "";
     const isDraftMode = isScoped && chatStarterMode === "draft";
-    const starters = isDraftMode
+    // Step 259: Mode C uses a coverage/issue-area mental model, not deviation/template.
+    // Branch starters by mode first so the suggestions match what the user is actually
+    // looking at — there are no "deviations" or "reference language" in Mode C.
+    const isModeC = (typeof isJobModeC === 'function') && isJobModeC();
+    const starters = isModeC
+        ? (isDraftMode
+            ? [
+                "Draft language to address this gap",
+                "What standard language should I push for here?",
+                "Make this more tenant-friendly",
+                "Draft a fallback if the landlord pushes back",
+            ]
+            : isScoped
+            ? [
+                "What's the coverage status of this clause?",
+                "Why is this flagged?",
+                "What language should I negotiate for?",
+                "What's the risk if I leave this as-is?",
+            ]
+            : [
+                "Where does this lease have coverage gaps?",
+                "Which issue areas need attention first?",
+                "What clauses are missing or unfavorable?",
+                "What should I push back on?",
+            ])
+        : (isDraftMode
         ? [
             "What is CAM trying to fix in this provision?",
             "Draft balanced replacement language for this provision",
@@ -9021,7 +9010,7 @@ function renderAnalysisChatWelcome() {
             "Which findings should I review first?",
             "What should I do next with these results?",
             "What are the biggest negotiation risks?",
-        ];
+        ]);
 
     const welcome = document.createElement("div");
     welcome.className = "chat-analysis-welcome";
@@ -10596,6 +10585,30 @@ function renderAuditTrail(allTenants) {
         return;
     }
     const r = tenant.results;
+
+    // Step 254: Mode C skips the evaluator/challenger/severity stages entirely.
+    // Replace the em-dash "missing data" appearance with an explanatory paragraph
+    // that frames the absence as intentional.
+    if (r.mode === "analyze") {
+        tab.innerHTML = `
+            <div class="audit-mode-c-message">
+                <div class="audit-mode-c-heading">Analyze-mode audit</div>
+                <p>
+                    This section shows provision-by-provision evaluator outputs, challenge reviews, and
+                    severity assignments. These stages run only in <strong>Compare mode</strong>, where
+                    findings are produced by deviation detection against a reference template.
+                </p>
+                <p>
+                    In <strong>Analyze mode</strong>, the analysis path is schema-driven coverage
+                    assessment. Findings for this run are on the
+                    <a href="#" onclick="window.CAM.switchResultsTab &amp;&amp; window.CAM.switchResultsTab('coverage'); return false;">
+                    Coverage &amp; Gaps</a> tab.
+                </p>
+            </div>
+        `;
+        return;
+    }
+
     let provisions = getTenantWorkflowProvisions(currentTenantIndex);
     const modelsUsed = r.models_used || {};
 
@@ -12127,12 +12140,185 @@ function setResultsContentDetailMode(enabled) {
     resultsContent.classList.toggle('results-content-detail', !!enabled);
 }
 
+// Step 259: Mode C variant of the Run Snapshot card grid. Buckets each tenant
+// by worst coverage tier (attention > review > ok) and emits cards using the
+// .snapshot-card classes plus a Mode-C-specific .snapshot-card-modec marker.
+// The Mode A toolbar is hidden via .hidden because its severity/confidence/
+// status filters don't apply when there are no deviations to filter.
+function renderModeCRunSnapshot(container) {
+    const tenants = (currentResults && currentResults.tenants) || [];
+
+    var toolbarBar = document.getElementById('snapshot-toolbar-bar');
+    if (toolbarBar) {
+        toolbarBar.classList.add('hidden');
+        toolbarBar.innerHTML = '';
+    }
+
+    if (tenants.length === 0) {
+        container.innerHTML = '<div class="snapshot-no-results">No leases analyzed yet</div>';
+        return;
+    }
+
+    // Build per-tenant coverage rollup
+    const _covRes = window._covResStateRef || {};
+    const tenantData = tenants.map(function(t, i) {
+        const ca = (t && t.results && t.results.coverage_assessment) || [];
+        let covered = 0, attention = 0, review = 0, na = 0;
+        const attentionItems = [];
+        const reviewItems = [];
+
+        ca.forEach(function(a) {
+            const state = a.coverage_state;
+            const pclass = a.partial_class;
+            if (state === "covered") {
+                covered++;
+            } else if (state === "not_applicable") {
+                na++;
+            } else if (state === "partial" && pclass === "partial_review") {
+                review++;
+                reviewItems.push(a);
+            } else {
+                attention++;
+                attentionItems.push(a);
+            }
+        });
+
+        const total = covered + attention + review + na;
+        const name = formatTenantName(t.filename) || ("Lease " + (i + 1));
+        let tier, action, actionClass;
+        if (attention > 0) {
+            tier = 'problems';
+            action = '\u26A0 Issues to Address';
+            actionClass = 'action-badge-critical';
+        } else if (review > 0) {
+            tier = 'review';
+            action = '\u00B7 Review Recommended';
+            actionClass = 'action-badge-medium';
+        } else if (total > 0) {
+            tier = 'ok';
+            action = '\u2713 Adequate Coverage';
+            actionClass = 'action-badge-clear';
+        } else {
+            tier = 'empty';
+            action = 'No analysis';
+            actionClass = 'res-badge-empty';
+        }
+
+        return {
+            t: t, i: i, name: name, total: total,
+            covered: covered, attention: attention, review: review, na: na,
+            attentionItems: attentionItems, reviewItems: reviewItems,
+            tier: tier, action: action, actionClass: actionClass
+        };
+    });
+
+    // Sort: attention first, then review, then ok
+    const tierOrder = { problems: 0, review: 1, ok: 2, empty: 3 };
+    tenantData.sort(function(a, b) {
+        const tDiff = (tierOrder[a.tier] || 99) - (tierOrder[b.tier] || 99);
+        if (tDiff !== 0) return tDiff;
+        if (b.attention !== a.attention) return b.attention - a.attention;
+        return b.review - a.review;
+    });
+
+    let html = '<div class="snapshot-grid">';
+    tenantData.forEach(function(d) {
+        const activeClass = (snapshotActiveIndex === d.i) ? ' contract-card-active' : '';
+        const nameEsc = esc(d.name);
+
+        const countParts = [];
+        if (d.covered > 0) countParts.push('<span class="modec-count modec-count-ok"><strong>' + d.covered + '</strong> covered</span>');
+        if (d.attention > 0) countParts.push('<span class="modec-count modec-count-attn"><strong>' + d.attention + '</strong> need attention</span>');
+        if (d.review > 0) countParts.push('<span class="modec-count modec-count-review"><strong>' + d.review + '</strong> worth reviewing</span>');
+        if (d.na > 0) countParts.push('<span class="modec-count modec-count-na"><strong>' + d.na + '</strong> N/A</span>');
+        const countLine = countParts.length > 0 ? '<div class="modec-count-row">' + countParts.join('') + '</div>' : '';
+
+        let chipRow = '';
+        const issueItems = d.attentionItems.concat(d.reviewItems).slice(0, 6);
+        if (issueItems.length > 0) {
+            chipRow = '<div class="overview-chip-row">';
+            issueItems.forEach(function(a) {
+                const pid = a.issue_area_id || '';
+                const shortName = (a.issue_area_name || pid).replace(/^LP-\d{2}\s*/, '');
+                const label = pid + (shortName ? ' ' + shortName : '');
+                let chipCls = 'overview-chip-medium';
+                if (a.coverage_state === 'covered_unfavorable' || a.coverage_state === 'missing' || a.partial_class === 'partial_material') {
+                    chipCls = 'overview-chip-high';
+                }
+                const titleStmt = (a.exposure_statement || '').replace(/"/g, '&quot;');
+                chipRow += '<span class="overview-chip ' + chipCls + ' chip-jumpable-modec" data-tenant="' + d.i + '" data-pid="' + esc(pid) + '" title="' + esc(titleStmt) + '">' + esc(label) + '</span>';
+            });
+            const remaining = (d.attentionItems.length + d.reviewItems.length) - issueItems.length;
+            if (remaining > 0) {
+                chipRow += '<span class="overview-chip overview-chip-medium">+' + remaining + ' more</span>';
+            }
+            chipRow += '</div>';
+        }
+
+        let bodyMsg = '';
+        if (d.tier === 'ok') {
+            bodyMsg = 'All ' + d.total + ' issue area' + (d.total === 1 ? '' : 's') + ' have adequate coverage';
+        } else if (d.tier === 'empty') {
+            bodyMsg = 'No coverage analysis available';
+        }
+        const bodyLine = bodyMsg ? '<div class="snapshot-card-body snapshot-card-body-clean">' + esc(bodyMsg) + '</div>' : '';
+
+        html += '<div class="snapshot-card snapshot-card-modec snapshot-card-modec-' + d.tier + activeClass + '" data-tenant="' + d.i + '">'
+            + '<div class="snapshot-card-header">'
+            + '<span class="snapshot-card-name">' + nameEsc + '</span>'
+            + '<div class="snapshot-card-badges">'
+            + '<span class="snapshot-action-badge ' + d.actionClass + '">' + d.action + '</span>'
+            + '</div>'
+            + '</div>'
+            + countLine
+            + chipRow
+            + bodyLine
+            + '<div class="snapshot-card-footer">'
+            + '<button class="snapshot-open-btn" data-tenant="' + d.i + '">Open Contract \u2192</button>'
+            + '</div>'
+            + '</div>';
+    });
+    html += '</div>';
+
+    container.innerHTML = html;
+
+    // Wire "Open Contract" buttons
+    container.querySelectorAll('.snapshot-open-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var idx = parseInt(btn.dataset.tenant, 10);
+            openContractDetail(idx);
+        });
+    });
+
+    // Wire issue chips: open contract → jump to that issue area on the Coverage tab
+    container.querySelectorAll('.chip-jumpable-modec[data-pid]').forEach(function(chip) {
+        chip.addEventListener('click', async function(e) {
+            e.stopPropagation();
+            var idx = parseInt(chip.dataset.tenant, 10);
+            var pid = chip.dataset.pid;
+            await openContractDetail(idx);
+            if (typeof jumpToCoverageProvision === 'function') {
+                jumpToCoverageProvision(pid);
+            }
+        });
+    });
+}
+
 function renderRunSnapshot() {
     const container = document.getElementById("snapshot-cards");
     if (!container || !currentResults || !currentResults.tenants) return;
     // Ensure the contracts tab content is visible
     var contractsTab = document.getElementById('contracts-tab-content');
     if (contractsTab) contractsTab.classList.remove('hidden');
+
+    // Step 259: Mode C — branch BEFORE building Mode A cards/toolbar.
+    // Mode A's filters (severity/confidence/status) and chip layout don't fit
+    // Mode C; the coverage-tier variant emits its own grid + hides the toolbar.
+    if (isJobModeC()) {
+        renderModeCRunSnapshot(container);
+        return;
+    }
 
     const tenants = currentResults.tenants;
     function getSnapshotSeverityRank(severity) {
@@ -12839,6 +13025,17 @@ function gatherUploadContext() {
 }
 
 function getResultsChatUIViewMap() {
+    // Step 259: Mode C has no template, so findings/docview don't render and
+    // shouldn't appear as available views to the chat backend. Coverage & Gaps
+    // is the primary contract view.
+    if (typeof isJobModeC === 'function' && isJobModeC()) {
+        return [
+            { id: "overview", label: "Run Synopsis", purpose: "Portfolio-level coverage snapshot across all analyzed leases" },
+            { id: "contracts", label: "Leases", purpose: "Lease cards with coverage tier and entry point" },
+            { id: "coverage", label: "Coverage & Gaps", purpose: "Per-issue-area coverage status, exposure statements, and gap analysis" },
+            { id: "audittrail", label: "CAM Audit Trail", purpose: "Per-clause extraction confidence and analysis trace" }
+        ];
+    }
     return [
         { id: "overview", label: "Run Synopsis", purpose: "Portfolio-level summary across all analyzed leases" },
         { id: "contracts", label: "Contracts", purpose: "Contract cards and contract-level entry point" },
@@ -12878,6 +13075,13 @@ function buildResultsChatUIContext() {
 
     return {
         screen: "results",
+        // Step 259: surface job mode so the chat backend can adapt prompting/framing.
+        // "analyze" = Mode C (single-doc coverage), "compare" = Mode A (template diff).
+        mode: (typeof isJobModeC === 'function' && isJobModeC()) ? "analyze" : "compare",
+        // Step 261: surface perspective so the chat backend can adapt its framing
+        // (tenant / landlord / neutral). Older jobs without this field send null,
+        // which the backend treats as "perspective not specified."
+        perspective: getJobPerspective(),
         active_top_tab: { id: topTabId, label: topTabLabel },
         active_results_tab: activeResultsTab ? {
             id: activeResultsTab,
@@ -14023,6 +14227,7 @@ window.CAM = {
     toggleContractSummaryCollapse,
     toggleSection,
     switchToDocview: function() { switchResultsTab("docview"); },
+    switchResultsTab,
     viewCancelledResults: async function() {
         try {
             await loadResults();

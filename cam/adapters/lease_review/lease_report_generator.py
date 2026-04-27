@@ -145,8 +145,12 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                 return M
             return cy
 
+        # Mode detection (Step 254). Mode C produces a coverage-first cover page.
+        is_mode_c = results.get("mode") == "analyze"
+
         # -- Header --
-        y = add_text(page, M, y, "CAM Lease Analysis Report", size=18, bold=True, color=(0.1, 0.2, 0.36))
+        header_title = "CAM Coverage Analysis" if is_mode_c else "CAM Lease Analysis Report"
+        y = add_text(page, M, y, header_title, size=18, bold=True, color=(0.1, 0.2, 0.36))
         y += 4
         tenant_file = results.get("tenant_file", "")
         date_str = datetime.now().strftime("%B %d, %Y")
@@ -231,8 +235,118 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                                 y = add_text(page, M + 10, y, xref_text, size=7.5, color=(0.76, 0.27, 0.05))
             y += 10
 
-        # -- Findings --
-        deviations = [p for p in provisions if p.get("final_verdict") == "DEVIATES"]
+        # -- Findings (Mode C: coverage-first) --
+        if is_mode_c:
+            coverage_assessment = results.get("coverage_assessment", []) or []
+            # Bucket per UI semantics:
+            #   Need Attention  = covered_unfavorable | partial_material | missing
+            #   Worth Reviewing = partial_review
+            #   Covered         = everything else
+            attention_items = []
+            review_items = []
+            covered_count = 0
+            for item in coverage_assessment:
+                st = item.get("coverage_state", "")
+                pcls = item.get("partial_class", "")
+                if st == "covered_unfavorable" or st == "missing" or pcls == "partial_material":
+                    attention_items.append(item)
+                elif pcls == "partial_review":
+                    review_items.append(item)
+                else:
+                    covered_count += 1
+
+            y = new_page_if_needed(y, 60)
+            y = add_text(page, M, y, "Findings", size=13, bold=True, color=(0.1, 0.2, 0.36))
+            y += 4
+            y = add_text(
+                page, M, y,
+                f"{len(attention_items)} issue area(s) require attention, "
+                f"{len(review_items)} worth reviewing, "
+                f"{covered_count} covered.",
+                size=10, bold=True, color=(0.1, 0.2, 0.36),
+            )
+            y += 6
+
+            state_labels = {
+                "missing": "MISSING",
+                "partial": "INCOMPLETE",
+                "covered_unfavorable": "UNFAVORABLE TERMS",
+            }
+            mat_order = {"high": 0, "medium": 1, "low": 2}
+
+            # Note: add_text is closed over `page`, not parameterised, so that
+            # callers following new_page_if_needed (which rebinds `page` via
+            # nonlocal) always write to the current page.
+            def _render_coverage_item(cy, item, tier_color):
+                pid = item.get("issue_area_id", "")
+                pname = item.get("provision_name", item.get("issue_area_name", pid))
+                state = item.get("coverage_state", "")
+                label = state_labels.get(state, state.upper() or "REVIEW")
+                exposure = item.get("exposure_statement", "")
+                missing_els = item.get("elements_missing", [])
+
+                cy = new_page_if_needed(cy, 50)
+                cy = add_text(page, M, cy, f"{pid} {pname}  [{label}]",
+                              size=10, bold=True, color=tier_color)
+                if missing_els:
+                    missing_str = ", ".join(str(e) for e in missing_els[:5])
+                    cy = new_page_if_needed(cy, 20)
+                    cy = add_text(page, M + 10, cy, f"Missing: {missing_str}",
+                                  size=8.5, color=(0.45, 0.47, 0.52))
+                if exposure:
+                    cy = new_page_if_needed(cy, 30)
+                    cy = add_text(page, M + 10, cy, exposure, size=9)
+
+                # Lawyer's coverage resolution (same lookup key as PDF annotator)
+                cov_resolutions = results.get("cov_resolutions") or {}
+                cov_res = (
+                    cov_resolutions.get(f"cov:0:{pid}")
+                    or cov_resolutions.get(f"cov:{pid}")
+                    or {}
+                )
+                cov_notes = []
+                for n in (cov_res.get("notes") or []):
+                    text = n.get("text", "") if isinstance(n, dict) else str(n)
+                    if text:
+                        cov_notes.append(text)
+                if cov_res.get("status") or cov_notes:
+                    cy = new_page_if_needed(cy, 16)
+                    status_labels = {
+                        "accepted": "Accepted as-is",
+                        "needs_negotiation": "Needs Negotiation",
+                        "not_applicable": "Not Applicable",
+                        "resolved": "Resolved",
+                    }
+                    status = cov_res.get("status", "")
+                    if status:
+                        cy = add_text(page, M + 10, cy,
+                                      f"Attorney decision: {status_labels.get(status, status)}",
+                                      size=8.5, color=(0.1, 0.2, 0.36))
+                    for note_text in cov_notes:
+                        cy = new_page_if_needed(cy, 16)
+                        cy = add_text(page, M + 10, cy, f"Note: {note_text}",
+                                      size=8.5, color=(0.1, 0.2, 0.36))
+
+                return cy + 6
+
+            if attention_items:
+                attention_items.sort(key=lambda it: mat_order.get(it.get("materiality", "medium"), 1))
+                y = new_page_if_needed(y, 20)
+                y = add_text(page, M, y, "Needs Attention", size=11, bold=True, color=(0.76, 0.27, 0.05))
+                for item in attention_items:
+                    y = _render_coverage_item(y, item, (0.76, 0.27, 0.05))
+
+            if review_items:
+                review_items.sort(key=lambda it: mat_order.get(it.get("materiality", "medium"), 1))
+                y = new_page_if_needed(y, 20)
+                y = add_text(page, M, y, "Worth Reviewing", size=11, bold=True, color=(0.65, 0.47, 0.02))
+                for item in review_items:
+                    y = _render_coverage_item(y, item, (0.65, 0.47, 0.02))
+
+            # Skip the deviation findings block below when Mode C
+            deviations = []
+        else:
+            deviations = [p for p in provisions if p.get("final_verdict") == "DEVIATES"]
         sev_order = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
         deviations.sort(key=lambda d: sev_order.get(d.get("severity", "LOW"), 99))
 
@@ -371,6 +485,7 @@ def generate_outputs(
         "dashboard_json": json_path,
         "annotated_document": None,
         "annotation_method": "none",
+        "comparison_view_pdf": None,  # Step 255: Aligned Provision Comparison (Mode A only)
         "summary": results.get("summary", {}),
     }
 
@@ -438,5 +553,23 @@ def generate_outputs(
                 cover_path.unlink()
             except Exception:
                 pass
+
+    # ── Step 255: Aligned Provision Comparison View PDF (Mode A only) ──
+    # Additive fourth Mode A artifact alongside Synopsis, annotated PDF, DOCX.
+    # Skipped automatically for Mode C (build_aligned_comparison_pdf returns
+    # None when results['mode'] == 'analyze'). Failure is non-fatal — the
+    # other artifacts ship regardless.
+    try:
+        from cam.adapters.lease_review.lease_comparison_view import (
+            build_aligned_comparison_pdf,
+        )
+        comparison_path = build_aligned_comparison_pdf(results, output_dir)
+        if comparison_path:
+            output_info["comparison_view_pdf"] = str(comparison_path)
+    except Exception as e:
+        print(
+            f"[report_generator] Aligned Provision Comparison PDF failed (non-fatal): {e}",
+            flush=True,
+        )
 
     return output_info

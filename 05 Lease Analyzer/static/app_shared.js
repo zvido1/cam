@@ -154,6 +154,19 @@ function getTenantProgressFraction(tenant, jobStatus) {
     return 0;
 }
 
+// Builds the "Coverage Gap" toolbar link for a provision, or "" when the
+// provision is fully covered or N/A. Centralized to eliminate the duplicate
+// inline IIFE pattern that historically caused string-termination bugs.
+function buildCoverageGapLink(pid, coverageAssessment, esc) {
+    if (!pid || !coverageAssessment) return "";
+    const cov = coverageAssessment.find(function(a) { return a.issue_area_id === pid; });
+    if (!cov) return "";
+    const state = cov.coverage_state;
+    if (state === "covered" || state === "not_applicable") return "";
+    const safePid = esc ? esc(pid) : pid;
+    return `<a class="card-docview-link card-docview-link--btn" href="#" onclick="window.CAM.jumpToCoverageProvision('${safePid}'); return false;" title="Jump to this gap in Coverage &amp; Gaps">&#9680; Coverage Gap</a>`;
+}
+
 function getResultsScrollContainer() {
     return document.getElementById("results-content") || document.querySelector(".results-content");
 }
@@ -225,5 +238,6 @@ window.CAMShared = {
     scrollResultsTargetIntoView,
     flashResultsTarget,
     waitForResultsTarget,
+    buildCoverageGapLink,
 };
 })();

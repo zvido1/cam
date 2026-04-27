@@ -95,7 +95,7 @@ def emit(
                 "stage_1_extraction": stage_data.get("extraction_meta", {}).get("num_chunks", 1),
                 "stage_1_gap_repair": stage_data.get("extraction_meta", {}).get("gap_repair_calls", 0),
                 "stage_1_fallbacks": stage_data.get("extraction_meta", {}).get("fallback_chunk_count", 0),
-                "stage_3_evaluation": stage_data.get("evaluation_meta", {}).get("api_calls", 3),
+                "stage_3_evaluation": stage_data.get("evaluation_meta", {}).get("api_calls", 0),
                 "stage_5_challenge": stage_data.get("challenge_meta", {}).get("api_calls", 0),
                 "stage_6_severity": stage_data.get("severity_meta", {}).get("api_calls", 0),
                 "gate_check": 1,

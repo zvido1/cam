@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAM Demo</title>
-    <link rel="stylesheet" href="/static/style.css?v=323">
+    <link rel="stylesheet" href="/static/style.css?v=332">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -68,8 +68,68 @@
             <div class="upload-layout">
                 <!-- Wrapper: upload columns 1+2 + email at bottom -->
                 <div class="upload-columns-wrapper">
+                    <!-- Step 263: Reordered to logical user flow:
+                         Step 1 = Mode (compare vs analyze)
+                         Step 2 = Perspective (tenant / landlord / neutral)
+                         Step 3 = Upload reference lease (Mode A only)
+                         Step 4 = Upload tenant lease(s) — relabeled to Step 3 in Mode C via JS -->
+
+                    <!-- Mode selector (Step 253) — now Step 1 -->
+                    <div class="mode-selector-wrapper" id="mode-selector-wrapper">
+                        <div class="card mode-selector-card">
+                            <div class="mode-selector-label">Step 1: What would you like to do?</div>
+                            <div class="mode-selector-options" id="mode-selector" role="radiogroup" aria-label="Analysis mode">
+                                <label class="mode-option">
+                                    <input type="radio" name="analysis-mode" value="compare" checked>
+                                    <span class="mode-option-body">
+                                        <span class="mode-option-title">Compare to reference</span>
+                                        <span class="mode-option-help">Compare a draft against a reference template to find deviations.</span>
+                                    </span>
+                                </label>
+                                <label class="mode-option">
+                                    <input type="radio" name="analysis-mode" value="analyze">
+                                    <span class="mode-option-body">
+                                        <span class="mode-option-title">Analyze single document</span>
+                                        <span class="mode-option-help">Analyze a single document for structural gaps and coverage issues, without a reference.</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Perspective selector (Step 261) — now Step 2; must select; gates submit. -->
+                    <div class="perspective-selector-wrapper" id="perspective-selector-wrapper">
+                        <div class="card perspective-selector-card">
+                            <div class="perspective-selector-label">Step 2: Whose perspective are you analyzing from?</div>
+                            <div class="perspective-selector-help">This sets the lens for the entire analysis. Required.</div>
+                            <div class="perspective-selector-options" id="perspective-selector" role="radiogroup" aria-label="Analysis perspective">
+                                <label class="perspective-option">
+                                    <input type="radio" name="analysis-perspective" value="tenant">
+                                    <span class="perspective-option-body">
+                                        <span class="perspective-option-title">Tenant</span>
+                                        <span class="perspective-option-help">I'm reviewing as the tenant or tenant's counsel. Coverage gaps and risks are framed against tenant interests.</span>
+                                    </span>
+                                </label>
+                                <label class="perspective-option">
+                                    <input type="radio" name="analysis-perspective" value="landlord">
+                                    <span class="perspective-option-body">
+                                        <span class="perspective-option-title">Landlord</span>
+                                        <span class="perspective-option-help">I'm reviewing as the landlord or landlord's counsel. Coverage gaps and risks are framed against landlord interests.</span>
+                                    </span>
+                                </label>
+                                <label class="perspective-option">
+                                    <input type="radio" name="analysis-perspective" value="neutral">
+                                    <span class="perspective-option-body">
+                                        <span class="perspective-option-title">Neutral / commercially reasonable</span>
+                                        <span class="perspective-option-help">No preferred party. Flag clauses that are unusually one-sided in either direction.</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="upload-cols-grid">
-                        <div class="upload-main">
+                        <div class="upload-main" id="template-dropzone-wrapper">
                             <!-- Step 1: Upload Reference Lease -->
                             <div class="card">
                                 <div class="card-header upload-card-header">
@@ -77,7 +137,7 @@
                                        onclick="window.CAM.cancelAddMore(); return false;">
                                         &larr; Back to results
                                     </a>
-                                    <span id="upload-step-label">Step 1: Upload your reference lease</span>
+                                    <span id="upload-step-label">Step 3: Upload your reference lease</span>
                                 </div>
                                 <p class="upload-card-subtitle" id="upload-subtitle">Upload your reference lease (standard template or prior executed lease).</p>
                                 <div id="submit-error" class="alert alert-error hidden mt-2"></div>
@@ -117,7 +177,7 @@
                         <div class="contracts-column step2-inactive" id="contracts-column">
                             <div class="card">
                                 <div class="card-header">
-                                    <span>Step 2: Upload Tenant Leases</span>
+                                    <span id="tenant-step-label">Step 4: Upload Tenant Leases</span>
                                 </div>
                                 <div class="upload-col">
                                     <div class="upload-col-header">
@@ -1024,13 +1084,13 @@
 
 </div>
 
-    <script src="/static/app_shared.js?v=2"></script>
+    <script src="/static/app_shared.js?v=3"></script>
     <script src="/static/app_audit_shared.js?v=12"></script>
     <script src="/static/app_workflow_shared.js?v=2"></script>
-    <script src="/static/app_docview_shared.js?v=9"></script>
+    <script src="/static/app_docview_shared.js?v=10"></script>
     <script src="/static/app_docview_render_shared.js?v=3"></script>
-    <script src="/static/app_summary_shared.js?v=9"></script>
+    <script src="/static/app_summary_shared.js?v=10"></script>
     <script src="/static/app_notes_shared.js?v=1"></script>
-    <script src="/static/app.js?v=325"></script>
+    <script src="/static/app.js?v=338"></script>
 </body>
 </html>

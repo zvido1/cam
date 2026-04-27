@@ -32,6 +32,7 @@ from cam.core.provider_health import get_health_tracker
 # Schema path for validation
 SCHEMA_PATH = Path(__file__).parent / "schemas" / "extraction_schema.json"
 PROMPT_PATH = Path(__file__).parent / "prompts" / "provision_extraction.txt"
+SINGLE_DOC_PROMPT_PATH = Path(__file__).parent / "prompts" / "provision_extraction_single_doc.txt"
 
 
 def _load_schema() -> dict:
@@ -43,6 +44,12 @@ def _load_schema() -> dict:
 def _load_prompt_template() -> str:
     """Load the provision extraction prompt template."""
     with open(PROMPT_PATH, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def _load_single_doc_prompt_template() -> str:
+    """Load the single-document (Mode C) provision extraction prompt template."""
+    with open(SINGLE_DOC_PROMPT_PATH, "r", encoding="utf-8") as f:
         return f.read()
 
 
@@ -671,6 +678,203 @@ def extract_provisions(
         template_text, tenant_text, provisions, config,
         max_output_tokens=EXTRACTION_MAX_TOKENS_SINGLE,
     )
+
+
+def extract_provisions_single_doc(
+    tenant_text: str,
+    provisions: List[dict],
+    config: dict,
+) -> Dict[str, Any]:
+    """Mode C (single-document analyze): extract per-issue-area clause text.
+
+    No template document is involved. The prompt targets each issue area from
+    the provided provisions list and extracts matching clause text from the
+    tenant lease. Output conforms to the same provisions schema used by
+    Mode A so that Phase 5 (negative-space, coverage, exposure) runs unchanged.
+
+    Args:
+        tenant_text: Full text of the lease to analyze.
+        provisions: List of provision dicts (id, name, description, search_hints).
+        config: Pipeline config dict.
+
+    Returns:
+        Dict with keys: provisions, contract_metadata, deal_overview, meta.
+    """
+    prompt_template = _load_single_doc_prompt_template()
+    provision_list_str = _build_provision_list(provisions)
+
+    user_prompt = prompt_template.replace("{tenant_text}", tenant_text)
+    user_prompt = user_prompt.replace("{provision_list}", provision_list_str)
+
+    system_prompt = (
+        "You are a legal document analyst specializing in commercial lease agreements. "
+        "You extract lease provisions from a single document, guided by an issue-area taxonomy. "
+        "Always respond with valid JSON only."
+    )
+
+    health = get_health_tracker()
+    start_time = time.time()
+    errors = []
+    obj = None
+    actual_model = EXTRACTION_CHAIN[0][1]
+    actual_provider = EXTRACTION_CHAIN[0][0]
+    fallback_used = False
+    google_provider_error = False
+
+    for chain_idx, (provider, model_name) in enumerate(EXTRACTION_CHAIN):
+        if obj is not None:
+            break
+
+        if not health.is_available(provider):
+            print(f"[lease_extract single-doc] Skipping {model_name} ({provider} degraded), trying next...", flush=True)
+            errors.append({"model": model_name, "error": f"provider {provider} degraded, skipped"})
+            continue
+
+        if chain_idx == 1 and provider == "google" and google_provider_error:
+            print(f"[lease_extract single-doc] Skipping {model_name} (google provider-level error on primary), trying next...", flush=True)
+            errors.append({"model": model_name, "error": "google provider-level error, skipped"})
+            continue
+
+        if chain_idx == 0 or provider == "google":
+            timeout = EXTRACTION_PRIMARY_TIMEOUT
+        else:
+            timeout = EXTRACTION_FALLBACK_TIMEOUT
+
+        current_max_output = EXTRACTION_MAX_TOKENS_SINGLE
+        if provider == "mistral":
+            current_max_output = min(current_max_output, MISTRAL_MAX_TOKENS)
+
+        target = ModelTarget(
+            name=f"{provider}:{model_name}-extraction-single-doc",
+            provider=provider,
+            model=model_name,
+            priority=chain_idx + 1,
+            max_output_tokens=current_max_output,
+            temperature=0.0,
+            timeout_sec=timeout,
+            max_retries=0,
+        )
+
+        call_label = "primary" if chain_idx == 0 else "FALLBACK"
+        print(f"[lease_extract single-doc] calling {model_name} ({call_label})...", flush=True)
+
+        try:
+            adapter = _get_adapter_for_provider(provider)
+        except Exception as e:
+            errors.append({"model": model_name, "error": f"adapter init: {e}"})
+            continue
+
+        try:
+            raw = adapter.call(system_prompt, user_prompt, target)
+
+            from cam.adapters.lease_review.lease_adapter import _check_cancel
+            _check_cancel(config)
+
+            raw_stripped = raw.strip()
+            if len(raw_stripped) < 100 or raw_stripped.startswith(("I'm sorry", "I cannot", "Error:", "The document")):
+                errors.append({"model": model_name, "error": f"model_refused_or_error: {raw_stripped[:100]}"})
+                print(f"[lease_extract single-doc] {model_name} returned refusal/error: {raw_stripped[:100]}", flush=True)
+                continue
+
+            try:
+                obj = _extract_provisions_json(raw)
+            except ValueError as ve:
+                print(f"[lease_extract single-doc] {model_name} JSON extraction failed: {ve}", flush=True)
+                errors.append({"model": model_name, "error": f"json_extract: {ve}"})
+                continue
+
+            ok, why = _validate_extraction(obj)
+            if not ok:
+                errors.append({"model": model_name, "error": f"validation: {why}"})
+                obj = None
+                continue
+
+            actual_model = model_name
+            actual_provider = provider
+            if chain_idx > 0:
+                fallback_used = True
+
+            elapsed_so_far = time.time() - start_time
+            print(f"[lease_extract single-doc] {model_name} succeeded in {round(elapsed_so_far, 1)}s ({call_label})", flush=True)
+
+        except Exception as e:
+            error_str = str(e).lower()
+            is_provider_error = any(k in error_str for k in [
+                "503", "connection", "refused", "unavailable",
+                "service_unavailable", "resource_exhausted",
+            ])
+            errors.append({"model": model_name, "error": str(e)})
+            if is_provider_error:
+                health.mark_degraded(provider, reason=str(e)[:100])
+                if chain_idx == 0 and provider == "google":
+                    google_provider_error = True
+                print(f"[lease_extract single-doc] {model_name} FAILED ({type(e).__name__}), "
+                      f"provider {provider} marked degraded", flush=True)
+            else:
+                print(f"[lease_extract single-doc] {model_name} FAILED ({type(e).__name__})", flush=True)
+            continue
+
+    elapsed = time.time() - start_time
+
+    if obj is None:
+        print(f"[lease_extract single-doc] All models failed. Returning empty provisions.", flush=True)
+        stub_provisions = []
+        for prov in provisions:
+            stub_provisions.append({
+                "provision_id": prov["id"],
+                "provision_name": prov["name"],
+                "template_text": "",
+                "tenant_text": "",
+                "template_section_ref": "",
+                "tenant_section_ref": "",
+                "status": "AMBIGUOUS",
+                "alignment_notes": f"Extraction failed: all models returned unparseable responses.",
+                "definition_changes": "",
+            })
+        return {
+            "provisions": stub_provisions,
+            "contract_metadata": {},
+            "deal_overview": {},
+            "meta": {
+                "model": "none",
+                "provider": "none",
+                "fallback_used": True,
+                "elapsed_sec": round(elapsed, 2),
+                "errors": errors,
+                "extraction_failed": True,
+                "single_doc": True,
+            },
+        }
+
+    # Ensure all requested provisions are represented
+    result_ids = {p["provision_id"] for p in obj.get("provisions", [])}
+    for prov in provisions:
+        if prov["id"] not in result_ids:
+            obj["provisions"].append({
+                "provision_id": prov["id"],
+                "provision_name": prov["name"],
+                "template_text": "",
+                "tenant_text": "",
+                "template_section_ref": "",
+                "tenant_section_ref": "",
+                "status": "AMBIGUOUS",
+                "alignment_notes": "Issue area not found by extraction model.",
+                "definition_changes": "",
+            })
+
+    return {
+        "provisions": obj["provisions"],
+        "contract_metadata": obj.get("contract_metadata", {}),
+        "deal_overview": obj.get("deal_overview", {}),
+        "meta": {
+            "model": actual_model,
+            "provider": actual_provider,
+            "fallback_used": fallback_used,
+            "elapsed_sec": round(elapsed, 2),
+            "errors": errors,
+            "single_doc": True,
+        },
+    }
 
 
 def targeted_reextract_section(

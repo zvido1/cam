@@ -163,12 +163,12 @@ def _build_schema_exposure(assessment: dict) -> dict:
     }
 
 
-_EXPOSURE_SYSTEM_PROMPT = """You write concise, practical exposure assessments for commercial lease provisions.
+_EXPOSURE_SYSTEM_PROMPT_TENANT = """You write concise, practical exposure assessments for commercial lease provisions.
 
 Rules:
 - Exactly 1-2 sentences. No more.
 - Plain English. No legal citations. No case law. No jurisdiction references.
-- Describe practical tenant exposure -- what can go wrong, who bears the risk.
+- Describe practical TENANT exposure -- what can go wrong, who bears the risk.
 - Do not restate the clause mechanically.
 - Do not speculate beyond the evidence supplied.
 - Do not use "may or may not" or similar hedge phrases unless state is explicitly ambiguous.
@@ -178,13 +178,65 @@ Rules:
 - Start with the risk actor: "Tenant", "Landlord", or the specific consequence.
 """
 
+_EXPOSURE_SYSTEM_PROMPT_LANDLORD = """You write concise, practical exposure assessments for commercial lease provisions.
+
+Rules:
+- Exactly 1-2 sentences. No more.
+- Plain English. No legal citations. No case law. No jurisdiction references.
+- Describe practical LANDLORD exposure -- what can go wrong for the landlord, what enforcement, collection, recovery, or operational risk the landlord bears.
+- Do not restate the clause mechanically.
+- Do not speculate beyond the evidence supplied.
+- Do not use "may or may not" or similar hedge phrases unless state is explicitly ambiguous.
+- Focus on the business/legal consequence to the landlord of what is absent or unfavorable.
+- Tone: direct and specific. "Landlord has no recourse if X" not "This provision appears to potentially suggest..."
+- Never start with "This provision" or "The clause".
+- Start with the risk actor: "Landlord", "Tenant", or the specific consequence to the landlord.
+- Important: the input below was classified using rules that lean tenant-protective. A clause flagged as "unfavorable" may actually be favorable to the landlord (e.g. waived audit rights, sole-discretion consent). When that is the case, describe the landlord's UPSIDE plainly -- but if the absent or unfavorable element instead exposes the landlord (e.g. no late-fee mechanism, no acceleration on default, no removal obligation at expiration), describe that landlord-side risk directly.
+"""
+
+_EXPOSURE_SYSTEM_PROMPT_NEUTRAL = """You write concise, practical exposure assessments for commercial lease provisions.
+
+Rules:
+- Exactly 1-2 sentences. No more.
+- Plain English. No legal citations. No case law. No jurisdiction references.
+- Describe the practical exposure NEUTRALLY -- name whichever party bears the risk. Do not advocate for either side.
+- If the clause is one-sided, say so and identify which party benefits and which is exposed.
+- If the clause is mutual or balanced, describe the shared risk plainly.
+- Do not restate the clause mechanically.
+- Do not speculate beyond the evidence supplied.
+- Do not use "may or may not" or similar hedge phrases unless state is explicitly ambiguous.
+- Tone: direct, specific, and even-handed. "The clause shifts X risk to tenant; landlord retains Y" not "This provision appears to potentially suggest..."
+- Never start with "This provision" or "The clause".
+- Start with the risk actor or with the imbalance itself.
+"""
+
+# Step 262: pick a perspective-specific system prompt. Default tenant for
+# backward compatibility with cfg dicts that don't carry the field.
+_EXPOSURE_SYSTEM_PROMPTS = {
+    "tenant":   _EXPOSURE_SYSTEM_PROMPT_TENANT,
+    "landlord": _EXPOSURE_SYSTEM_PROMPT_LANDLORD,
+    "neutral":  _EXPOSURE_SYSTEM_PROMPT_NEUTRAL,
+}
+
+# Backward-compat alias — some external callers may import this name directly.
+_EXPOSURE_SYSTEM_PROMPT = _EXPOSURE_SYSTEM_PROMPT_TENANT
+
+# Step 262: perspective-aware closing line for the user template. The body of
+# the prompt (provision name, state, elements, evidence) stays identical so
+# we can diff outputs across perspectives apples-to-apples.
+_EXPOSURE_USER_TEMPLATE_TAIL = {
+    "tenant":   "Write a 1-2 sentence exposure statement describing the practical risk to the tenant.",
+    "landlord": "Write a 1-2 sentence exposure statement describing the practical risk or consequence to the landlord. If the clause is favorable to the landlord, describe that posture; if it exposes the landlord, describe that exposure.",
+    "neutral":  "Write a 1-2 sentence exposure statement describing which party bears the risk and how. Be even-handed and name the parties explicitly.",
+}
+
 _EXPOSURE_USER_TEMPLATE = """Provision: {name}
 Coverage state: {state}
 Missing or unfavorable elements: {elements}
 Evidence note: {evidence}
 Fallback schema statement: {fallback}
 
-Write a 1-2 sentence exposure statement describing the practical risk to the tenant."""
+{tail}"""
 
 
 def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict:
@@ -199,6 +251,13 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
     evidence = assessment.get("evidence_summary", "")
     fallback = assessment.get("exposure_statement", "")
 
+    # Step 262: pick prompt + tail by perspective. Unknown values fall back to tenant.
+    perspective = ((cfg or {}).get("perspective") or "tenant").lower()
+    if perspective not in _EXPOSURE_SYSTEM_PROMPTS:
+        perspective = "tenant"
+    system_prompt = _EXPOSURE_SYSTEM_PROMPTS[perspective]
+    user_tail = _EXPOSURE_USER_TEMPLATE_TAIL[perspective]
+
     if state == "covered_unfavorable":
         elements_used = found[:3]
         elements_str = f"Provision present but unfavorable: {', '.join(elements_used)}"
@@ -212,6 +271,7 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
         elements=elements_str,
         evidence=evidence[:200] if evidence else "none",
         fallback=fallback[:200] if fallback else "none",
+        tail=user_tail,
     )
 
     try:
@@ -223,13 +283,14 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
         )
         router = ProviderRouter([target], RouterConfig())
         adapter = router._get_adapter("openai")
-        statement = adapter.call(_EXPOSURE_SYSTEM_PROMPT, user_prompt, target).strip()
+        statement = adapter.call(system_prompt, user_prompt, target).strip()
 
         if not statement or len(statement) < 20:
             logger.warning(f"[lease_exposure] Short response for {pid}, using schema fallback")
             result = _build_schema_exposure(assessment)
             result["exposure_source"] = "schema_fallback"
             result["exposure_reason_code"] = reason_code
+            result["exposure_perspective"] = perspective
             return result
 
         sentences = [s.strip() for s in statement.split('.') if s.strip()]
@@ -242,6 +303,7 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
             "exposure_reason_code": reason_code,
             "exposure_confidence_note": "Ambiguous -- outcome depends on lease interpretation" if state == "ambiguous" else None,
             "exposure_elements_used": elements_used,
+            "exposure_perspective": perspective,
         }
 
     except Exception as e:
@@ -249,6 +311,7 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
         result = _build_schema_exposure(assessment)
         result["exposure_source"] = "schema_fallback"
         result["exposure_reason_code"] = reason_code
+        result["exposure_perspective"] = perspective
         return result
 
 
@@ -256,6 +319,16 @@ def generate_exposure(coverage_assessment: list, cfg: dict) -> list:
     """Enrich coverage assessments with exposure statements. Mutates in place."""
     if not coverage_assessment:
         return coverage_assessment
+
+    # Step 262: log the perspective once per run so downstream debugging has a
+    # quick anchor for which prompt set generated this batch of statements.
+    perspective = ((cfg or {}).get("perspective") or "tenant").lower()
+    if perspective not in _EXPOSURE_SYSTEM_PROMPTS:
+        perspective = "tenant"
+    print(
+        f"[lease_exposure] Perspective: {perspective}",
+        flush=True,
+    )
 
     model_calls = 0
     schema_calls = 0
@@ -284,6 +357,9 @@ def generate_exposure(coverage_assessment: list, cfg: dict) -> list:
             model_calls += 1
         else:
             exposure = _build_schema_exposure(assessment)
+            # Step 262: tag schema-only outputs with perspective too so downstream
+            # consumers can audit which lens this run was rendered under.
+            exposure["exposure_perspective"] = perspective
             schema_calls += 1
 
         assessment.update(exposure)

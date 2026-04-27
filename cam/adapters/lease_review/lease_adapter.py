@@ -989,6 +989,227 @@ def run_lease_analysis(
     return result
 
 
+def run_lease_coverage_only(
+    tenant_path: str,
+    provisions: List[dict] = None,
+    config: dict = None,
+    run_id: str = None,
+    progress_callback=None,
+) -> dict:
+    """Mode C pipeline: single-document coverage analysis.
+
+    Skips Stages 1 alignment, 2-7 (rules, cascade, evaluators, challenge,
+    severity, disposition) and runs only the Phase 5 coverage layer
+    (negative space → coverage assessor → exposure).
+
+    Output shape matches Mode A's pipeline_results.json with deviation-shaped
+    fields populated as empty arrays (not null, not missing) so downstream
+    consumers can treat the record uniformly.
+
+    Args:
+        tenant_path: Path to the lease document to analyze.
+        provisions: Provision/issue-area list (defaults to full 18 LPs).
+        config: Pipeline config dict.
+        run_id: Optional run identifier for output directory naming.
+
+    Returns:
+        Pipeline results dict with mode="analyze".
+    """
+    from cam.adapters.lease_review.lease_extract import extract_provisions_single_doc
+
+    cfg = {**DEFAULT_CONFIG}
+    if config:
+        cfg.update(config)
+
+    if run_id is None:
+        run_id = datetime.now(timezone.utc).strftime("lease_analyze_%Y%m%d_%H%M%S")
+
+    if provisions is None:
+        provisions = get_active_provisions()
+
+    print(f"[lease_adapter:analyze] Starting Mode C coverage analysis: run_id={run_id}", flush=True)
+    print(f"[lease_adapter:analyze] Document: {os.path.basename(tenant_path)}", flush=True)
+    print(f"[lease_adapter:analyze] Issue areas: {len(provisions)}", flush=True)
+
+    pipeline_start = time.time()
+    total_api_calls = 0
+    models_used = {}
+
+    # ── Parse document ──
+    if progress_callback:
+        progress_callback(1, 3, "Parsing document.")
+    print("[lease_adapter:analyze] Parsing document...", flush=True)
+    parse_start = time.time()
+    tenant_text = parse_document(tenant_path)
+    parse_elapsed = time.time() - parse_start
+    tenant_word_count = len(tenant_text.split())
+    cfg["tenant_word_count"] = tenant_word_count
+    print(
+        f"[lease_adapter:analyze] Document: {len(tenant_text)} chars "
+        f"({tenant_word_count} words) | parse {parse_elapsed:.2f}s",
+        flush=True,
+    )
+
+    # ── Document Gate Check ──
+    print("[lease_adapter:analyze] Gate: classifying document...", flush=True)
+    gate_result = check_document_is_lease(tenant_text, cfg)
+    print(f"[lease_adapter:analyze] Gate: is_lease={gate_result['is_lease']} in {gate_result['elapsed_sec']}s", flush=True)
+    if gate_result.get("abort"):
+        raise GateAbortError(gate_result["abort_message"])
+
+    _check_cancel(cfg)
+
+    # ── Single-document extraction ──
+    if progress_callback:
+        progress_callback(2, 3, "Extracting provisions.")
+    print("[lease_adapter:analyze] Single-document extraction...", flush=True)
+    extraction = extract_provisions_single_doc(tenant_text, provisions, cfg)
+    total_api_calls += 1
+    models_used["extractor"] = extraction["meta"]["model"]
+    models_used["extractor_provider"] = extraction["meta"].get("provider", "")
+    models_used["extractor_fallback_used"] = extraction["meta"].get("fallback_used", False)
+    models_used["extraction"] = models_used["extractor"]
+    print(
+        f"[lease_adapter:analyze] Extraction complete: "
+        f"{len(extraction['provisions'])} provisions in {extraction['meta']['elapsed_sec']}s",
+        flush=True,
+    )
+
+    _check_cancel(cfg)
+
+    # ── Phase 5: negative-space → coverage → exposure ──
+    if progress_callback:
+        progress_callback(3, 3, "Analyzing coverage.")
+    coverage_assessment = []
+    coverage_summary = {}
+    negative_space_by_provision = {}
+    exposure_summary = {}
+
+    try:
+        from cam.adapters.lease_review.lease_negative_space import (
+            detect_negative_space, summarize_negative_space,
+        )
+        from cam.adapters.lease_review.lease_coverage import (
+            assess_coverage, summarize_coverage,
+        )
+        negative_space_by_provision = detect_negative_space(
+            extraction["provisions"], tenant_text,
+        )
+        coverage_assessment = assess_coverage(
+            extraction["provisions"], tenant_text, negative_space_by_provision,
+        )
+        coverage_summary = summarize_coverage(coverage_assessment)
+        ns_summary = summarize_negative_space(negative_space_by_provision)
+        print(
+            f"[lease_adapter:analyze] Coverage: "
+            f"{coverage_summary.get('covered_count', 0)} covered, "
+            f"{coverage_summary.get('attention_count', 0)} require attention, "
+            f"{coverage_summary.get('not_applicable_count', 0)} not applicable | "
+            f"neg-space: {ns_summary.get('total_signals', 0)} signals across "
+            f"{ns_summary.get('provisions_with_signals', 0)} provisions",
+            flush=True,
+        )
+    except Exception as e:
+        print(f"[lease_adapter:analyze] Coverage assessment failed: {e}", flush=True)
+        coverage_assessment = []
+        coverage_summary = {}
+        negative_space_by_provision = {}
+
+    if coverage_assessment:
+        try:
+            from cam.adapters.lease_review.lease_exposure import (
+                generate_exposure, summarize_exposure,
+            )
+            exposure_calls_before = total_api_calls
+            generate_exposure(coverage_assessment, cfg)
+            exposure_summary = summarize_exposure(coverage_assessment)
+            exposure_model_calls = exposure_summary.get("model_calls", 0)
+            total_api_calls += exposure_model_calls
+            if exposure_model_calls:
+                models_used["exposure"] = cfg.get("exposure_model", "")
+            print(
+                f"[lease_adapter:analyze] Exposure: "
+                f"{exposure_summary.get('model_calls', 0)} model, "
+                f"{exposure_summary.get('schema_only', 0)} schema | "
+                f"material={exposure_summary.get('partial_material', 0)} "
+                f"review={exposure_summary.get('partial_review', 0)} "
+                f"typical={exposure_summary.get('partial_typical', 0)}",
+                flush=True,
+            )
+        except Exception as e:
+            print(f"[lease_adapter:analyze] Exposure engine failed: {e}", flush=True)
+            exposure_summary = {}
+
+    pipeline_elapsed = time.time() - pipeline_start
+
+    # ── Assemble result (deviation-shaped fields empty, not missing) ──
+    result = {
+        "run_id": run_id,
+        "mode": "analyze",
+        "template_file": "",
+        "tenant_file": os.path.basename(tenant_path),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "pipeline_version": "1.0.0",
+        "pipeline_domain": "commercial_lease_review",
+        "pipeline_domain_label": "Commercial Lease Coverage Analysis",
+        "models_used": models_used,
+        "api_calls_total": total_api_calls,
+        "elapsed_sec": round(pipeline_elapsed, 2),
+        "contract_metadata": extraction.get("contract_metadata", {}),
+        "deal_overview": extraction.get("deal_overview", {}),
+        "full_template_text": "",
+        "full_tenant_text": tenant_text,
+        "summary": {
+            "total_provisions_checked": len(extraction["provisions"]),
+            "conforms": 0,
+            "deviates": 0,
+            "unclear": 0,
+            "critical": 0,
+            "high": 0,
+            "medium": 0,
+            "low": 0,
+        },
+        "provisions": [],
+        "deviations": [],
+        "cascade_findings": [],
+        "challenge_findings": [],
+        "severity_assignments": [],
+        "dispositions": [],
+        "discoveries": {"folded": [], "standalone": []},
+        "cam_contract_summary": {},
+        "analysis_completeness": {},
+        "human_feedback": [],
+        "coverage_assessment": coverage_assessment,
+        "coverage_summary": coverage_summary,
+        "exposure_summary": exposure_summary,
+        "_stage_data": {
+            "extraction_meta": extraction["meta"],
+            "negative_space": negative_space_by_provision,
+        },
+    }
+
+    output_dir = Path(cfg["output_dir"]) / run_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / "pipeline_results.json"
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
+    print(f"[lease_adapter:analyze] Results saved to {output_path}", flush=True)
+
+    try:
+        from cam.adapters.lease_review.lease_telemetry import emit as emit_telemetry
+        emit_telemetry(result, cfg)
+    except Exception as e:
+        print(f"[lease_adapter:analyze] Telemetry emit failed (non-fatal): {e}", flush=True)
+
+    print(
+        f"[lease_adapter:analyze] Pipeline complete: "
+        f"{total_api_calls} API call(s) in {round(pipeline_elapsed, 1)}s",
+        flush=True,
+    )
+
+    return result
+
+
 def _compute_summary(dispositions: List[dict]) -> dict:
     """Compute summary statistics from dispositions."""
     total = len(dispositions)

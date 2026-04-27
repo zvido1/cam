@@ -29,9 +29,16 @@ def _build_html_email(
     results_url: str,
     summary: dict,
     attachment_info: Optional[dict] = None,
+    mode: str = "compare",
 ) -> tuple:
-    """Build HTML + plain text email bodies. Returns (html, plain)."""
+    """Build HTML + plain text email bodies. Returns (html, plain).
+
+    Step 255: when ``mode == "compare"`` (Mode A), insert a single locked line
+    referencing the new Aligned Provision Comparison artifact. Mode C jobs
+    never generate that artifact, so the line is suppressed there.
+    """
     info = attachment_info or {}
+    is_mode_c = (mode == "analyze")
     deviates = summary.get("deviates", 0)
     total = summary.get("total_provisions_checked", 0)
     critical = summary.get("critical", 0)
@@ -89,6 +96,22 @@ def _build_html_email(
         <ul style="margin:0;padding-left:20px;color:#2980b9;line-height:1.8;">{attachment_lines}</ul>
     """ if attachment_lines else ""
 
+    # Step 255: locked one-line reference to the Aligned Provision Comparison
+    # artifact. Mode A only. Phrasing is fixed by the spec — do NOT change.
+    comparison_reference_html = ""
+    comparison_reference_plain = ""
+    if not is_mode_c:
+        comparison_reference_html = (
+            '<p style="margin:14px 0 0;color:#444;font-size:0.92rem;">'
+            'Also included: Aligned Provision Comparison '
+            '(view both leases clause-by-clause)'
+            '</p>'
+        )
+        comparison_reference_plain = (
+            "Also included: Aligned Provision Comparison "
+            "(view both leases clause-by-clause)\n"
+        )
+
     short_id = job_id[:12] if len(job_id) > 12 else job_id
     from datetime import datetime as _dt
     current_year = _dt.now().year
@@ -124,6 +147,7 @@ def _build_html_email(
       </table>
 
       {attachments_section}
+      {comparison_reference_html}
 
       <!-- CTA Button -->
       <div style="text-align:center;margin:28px 0 20px;">
@@ -164,6 +188,8 @@ def _build_html_email(
         plain += f"  Medium: {medium}\n"
     if low:
         plain += f"  Low: {low}\n"
+    if comparison_reference_plain:
+        plain += f"\n{comparison_reference_plain}"
     plain += f"\nView your results: {results_url}\n\nJob ID: {job_id}\n"
 
     return html, plain
@@ -177,8 +203,14 @@ def send_job_complete_email(
     attachments: Optional[List[str]] = None,
     attachment_info: Optional[dict] = None,
     tenant_names: Optional[List[str]] = None,
+    mode: str = "compare",
 ) -> bool:
-    """Send notification that analysis is done with link to results."""
+    """Send notification that analysis is done with link to results.
+
+    Step 255: ``mode`` is forwarded to the body builder so Mode A emails get
+    the locked Aligned Provision Comparison reference line and Mode C emails
+    do not.
+    """
     def _strip_ext(name: str) -> str:
         return Path(name).stem if name else name
 
@@ -191,7 +223,7 @@ def send_job_complete_email(
         subject = f"Lease Analysis Ready \u2014 {len(names)} Leases Reviewed"
     else:
         subject = "Your Lease Analysis is Ready"
-    html, plain = _build_html_email(job_id, job_url, summary, attachment_info)
+    html, plain = _build_html_email(job_id, job_url, summary, attachment_info, mode=mode)
     return _send_email(to_email, subject, plain, html=html, attachments=attachments)
 
 

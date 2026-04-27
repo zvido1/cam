@@ -797,6 +797,10 @@ def _generate_combined_synopsis_inner(
     meta = first_result.get("contract_metadata", {})
     models_used = first_result.get("models_used", {})
 
+    # Mode detection (Step 254). Mode C omits reference-document and deviation
+    # sections entirely; the Synopsis is a coverage-first document.
+    is_mode_c = first_result.get("mode") == "analyze"
+
     created_at = job.get("created_at", "")
     try:
         dt = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
@@ -826,7 +830,8 @@ def _generate_combined_synopsis_inner(
     # PAGE 1: HEADER + DEAL OVERVIEW + ANALYSIS RESULTS
     # ════════════════════════════════════════════════
 
-    elements.append(Paragraph("CAM ANALYSIS SYNOPSIS", styles["SynopsisTitle"]))
+    title_text = "COVERAGE ANALYSIS" if is_mode_c else "CAM ANALYSIS SYNOPSIS"
+    elements.append(Paragraph(title_text, styles["SynopsisTitle"]))
     subtitle_parts = [_esc_xml(date_str)]
     if job_id:
         subtitle_parts.append(_esc_xml(job_id))
@@ -834,13 +839,22 @@ def _generate_combined_synopsis_inner(
     elements.append(Spacer(1, 10))
 
     # ── Deal Overview section ──
+    # Mode C: a single "DOCUMENT OVERVIEW" panel with neutral subtitle (no
+    # reference-template framing). Mode A: unchanged "REFERENCE DOCUMENT OVERVIEW".
     elements.append(HRFlowable(width="100%", thickness=1.5, color=HexColor("#1a365d"),
                                 spaceBefore=2, spaceAfter=6))
-    elements.append(Paragraph("REFERENCE DOCUMENT OVERVIEW", styles["SynopsisHeading"]))
-    elements.append(Paragraph(
-        "<i>Standard template -- deviations from these terms are flagged below</i>",
-        styles["SmallMuted"],
-    ))
+    if is_mode_c:
+        elements.append(Paragraph("DOCUMENT OVERVIEW", styles["SynopsisHeading"]))
+        elements.append(Paragraph(
+            "<i>Single-document coverage analysis -- no reference template</i>",
+            styles["SmallMuted"],
+        ))
+    else:
+        elements.append(Paragraph("REFERENCE DOCUMENT OVERVIEW", styles["SynopsisHeading"]))
+        elements.append(Paragraph(
+            "<i>Standard template -- deviations from these terms are flagged below</i>",
+            styles["SmallMuted"],
+        ))
     elements.append(HRFlowable(width="100%", thickness=1.5, color=HexColor("#1a365d"),
                                 spaceBefore=2, spaceAfter=8))
 
@@ -929,13 +943,43 @@ def _generate_combined_synopsis_inner(
                                 spaceBefore=4, spaceAfter=6))
     elements.append(Paragraph("RUN SYNOPSIS", styles["SynopsisHeading"]))
 
-    elements.append(Paragraph(
-        f"{total_deviations} deviation{'s' if total_deviations != 1 else ''} "
-        f"found across {total_provisions} provisions analyzed",
-        styles["BodyBold"],
-    ))
-    if len(tenant_results) > 1:
-        elements.append(Paragraph(f"Tenants reviewed: {len(tenant_results)}", styles["BodyText"]))
+    if is_mode_c:
+        # Mode C uses three-bucket coverage semantics. Aggregate across all
+        # tenant coverage_assessment arrays using the UI bucketing rule:
+        #   Need Attention  = covered_unfavorable | partial_material | missing
+        #   Worth Reviewing = partial_review
+        #   Covered         = covered | partial_typical | not_applicable | other
+        need_attention = 0
+        worth_review = 0
+        covered_total = 0
+        total_issue_areas = 0
+        for tr in tenant_results:
+            for item in tr.get("coverage_assessment", []):
+                total_issue_areas += 1
+                st = item.get("coverage_state", "")
+                pcls = item.get("partial_class", "")
+                if st == "covered_unfavorable" or st == "missing" or pcls == "partial_material":
+                    need_attention += 1
+                elif pcls == "partial_review":
+                    worth_review += 1
+                else:
+                    covered_total += 1
+
+        elements.append(Paragraph(
+            f"{need_attention} require attention, {worth_review} worth reviewing, "
+            f"{covered_total} covered (across {total_issue_areas} issue areas analyzed)",
+            styles["BodyBold"],
+        ))
+        if len(tenant_results) > 1:
+            elements.append(Paragraph(f"Documents reviewed: {len(tenant_results)}", styles["BodyText"]))
+    else:
+        elements.append(Paragraph(
+            f"{total_deviations} deviation{'s' if total_deviations != 1 else ''} "
+            f"found across {total_provisions} provisions analyzed",
+            styles["BodyBold"],
+        ))
+        if len(tenant_results) > 1:
+            elements.append(Paragraph(f"Tenants reviewed: {len(tenant_results)}", styles["BodyText"]))
 
     sev_parts = []
     for sev_label in SEVERITY_ORDER:
@@ -948,9 +992,59 @@ def _generate_combined_synopsis_inner(
     elements.append(Spacer(1, 12))
 
     # ── Provision Checklist (traffic-light grid, matches screen) ──
-    # For single tenant, show from the first result; for multi-tenant, aggregate
-    all_provisions_for_checklist = []
-    if len(tenant_results) == 1:
+    # Mode C: grouped by coverage tier (Need Attention / Worth Reviewing / Covered),
+    # driven by coverage_assessment (provisions[] is empty in Mode C).
+    if is_mode_c:
+        # Aggregate LP issue areas across tenants; take the worst tier observed per pid.
+        tier_rank = {"attention": 0, "review": 1, "covered": 2}
+        worst_tier = {}  # pid -> (rank, tier, name)
+        for tr in tenant_results:
+            for item in tr.get("coverage_assessment", []):
+                pid = item.get("issue_area_id", "")
+                if not pid:
+                    continue
+                name = item.get("provision_name", item.get("issue_area_name", pid))
+                st = item.get("coverage_state", "")
+                pcls = item.get("partial_class", "")
+                if st == "covered_unfavorable" or st == "missing" or pcls == "partial_material":
+                    tier = "attention"
+                elif pcls == "partial_review":
+                    tier = "review"
+                else:
+                    tier = "covered"
+                prev = worst_tier.get(pid)
+                if prev is None or tier_rank[tier] < tier_rank[prev[0]]:
+                    worst_tier[pid] = (tier, name)
+
+        buckets = {"attention": [], "review": [], "covered": []}
+        for pid, (tier, name) in worst_tier.items():
+            buckets[tier].append((pid, name))
+
+        if worst_tier:
+            elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
+                                        spaceBefore=4, spaceAfter=6))
+            elements.append(Paragraph("PROVISION CHECKLIST", styles["SynopsisHeading"]))
+
+            cov_tier_meta = [
+                ("attention", "Needs Attention", "#dc2626", "\u2715"),
+                ("review",    "Worth Reviewing", "#d97706", "\u25cb"),
+                ("covered",   "Covered",         "#16a34a", "\u2713"),
+            ]
+            for key, label, color, icon in cov_tier_meta:
+                items = sorted(buckets[key], key=lambda x: x[0])
+                if not items:
+                    continue
+                names = ", ".join(f"{_esc_xml(pid)} {_esc_xml(name)}" for pid, name in items)
+                elements.append(Paragraph(
+                    f'<font color="{color}"><b>{icon} {label}:</b></font>  {names}',
+                    styles["BodyText"],
+                ))
+
+            elements.append(Spacer(1, 8))
+
+        # Skip the deviation-oriented checklist block below in Mode C.
+        all_provisions_for_checklist = []
+    elif len(tenant_results) == 1:
         all_provisions_for_checklist = tenant_results[0].get("provisions", [])
     else:
         # Aggregate: show each provision once with worst severity across tenants
@@ -1220,13 +1314,18 @@ def _generate_combined_synopsis_inner(
 
         elements.append(Spacer(1, 6))
 
-    elements.append(Paragraph("CONTRACT FINDINGS", styles["SynopsisHeading"]))
+    if is_mode_c:
+        # Mode C has no deviation-based "Contract Findings" section. The Coverage
+        # & Gaps section above is the centerpiece; skip deviation loop entirely.
+        sorted_results = []
+    else:
+        elements.append(Paragraph("CONTRACT FINDINGS", styles["SynopsisHeading"]))
 
-    sorted_results = sorted(
-        tenant_results,
-        key=lambda tr: tr.get("summary", {}).get("deviates", 0),
-        reverse=True,
-    )
+        sorted_results = sorted(
+            tenant_results,
+            key=lambda tr: tr.get("summary", {}).get("deviates", 0),
+            reverse=True,
+        )
 
     for tr in sorted_results:
         tenant_idx = tenant_results.index(tr)
@@ -1458,8 +1557,11 @@ def _generate_combined_synopsis_inner(
     elements.append(Paragraph(f"Processing: {total_api_calls} API calls total, {minutes} minutes", styles["SmallMuted"]))
     elements.append(Paragraph("Pipeline: CAM v2.5.3 -- Constrained Assertion Method", styles["SmallMuted"]))
 
-    template_name = first_result.get("template_file", "Unknown")
-    elements.append(Paragraph(f"Template file: {_esc_xml(template_name)}", styles["SmallMuted"]))
+    if is_mode_c:
+        elements.append(Paragraph("Analysis mode: Analyze (coverage & gaps)", styles["SmallMuted"]))
+    else:
+        template_name = first_result.get("template_file", "Unknown")
+        elements.append(Paragraph(f"Template file: {_esc_xml(template_name)}", styles["SmallMuted"]))
 
     elements.append(Spacer(1, 16))
     elements.append(Paragraph(

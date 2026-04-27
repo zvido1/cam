@@ -1,0 +1,79 @@
+You are a legal document analyst specializing in commercial lease agreements. Your task is to extract specific provisions from a single lease document, guided by an issue-area taxonomy. There is NO reference template — you are analyzing this document on its own.
+
+LEASE DOCUMENT:
+===BEGIN LEASE===
+{tenant_text}
+===END LEASE===
+
+ISSUE AREAS TO EXTRACT:
+{provision_list}
+
+INSTRUCTIONS:
+
+For each issue area listed above:
+1. Locate the clause(s) in the LEASE DOCUMENT that address this issue area. Use the issue area's name and description to guide your search.
+2. Extract the COMPLETE clause text, including all subsections and sub-paragraphs. Do not summarize — copy the full language verbatim.
+3. Record the section reference (e.g., "Article XI, Sections 11.1-11.4").
+4. Determine the status:
+   - FOUND: The issue area is addressed somewhere in the document.
+   - NOT_FOUND: The issue area is absent from the document.
+   - AMBIGUOUS: Language potentially addresses this issue area but scope or applicability is uncertain.
+
+CRITICAL — COMPLETE EXTRACTION:
+Extract the COMPLETE clause text for each issue area, including ALL subsections. Do not summarize, paraphrase, or truncate. Downstream coverage and exposure analysis requires the actual contractual language.
+
+CRITICAL — OMISSION DETECTION:
+If a section appears with language like "[Intentionally Omitted]", "Reserved", or similar, still extract that clause text and record status FOUND. Downstream negative-space detection will interpret the omission signal.
+
+CRITICAL — ADDITIONAL SUBSECTIONS:
+Extract ALL subsections found under the same article heading. A subsection that addresses the issue area must be included in the tenant_text field.
+
+ADDITIONAL TASK — CONTRACT METADATA:
+Extract the following contract-level metadata from the LEASE DOCUMENT. Return as a "contract_metadata" object alongside the provisions array.
+
+Required metadata fields:
+- "landlord": Full legal name of the landlord/lessor
+- "tenant": Full legal name of the tenant/lessee
+- "property_description": Property address or description (suite, building, address)
+- "effective_date": Lease effective or commencement date
+- "term_length": Duration of the lease term (e.g., "5 years")
+- "expiration_date": Lease expiration date (if stated)
+- "governing_law": Governing state/jurisdiction
+- "base_rent": Base rent amount and frequency (e.g., "$4,500/month")
+- "permitted_use": Brief description of permitted use
+
+If any field cannot be determined from the document, use an empty string.
+
+ADDITIONAL TASK — DEAL OVERVIEW:
+Provide a "deal_overview" object summarizing the key business terms.
+
+Required deal_overview fields:
+- "landlord_name", "tenant_name", "property_address", "property_type"
+- "lease_term_years" (numeric), "commencement_date", "expiration_date"
+- "renewal_options", "base_rent_monthly", "escalation", "security_deposit"
+- "cam_structure", "permitted_use"
+- "key_terms_summary": Array of 3-6 bullet-point strings highlighting the most important business terms
+
+If any field cannot be determined, use an empty string (or empty array for key_terms_summary).
+
+OUTPUT FORMAT:
+
+Respond with a JSON object containing three top-level keys:
+1. "contract_metadata": the metadata object described above
+2. "deal_overview": the deal overview object described above
+3. "provisions": an array of extraction objects, one per issue area in the list
+
+Each provision extraction object must have these exact fields:
+- "provision_id": The issue area ID (e.g., "LP-01")
+- "provision_name": The issue area name
+- "template_text": Empty string "" (no template in this mode)
+- "tenant_text": Full extracted clause text from the lease (empty string if NOT_FOUND)
+- "template_section_ref": Empty string "" (no template in this mode)
+- "tenant_section_ref": Section reference in the lease (empty string if not found)
+- "status": One of "FOUND_BOTH", "TEMPLATE_ONLY", "TENANT_ONLY", "AMBIGUOUS". In single-document mode, use "TENANT_ONLY" when the clause is present (FOUND), "AMBIGUOUS" when uncertain. The "status" values match the existing schema for downstream compatibility.
+- "alignment_notes": Brief observations about the extracted text (e.g., "Clause addresses expected rent escalation via CPI without cap.")
+- "definition_changes": Empty string (no template to compare against)
+
+Respond ONLY with the JSON object containing three top-level keys:
+"contract_metadata", "deal_overview", and "provisions".
+No additional text before or after.

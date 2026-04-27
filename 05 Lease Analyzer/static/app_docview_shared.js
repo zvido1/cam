@@ -57,10 +57,7 @@
             </button>`
         ).join("");
 
-        const _ca = helpers.coverageAssessment || [];
-        const _cov = _ca.find(function(a) { return a.issue_area_id === pid; });
-        const covLinkHtml = (!_cov || _cov.coverage_state === 'covered' || _cov.coverage_state === 'not_applicable') ? '' :
-            `<a class="card-docview-link card-docview-link--btn" href="#" onclick="window.CAM.jumpToCoverageProvision('${esc(pid)}'); return false;" title="Jump to this gap in Coverage &amp; Gaps">&#9680; Coverage Gap</a>`;
+        const covLinkHtml = window.CAMShared.buildCoverageGapLink(pid, helpers.coverageAssessment, esc);
 
         return `
             <div class="resolution-bar docview-resolution-bar" data-pid="${esc(pid)}" data-tenant-idx="${tenantIdx}">
@@ -123,10 +120,7 @@
         const pid = provision.provision_id;
         const concernState = getConformingConcernState(tenantIdx, pid);
 
-        const _ca = helpers.coverageAssessment || [];
-        const _cov = _ca.find(function(a) { return a.issue_area_id === pid; });
-        const covLinkHtml = (!_cov || _cov.coverage_state === 'covered' || _cov.coverage_state === 'not_applicable') ? '' :
-            `<a class="card-docview-link card-docview-link--btn" href="#" onclick="window.CAM.jumpToCoverageProvision('${esc(pid)}'); return false;" title="Jump to this gap in Coverage &amp; Gaps">&#9680; Coverage Gap</a>`;
+        const covLinkHtml = window.CAMShared.buildCoverageGapLink(pid, helpers.coverageAssessment, esc);
 
         return `
             <div class="conforming-concern-bar docview-concern-bar">
