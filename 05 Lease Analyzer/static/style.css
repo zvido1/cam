@@ -11692,3 +11692,208 @@ body.mode-c #contract-tab-audittrail {
 body.mode-c .card-audit-link {
     display: none !important;
 }
+
+/* ───────────────────────────────────────────────────────────────────
+   Step 264: Unified left-sidebar enrichment (Mode A + Mode C)
+
+   Both modes now use the same item layout: provision/area ID + name +
+   state-or-severity badge on the top row, truncated risk/exposure
+   descriptor on the second row. Mode A is grouped per-tenant by severity;
+   Mode C is grouped per-tenant by attention tier. Class names are
+   intentionally new (.nav-item-enriched, .nav-section, etc.) so they
+   don't collide with whatever earlier .nav-sidebar item styles exist.
+   ─────────────────────────────────────────────────────────────────── */
+
+.nav-sidebar-content .nav-tenant-group {
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+}
+.nav-sidebar-content .nav-tenant-group + .nav-tenant-group {
+    border-top: 1px solid var(--border, #e2e8f0);
+    padding-top: 0.75rem;
+}
+
+.nav-sidebar-content .nav-tenant-header {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted, #64748b);
+    padding: 0.4rem 0.75rem 0.25rem;
+    word-break: break-word;
+}
+.nav-sidebar-content .nav-tenant-active .nav-tenant-header {
+    color: var(--accent, #2563eb);
+}
+
+.nav-sidebar-content .nav-section {
+    margin-bottom: 0.5rem;
+}
+.nav-sidebar-content .nav-section-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted, #64748b);
+    padding: 0.35rem 0.75rem 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.nav-sidebar-content .nav-section-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    padding: 0 0.35rem;
+    height: 1rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text-muted, #64748b);
+    background: var(--bg-alt, #f1f5f9);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 9999px;
+    line-height: 1;
+}
+
+/* Section header tints by severity / attention tier */
+.nav-sidebar-content .nav-section-sev-critical .nav-section-header { color: #b91c1c; }
+.nav-sidebar-content .nav-section-sev-high     .nav-section-header { color: #c2410c; }
+.nav-sidebar-content .nav-section-sev-medium   .nav-section-header { color: #b45309; }
+.nav-sidebar-content .nav-section-sev-low      .nav-section-header { color: #475569; }
+.nav-sidebar-content .nav-section-attention    .nav-section-header { color: #b91c1c; }
+.nav-sidebar-content .nav-section-review       .nav-section-header { color: #c2410c; }
+
+/* Item button: full-width clickable card. Reset native button styles. */
+.nav-sidebar-content .nav-item-enriched {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 1px solid transparent;
+    border-left: 3px solid transparent;
+    border-radius: var(--radius, 0.5rem);
+    padding: 0.5rem 0.7rem;
+    margin: 0.15rem 0;
+    cursor: pointer;
+    color: var(--text, #1e293b);
+    font-family: inherit;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.nav-sidebar-content .nav-item-enriched:hover {
+    background: var(--bg-alt, #f8fafc);
+    border-color: var(--border, #e2e8f0);
+}
+.nav-sidebar-content .nav-item-enriched:focus-visible {
+    outline: 2px solid var(--accent, #2563eb);
+    outline-offset: 2px;
+}
+.nav-sidebar-content .nav-item-enriched.active {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    border-left-color: var(--accent, #2563eb);
+}
+
+/* Top row: ID · name · badge (badge pinned right) */
+.nav-sidebar-content .nav-item-top {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+}
+.nav-sidebar-content .nav-item-id {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+}
+.nav-sidebar-content .nav-item-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    color: var(--text, #1e293b);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.nav-sidebar-content .nav-item-badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    height: 1.1rem;
+    padding: 0 0.4rem;
+    border-radius: 9999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+/* Severity badges (Mode A) */
+.nav-sidebar-content .nav-badge-critical {
+    background: #fee2e2; color: #991b1b; border-color: #fca5a5;
+}
+.nav-sidebar-content .nav-badge-high {
+    background: #ffedd5; color: #9a3412; border-color: #fed7aa;
+}
+.nav-sidebar-content .nav-badge-medium {
+    background: #fef3c7; color: #92400e; border-color: #fde68a;
+}
+.nav-sidebar-content .nav-badge-low {
+    background: #f1f5f9; color: #475569; border-color: #cbd5e1;
+}
+.nav-sidebar-content .nav-badge-review {
+    background: #e0e7ff; color: #3730a3; border-color: #c7d2fe;
+}
+
+/* Coverage state badges (Mode C) */
+.nav-sidebar-content .nav-badge-unfavorable {
+    background: #fee2e2; color: #991b1b; border-color: #fca5a5;
+}
+.nav-sidebar-content .nav-badge-missing {
+    background: #fee2e2; color: #991b1b; border-color: #fca5a5;
+}
+.nav-sidebar-content .nav-badge-partial-material {
+    background: #ffedd5; color: #9a3412; border-color: #fed7aa;
+}
+.nav-sidebar-content .nav-badge-partial-review {
+    background: #fef3c7; color: #92400e; border-color: #fde68a;
+}
+.nav-sidebar-content .nav-badge-default {
+    background: #f1f5f9; color: #475569; border-color: #cbd5e1;
+}
+
+/* Descriptor: 2-line clamp with ellipsis. Lighter than name; full text on hover via title attr. */
+.nav-sidebar-content .nav-item-desc {
+    margin-top: 0.25rem;
+    color: var(--text-muted, #64748b);
+    font-size: 0.75rem;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+
+/* Empty states */
+.nav-sidebar-content .nav-empty {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-muted, #64748b);
+    font-style: italic;
+}
+.nav-sidebar-content .nav-empty-state {
+    padding: 1rem 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted, #64748b);
+    text-align: center;
+}

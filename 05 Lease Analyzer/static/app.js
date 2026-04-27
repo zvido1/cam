@@ -14639,6 +14639,253 @@ window.CAM._applyCoverageTierFilter = _applyCoverageTierFilter;
 window.CAM._applyCoverageStatusFilter = _applyCoverageStatusFilter;
 window.CAM.renderCoveragePanel = renderCoveragePanel;
 
+// ══════════════════════════════════════════════════════
+// Step 264: Unified left-sidebar enrichment (Mode A + Mode C)
+//
+// Both modes share one item layout: provision/area ID + name + state-or-
+// severity badge + truncated risk descriptor. Mode A pulls from
+// provisions[].final_verdict === "DEVIATES" (existing deviation workflow).
+// Mode C pulls from coverage_assessment[] (Phase 5 Coverage & Exposure).
+//
+// These function declarations are intentionally placed at the END of the
+// IIFE: in JS, when two `function` declarations share a name in the same
+// scope, the LATER one wins after hoisting. This lets us override the
+// earlier renderNavSidebar/updateNavActive without reading or removing them.
+// ══════════════════════════════════════════════════════
+
+// Step 264.1: prefer truncating at a sentence boundary within `max` chars.
+// Walks backward looking for `.`, `!`, or `?` followed by a space (or end of
+// slice). The trailing-space check avoids matching mid-abbreviation cases
+// like "e.g." or "U.S." Falls back to clean word-boundary truncation with an
+// ellipsis if no sentence boundary is found. Mid-word cuts are never
+// produced — the descriptor always ends at clean punctuation or whitespace.
+function _navTruncate(s, max) {
+    if (!s) return "";
+    s = String(s).trim();
+    if (s.length <= max) return s;
+    const slice = s.slice(0, max);
+    let cut = -1;
+    for (let i = slice.length - 1; i >= 40; i--) {
+        const ch = slice[i];
+        if (ch === "." || ch === "!" || ch === "?") {
+            const next = slice[i + 1];
+            if (next === undefined || next === " ") {
+                cut = i + 1;
+                break;
+            }
+        }
+    }
+    if (cut > 0) {
+        return s.slice(0, cut);
+    }
+    const wordEnd = slice.lastIndexOf(" ");
+    if (wordEnd >= 40) {
+        return s.slice(0, wordEnd).trimEnd() + "\u2026";
+    }
+    return s.slice(0, max - 1).trimEnd() + "\u2026";
+}
+
+function _navBuildModeAItem(d, tIdx) {
+    const pid = d.provision_id || "";
+    const name = d.provision_name || pid || "Unnamed provision";
+    const sev = (d.severity || "MEDIUM").toUpperCase();
+    const desc = (d.risk_headline || d.challenge_details || d.summary || "").trim();
+    const truncDesc = _navTruncate(desc, 180);
+    const sevLabel = sevDisplay(sev);
+    const sevCls = sev.toLowerCase();
+    return '<button class="nav-item-enriched nav-item-sev-' + sevCls + '" data-pid="' + esc(pid) + '" data-tenant-idx="' + tIdx + '" data-mode="a" title="' + esc(desc || name) + '">'
+         +   '<div class="nav-item-top">'
+         +     '<span class="nav-item-id">' + esc(pid) + '</span>'
+         +     '<span class="nav-item-name">' + esc(name) + '</span>'
+         +     '<span class="nav-item-badge nav-badge-' + sevCls + '">' + esc(sevLabel) + '</span>'
+         +   '</div>'
+         +   (truncDesc ? '<div class="nav-item-desc">' + esc(truncDesc) + '</div>' : "")
+         + '</button>';
+}
+
+function _navBuildModeCItem(a, tIdx) {
+    const pid = a.issue_area_id || a.provision_id || "";
+    const name = a.issue_area_name || a.provision_name || pid || "Unnamed area";
+    const state = a.coverage_state || "";
+    const pcls = a.partial_class || "";
+    const stmt = (a.exposure_statement || a.exposure || "").trim();
+    const truncStmt = _navTruncate(stmt, 180);
+    let badgeLabel, badgeCls;
+    if (state === "covered_unfavorable") {
+        badgeLabel = "Unfavorable"; badgeCls = "nav-badge-unfavorable";
+    } else if (state === "missing") {
+        badgeLabel = "Missing"; badgeCls = "nav-badge-missing";
+    } else if (pcls === "partial_material") {
+        badgeLabel = "Partial"; badgeCls = "nav-badge-partial-material";
+    } else if (pcls === "partial_review") {
+        badgeLabel = "Review"; badgeCls = "nav-badge-partial-review";
+    } else {
+        badgeLabel = state || "—"; badgeCls = "nav-badge-default";
+    }
+    return '<button class="nav-item-enriched" data-pid="' + esc(pid) + '" data-tenant-idx="' + tIdx + '" data-mode="c" title="' + esc(stmt || name) + '">'
+         +   '<div class="nav-item-top">'
+         +     '<span class="nav-item-id">' + esc(pid) + '</span>'
+         +     '<span class="nav-item-name">' + esc(name) + '</span>'
+         +     '<span class="nav-item-badge ' + badgeCls + '">' + esc(badgeLabel) + '</span>'
+         +   '</div>'
+         +   (truncStmt ? '<div class="nav-item-desc">' + esc(truncStmt) + '</div>' : "")
+         + '</button>';
+}
+
+function renderNavSidebar() {
+    const container = document.getElementById("nav-sidebar-content");
+    if (!container) return;
+    if (!currentResults || !currentResults.tenants) {
+        container.innerHTML = "";
+        return;
+    }
+    const tenants = currentResults.tenants;
+    const isModeC = isJobModeC();
+    const showTenantHeaders = tenants.length > 1;
+    let html = "";
+
+    if (isModeC) {
+        // Mode C: group coverage_assessment items into Needs Attention / Worth Reviewing tiers.
+        // covered + partial_typical are intentionally excluded — they're surfaced in the
+        // collapsed "Adequately Covered" section of the main panel.
+        tenants.forEach((tenant, tIdx) => {
+            const ca = (tenant.results && tenant.results.coverage_assessment) || [];
+            const needsAttention = [];
+            const worthReviewing = [];
+            ca.forEach(a => {
+                if (a.coverage_state === "covered_unfavorable"
+                    || a.coverage_state === "missing"
+                    || a.partial_class === "partial_material") {
+                    needsAttention.push(a);
+                } else if (a.partial_class === "partial_review") {
+                    worthReviewing.push(a);
+                }
+            });
+            if (needsAttention.length === 0 && worthReviewing.length === 0) {
+                if (showTenantHeaders) {
+                    html += '<div class="nav-tenant-group" data-tenant-idx="' + tIdx + '">'
+                         +   '<div class="nav-tenant-header">' + esc(tenant.filename || ("Lease " + (tIdx + 1))) + '</div>'
+                         +   '<div class="nav-empty">No high-priority gaps</div>'
+                         + '</div>';
+                }
+                return;
+            }
+            html += '<div class="nav-tenant-group" data-tenant-idx="' + tIdx + '">';
+            if (showTenantHeaders) {
+                html += '<div class="nav-tenant-header">' + esc(tenant.filename || ("Lease " + (tIdx + 1))) + '</div>';
+            }
+            if (needsAttention.length > 0) {
+                html += '<div class="nav-section nav-section-attention">'
+                     +   '<div class="nav-section-header">Needs Attention <span class="nav-section-count">' + needsAttention.length + '</span></div>';
+                needsAttention.forEach(a => { html += _navBuildModeCItem(a, tIdx); });
+                html += '</div>';
+            }
+            if (worthReviewing.length > 0) {
+                html += '<div class="nav-section nav-section-review">'
+                     +   '<div class="nav-section-header">Worth Reviewing <span class="nav-section-count">' + worthReviewing.length + '</span></div>';
+                worthReviewing.forEach(a => { html += _navBuildModeCItem(a, tIdx); });
+                html += '</div>';
+            }
+            html += '</div>';
+        });
+    } else {
+        // Mode A: group deviations per tenant, then by severity.
+        const SEV_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "REVIEW"];
+        tenants.forEach((tenant, tIdx) => {
+            const provs = (tenant.results && tenant.results.provisions) || [];
+            const devs = getDeviationWorkflowProvisions(provs, tIdx);
+            if (devs.length === 0) {
+                if (showTenantHeaders) {
+                    html += '<div class="nav-tenant-group" data-tenant-idx="' + tIdx + '">'
+                         +   '<div class="nav-tenant-header">' + esc(tenant.filename || ("Lease " + (tIdx + 1))) + '</div>'
+                         +   '<div class="nav-empty">No deviations</div>'
+                         + '</div>';
+                }
+                return;
+            }
+            const grouped = {};
+            devs.forEach(d => {
+                let sev = (d.severity || "MEDIUM").toUpperCase();
+                if (!SEV_ORDER.includes(sev)) sev = "MEDIUM";
+                if (!grouped[sev]) grouped[sev] = [];
+                grouped[sev].push(d);
+            });
+            html += '<div class="nav-tenant-group" data-tenant-idx="' + tIdx + '">';
+            if (showTenantHeaders) {
+                html += '<div class="nav-tenant-header">' + esc(tenant.filename || ("Lease " + (tIdx + 1))) + '</div>';
+            }
+            SEV_ORDER.forEach(sev => {
+                const items = grouped[sev];
+                if (!items || items.length === 0) return;
+                const sevCls = sev.toLowerCase();
+                html += '<div class="nav-section nav-section-sev-' + sevCls + '">'
+                     +   '<div class="nav-section-header">' + esc(sevDisplay(sev)) + ' <span class="nav-section-count">' + items.length + '</span></div>';
+                items.forEach(d => { html += _navBuildModeAItem(d, tIdx); });
+                html += '</div>';
+            });
+            html += '</div>';
+        });
+    }
+
+    if (!html.trim()) {
+        html = '<div class="nav-empty-state">No open issues to review</div>';
+    }
+
+    container.innerHTML = html;
+
+    // Wire click handlers. Mode A jumps to docview; Mode C jumps to coverage panel.
+    // Both sync currentTenantIndex first if the click came from a different tenant section.
+    container.querySelectorAll(".nav-item-enriched").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const pid = btn.dataset.pid;
+            const tIdx = parseInt(btn.dataset.tenantIdx, 10);
+            const mode = btn.dataset.mode;
+            if (!isNaN(tIdx) && tIdx !== currentTenantIndex) {
+                currentTenantIndex = tIdx;
+                const ts = document.getElementById("tenant-select");
+                if (ts) ts.value = String(tIdx);
+                const dts = document.getElementById("docview-tenant-select");
+                if (dts) dts.value = String(tIdx);
+                if (typeof renderTenantResults === "function") {
+                    try { renderTenantResults(); } catch (e) { /* silent */ }
+                }
+                if (typeof syncChatScopeToCurrentTenant === "function") {
+                    try { syncChatScopeToCurrentTenant(true); } catch (e) { /* silent */ }
+                }
+            }
+            if (mode === "c") {
+                if (window.CAM && typeof window.CAM.jumpToCoverageProvision === "function") {
+                    window.CAM.jumpToCoverageProvision(pid);
+                }
+            } else {
+                if (window.CAM && typeof window.CAM.jumpToDocview === "function") {
+                    window.CAM.jumpToDocview(pid);
+                }
+            }
+            updateNavActive(currentTenantIndex, pid);
+        });
+    });
+
+    updateNavActive(currentTenantIndex);
+}
+
+function updateNavActive(tenantIdx, focusPid) {
+    const container = document.getElementById("nav-sidebar-content");
+    if (!container) return;
+    container.querySelectorAll(".nav-item-enriched.active").forEach(el => el.classList.remove("active"));
+    container.querySelectorAll(".nav-tenant-group").forEach(g => {
+        const idx = parseInt(g.dataset.tenantIdx, 10);
+        g.classList.toggle("nav-tenant-active", idx === tenantIdx);
+    });
+    if (focusPid) {
+        try {
+            const sel = '.nav-item-enriched[data-pid="' + (window.CSS && CSS.escape ? CSS.escape(focusPid) : focusPid) + '"][data-tenant-idx="' + tenantIdx + '"]';
+            const item = container.querySelector(sel);
+            if (item) item.classList.add("active");
+        } catch (e) { /* silent */ }
+    }
+}
+
 // ── Boot ──
 document.addEventListener("DOMContentLoaded", init);
 
