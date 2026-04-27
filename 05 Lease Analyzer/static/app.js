@@ -14659,9 +14659,34 @@ window.CAM.renderCoveragePanel = renderCoveragePanel;
 // like "e.g." or "U.S." Falls back to clean word-boundary truncation with an
 // ellipsis if no sentence boundary is found. Mid-word cuts are never
 // produced — the descriptor always ends at clean punctuation or whitespace.
+//
+// Step 264.2: defensive sanitizer for existing data with pipeline truncation
+// artifacts. The pipeline bug (in lease_exposure.py, fixed in 264.2) used
+// `statement.split('.')` which shattered abbreviations — producing endings
+// like "...default. (e." or "...default. (e. g." Strip those before
+// truncation so historical runs render cleanly without re-processing.
+function _navSanitize(s) {
+    if (!s) return s;
+    let result = String(s).trim();
+    // Pattern A: trailing parenthetical abbreviation — " (e. g.", " (e.g.",
+    // " (e.", " (i. e.", " (i.". Requires opening paren so we don't strip
+    // legitimate sentence endings.
+    result = result.replace(/\s+\(\s*[a-zA-Z]\.\s*([a-zA-Z]\.?)?\s*$/, "");
+    // Pattern B: trailing bare abbreviation without paren — " e. g.", " e.g."
+    result = result.replace(/\s+[a-zA-Z]\.\s+[a-zA-Z]\.?\s*$/, "");
+    // Strip any dangling open paren or trailing comma left behind
+    result = result.replace(/[(,\s]+$/, "").trim();
+    // If we changed the string and it doesn't end in sentence punctuation,
+    // append a period for a clean ending.
+    if (result !== String(s).trim() && result && !/[.!?]$/.test(result)) {
+        result += ".";
+    }
+    return result || String(s);
+}
+
 function _navTruncate(s, max) {
     if (!s) return "";
-    s = String(s).trim();
+    s = _navSanitize(String(s).trim());
     if (s.length <= max) return s;
     const slice = s.slice(0, max);
     let cut = -1;

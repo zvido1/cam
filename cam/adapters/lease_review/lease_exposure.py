@@ -293,9 +293,12 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
             result["exposure_perspective"] = perspective
             return result
 
-        sentences = [s.strip() for s in statement.split('.') if s.strip()]
-        if len(sentences) > 2:
-            statement = '. '.join(sentences[:2]) + '.'
+        # Step 264.2: previous code did `sentences = statement.split('.')` and
+        # joined first 2 — but `split('.')` shatters abbreviations like "e.g."
+        # and "(e. g." producing artifacts like "...default. (e." at the end
+        # of the statement. The system prompt already constrains to 1–2
+        # sentences and `max_output_tokens=150` hard-caps length, so the
+        # post-hoc sentence trim was doing more harm than good. Removed.
 
         return {
             "exposure_statement": statement,
