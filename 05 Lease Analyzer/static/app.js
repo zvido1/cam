@@ -14814,40 +14814,73 @@ function renderNavSidebar() {
             html += '</div>';
         });
     } else {
-        // Mode A: group deviations per tenant, then by severity.
+        // Mode A: per tenant, render deviation sections (by severity) AND
+        // coverage gap sections (Needs Attention / Worth Reviewing). Deviations
+        // come from the multi-evaluator pipeline (provisions[].final_verdict);
+        // coverage gaps come from Phase 5 (coverage_assessment[]). Both are
+        // generated for Mode A jobs, so the sidebar should surface both.
         const SEV_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "REVIEW"];
         tenants.forEach((tenant, tIdx) => {
             const provs = (tenant.results && tenant.results.provisions) || [];
             const devs = getDeviationWorkflowProvisions(provs, tIdx);
-            if (devs.length === 0) {
+            const ca = (tenant.results && tenant.results.coverage_assessment) || [];
+            const needsAttention = [];
+            const worthReviewing = [];
+            ca.forEach(a => {
+                if (a.coverage_state === "covered_unfavorable"
+                    || a.coverage_state === "missing"
+                    || a.partial_class === "partial_material") {
+                    needsAttention.push(a);
+                } else if (a.partial_class === "partial_review") {
+                    worthReviewing.push(a);
+                }
+            });
+            const totalIssues = devs.length + needsAttention.length + worthReviewing.length;
+            if (totalIssues === 0) {
                 if (showTenantHeaders) {
                     html += '<div class="nav-tenant-group" data-tenant-idx="' + tIdx + '">'
                          +   '<div class="nav-tenant-header">' + esc(tenant.filename || ("Lease " + (tIdx + 1))) + '</div>'
-                         +   '<div class="nav-empty">No deviations</div>'
+                         +   '<div class="nav-empty">No open issues</div>'
                          + '</div>';
                 }
                 return;
             }
-            const grouped = {};
-            devs.forEach(d => {
-                let sev = (d.severity || "MEDIUM").toUpperCase();
-                if (!SEV_ORDER.includes(sev)) sev = "MEDIUM";
-                if (!grouped[sev]) grouped[sev] = [];
-                grouped[sev].push(d);
-            });
             html += '<div class="nav-tenant-group" data-tenant-idx="' + tIdx + '">';
             if (showTenantHeaders) {
                 html += '<div class="nav-tenant-header">' + esc(tenant.filename || ("Lease " + (tIdx + 1))) + '</div>';
             }
-            SEV_ORDER.forEach(sev => {
-                const items = grouped[sev];
-                if (!items || items.length === 0) return;
-                const sevCls = sev.toLowerCase();
-                html += '<div class="nav-section nav-section-sev-' + sevCls + '">'
-                     +   '<div class="nav-section-header">' + esc(sevDisplay(sev)) + ' <span class="nav-section-count">' + items.length + '</span></div>';
-                items.forEach(d => { html += _navBuildModeAItem(d, tIdx); });
+            // Deviation severity sections
+            if (devs.length > 0) {
+                const grouped = {};
+                devs.forEach(d => {
+                    let sev = (d.severity || "MEDIUM").toUpperCase();
+                    if (!SEV_ORDER.includes(sev)) sev = "MEDIUM";
+                    if (!grouped[sev]) grouped[sev] = [];
+                    grouped[sev].push(d);
+                });
+                SEV_ORDER.forEach(sev => {
+                    const items = grouped[sev];
+                    if (!items || items.length === 0) return;
+                    const sevCls = sev.toLowerCase();
+                    html += '<div class="nav-section nav-section-sev-' + sevCls + '">'
+                         +   '<div class="nav-section-header">' + esc(sevDisplay(sev)) + ' <span class="nav-section-count">' + items.length + '</span></div>';
+                    items.forEach(d => { html += _navBuildModeAItem(d, tIdx); });
+                    html += '</div>';
+                });
+            }
+            // Coverage gap sections (same layout as Mode C)
+            if (needsAttention.length > 0) {
+                html += '<div class="nav-section nav-section-attention">'
+                     +   '<div class="nav-section-header">Coverage — Needs Attention <span class="nav-section-count">' + needsAttention.length + '</span></div>';
+                needsAttention.forEach(a => { html += _navBuildModeCItem(a, tIdx); });
                 html += '</div>';
-            });
+            }
+            if (worthReviewing.length > 0) {
+                html += '<div class="nav-section nav-section-review">'
+                     +   '<div class="nav-section-header">Coverage — Worth Reviewing <span class="nav-section-count">' + worthReviewing.length + '</span></div>';
+                worthReviewing.forEach(a => { html += _navBuildModeCItem(a, tIdx); });
+                html += '</div>';
+            }
             html += '</div>';
         });
     }

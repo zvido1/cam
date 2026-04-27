@@ -63,8 +63,9 @@ def get_config() -> dict:
         "UPLOAD_DIR": os.getenv("UPLOAD_DIR", str(LEASE_DIR / "uploads")),
         "RESULTS_DIR": os.getenv("RESULTS_DIR", str(LEASE_DIR / "results")),
 
-        # Results expiration (minutes after completion — default 24 hours)
-        "JOB_EXPIRY_MINUTES": int(os.getenv("JOB_EXPIRY_MINUTES", "1440")),
+        # Results expiration (minutes after completion — default 7 days).
+        # Set JOB_EXPIRY_MINUTES env var to override (e.g. 1440 = 24h, 10080 = 7 days).
+        "JOB_EXPIRY_MINUTES": int(os.getenv("JOB_EXPIRY_MINUTES", "10080")),
     }
 
 
