@@ -5292,6 +5292,14 @@ function renderContractClauseFilterBar(provisions) {
             &#128196; Aligned Provision Comparison
         </button>`
         : '';
+    // Step 277: Generate Final Draft consumes provisions[] (Mode A
+    // deviation findings) and is inert in Mode C — would produce a
+    // 10-paragraph stub with all-zero counts. Hide the button entirely
+    // in Mode C runs. Mirror the comparisonButton guard pattern.
+    const finalDraftButton = !isJobModeC()
+        ? `<button type="button" class="fd-generate-btn contract-final-draft-btn" id="fd-generate-btn" disabled
+            onclick="window.CAM.generateFinalDraft()">Generate Final Draft ↓</button>`
+        : '';
 
     // Provision filter dropdown
     const provEntries = [...available.provisions.entries()].sort(function(a, b) {
@@ -5329,8 +5337,7 @@ function renderContractClauseFilterBar(provisions) {
                 <div class="contract-clause-filter-actions">
                     ${annotatedButton}
                     ${comparisonButton}
-                    <button type="button" class="fd-generate-btn contract-final-draft-btn" id="fd-generate-btn" disabled
-                        onclick="window.CAM.generateFinalDraft()">Generate Final Draft \u2193</button>
+                    ${finalDraftButton}
                 </div>
             </div>
             <div class="contract-clause-filter-controls">
