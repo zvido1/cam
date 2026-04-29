@@ -3021,7 +3021,11 @@ function renderResults() {
     document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage").forEach(function(btn) {
         btn.onclick = function() {
             var _l = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail', coverage: 'Coverage & Gaps' };
-            setSubheader(_l[btn.dataset.tab] || btn.dataset.tab);
+            // Step 281: include perspective indicator on the coverage
+            // tab so the bar doesn't flash from "no perspective" to
+            // "perspective" when switchResultsTab runs after this.
+            var _subRight = (btn.dataset.tab === "coverage") ? _coverageSubheaderRight() : "";
+            setSubheader(_l[btn.dataset.tab] || btn.dataset.tab, _subRight);
             if (!contractDetailOpen) {
                 showNoContractPlaceholder(btn.dataset.tab);
             } else {
@@ -7107,7 +7111,11 @@ function switchResultsTab(tab) {
     if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage") {
         activeTopTab = tab;
     }
-    setSubheader(TAB_SUBHEADER_LABELS[tab] || tab);
+    // Step 281: Coverage & Gaps tab in Mode C carries a right-aligned
+    // perspective indicator. All other tabs (and Mode A on the
+    // Coverage tab) get the plain label-only subheader as before.
+    var _subRight = (tab === "coverage") ? _coverageSubheaderRight() : "";
+    setSubheader(TAB_SUBHEADER_LABELS[tab] || tab, _subRight);
 
     // Update tab bar active state (Step 129 fix: $ → $ for querySelectorAll)
     document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage").forEach(t => {
@@ -11985,9 +11993,55 @@ function checkCompletionBanner() {
 
 // ── Top-Level Tab Switching ──
 
-function setSubheader(label) {
+function setSubheader(label, rightHtml) {
     var el = document.getElementById('tab-subheader');
-    if (el) el.textContent = label;
+    if (!el) return;
+    // Step 281: subheader bar can carry an optional right-aligned
+    // suffix (e.g. "Perspective: Tenant" on the Coverage & Gaps tab
+    // for Mode C runs). When rightHtml is omitted the bar renders
+    // exactly as it did pre-Step-281 — left-aligned label only.
+    if (rightHtml) {
+        el.innerHTML =
+            '<span class="tab-subheader-label">' + esc(label) + '</span>' +
+            '<span class="tab-subheader-right">' + rightHtml + '</span>';
+        el.classList.add('tab-subheader-flex');
+    } else {
+        el.textContent = label;
+        el.classList.remove('tab-subheader-flex');
+    }
+}
+
+// Step 281: perspective indicator for the Coverage & Gaps tab subheader.
+// Mirrors the same precedence the Synopsis PDF uses: top-level
+// `perspective` field on the result dict → most-common
+// `coverage_assessment[].exposure_perspective` → "tenant" default.
+// Returns the formatted right-side HTML (empty string when not Mode C).
+function _coverageSubheaderRight() {
+    if (!isJobModeC()) return "";
+    var tr = (currentResults && currentResults.tenants)
+        ? currentResults.tenants[currentTenantIndex || 0]
+        : null;
+    var pr = tr && tr.results ? tr.results : null;
+    if (!pr) return "";
+    var p = (pr.perspective || "").toString().trim().toLowerCase();
+    if (!p) {
+        var ca = pr.coverage_assessment || [];
+        var counts = {};
+        for (var i = 0; i < ca.length; i++) {
+            var v = (ca[i].exposure_perspective || "").toString().trim().toLowerCase();
+            if (!v) continue;
+            counts[v] = (counts[v] || 0) + 1;
+        }
+        var best = "";
+        var bestN = 0;
+        for (var k in counts) {
+            if (counts[k] > bestN) { best = k; bestN = counts[k]; }
+        }
+        p = best || "tenant";
+    }
+    var labels = { tenant: "Tenant", landlord: "Landlord", neutral: "Neutral" };
+    var label = labels[p] || (p.charAt(0).toUpperCase() + p.slice(1));
+    return '<span class="tab-subheader-perspective"><span class="tab-subheader-perspective-key">Perspective:</span> ' + esc(label) + '</span>';
 }
 
 function switchTopTab(tab) {
@@ -15011,8 +15065,22 @@ function renderNavSidebar() {
 
     container.innerHTML = html;
 
-    // Wire click handlers. Mode A jumps to docview; Mode C jumps to coverage panel.
-    // Both sync currentTenantIndex first if the click came from a different tenant section.
+    // Wire click handlers — item-type-aware routing (Step 283).
+    // The sidebar can carry two kinds of items:
+    //   - data-mode="a" — Mode A deviations (rendered via _navBuildModeAItem).
+    //     These have a `provision_id`; their primary writeup is the Lease
+    //     Summary (Findings) view, so the click jumps to `jumpToFinding`
+    //     which switches to the findings tab and scrolls to the deviation
+    //     card.
+    //   - data-mode="c" — coverage gap items (rendered via _navBuildModeCItem).
+    //     These have an `issue_area_id`; their native view is the
+    //     Coverage & Gaps panel, so the click jumps to
+    //     `jumpToCoverageProvision`.
+    //
+    // Pre-Step-283, Mode A items routed to `jumpToDocview` (Doc Comparison),
+    // which is supporting evidence rather than the primary writeup. The
+    // tenant-index sync logic above is unchanged — only the per-mode
+    // navigation target moved.
     container.querySelectorAll(".nav-item-enriched").forEach(btn => {
         btn.addEventListener("click", () => {
             const pid = btn.dataset.pid;
@@ -15036,8 +15104,11 @@ function renderNavSidebar() {
                     window.CAM.jumpToCoverageProvision(pid);
                 }
             } else {
-                if (window.CAM && typeof window.CAM.jumpToDocview === "function") {
-                    window.CAM.jumpToDocview(pid);
+                // Mode A deviation → Lease Summary (Findings tab) + scroll.
+                // jumpToFinding switches the tab when needed (no-op when
+                // already on findings), then scrolls + flashes the card.
+                if (typeof jumpToFinding === "function") {
+                    jumpToFinding(pid);
                 }
             }
             updateNavActive(currentTenantIndex, pid);

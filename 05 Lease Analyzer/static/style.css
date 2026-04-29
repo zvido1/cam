@@ -1531,6 +1531,17 @@ textarea.input-field {
     margin-bottom: 0.7rem;
 }
 
+/* Step 282: title-side wrapper (the unnamed first child div containing
+   title + meta) gets flex: 1 1 auto + min-width: 0 so the long
+   contract filename can wrap rather than push the badge off-screen.
+   `overflow-wrap: anywhere` permits breaking on filenames that have
+   no natural break points (long underscored names, etc.). */
+.processing-checklist-group-header > div:first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .processing-checklist-group-title {
     font-size: 0.95rem;
     font-weight: 700;
@@ -1543,7 +1554,12 @@ textarea.input-field {
     color: var(--text-muted);
 }
 
+/* Step 282: badge must never shrink — READY / STEP X OF Y labels were
+   getting clipped when the title side took up the full row. flex: 0 0
+   auto locks the badge to content size; existing `white-space: nowrap`
+   keeps the label on a single line. */
 .processing-checklist-group-badge {
+    flex: 0 0 auto;
     font-size: 0.76rem;
     font-weight: 800;
     color: var(--text-muted);
@@ -1691,13 +1707,20 @@ textarea.input-field {
     margin-bottom: 0.7rem;
 }
 
+/* Step 282: status wrap must hold its full width — READY / STEP X OF Y
+   labels were getting clipped when the contract filename was long.
+   `flex: 0 0 auto` locks the wrap to its content size, and the
+   `min-width: 35%` floor stays as a layout reservation for very narrow
+   viewports. The internal status / status-meta lines already declare
+   `white-space: nowrap`, so the labels render in full now that the
+   wrap can't be squeezed below content size. */
 .processing-tenant-status-wrap {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 0.35rem;
     min-width: 35%;
-    flex-shrink: 0;
+    flex: 0 0 auto;
 }
 
 .processing-tenant-percent {
@@ -1707,7 +1730,18 @@ textarea.input-field {
     color: var(--primary);
 }
 
+/* Step 282: title takes the remaining width and is allowed to wrap.
+   `flex: 1 1 auto` lets it grow into available space and shrink as
+   needed; `min-width: 0` is the standard escape hatch that lets a flex
+   child actually shrink below its content's intrinsic min-content size
+   (the long-filename wrap pattern that already works on the contract
+   filename today). `overflow-wrap: anywhere` lets pathological
+   filenames like "T-10_Negotiated_Tennant_Lease.docx_with_extra_…"
+   wrap rather than overflow horizontally. */
 .processing-tenant-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
     font-size: 0.95rem;
     font-weight: 700;
     color: var(--text);
@@ -9372,6 +9406,33 @@ textarea.input-field {
     padding: 0.625rem 1.8%;
     z-index: 19;
     margin: 0 calc(1.8% + var(--scrollbar-w, 0)) 0 1.8%;
+}
+
+/* Step 281: Coverage & Gaps subheader in Mode C carries a right-aligned
+   "Perspective: <value>" indicator. The flex variant kicks in only when
+   `setSubheader` is called with a rightHtml argument; otherwise the bar
+   continues to render its single text label exactly as before. */
+.tab-subheader.tab-subheader-flex {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.tab-subheader-label {
+    flex: 0 1 auto;
+}
+.tab-subheader-right {
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: none;
+    color: rgba(255, 255, 255, 0.85);
+}
+.tab-subheader-perspective-key {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    margin-right: 0.25rem;
 }
 
 /* Section heading bars (Run Synopsis collapsible / legacy) */
