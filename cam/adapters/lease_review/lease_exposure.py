@@ -127,54 +127,43 @@ def _get_exposure_statement(issue_area_def, perspective):
 
 
 def _build_schema_exposure(assessment: dict, perspective: str = "tenant") -> dict:
+    """Build a schema-path exposure result.
+
+    Step 278: every schema-path output now also carries an
+    `exposure_headline` field derived deterministically from the prose
+    via `extract_headline` (mirrors the model-path output shape so the
+    Synopsis can render one consistent presentation across both paths).
+    """
+    from cam.adapters.lease_review.lease_display import extract_headline
+
     state = assessment.get("coverage_state", "")
     missing = assessment.get("elements_missing", [])
     schema_statement = _get_exposure_statement(assessment, perspective)
     pid = assessment.get("issue_area_id", "")
     name = assessment.get("issue_area_name", pid)
 
+    def _shape(stmt, elements_used):
+        return {
+            "exposure_statement": stmt,
+            "exposure_headline":  extract_headline(stmt),
+            "exposure_source":    "schema",
+            "exposure_reason_code": "schema_default",
+            "exposure_confidence_note": None,
+            "exposure_elements_used": elements_used,
+        }
+
     if state == "covered":
-        return {
-            "exposure_statement": f"{name} is addressed and consistent with standard form.",
-            "exposure_source": "schema",
-            "exposure_reason_code": "schema_default",
-            "exposure_confidence_note": None,
-            "exposure_elements_used": [],
-        }
+        return _shape(f"{name} is addressed and consistent with standard form.", [])
     if state == "not_applicable":
-        return {
-            "exposure_statement": f"{name} does not apply to this lease.",
-            "exposure_source": "schema",
-            "exposure_reason_code": "schema_default",
-            "exposure_confidence_note": None,
-            "exposure_elements_used": [],
-        }
+        return _shape(f"{name} does not apply to this lease.", [])
     if state == "partial" and missing:
         stmt = schema_statement or f"{name} is present but {missing[0]} is absent."
-        return {
-            "exposure_statement": stmt,
-            "exposure_source": "schema",
-            "exposure_reason_code": "schema_default",
-            "exposure_confidence_note": None,
-            "exposure_elements_used": missing[:2],
-        }
+        return _shape(stmt, missing[:2])
     if state == "missing":
         stmt = schema_statement or f"{name} is absent from this lease."
-        return {
-            "exposure_statement": stmt,
-            "exposure_source": "schema",
-            "exposure_reason_code": "schema_default",
-            "exposure_confidence_note": None,
-            "exposure_elements_used": [],
-        }
+        return _shape(stmt, [])
     stmt = schema_statement or f"{name}: {state}."
-    return {
-        "exposure_statement": stmt,
-        "exposure_source": "schema",
-        "exposure_reason_code": "schema_default",
-        "exposure_confidence_note": None,
-        "exposure_elements_used": missing[:2],
-    }
+    return _shape(stmt, missing[:2])
 
 
 _EXPOSURE_SYSTEM_PROMPT_TENANT = """You write concise, practical exposure assessments for commercial lease provisions.
@@ -250,7 +239,16 @@ Missing or unfavorable elements: {elements}
 Evidence note: {evidence}
 Fallback schema statement: {fallback}
 
-{tail}"""
+{tail}
+
+Step 278: respond as a JSON object with two fields:
+- "headline": a short scannable summary (maximum 60 characters, ideally
+  4-8 words). Name the core risk/benefit concisely. Examples:
+  "Uncapped CAM, no audit rights", "Asymmetric indemnification",
+  "Aggressive default remedies, short cure". No trailing period.
+- "full": the 1-2 sentence exposure prose described above.
+
+Return only the JSON object, no surrounding markdown or commentary."""
 
 
 def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict:
@@ -296,11 +294,21 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
             name="openai:gpt-5.2",
             provider="openai",
             model="gpt-5.2",
-            max_output_tokens=150,
+            # Step 278: bumped from 150 to 220 to make room for the JSON
+            # envelope ({"headline": "...", "full": "..."}) without
+            # truncating the prose body. The body itself is still capped
+            # by the 1-2-sentence rule in the system prompt.
+            max_output_tokens=220,
         )
         router = ProviderRouter([target], RouterConfig())
         adapter = router._get_adapter("openai")
-        statement = adapter.call(system_prompt, user_prompt, target).strip()
+        raw = adapter.call(system_prompt, user_prompt, target).strip()
+
+        # Step 278: parse {headline, full} JSON. Fall back deterministically
+        # to extract_headline(full) if the model omits the headline field
+        # or returns malformed JSON. The full prose is what populates
+        # exposure_statement (preserves backward compatibility).
+        statement, headline = _parse_headline_envelope(raw, perspective)
 
         if not statement or len(statement) < 20:
             logger.warning(f"[lease_exposure] Short response for {pid}, using schema fallback")
@@ -310,16 +318,10 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
             result["exposure_perspective"] = perspective
             return result
 
-        # Step 264.2: previous code did `sentences = statement.split('.')` and
-        # joined first 2 — but `split('.')` shatters abbreviations like "e.g."
-        # and "(e. g." producing artifacts like "...default. (e." at the end
-        # of the statement. The system prompt already constrains to 1–2
-        # sentences and `max_output_tokens=150` hard-caps length, so the
-        # post-hoc sentence trim was doing more harm than good. Removed.
-
         return {
             "exposure_statement": statement,
-            "exposure_source": "model",
+            "exposure_headline":  headline,
+            "exposure_source":    "model",
             "exposure_reason_code": reason_code,
             "exposure_confidence_note": "Ambiguous -- outcome depends on lease interpretation" if state == "ambiguous" else None,
             "exposure_elements_used": elements_used,
@@ -333,6 +335,64 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
         result["exposure_reason_code"] = reason_code
         result["exposure_perspective"] = perspective
         return result
+
+
+def _parse_headline_envelope(raw: str, perspective: str) -> tuple:
+    """Parse the model's `{headline, full}` JSON envelope.
+
+    Returns (full_prose, headline). Falls back to deterministic headline
+    extraction (`extract_headline`) when the model returns plain prose
+    or malformed JSON. Always returns a usable (full, headline) pair —
+    never raises.
+    """
+    import json
+    from cam.adapters.lease_review.lease_display import extract_headline
+
+    # Strip common wrapper artifacts (markdown fences, leading/trailing
+    # backticks). Model is instructed to emit raw JSON but be defensive.
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.strip("`").lstrip("json").strip()
+
+    full, headline = "", ""
+    parsed_ok = False
+    try:
+        obj = json.loads(cleaned)
+        if isinstance(obj, dict):
+            full = (obj.get("full") or "").strip()
+            headline = (obj.get("headline") or "").strip()
+            parsed_ok = True
+    except (ValueError, TypeError):
+        pass
+
+    # If JSON parse failed entirely, treat the input as plain prose —
+    # but only if it doesn't look like a malformed JSON fragment (in
+    # which case we'd surface "{...broken" to users). The heuristic
+    # "starts with '{' but didn't parse" catches the malformed case.
+    if not parsed_ok:
+        if cleaned.lstrip().startswith("{"):
+            # Malformed JSON — strip braces / quotes and salvage what we can.
+            stripped = _re.sub(r'[{}"]', "", cleaned).strip()
+            full = stripped
+        else:
+            full = cleaned
+
+    if not full:
+        full = cleaned
+
+    # Headline fallback: derive deterministically from full prose when
+    # the model omits it. Cap at 60 chars per spec.
+    if not headline:
+        headline = extract_headline(full)
+    elif len(headline) > 60:
+        headline = extract_headline(headline)
+
+    return full, headline
+
+
+# Local re-import for the salvage path above; keeps the import next to
+# the only call site without polluting the module top-level.
+import re as _re  # noqa: E402
 
 
 def generate_exposure(coverage_assessment: list, cfg: dict) -> list:

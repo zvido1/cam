@@ -287,16 +287,31 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
             # callers following new_page_if_needed (which rebinds `page` via
             # nonlocal) always write to the current page.
             def _render_coverage_item(cy, item, tier_color):
+                from cam.adapters.lease_review.lease_display import extract_headline as _eh
                 pid = item.get("issue_area_id", "")
-                pname = item.get("provision_name", item.get("issue_area_name", pid))
-                # Step 273: per-item label flows through `_resolve_display`
-                # so it reads consistently with the section header.
-                label = _resolve_display(item, perspective)["label"]
+                # Step 279: prefer issue_area_name over provision_name
+                # (which is None in Mode C, used to fall through to
+                # issue_area_id and produce a doubled LP id in the
+                # header).
+                pname = (item.get("provision_name")
+                         or item.get("issue_area_name")
+                         or pid)
                 exposure = item.get("exposure_statement", "")
                 missing_els = item.get("elements_missing", [])
+                # Step 278: headline integrated into the header line.
+                headline = (item.get("exposure_headline") or "").strip()
+                if not headline and exposure:
+                    headline = _eh(exposure)
 
-                cy = new_page_if_needed(cy, 50)
-                cy = add_text(page, M, cy, f"{pid} {pname}  [{label}]",
+                # Step 279: single-line item header. Marker carries
+                # severity, the section bucket header above carries
+                # category — so the per-item state label is dropped.
+                if headline:
+                    header_text = f"{pid} {pname} — {headline}"
+                else:
+                    header_text = f"{pid} {pname}"
+                cy = new_page_if_needed(cy, 30)
+                cy = add_text(page, M, cy, header_text,
                               size=10, bold=True, color=tier_color)
                 if missing_els:
                     missing_str = ", ".join(str(e) for e in missing_els[:5])

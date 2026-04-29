@@ -942,6 +942,20 @@
         <div class="modal-content about-cam-content">
             <h2>How CAM Analyzes Your Lease</h2>
 
+            <!-- Step 280: mode disambiguation. The body of this page describes
+                 the multi-evaluator Comparison Analysis pipeline. Coverage
+                 Analysis (Mode C) uses a different mechanism — schema-driven
+                 classification with materiality grading — and the
+                 confidence-score machinery below does not apply to it. -->
+            <section class="about-cam-intro">
+                <h3 style="margin:0 0 0.5rem 0;">How CAM analyzes leases &mdash; two modes</h3>
+                <p>CAM operates in two analysis modes. The behaviors described on this page apply differently depending on which mode produced your report:</p>
+                <p style="margin-top:0.75rem;"><strong>Coverage Analysis (single document)</strong> &mdash; When you upload a single lease without a reference template, CAM runs <strong>Coverage Analysis</strong>. This mode uses CAM&rsquo;s schema-governed assertion architecture to evaluate the lease against a curated library of expected provisions. Each issue area is classified by materiality (covered, worth reviewing, needs attention) and surfaced with exposure prose framed for the perspective you selected (tenant, landlord, or neutral). Coverage Analysis surfaces what&rsquo;s missing, what&rsquo;s incomplete, and what&rsquo;s structurally asymmetric &mdash; without requiring a reference document to compare against.</p>
+                <p style="margin-top:0.5rem;"><strong>Comparison Analysis (lease vs template)</strong> &mdash; When you upload a tenant lease alongside a reference template, CAM runs <strong>Comparison Analysis</strong>. This mode uses CAM&rsquo;s full multi-evaluator pipeline: independent evaluator roles, challenger review, severity assessment, and the disagreement governance described below. The confidence indicators, Finding Reliability scores, and Assertion Sensitivity Gap all apply to Comparison Analysis findings.</p>
+                <p style="margin-top:0.5rem;"><em>The remainder of this page describes Comparison Analysis behavior in detail. Coverage Analysis surfaces issues based on schema-driven classification with materiality grading rather than multi-evaluator agreement; the confidence-score machinery described below does not apply to Coverage findings.</em></p>
+            </section>
+            <hr style="margin: 1.25rem 0; border: none; border-top: 1px solid #e2e8f0;">
+
             <div class="about-cam-story">
                 <div class="about-cam-story-block">
                     <div class="about-cam-story-icon">&#128064;</div>

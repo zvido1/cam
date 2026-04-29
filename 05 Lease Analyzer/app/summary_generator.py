@@ -742,6 +742,7 @@ _PERSPECTIVE_FRAMING = {
 from cam.adapters.lease_review.lease_display import (  # noqa: E402
     _resolve_display,
     resolve_sections,
+    extract_headline,
     PERSPECTIVE_SCOPE_DISCLOSURE,
     BUCKET_SECTION_HEADERS as _BUCKET_SECTION_HEADERS,
     BUCKET_ORDER_BY_PERSPECTIVE as _BUCKET_ORDER_BY_PERSPECTIVE,
@@ -1360,18 +1361,40 @@ def _generate_combined_synopsis_inner(
 
             for item, disp in section_items:
                 state = item.get("coverage_state", "")
-                label = disp["label"]
                 color = state_colors.get(state, "#64748b")
                 icon = mat_icons.get(item.get("materiality", "medium"), "~")
                 pid = item.get("issue_area_id", "")
-                name = item.get("provision_name", item.get("issue_area_id", "")) or pid
+                # Step 279: prefer issue_area_name (the schema's clean
+                # name like "Common Area Maintenance (CAM)") over
+                # provision_name (which is None in Mode C and was
+                # falling through to issue_area_id, producing the
+                # doubled "LP-07 LP-07" header).
+                name = (item.get("provision_name")
+                        or item.get("issue_area_name")
+                        or pid)
                 exposure = _sanitize_for_pdf(item.get("exposure_statement", "") or "")
                 missing_els = item.get("elements_missing", []) or []
+                # Step 278: prefer the upstream-attached headline; fall
+                # back to deterministic extraction if a result dict
+                # predates Step 278 or the model-path field is empty.
+                headline = (item.get("exposure_headline") or "").strip()
+                if not headline and exposure:
+                    headline = extract_headline(exposure)
 
-                heading_line = (
-                    f'[{icon}] <font color="{color}"><b>{_esc_xml(pid)} {_esc_xml(name)}</b></font>'
-                    f' <font color="#64748b">— {_esc_xml(label)}</font>'
-                )
+                # Step 279: combine LP id + name + headline into one
+                # line. Marker carries severity (mat_icons); the section
+                # bucket header above carries category — so the per-item
+                # state label (`UNFAVORABLE TERMS` etc.) is now
+                # redundant and dropped.
+                if headline:
+                    heading_line = (
+                        f'[{icon}] <font color="{color}"><b>{_esc_xml(pid)} {_esc_xml(name)}</b></font>'
+                        f' <font color="#64748b">— {_esc_xml(headline)}</font>'
+                    )
+                else:
+                    heading_line = (
+                        f'[{icon}] <font color="{color}"><b>{_esc_xml(pid)} {_esc_xml(name)}</b></font>'
+                    )
                 elements.append(Paragraph(heading_line, styles["FindingBody"]))
 
                 if missing_els:

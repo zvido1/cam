@@ -114,20 +114,31 @@ def _format_coverage_annotation_text(coverage_item: dict, cov_resolution: dict =
     "TILTS TOWARD LANDLORD"). Tenant labels match the pre-Step-273 mapping
     byte-for-byte.
     """
-    from cam.adapters.lease_review.lease_display import _resolve_display
+    from cam.adapters.lease_review.lease_display import extract_headline
 
     pid = coverage_item.get("issue_area_id", "?")
-    pname = coverage_item.get("provision_name", "")
+    # Step 279: prefer issue_area_name over provision_name (which is
+    # None in Mode C and was creating doubled-LP-id headers).
+    pname = (coverage_item.get("provision_name")
+             or coverage_item.get("issue_area_name")
+             or "")
     materiality = coverage_item.get("materiality", "medium")
     exposure = coverage_item.get("exposure_statement", "")
     elements_missing = coverage_item.get("elements_missing", [])
+    # Step 278: integrate headline into the header line.
+    headline = (coverage_item.get("exposure_headline") or "").strip()
+    if not headline and exposure:
+        headline = extract_headline(exposure)
 
-    disp = _resolve_display(coverage_item, perspective)
-    state_label = disp["label"]
     mat_labels = {"high": "HIGH", "medium": "MEDIUM", "low": "LOW"}
     mat_label = mat_labels.get(materiality, materiality.upper())
 
-    lines = [f"[GAP] {pid} {pname} \u2014 {state_label} ({mat_label} materiality)"]
+    # Step 279: single-line header. State label dropped; materiality
+    # parenthetical kept at the end.
+    if headline:
+        lines = [f"[GAP] {pid} {pname} \u2014 {headline} ({mat_label} materiality)"]
+    else:
+        lines = [f"[GAP] {pid} {pname} ({mat_label} materiality)"]
     lines.append("")
 
     if elements_missing:

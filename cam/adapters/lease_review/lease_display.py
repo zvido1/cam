@@ -1,6 +1,11 @@
 """
 CAM Lease Review — Perspective-Aware Display Resolution (Step 273)
 
+Step 278 also hosts `extract_headline`, the deterministic short-summary
+extractor used by both the model-path exposure engine (as a fallback if
+the model omits its headline field) and the schema-path branch (always,
+since v1.1.5 schema strings have no headline field).
+
 The classifier in `lease_coverage.py` is perspective-blind: every rule in
 `_UNFAVORABLE_PATTERNS` and `_UNENFORCEABLE_PATTERNS` matches a tenant-disfavor
 pattern (audited 2026-04-29 — see Step 273 status file). The state value
@@ -286,3 +291,63 @@ def resolve_sections(coverage_items: list, perspective: str) -> list:
         })
 
     return sections
+
+
+# ── Step 278: Deterministic headline extraction ──
+#
+# Joshua flagged the Synopsis as too verbose — 11 items × 3-4 sentences
+# of exposure prose meant a lawyer scanning the Coverage & Gaps section
+# had to read 15-20 sentences before deciding whether anything mattered.
+# `extract_headline` produces a short scannable summary from any
+# exposure string, used uniformly across model-path and schema-path
+# items so the Synopsis renders one consistent shape.
+#
+# Schema-path strings in v1.1.5 were written by Tzvi in Step 272 with a
+# semicolon-separated structure ("summary; detail"). The first clause
+# is already a natural headline. The deterministic extractor leverages
+# this structure rather than introducing a new field.
+
+import re as _re
+
+
+def extract_headline(text: str, max_chars: int = 60) -> str:
+    """Extract a short scannable headline from an exposure prose string.
+
+    Priority order:
+      1. Text before first semicolon (covers schema-path "summary; detail").
+      2. First sentence (text up to first sentence-ending punctuation
+         followed by whitespace or end-of-string).
+      3. First `max_chars` (fallback).
+
+    The result is capped at `max_chars`. If trimming is needed, the
+    extractor truncates at the last word boundary before `max_chars`
+    and appends "...".
+    """
+    if not text:
+        return ""
+
+    text = str(text).strip()
+    if not text:
+        return ""
+
+    # 1. Semicolon split — schema-path strings are "summary; detail".
+    if ";" in text:
+        candidate = text.split(";", 1)[0].strip()
+        if candidate and len(candidate) <= max_chars:
+            return candidate
+
+    # 2. First-sentence split — handles model-generated prose where the
+    #    opening sentence already names the risk concisely.
+    sentences = _re.split(r'(?<=[.!?])\s+', text, maxsplit=1)
+    if sentences and sentences[0]:
+        candidate = sentences[0].rstrip('.!?').strip()
+        if candidate and len(candidate) <= max_chars:
+            return candidate
+
+    # 3. Fallback: word-boundary truncate at `max_chars`.
+    if len(text) <= max_chars:
+        return text
+    truncated = text[:max_chars].rsplit(" ", 1)[0].rstrip('.,;:!?-')
+    if not truncated:
+        truncated = text[:max_chars].rstrip()
+    return truncated + "..."

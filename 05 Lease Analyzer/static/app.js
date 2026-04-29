@@ -14434,6 +14434,11 @@ function renderCoveragePanel() {
         const nsSignals = (a.negative_space_signals || []).filter(s =>
             s.signal_type === "broken_xref" || s.signal_type === "missing_exhibit" || s.signal_type === "reserved_section"
         );
+        // Step 280: read the same headline field the sidebar uses
+        // (Step 278's `exposure_headline`); fall back to the JS-side
+        // deterministic extractor so cached pre-Step-278 result dicts
+        // still render a usable headline.
+        const headline = (a.exposure_headline || _deriveHeadlineFromExposure(stmt) || "").trim();
 
         const stateInfo = STATE_LABELS[state] || { label: state, cls: "cv-badge-na" };
         let pclsBadge = "";
@@ -14457,10 +14462,21 @@ function renderCoveragePanel() {
 
         const toolbarHtml = buildCovToolbar(a, tenantIdx);
 
+        // Step 280: combined-line header — `LP-id  Name — Headline  [badge]`.
+        // Mirrors the Step 279 single-line treatment in the four
+        // PDF/DOCX renderers so the dashboard, sidebar, Synopsis, and
+        // annotated artifacts all carry the same shape. Headline is
+        // wrapped in its own span so CSS can style it (em-dash + muted
+        // color); when headline is empty we omit the span entirely
+        // rather than render a dangling em-dash.
+        const headlineHtml = headline
+            ? ` <span class="cv-item-headline-sep">—</span> <span class="cv-item-headline">${esc(headline)}</span>`
+            : "";
+
         return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
             <div class="cv-item-header">
                 <span class="cv-item-id">${esc(pid)}</span>
-                <span class="cv-item-name">${esc(name)}</span>
+                <span class="cv-item-name">${esc(name)}</span>${headlineHtml}
                 <span class="cv-badge ${stateInfo.cls}">${stateInfo.label}</span>
                 ${pclsBadge}
             </div>
@@ -14807,7 +14823,13 @@ function _navBuildModeCItem(a, tIdx) {
     const state = a.coverage_state || "";
     const pcls = a.partial_class || "";
     const stmt = (a.exposure_statement || a.exposure || "").trim();
-    const truncStmt = _navTruncate(stmt, 180);
+    // Step 278: prefer the upstream-attached headline (model-path JSON
+    // envelope or schema-path deterministic extraction). Fall back to
+    // a JS-side semicolon/sentence split if a result dict predates
+    // Step 278 — this keeps every Mode C render consistent without
+    // requiring a backend re-run for cached jobs. The full prose is
+    // still kept on the title attribute for hover.
+    const headline = (a.exposure_headline || _deriveHeadlineFromExposure(stmt)).trim();
     let badgeLabel, badgeCls;
     if (state === "covered_unfavorable") {
         badgeLabel = "Unfavorable"; badgeCls = "nav-badge-unfavorable";
@@ -14826,8 +14848,33 @@ function _navBuildModeCItem(a, tIdx) {
          +     '<span class="nav-item-name">' + esc(name) + '</span>'
          +     '<span class="nav-item-badge ' + badgeCls + '">' + esc(badgeLabel) + '</span>'
          +   '</div>'
-         +   (truncStmt ? '<div class="nav-item-desc">' + esc(truncStmt) + '</div>' : "")
+         +   (headline ? '<div class="nav-item-desc">' + esc(headline) + '</div>' : "")
          + '</button>';
+}
+
+// Step 278: client-side mirror of `extract_headline` from
+// `cam/adapters/lease_review/lease_display.py`. Used as a fallback when
+// the result dict was generated before Step 278 (no `exposure_headline`
+// field on the assessment). Same priority: semicolon split → first
+// sentence → 60-char word-boundary truncate.
+function _deriveHeadlineFromExposure(text) {
+    if (!text) return "";
+    const max = 60;
+    text = String(text).trim();
+    if (!text) return "";
+    if (text.indexOf(";") >= 0) {
+        const candidate = text.split(";", 1)[0].trim();
+        if (candidate && candidate.length <= max) return candidate;
+    }
+    const sentMatch = text.match(/^[^.!?]+[.!?](?:\s|$)/);
+    if (sentMatch) {
+        const candidate = sentMatch[0].replace(/[.!?]\s*$/, "").trim();
+        if (candidate && candidate.length <= max) return candidate;
+    }
+    if (text.length <= max) return text;
+    const wordEnd = text.slice(0, max).lastIndexOf(" ");
+    const cut = wordEnd > 0 ? text.slice(0, wordEnd) : text.slice(0, max);
+    return cut.replace(/[.,;:!?-]+$/, "") + "...";
 }
 
 function renderNavSidebar() {

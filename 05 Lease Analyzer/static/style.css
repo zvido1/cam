@@ -11364,6 +11364,11 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 .cv-item-header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-bottom: 0.375rem; }
 .cv-item-id { font-family: monospace; font-size: 0.85rem; color: var(--text-muted); }
 .cv-item-name { font-weight: 600; color: var(--text); }
+/* Step 280: combined-line item header in the main pane mirrors the
+   Synopsis PDF / DOCX [GAP] shape from Step 279. The em-dash separator
+   and the headline span sit between the LP name and the state badge. */
+.cv-item-headline-sep { color: var(--text-muted); font-weight: 400; }
+.cv-item-headline { color: var(--text); font-weight: 500; }
 .cv-badge { font-size: 0.75rem; padding: 0.125rem 0.5rem; border-radius: 0.625rem; font-weight: 500; }
 .cv-badge-ok      { background: #e8f5e9; color: #2e7d32; }
 .cv-badge-unfav   { background: #fee; color: #c33; }
