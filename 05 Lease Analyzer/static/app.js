@@ -710,6 +710,11 @@ function setupEventListeners() {
         radio.addEventListener("change", handlePerspectiveChange);
     });
 
+    // Step 284: apply the initial mode-aware state so a default Mode A
+    // page-load hides the perspective selector and force-sets the
+    // tenant value. (No `change` event fires on initial render.)
+    handleModeChange();
+
     // Help chat
     initHelpChat();
 
@@ -1813,10 +1818,23 @@ const PERSPECTIVE_LABELS = {
 function getPerspectiveLabel(value) {
     return PERSPECTIVE_LABELS[value] || value || "";
 }
+// Step 284: cache the user's Mode C perspective selection so a Mode C →
+// Mode A → Mode C toggle restores their choice. `null` means the user has
+// not yet picked one in Mode C this session.
+let _modeCPerspectiveCache = null;
+
 function handlePerspectiveChange() {
     // Remove the red required-indicator the moment the user picks something.
     const card = document.querySelector(".perspective-selector-card");
     if (card) card.classList.remove("required-indicator");
+    // Step 284: capture the user's selection so it survives a hop into Mode A
+    // and back. Only update the cache when in Mode C — Mode A drives the
+    // value programmatically and we don't want that overwriting the user's
+    // intent.
+    if (getSelectedMode() === "analyze") {
+        const checked = document.querySelector('input[name="analysis-perspective"]:checked');
+        if (checked) _modeCPerspectiveCache = checked.value;
+    }
     updateSubmitState();
 }
 
@@ -1825,6 +1843,57 @@ function handleModeChange() {
     const grid = document.querySelector(".upload-cols-grid");
     if (grid) {
         grid.classList.toggle("mode-analyze", mode === "analyze");
+    }
+
+    // Step 284: hide the perspective selector when Mode A is selected.
+    // Architectural reality: Mode A's deviation pipeline is tenant-anchored
+    // at the prompt layer regardless of selected perspective; only the
+    // coverage subset honors it. Asking for perspective and then partially
+    // discarding it is dishonest UX. The selector appears only in Mode C
+    // where the system delivers on it end-to-end. Mode A submissions
+    // always carry perspective="tenant" (the implicit value the deviation
+    // pipeline already uses).
+    const persWrap = document.getElementById("perspective-selector-wrapper");
+    const persCard = document.querySelector(".perspective-selector-card");
+    if (persWrap) {
+        if (mode === "analyze") {
+            // Mode C: show selector, restore the user's prior choice (if any).
+            persWrap.classList.remove("hidden");
+            if (_modeCPerspectiveCache) {
+                const restore = document.querySelector(
+                    'input[name="analysis-perspective"][value="' + _modeCPerspectiveCache + '"]'
+                );
+                if (restore) restore.checked = true;
+            } else {
+                // No cached choice — leave radios as-is. If they were
+                // programmatically set to "tenant" by a prior Mode A toggle
+                // (default-Mode-A page load before any Mode C selection),
+                // clear them so the required-validation flash works.
+                document.querySelectorAll('input[name="analysis-perspective"]').forEach(r => {
+                    if (r.checked && r.dataset.modeAForced === "1") {
+                        r.checked = false;
+                        delete r.dataset.modeAForced;
+                    }
+                });
+            }
+        } else {
+            // Mode A: cache any user-selected Mode C value, force tenant,
+            // hide the wrapper. The required-indicator flash gets cleared
+            // too since the selector is no longer surfaced.
+            const checked = document.querySelector('input[name="analysis-perspective"]:checked');
+            if (checked && checked.dataset.modeAForced !== "1") {
+                _modeCPerspectiveCache = checked.value;
+            }
+            const tenantRadio = document.querySelector(
+                'input[name="analysis-perspective"][value="tenant"]'
+            );
+            if (tenantRadio) {
+                tenantRadio.checked = true;
+                tenantRadio.dataset.modeAForced = "1";
+            }
+            persWrap.classList.add("hidden");
+            if (persCard) persCard.classList.remove("required-indicator");
+        }
     }
     // Step 254: relabel the upload-page provisions sidebar when mode changes.
     const sidebarTitle = document.querySelector(".provisions-panel-title");
