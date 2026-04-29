@@ -256,6 +256,7 @@ let docviewMode = "sidebyside"; // "full" or "sidebyside" — default to side-by
 let docviewSort = "contract";   // "contract" or "reference" — tenant-led or reference-led docview order
 let pollNotFoundCount = 0;
 let addMoreMode = null; // null or "addmore"
+let modeExplicitlySelected = false;
 let jobEmail = null;    // Tracks confirmed notification email across all screens
 let templateSummary = null;      // Step 138: {landlord, property, base_rent, lease_term, gate_passed}
 let identityChecks = {           // Step 138: which identity fields to verify (all off by default)
@@ -718,7 +719,10 @@ function setupEventListeners() {
 
     // Mode selector (Step 253)
     document.querySelectorAll('input[name="analysis-mode"]').forEach(radio => {
-        radio.addEventListener("change", handleModeChange);
+        radio.addEventListener("change", () => {
+            modeExplicitlySelected = true;
+            handleModeChange();
+        });
     });
 
     // Perspective selector (Step 261) — must select; flashes red if user tries
@@ -9823,6 +9827,7 @@ function resetApp() {
     templateFile = null;
     tenantFiles = [];
     addMoreMode = null;
+    modeExplicitlySelected = false;
     currentJobId = null;
     jobEmail = null;
     templateSummary = null;
@@ -13352,6 +13357,7 @@ function buildGeneralChatUIContext(screen) {
 
     const mode = getSelectedMode();
     const perspective = getSelectedPerspective();
+    const modeChosen = modeExplicitlySelected;
     const selectedReviewAreaCount = document.querySelectorAll("#provision-list input[type=checkbox]:checked").length;
     const hasTemplate = !!templateFile;
     const hasTemplateSummary = !!templateSummary;
@@ -13362,7 +13368,10 @@ function buildGeneralChatUIContext(screen) {
     const missingRequirements = [];
     let nextStep = "";
 
-    if (mode === "analyze") {
+    if (!modeChosen) {
+        missingRequirements.push("choose whether to compare to a reference or analyze a single document");
+        nextStep = "choose_mode";
+    } else if (mode === "analyze") {
         if (!perspective) {
             missingRequirements.push("choose a review perspective");
             nextStep = "choose_perspective";
@@ -13399,6 +13408,7 @@ function buildGeneralChatUIContext(screen) {
     return {
         screen: "upload",
         mode,
+        mode_explicitly_selected: modeChosen,
         perspective,
         template_loaded: !!templateFile,
         reference_ready: !!templateSummary,

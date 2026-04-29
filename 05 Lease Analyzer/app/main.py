@@ -1721,6 +1721,10 @@ async def chat_with_analysis(job_id: str, body: dict):
             ui_context_lines.append(f"Current screen: {screen}")
         if ui_context.get("mode"):
             ui_context_lines.append(f"Mode: {ui_context.get('mode')}")
+        if "mode_explicitly_selected" in ui_context:
+            ui_context_lines.append(
+                f"Mode explicitly selected by user: {'yes' if ui_context.get('mode_explicitly_selected') else 'no'}"
+            )
         if ui_context.get("perspective"):
             ui_context_lines.append(f"Perspective: {ui_context.get('perspective')}")
         top_tab = ui_context.get("active_top_tab") or {}
@@ -2053,6 +2057,11 @@ async def chat_general(request: Request):
     system_prompt = (
         screen_intro +
         "THE CURRENT UI FLOW (describe this accurately when asked how to get started):\n"
+        "Important: the page may visually default to Compare to reference for layout, but if "
+        "UI CONTEXT says the mode was not explicitly selected by the user, do not treat that "
+        "default as the user's choice. When asked what to do, briefly explain both paths: "
+        "for comparison, upload a reference lease and tenant lease; for single-document "
+        "analysis, choose a perspective and upload the lease to analyze.\n\n"
         "Step 1 - Choose a mode:\n"
         "  - Compare to reference: compare one or more tenant leases against a reference/template lease.\n"
         "  - Analyze single document: review one lease without a reference template for coverage gaps and structural issues.\n\n"
