@@ -275,12 +275,12 @@
                 </div><!-- /upload-columns-wrapper -->
 
                 <!-- Provisions Sidebar (078 redesign) -->
-                <div class="provisions-sidebar step2-inactive" id="provisions-sidebar">
+                <div class="provisions-sidebar review-areas-inactive" id="provisions-sidebar">
                     <div class="card">
                         <div class="provisions-panel" id="provisions-panel">
                             <div class="provisions-panel-header">
                                 <div class="provisions-panel-title-row">
-                                    <span class="provisions-panel-title">Issue Areas to Check</span>
+                                    <span class="provisions-panel-title">Review Areas</span>
                                     <div class="provisions-title-actions">
                                         <button class="btn btn-ghost btn-sm" id="reset-btn" onclick="window.CAM.resetApp(); return false;">
                                             ↺ Reset All
@@ -290,7 +290,7 @@
                                         </button>
                                     </div>
                                 </div>
-                                <div class="provisions-subtitle">Select issue areas to check, then click Review Leases. CAM also discovers additional issue areas automatically.</div>
+                                <div class="provisions-subtitle">Select review areas, then click Review Leases. CAM also discovers additional review areas automatically.</div>
                                 <div class="provisions-panel-controls">
                                     <a href="#" id="check-all-provisions" onclick="window.CAM.checkAllProvisions(); return false;">Check All</a>
                                     <a href="#" id="uncheck-all-provisions" onclick="window.CAM.uncheckAllProvisions(); return false;">Uncheck All</a>
@@ -299,13 +299,13 @@
                             <div class="estimate-text" id="estimate-text"></div>
                             <!-- Provisions list -->
                             <div class="provisions-col-standard">
-                                <div class="provisions-tier-label">Standard Provisions to Check</div>
+                                <div class="provisions-tier-label">Standard Review Areas</div>
                                 <ul id="provision-list" class="provision-list"></ul>
                             </div>
 
                             <!-- Full-width custom provision row -->
                             <div class="custom-provision-add full-width">
-                                <input type="text" id="custom-provision-input" placeholder="Add custom provision...">
+                                <input type="text" id="custom-provision-input" placeholder="Add custom review area...">
                                 <button class="btn btn-sm btn-secondary" id="add-custom-provision">+ Add</button>
                             </div>
                         </div>
@@ -321,7 +321,7 @@
                         <div class="help-chat-input-area">
                             <div class="chat-input-row">
                                 <input type="text" id="help-chat-input" class="chat-input"
-                                       placeholder="Ask about provisions, leases...">
+                                       placeholder="Ask about review areas, leases...">
                                 <button class="btn btn-primary btn-sm" id="help-chat-send-btn">Ask</button>
                             </div>
                         </div>
@@ -428,7 +428,7 @@
                         <div class="processing-chat-input-area">
                             <div class="chat-input-row">
                                 <input type="text" id="processing-chat-input" class="chat-input"
-                                       placeholder="Ask about CAM, leases, provisions...">
+                                       placeholder="Ask about CAM, leases, review areas...">
                                 <button class="btn btn-primary btn-sm" id="processing-chat-send-btn">Ask</button>
                             </div>
                         </div>

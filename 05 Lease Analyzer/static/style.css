@@ -9117,6 +9117,15 @@ textarea.input-field {
     transition: opacity 0.3s ease;
 }
 
+.provisions-sidebar.review-areas-inactive .provisions-panel-controls,
+.provisions-sidebar.review-areas-inactive .provisions-col-standard,
+.provisions-sidebar.review-areas-inactive .custom-provision-add {
+    opacity: 0.42;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 0.3s ease;
+}
+
 /* ── Step 140: User Rules ── */
 .not-deviation-btn {
     font-size: 0.75rem;

@@ -374,8 +374,7 @@ const $$ = (sel) => document.querySelectorAll(sel);
 function activateStep2() {
     const phase2 = $("#phase2-content");
     const contractsCol = $("#contracts-column");
-    const provSidebar = $("#provisions-sidebar");
-    [phase2, contractsCol, provSidebar].forEach(el => {
+    [phase2, contractsCol].forEach(el => {
         if (el) {
             el.classList.remove("step2-inactive");
             el.classList.remove("hidden");
@@ -386,10 +385,30 @@ function activateStep2() {
 function deactivateStep2() {
     const phase2 = $("#phase2-content");
     const contractsCol = $("#contracts-column");
-    const provSidebar = $("#provisions-sidebar");
-    [phase2, contractsCol, provSidebar].forEach(el => {
+    [phase2, contractsCol].forEach(el => {
         if (el) el.classList.add("step2-inactive");
     });
+}
+
+function shouldActivateUploadLowerSteps() {
+    if (addMoreMode === "addmore" || templateSummary) return true;
+    if (getSelectedMode() === "analyze") return getSelectedPerspective() !== null;
+    return false;
+}
+
+function syncReviewAreasAvailability() {
+    const provSidebar = $("#provisions-sidebar");
+    if (!provSidebar) return;
+
+    const mode = getSelectedMode();
+    const hasTenants = tenantFiles.length > 0;
+    const ready = addMoreMode === "addmore"
+        || (mode === "analyze" && getSelectedPerspective() !== null && hasTenants)
+        || (mode !== "analyze" && !!templateSummary && hasTenants);
+
+    provSidebar.classList.remove("step2-inactive");
+    provSidebar.classList.toggle("review-areas-inactive", !ready);
+    provSidebar.classList.remove("hidden");
 }
 
 // ══════════════════════════════════════════════════════
@@ -424,13 +443,12 @@ function showState(name) {
 
     // Step 139: Manage step2 active/inactive state (step2 always visible, just inactive until template processed)
     if (name === "upload") {
-        // Step 256 fix: Mode C (analyze) has no Step 1 (template upload),
-        // so Step 2 must be active immediately rather than gated on templateSummary.
-        if (templateSummary || addMoreMode === "addmore" || getSelectedMode() === "analyze") {
+        if (shouldActivateUploadLowerSteps()) {
             activateStep2();
         } else {
             deactivateStep2();
         }
+        syncReviewAreasAvailability();
     }
 
     // Mobile: populate results URL for copy/email
@@ -1223,7 +1241,7 @@ function renderTemplateSummaryCard(data) {
 
 function revealPhase2() {
     activateStep2();
-    activateStep2();
+    syncReviewAreasAvailability();
 }
 
 function handleTenantFiles(files) {
@@ -1834,6 +1852,12 @@ function handlePerspectiveChange() {
         const checked = document.querySelector('input[name="analysis-perspective"]:checked');
         if (checked) _modeCPerspectiveCache = checked.value;
     }
+    if (shouldActivateUploadLowerSteps()) {
+        activateStep2();
+    } else {
+        deactivateStep2();
+    }
+    syncReviewAreasAvailability();
     updateSubmitState();
 }
 
@@ -1850,12 +1874,12 @@ function updateUploadModeLabels(mode = getSelectedMode()) {
 
     const sidebarTitle = document.querySelector(".provisions-panel-title");
     if (sidebarTitle) {
-        sidebarTitle.textContent = "Issue Areas to Check";
+        sidebarTitle.textContent = "Review Areas";
     }
 
     const sidebarSubtitle = document.querySelector(".provisions-subtitle");
     if (sidebarSubtitle) {
-        sidebarSubtitle.textContent = "Select issue areas to check, then click Review Leases. CAM also discovers additional issue areas automatically.";
+        sidebarSubtitle.textContent = "Select review areas, then click Review Leases. CAM also discovers additional review areas automatically.";
     }
 }
 
@@ -1919,13 +1943,13 @@ function handleModeChange() {
     // Step 285: keep visible upload steps gap-free in both modes and keep the
     // sidebar label mode-neutral.
     updateUploadModeLabels(mode);
-    // Step 256 fix: keep Step 2 gating in sync with mode change.
-    // Mode C never has Step 1, so Step 2 must be active. Mode A re-gates on templateSummary.
-    if (mode === "analyze" || templateSummary || addMoreMode === "addmore") {
+    // Keep lower upload/sidebar gating in sync with mode changes.
+    if (shouldActivateUploadLowerSteps()) {
         activateStep2();
     } else {
         deactivateStep2();
     }
+    syncReviewAreasAvailability();
     updateSubmitState();
 }
 
@@ -1944,6 +1968,7 @@ function applyModeAwareTabVisibility() {
 function updateSubmitState() {
     const btn = $("#analyze-btn");
     const est = $("#estimate-text");
+    syncReviewAreasAvailability();
 
     // addMore mode has different requirements
     if (addMoreMode === "addmore") {
@@ -2000,7 +2025,9 @@ function updateSubmitState() {
 
     btn.textContent = "Review Leases";
 
-    if (filesReady && !provisionsReady) {
+    if (analysisMode === "analyze" && !perspectiveSelected) {
+        est.textContent = "Choose a perspective above to continue";
+    } else if (filesReady && !provisionsReady) {
         est.textContent = "Select at least one provision to analyze";
     } else if (filesReady && provisionsReady && !perspectiveSelected) {
         // Step 261: nudge the user to pick a perspective once everything else is ready.
@@ -2010,7 +2037,7 @@ function updateSubmitState() {
     } else if (analysisMode === "analyze" && tenantFiles.length === 0) {
         est.textContent = "Upload at least one lease to analyze";
     } else if (!templateFile && tenantFiles.length === 0) {
-        est.textContent = "";
+        est.textContent = "Upload a reference lease and at least one tenant lease to compare";
     } else if (!templateFile && analysisMode !== "analyze") {
         est.textContent = "Upload a reference lease to continue";
     } else {
@@ -2070,7 +2097,7 @@ function lockAnalyzedProvisions() {
             } else if (!isLocked && !insertedNew) {
                 const label = document.createElement("li");
                 label.className = "provision-section-label provision-section-new";
-                label.textContent = "+ Select provisions to add";
+                label.textContent = "+ Select review areas to add";
                 list.insertBefore(label, li);
                 insertedNew = true;
             }
@@ -13153,8 +13180,8 @@ function renderHelpChatWelcome() {
 
     const starters = [
         "What does CAM do with these leases?",
-        "What do I need before I click Analyze Leases?",
-        "Which provisions should I keep selected?",
+        "What do I need before I click Review Leases?",
+        "Which review areas should I keep selected?",
         "Ask any lease-related question...",
     ];
 
@@ -13179,8 +13206,8 @@ function refreshHelpChatStarters() {
 
     const starters = [
         "What does CAM do with these leases?",
-        "What do I need before I click Analyze Leases?",
-        "Which provisions should I keep selected?",
+        "What do I need before I click Review Leases?",
+        "Which review areas should I keep selected?",
     ];
 
     starters.push("Ask any lease-related question...");
@@ -13203,7 +13230,10 @@ function gatherUploadContext() {
     document.querySelectorAll("#provision-list input[type=checkbox]:checked").forEach(cb => {
         selected.push(cb.value);
     });
-    if (selected.length > 0) ctx.selected_provisions = selected;
+    if (selected.length > 0) {
+        ctx.selected_provisions = selected;
+        ctx.selected_review_areas = selected;
+    }
 
     // Uploaded filenames
     const files = [];
@@ -13214,7 +13244,10 @@ function gatherUploadContext() {
 
     // Custom provisions
     const customs = customProvisions.map(cp => cp.name || cp.id);
-    if (customs.length > 0) ctx.custom_provisions = customs;
+    if (customs.length > 0) {
+        ctx.custom_provisions = customs;
+        ctx.custom_review_areas = customs;
+    }
 
     // (Prescan results removed in step 112 — discovery moved into pipeline)
 
@@ -13300,9 +13333,12 @@ function buildResultsChatUIContext() {
 function buildGeneralChatUIContext(screen) {
     if (screen === "processing") {
         const tenants = (currentJobData && currentJobData.input_config && currentJobData.input_config.tenants) || [];
+        const inputCfg = (currentJobData && currentJobData.input_config) || {};
         const completedContractCount = tenants.filter(t => t && t.status === "completed").length;
         return {
             screen: "processing",
+            mode: inputCfg.mode || "",
+            perspective: inputCfg.perspective || null,
             job_status: (currentJobData && currentJobData.status) || "",
             completed_contract_count: completedContractCount,
             remaining_contract_count: Math.max(0, tenants.length - completedContractCount),
@@ -13314,10 +13350,63 @@ function buildGeneralChatUIContext(screen) {
         };
     }
 
+    const mode = getSelectedMode();
+    const perspective = getSelectedPerspective();
+    const selectedReviewAreaCount = document.querySelectorAll("#provision-list input[type=checkbox]:checked").length;
+    const hasTemplate = !!templateFile;
+    const hasTemplateSummary = !!templateSummary;
+    const hasTenants = tenantFiles.length > 0;
+    const reviewAreasReady = addMoreMode === "addmore"
+        || (mode === "analyze" && perspective !== null && hasTenants)
+        || (mode !== "analyze" && hasTemplateSummary && hasTenants);
+    const missingRequirements = [];
+    let nextStep = "";
+
+    if (mode === "analyze") {
+        if (!perspective) {
+            missingRequirements.push("choose a review perspective");
+            nextStep = "choose_perspective";
+        }
+        if (!hasTenants) {
+            missingRequirements.push("upload at least one lease to analyze");
+            if (!nextStep) nextStep = "upload_lease";
+        }
+    } else {
+        if (!hasTemplate) {
+            missingRequirements.push("upload a reference lease");
+            nextStep = "upload_reference_lease";
+        } else if (!hasTemplateSummary) {
+            missingRequirements.push("wait for CAM to finish reading the reference lease");
+            nextStep = "wait_for_reference_lease";
+        }
+        if (!hasTenants) {
+            missingRequirements.push("upload at least one tenant lease");
+            if (!nextStep) nextStep = "upload_tenant_lease";
+        }
+    }
+
+    if (selectedReviewAreaCount === 0) {
+        missingRequirements.push("select at least one review area");
+        if (!nextStep) nextStep = "select_review_area";
+    }
+
+    if (!nextStep) {
+        nextStep = !(($("#analyze-btn") || {}).disabled)
+            ? "click_review_leases"
+            : "check_email_or_required_fields";
+    }
+
     return {
         screen: "upload",
+        mode,
+        perspective,
         template_loaded: !!templateFile,
+        reference_ready: !!templateSummary,
         tenant_count: tenantFiles.length,
+        selected_review_area_count: selectedReviewAreaCount,
+        review_areas_ready: reviewAreasReady,
+        missing_requirements: missingRequirements,
+        next_step: nextStep,
         analyze_enabled: !(($("#analyze-btn") || {}).disabled),
         available_views: [
             { id: "upload", label: "Upload" },

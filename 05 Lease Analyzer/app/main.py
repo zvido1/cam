@@ -1719,6 +1719,10 @@ async def chat_with_analysis(job_id: str, body: dict):
         screen = ui_context.get("screen")
         if screen:
             ui_context_lines.append(f"Current screen: {screen}")
+        if ui_context.get("mode"):
+            ui_context_lines.append(f"Mode: {ui_context.get('mode')}")
+        if ui_context.get("perspective"):
+            ui_context_lines.append(f"Perspective: {ui_context.get('perspective')}")
         top_tab = ui_context.get("active_top_tab") or {}
         if top_tab.get("label"):
             ui_context_lines.append(f"Active top tab: {top_tab.get('label')} ({top_tab.get('id', '')})")
@@ -1968,7 +1972,7 @@ async def chat_with_analysis(job_id: str, body: dict):
 async def chat_general(request: Request):
     """General lease guidance chat — no job required.
 
-    For pre-analysis questions about provisions, lease concepts,
+    For pre-analysis questions about review areas, lease concepts,
     and what to look for.
     """
     body = await request.json()
@@ -1986,12 +1990,28 @@ async def chat_general(request: Request):
         screen = ui_context.get("screen")
         if screen:
             ui_context_lines.append(f"Current screen: {screen}")
+        if ui_context.get("mode"):
+            ui_context_lines.append(f"Mode: {ui_context.get('mode')}")
+        if ui_context.get("perspective"):
+            ui_context_lines.append(f"Perspective: {ui_context.get('perspective')}")
         if "template_loaded" in ui_context:
             ui_context_lines.append(f"Reference file loaded: {'yes' if ui_context.get('template_loaded') else 'no'}")
+        if "reference_ready" in ui_context:
+            ui_context_lines.append(f"Reference lease ready: {'yes' if ui_context.get('reference_ready') else 'no'}")
         if "tenant_count" in ui_context:
             ui_context_lines.append(f"Tenant file count: {ui_context.get('tenant_count')}")
+        if "selected_review_area_count" in ui_context:
+            ui_context_lines.append(f"Selected review areas: {ui_context.get('selected_review_area_count')}")
+        if "review_areas_ready" in ui_context:
+            ui_context_lines.append(f"Review Areas panel ready: {'yes' if ui_context.get('review_areas_ready') else 'no'}")
+        if ui_context.get("missing_requirements"):
+            ui_context_lines.append("Missing requirements:")
+            for item in ui_context.get("missing_requirements") or []:
+                ui_context_lines.append(f"- {item}")
+        if ui_context.get("next_step"):
+            ui_context_lines.append(f"Recommended next step: {ui_context.get('next_step')}")
         if "analyze_enabled" in ui_context:
-            ui_context_lines.append(f"Analyze enabled: {'yes' if ui_context.get('analyze_enabled') else 'no'}")
+            ui_context_lines.append(f"Review Leases enabled: {'yes' if ui_context.get('analyze_enabled') else 'no'}")
         if ui_context.get("job_status"):
             ui_context_lines.append(f"Job status: {ui_context.get('job_status')}")
         if "completed_contract_count" in ui_context:
@@ -2010,52 +2030,57 @@ async def chat_general(request: Request):
 
     screen_intro = (
         "You are a lease analysis guidance assistant for CAM, a commercial lease "
-        "deviation analyzer. The user is on the processing screen while CAM analyzes "
-        "one or more tenant leases against a standard reference contract.\n\n"
+        "deviation and coverage analyzer. The user is on the processing screen while CAM reviews "
+        "the uploaded lease or leases. Depending on the selected mode, CAM may be comparing "
+        "against a reference lease or running single-document coverage analysis.\n\n"
         "ON THIS SCREEN, PRIORITIZE:\n"
         "- Explaining what CAM is doing now in plain language\n"
         "- Setting expectations for what the user will see when results are ready\n"
         "- Helping the user understand whether they can review partial results yet\n"
-        "- Answering broader lease and provision questions while they wait\n\n"
+        "- Answering broader lease, provision, and review-area questions while they wait\n\n"
         if screen == "processing"
         else
         "You are a lease analysis guidance assistant for CAM, a commercial lease "
-        "deviation analyzer. The user is on the upload page preparing to analyze "
-        "one or more tenant leases against a standard reference contract.\n\n"
+        "deviation and coverage analyzer. The user is on the upload page preparing "
+        "to review leases in either comparison mode or single-document mode.\n\n"
         "ON THIS SCREEN, PRIORITIZE:\n"
         "- Explaining what CAM does with the uploaded leases\n"
-        "- Helping the user understand what to upload and which provisions to review\n"
-        "- Telling the user what to do before they click 'Analyze Leases'\n"
-        "- Answering broader lease and provision questions before analysis starts\n\n"
+        "- Helping the user understand what to upload and which review areas to keep selected\n"
+        "- Telling the user what to do before they click 'Review Leases'\n"
+        "- Answering broader lease and review-area questions before analysis starts\n\n"
     )
 
     system_prompt = (
         screen_intro +
-
         "THE CURRENT UI FLOW (describe this accurately when asked how to get started):\n"
-        "Step 1 — Upload two things:\n"
-        "  - LEFT zone: the Standard / Reference Contract (their ideal template lease, single file)\n"
-        "  - RIGHT zone: one or more Tenant Leases to compare against the template\n\n"
-        "Step 2 — Provision Checklist (right panel):\n"
-        "  LP-01 through LP-18 are checked by default. "
-        "The user can uncheck provisions they don't want analyzed, or add custom provisions.\n"
-        "  CAM will also automatically flag any other substantive clauses it notices during "
-        "analysis — these appear as 'Additional Findings' in the results.\n\n"
-        "Step 3 — Click 'Analyze Leases'.\n\n"
+        "Step 1 - Choose a mode:\n"
+        "  - Compare to reference: compare one or more tenant leases against a reference/template lease.\n"
+        "  - Analyze single document: review one lease without a reference template for coverage gaps and structural issues.\n\n"
+        "Step 2 depends on mode:\n"
+        "  - Compare to reference: upload the reference lease first.\n"
+        "  - Analyze single document: choose the review perspective (Tenant, Landlord, or Neutral / commercially reasonable).\n\n"
+        "Step 3 - Upload the lease or leases to review:\n"
+        "  - Compare to reference: upload at least one tenant lease after the reference lease is ready.\n"
+        "  - Analyze single document: upload at least one lease to analyze.\n\n"
+        "Review Areas panel:\n"
+        "  LP-01 through LP-18 are checked by default as standard review areas. "
+        "The user can uncheck review areas they don't want analyzed, or add custom review areas.\n"
+        "  CAM will also automatically surface additional substantive clauses or issue areas it notices during analysis.\n\n"
+        "Final step - Click 'Review Leases'.\n\n"
 
         "WHAT YOU HELP WITH:\n"
         "- Walking users through the steps above when they ask how to get started\n"
-        "- Explaining what each provision means and why it matters\n"
-        "- Advising which provisions to check for specific lease types\n"
+        "- Explaining what each review area means and why it matters\n"
+        "- Advising which review areas to keep selected for specific lease types\n"
         "- Explaining that CAM automatically discovers additional substantive clauses "
-        "during analysis and surfaces them as Additional Findings\n"
+        "or issue areas during analysis and surfaces them in the results\n"
         "- Answering general commercial lease questions\n\n"
 
         "WHAT YOU CAN AND CANNOT SEE:\n"
         "You CAN see (when provided in context):\n"
-        "- The list of standard provisions (LP-01 to LP-18) the user has selected.\n"
+        "- The list of standard review areas (LP-01 to LP-18) the user has selected.\n"
         "- The filenames of uploaded documents.\n"
-        "- Any custom provisions the user has added.\n\n"
+        "- Any custom review areas the user has added.\n\n"
         "You CANNOT see:\n"
         "- The raw text of the uploaded lease documents.\n"
         "- The full analysis results (those are only available after analysis is complete).\n\n"
@@ -2070,9 +2095,9 @@ async def chat_general(request: Request):
         "certain exist. Do not invent 'View Source', 'See Context', 'Expand', or any "
         "other UI element to direct the user to.\n"
         "- The real UI elements you can reference:\n"
-        "  - LP-01 through LP-18 checkboxes in the Standard Provisions list\n"
-        "  - The 'Analyze Leases' button\n"
-        "  - The 'Add custom provision' field at the bottom of the Provisions panel\n"
+        "  - LP-01 through LP-18 checkboxes in the Standard Review Areas list\n"
+        "  - The 'Review Leases' button\n"
+        "  - The 'Add custom review area' field at the bottom of the Review Areas panel\n"
         "  - The chat panel (where the user is currently talking to you)\n"
         "- If you are not sure whether a UI element exists, describe the concept "
         "(e.g., 'once you run the analysis, each finding will show the extracted text') "
@@ -2108,15 +2133,15 @@ async def chat_general(request: Request):
         system_prompt += ui_context_prompt
 
     # Add upload context if available
-    selected = context.get("selected_provisions", [])
+    selected = context.get("selected_review_areas") or context.get("selected_provisions", [])
     if selected:
-        system_prompt += f"USER'S SELECTED PROVISIONS: {', '.join(selected)}\n"
+        system_prompt += f"USER'S SELECTED REVIEW AREAS: {', '.join(selected)}\n"
     uploaded = context.get("uploaded_files", [])
     if uploaded:
         system_prompt += f"UPLOADED FILES: {', '.join(uploaded)}\n"
-    custom = context.get("custom_provisions", [])
+    custom = context.get("custom_review_areas") or context.get("custom_provisions", [])
     if custom:
-        system_prompt += f"CUSTOM PROVISIONS ADDED: {', '.join(custom)}\n"
+        system_prompt += f"CUSTOM REVIEW AREAS ADDED: {', '.join(custom)}\n"
 
     system_prompt += (
         "\nRESPONSE GUIDELINES:\n"
