@@ -1,0 +1,462 @@
+{
+  "LP-07": {
+    "input": {
+      "issue_area_id": "LP-07",
+      "issue_area_name": "Common Area Maintenance (CAM)",
+      "applicability": "applicable",
+      "coverage_state": "covered_unfavorable",
+      "evidence_summary": "Audit rights explicitly removed",
+      "supporting_provision_ids": [
+        "LP-07"
+      ],
+      "elements_found": [
+        "tenant's proportionate share calculation method",
+        "included expense categories",
+        "annual CAM increase cap",
+        "tenant audit rights",
+        "reconciliation timeline"
+      ],
+      "elements_missing": [
+        "excluded expense categories"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Audit rights section marked Reserved or Intentionally Omitted",
+          "evidence": "Audit rights section marked Reserved or Intentionally Omitted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Excluded expenses list cross-references exhibit not attached",
+          "evidence": "Excluded expenses list cross-references exhibit not attached",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "landlord_leverage_point"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "landlord_leverage_point": "Landlord typically holds stronger enforcement position if disputed"
+      },
+      "related_issue_areas": [
+        "LP-01",
+        "LP-06"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": null
+    },
+    "repeats": [
+      {
+        "exposure_statement": "Tenant bears open-ended CAM cost risk because the landlord controls the proportionate-share math and what expense categories get included, with no cap on annual increases. Tenant also has no audit rights to verify charges, so the tenant pays inflated or misallocated CAM with little practical ability to challenge it.",
+        "exposure_source": "model",
+        "exposure_reason_code": "unfavorable_provision",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "tenant's proportionate share calculation method",
+          "included expense categories",
+          "annual CAM increase cap"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 0,
+        "_replay_elapsed_sec": 3.733
+      },
+      {
+        "exposure_statement": "Tenant bears open-ended CAM costs because the share calculation and included expenses are skewed against Tenant and there\u2019s no cap on annual increases, creating unpredictable operating expense spikes. Tenant also has no audit rights to verify charges, so Landlord\u2019s CAM allocations and categories effectively go unchecked and Tenant pays the bill.",
+        "exposure_source": "model",
+        "exposure_reason_code": "unfavorable_provision",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "tenant's proportionate share calculation method",
+          "included expense categories",
+          "annual CAM increase cap"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 1,
+        "_replay_elapsed_sec": 4.141
+      },
+      {
+        "exposure_statement": "Tenant bears an open-ended CAM cost risk because the share calculation and expense categories can be applied broadly and there\u2019s no cap on annual increases, making operating costs unpredictable and potentially unaffordable. Tenant also has no ability to audit or challenge CAM billings, so overcharges or misallocations stick.",
+        "exposure_source": "model",
+        "exposure_reason_code": "unfavorable_provision",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "tenant's proportionate share calculation method",
+          "included expense categories",
+          "annual CAM increase cap"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 2,
+        "_replay_elapsed_sec": 3.61
+      }
+    ]
+  },
+  "LP-09": {
+    "input": {
+      "issue_area_id": "LP-09",
+      "issue_area_name": "Subletting & Assignment",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "4 of 6 expected elements found; missing: recapture right (landlord can terminate and lease directly), assignment in connection with sale of business",
+      "supporting_provision_ids": [
+        "LP-09"
+      ],
+      "elements_found": [
+        "landlord consent requirement",
+        "grounds for withholding consent (reasonableness standard)",
+        "affiliate exception (no consent required for related entities)",
+        "profit sharing on sublet above base rent"
+      ],
+      "elements_missing": [
+        "recapture right (landlord can terminate and lease directly)",
+        "assignment in connection with sale of business"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Affiliate exception section marked Reserved",
+          "evidence": "Affiliate exception section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "landlord_leverage_point"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "landlord_leverage_point": "Landlord typically holds stronger enforcement position if disputed"
+      },
+      "related_issue_areas": [
+        "LP-03",
+        "LP-11"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": "partial_material"
+    },
+    "repeats": [
+      {
+        "exposure_statement": "Landlord can recapture the space when Tenant seeks to assign or sublet, cutting off Tenant\u2019s ability to monetize the remaining term and potentially forcing an early exit without compensation. Tenant also lacks clear permission to assign in connection with a sale of its business, which can delay or reduce deal value and leave Tenant stuck on the hook for the lease.",
+        "exposure_source": "model",
+        "exposure_reason_code": "high_materiality_missing_element",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "recapture right (landlord can terminate and lease directly)",
+          "assignment in connection with sale of business"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 0,
+        "_replay_elapsed_sec": 3.926
+      },
+      {
+        "exposure_statement": "Landlord can recapture the space when Tenant seeks to sublet or assign, forcing Tenant to lose the premises and any deal value while still carrying relocation and transition costs. Tenant also lacks clear rights to assign in connection with a sale of its business, which can delay or derail a sale or reduce purchase price if the lease can\u2019t transfer cleanly.",
+        "exposure_source": "model",
+        "exposure_reason_code": "high_materiality_missing_element",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "recapture right (landlord can terminate and lease directly)",
+          "assignment in connection with sale of business"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 1,
+        "_replay_elapsed_sec": 2.61
+      },
+      {
+        "exposure_statement": "Landlord can block Tenant\u2019s attempt to transfer the space and capture the upside by terminating the lease and leasing directly to the proposed replacement, leaving Tenant with relocation costs and potential downtime. Tenant also has no clear right to assign the lease as part of a sale of its business, which can delay or reduce the value of an exit deal.",
+        "exposure_source": "model",
+        "exposure_reason_code": "high_materiality_missing_element",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "recapture right (landlord can terminate and lease directly)",
+          "assignment in connection with sale of business"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 2,
+        "_replay_elapsed_sec": 4.03
+      }
+    ]
+  },
+  "LP-11": {
+    "input": {
+      "issue_area_id": "LP-11",
+      "issue_area_name": "Default & Remedies",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "6 of 7 expected elements found; missing: tenant's right to cure third-party defaults",
+      "supporting_provision_ids": [
+        "LP-11"
+      ],
+      "elements_found": [
+        "monetary default definition and cure period (typically 5 days)",
+        "non-monetary default definition and cure period (typically 30 days)",
+        "notice requirement before default declaration",
+        "landlord termination right",
+        "landlord re-entry right",
+        "rent acceleration on default"
+      ],
+      "elements_missing": [
+        "tenant's right to cure third-party defaults"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Notice requirement section marked Reserved",
+          "evidence": "Notice requirement section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "governing_law_sensitive",
+        "potentially_unenforceable"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+        "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+      },
+      "related_issue_areas": [
+        "LP-01",
+        "LP-09",
+        "LP-12"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": "partial_material"
+    },
+    "repeats": [
+      {
+        "exposure_statement": "Tenant has no right to step in and cure a third party\u2019s default (such as a lender, HOA, or utility issue) that threatens the premises, so Landlord can treat the problem as unresolved and the Tenant bears the business disruption and potential costs without a contractual tool to keep the lease and operations intact.",
+        "exposure_source": "model",
+        "exposure_reason_code": "high_materiality_missing_element",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "tenant's right to cure third-party defaults"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 0,
+        "_replay_elapsed_sec": 10.2
+      },
+      {
+        "exposure_statement": "Tenant has no right to step in and cure a third-party\u2019s default (such as a lender, utility, or service provider issue), so Landlord can treat the resulting disruption or noncompliance as Tenant\u2019s problem and enforce default remedies. Tenant bears the business risk of losing services or space access without the ability to fix the root cause directly.",
+        "exposure_source": "model",
+        "exposure_reason_code": "high_materiality_missing_element",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "tenant's right to cure third-party defaults"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 1,
+        "_replay_elapsed_sec": 3.667
+      },
+      {
+        "exposure_statement": "Tenant cannot step in to cure a third party\u2019s default that affects the premises or building services, so Landlord can treat the situation as continuing and enforce default remedies against Tenant even when Tenant is willing and able to fix the issue. Tenant bears the resulting disruption and costs, including potential termination and damages.",
+        "exposure_source": "model",
+        "exposure_reason_code": "high_materiality_missing_element",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "tenant's right to cure third-party defaults"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 2,
+        "_replay_elapsed_sec": 2.394
+      }
+    ]
+  },
+  "LP-13": {
+    "input": {
+      "issue_area_id": "LP-13",
+      "issue_area_name": "Indemnification & Liability",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "5 of 6 expected elements found; missing: cap on liability (if any)",
+      "supporting_provision_ids": [
+        "LP-13"
+      ],
+      "elements_found": [
+        "tenant indemnification of landlord scope",
+        "landlord indemnification of tenant scope",
+        "mutual vs one-way indemnification structure",
+        "exclusion of consequential or punitive damages",
+        "carve-outs for indemnitee negligence"
+      ],
+      "elements_missing": [
+        "cap on liability (if any)"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Landlord indemnification section marked Reserved or deleted",
+          "evidence": "Landlord indemnification section marked Reserved or deleted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Liability cap provision header present but amount blank",
+          "evidence": "Liability cap provision header present but amount blank",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "governing_law_sensitive",
+        "potentially_unenforceable"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+        "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+      },
+      "related_issue_areas": [
+        "LP-08",
+        "LP-11"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": "partial_material"
+    },
+    "repeats": [
+      {
+        "exposure_statement": "Tenant has uncapped indemnity and liability exposure, so a single claim could trigger open-ended costs for damages, defense, and settlements. Tenant bears the risk of losses exceeding insurance limits or internal reserves without a contractual ceiling.",
+        "exposure_source": "model",
+        "exposure_reason_code": "high_materiality_missing_element",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "cap on liability (if any)"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 0,
+        "_replay_elapsed_sec": 2.383
+      },
+      {
+        "exposure_statement": "Tenant has no limit on its indemnity and liability exposure, so a single claim can trigger uncapped defense costs, settlements, and damages that exceed insurance limits and the value of the lease. Tenant bears the risk of catastrophic loss and balance\u2011sheet impact if multiple claims or a large event occurs.",
+        "exposure_source": "model",
+        "exposure_reason_code": "high_materiality_missing_element",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "cap on liability (if any)"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 1,
+        "_replay_elapsed_sec": 5.633
+      },
+      {
+        "exposure_statement": "Tenant faces potentially uncapped indemnity and liability exposure, so a single claim could exceed the lease economics and materially impact cash flow. Tenant bears the risk of large defense and settlement costs with no contractual ceiling on total responsibility.",
+        "exposure_source": "model",
+        "exposure_reason_code": "high_materiality_missing_element",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "cap on liability (if any)"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 2,
+        "_replay_elapsed_sec": 2.347
+      }
+    ]
+  },
+  "LP-14": {
+    "input": {
+      "issue_area_id": "LP-14",
+      "issue_area_name": "Force Majeure",
+      "applicability": "required",
+      "coverage_state": "covered_unfavorable",
+      "evidence_summary": "Abatement limited to 'wholly/totally untenantable' standard with no partial-abatement mechanism for operational impairment",
+      "supporting_provision_ids": [
+        "LP-14"
+      ],
+      "elements_found": [
+        "definition of qualifying force majeure events",
+        "scope of excused obligations (which parties, which obligations)",
+        "rent abatement during force majeure period",
+        "notice requirement to invoke",
+        "termination right if force majeure exceeds threshold period"
+      ],
+      "elements_missing": [
+        "partial rent abatement or adjustment for operational impairment"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Force majeure section present but rent abatement carve-out blank or deleted",
+          "evidence": "Force majeure section present but rent abatement carve-out blank or deleted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Event list ends with 'including without limitation' with body truncated",
+          "evidence": "Event list ends with 'including without limitation' with body truncated",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Abatement conditioned on tenant vacating the premises",
+          "evidence": "Abatement conditioned on tenant vacating the premises",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "cascade_risk"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "cascade_risk": "Change to this provision may silently affect other provisions via cross-reference"
+      },
+      "related_issue_areas": [
+        "LP-05",
+        "LP-03"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": null
+    },
+    "repeats": [
+      {
+        "exposure_statement": "Tenant bears the risk that many disruptions won\u2019t qualify for relief and that key obligations (especially rent) still must be paid because the clause is narrow and unclear about what is excused. Tenant also has no meaningful protection for partial shutdowns or impaired operations since any rent relief is limited to situations where the space is wholly untenantable, leaving Tenant to absorb ongoing costs during a force majeure event.",
+        "exposure_source": "model",
+        "exposure_reason_code": "unfavorable_provision",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "definition of qualifying force majeure events",
+          "scope of excused obligations (which parties, which obligations)",
+          "rent abatement during force majeure period"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 0,
+        "_replay_elapsed_sec": 3.077
+      },
+      {
+        "exposure_statement": "Tenant bears the risk of most disruptions because force majeure coverage is narrowly defined and may not excuse key tenant obligations, leaving performance and cost exposure during outages. Tenant also has no meaningful rent relief unless the space is wholly untenantable, so partial shutdowns or operational impairment can still require full rent and continued compliance.",
+        "exposure_source": "model",
+        "exposure_reason_code": "unfavorable_provision",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "definition of qualifying force majeure events",
+          "scope of excused obligations (which parties, which obligations)",
+          "rent abatement during force majeure period"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 1,
+        "_replay_elapsed_sec": 2.776
+      },
+      {
+        "exposure_statement": "Tenant bears most interruption risk because force majeure relief is narrowly defined and unclear on which duties are excused, so Tenant can still be in default for nonperformance during many disruption scenarios. Tenant has no meaningful rent relief unless the space is wholly untenantable, leaving Tenant paying full rent even if operations are materially impaired but the premises remain partially usable.",
+        "exposure_source": "model",
+        "exposure_reason_code": "unfavorable_provision",
+        "exposure_confidence_note": null,
+        "exposure_elements_used": [
+          "definition of qualifying force majeure events",
+          "scope of excused obligations (which parties, which obligations)",
+          "rent abatement during force majeure period"
+        ],
+        "exposure_perspective": "tenant",
+        "_replay_index": 2,
+        "_replay_elapsed_sec": 3.954
+      }
+    ]
+  }
+}

@@ -1331,12 +1331,14 @@ def download_annotated(job_id: str, tenant_index: int, with_resolutions: bool = 
 
                 if ext == ".docx":
                     from cam.adapters.lease_review.lease_docx_annotator import annotate_docx
+                    cov_resolutions = job.get("cov_resolutions", {})
                     regen_path = Path(annotated_path).parent / f"annotated_latest_{Path(tenant['filename']).stem}.docx"
                     annotate_docx(
                         original_docx_path=upload_path,
                         results=pipeline_results,
                         output_path=str(regen_path),
                         resolutions=resolutions,
+                        cov_resolutions=cov_resolutions,
                     )
                     return FileResponse(
                         path=str(regen_path),

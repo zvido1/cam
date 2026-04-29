@@ -87,3 +87,8 @@ _edit_html.py
 
 token_key_gmail.py
 .tmp.driveupload/
+
+# Local env files (never commit credentials)
+.env
+**/.env
+*.env.local

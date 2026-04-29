@@ -1,0 +1,87 @@
+{
+  "input": {
+    "issue_area_id": "LP-11",
+    "issue_area_name": "Default & Remedies",
+    "applicability": "required",
+    "coverage_state": "partial",
+    "evidence_summary": "6 of 7 expected elements found; missing: tenant's right to cure third-party defaults",
+    "supporting_provision_ids": [
+      "LP-11"
+    ],
+    "elements_found": [
+      "monetary default definition and cure period (typically 5 days)",
+      "non-monetary default definition and cure period (typically 30 days)",
+      "notice requirement before default declaration",
+      "landlord termination right",
+      "landlord re-entry right",
+      "rent acceleration on default"
+    ],
+    "elements_missing": [
+      "tenant's right to cure third-party defaults"
+    ],
+    "negative_space_signals": [
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Notice requirement section marked Reserved",
+        "evidence": "Notice requirement section marked Reserved",
+        "severity": "medium"
+      }
+    ],
+    "caution_signals": [
+      "common_dispute_area",
+      "governing_law_sensitive",
+      "potentially_unenforceable"
+    ],
+    "caution_signal_definitions": {
+      "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+      "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+      "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+    },
+    "related_issue_areas": [
+      "LP-01",
+      "LP-09",
+      "LP-12"
+    ],
+    "requires_attention": true,
+    "materiality": "high",
+    "partial_class": "partial_material"
+  },
+  "repeats": [
+    {
+      "exposure_statement": "Tenant has no right to step in and cure a third party\u2019s default (such as a lender, HOA, or utility issue) that threatens the premises, so Landlord can treat the problem as unresolved and the Tenant bears the business disruption and potential costs without a contractual tool to keep the lease and operations intact.",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "tenant's right to cure third-party defaults"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 0,
+      "_replay_elapsed_sec": 10.2
+    },
+    {
+      "exposure_statement": "Tenant has no right to step in and cure a third-party\u2019s default (such as a lender, utility, or service provider issue), so Landlord can treat the resulting disruption or noncompliance as Tenant\u2019s problem and enforce default remedies. Tenant bears the business risk of losing services or space access without the ability to fix the root cause directly.",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "tenant's right to cure third-party defaults"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 1,
+      "_replay_elapsed_sec": 3.667
+    },
+    {
+      "exposure_statement": "Tenant cannot step in to cure a third party\u2019s default that affects the premises or building services, so Landlord can treat the situation as continuing and enforce default remedies against Tenant even when Tenant is willing and able to fix the issue. Tenant bears the resulting disruption and costs, including potential termination and damages.",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "tenant's right to cure third-party defaults"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 2,
+      "_replay_elapsed_sec": 2.394
+    }
+  ]
+}

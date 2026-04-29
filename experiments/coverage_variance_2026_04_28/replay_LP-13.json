@@ -1,0 +1,91 @@
+{
+  "input": {
+    "issue_area_id": "LP-13",
+    "issue_area_name": "Indemnification & Liability",
+    "applicability": "required",
+    "coverage_state": "partial",
+    "evidence_summary": "5 of 6 expected elements found; missing: cap on liability (if any)",
+    "supporting_provision_ids": [
+      "LP-13"
+    ],
+    "elements_found": [
+      "tenant indemnification of landlord scope",
+      "landlord indemnification of tenant scope",
+      "mutual vs one-way indemnification structure",
+      "exclusion of consequential or punitive damages",
+      "carve-outs for indemnitee negligence"
+    ],
+    "elements_missing": [
+      "cap on liability (if any)"
+    ],
+    "negative_space_signals": [
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Landlord indemnification section marked Reserved or deleted",
+        "evidence": "Landlord indemnification section marked Reserved or deleted",
+        "severity": "medium"
+      },
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Liability cap provision header present but amount blank",
+        "evidence": "Liability cap provision header present but amount blank",
+        "severity": "medium"
+      }
+    ],
+    "caution_signals": [
+      "common_dispute_area",
+      "governing_law_sensitive",
+      "potentially_unenforceable"
+    ],
+    "caution_signal_definitions": {
+      "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+      "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+      "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+    },
+    "related_issue_areas": [
+      "LP-08",
+      "LP-11"
+    ],
+    "requires_attention": true,
+    "materiality": "high",
+    "partial_class": "partial_material"
+  },
+  "repeats": [
+    {
+      "exposure_statement": "Tenant has uncapped indemnity and liability exposure, so a single claim could trigger open-ended costs for damages, defense, and settlements. Tenant bears the risk of losses exceeding insurance limits or internal reserves without a contractual ceiling.",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "cap on liability (if any)"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 0,
+      "_replay_elapsed_sec": 2.383
+    },
+    {
+      "exposure_statement": "Tenant has no limit on its indemnity and liability exposure, so a single claim can trigger uncapped defense costs, settlements, and damages that exceed insurance limits and the value of the lease. Tenant bears the risk of catastrophic loss and balance\u2011sheet impact if multiple claims or a large event occurs.",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "cap on liability (if any)"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 1,
+      "_replay_elapsed_sec": 5.633
+    },
+    {
+      "exposure_statement": "Tenant faces potentially uncapped indemnity and liability exposure, so a single claim could exceed the lease economics and materially impact cash flow. Tenant bears the risk of large defense and settlement costs with no contractual ceiling on total responsibility.",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "cap on liability (if any)"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 2,
+      "_replay_elapsed_sec": 2.347
+    }
+  ]
+}

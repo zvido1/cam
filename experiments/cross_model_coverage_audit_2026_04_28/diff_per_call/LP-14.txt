@@ -1,0 +1,20 @@
+=== LP-14 ===
+  input.coverage_state    : covered_unfavorable
+  input.partial_class     : None
+  input.materiality       : high
+  input.elements_missing  : ['partial rent abatement or adjustment for operational impairment']
+  input.elements_found    : ['definition of qualifying force majeure events', 'scope of excused obligations (which parties, which obligations)', 'rent abatement during force majeure period', 'notice requirement to invoke', 'termination right if force majeure exceeds threshold period']
+  exposure_elements_used  : ['definition of qualifying force majeure events', 'scope of excused obligations (which parties, which obligations)', 'rent abatement during force majeure period']
+  exposure_reason_code    : None
+
+  models_responded        : ['claude', 'gpt', 'grok']
+  statement_text_diverged : True
+
+  [CLAUDE]  (anthropic:claude-sonnet-4-20250514)  elapsed=3.39s  
+    Tenant must continue paying full rent during force majeure events unless the premises becomes wholly untenantable, with no relief for partial operational impairments that still allow some business use. The narrow definition of qualifying events and limited scope of excused obligations leaves tenant exposed to continued lease obligations during disruptions that significantly impact but don't completely prevent occupancy.
+
+  [GPT]  (openai:gpt-5.2)  elapsed=3.87s  
+    Tenant bears most of the business interruption risk because only extreme events that make the space wholly untenantable excuse performance, leaving no relief for partial loss of access or operational impairment. Tenant must keep paying full rent and comply with most obligations during force majeure unless the disruption meets that high threshold, shifting downtime costs to Tenant.
+
+  [GROK]  (xai:grok-4)  elapsed=5.52s  
+    Tenant bears the risk of continuing to pay full rent during force majeure events that impair but do not totally prevent operations, with no partial abatement available. Tenant also faces uncertainty in excusing performance due to a narrow definition of qualifying events and unclear scope of obligations for both parties.

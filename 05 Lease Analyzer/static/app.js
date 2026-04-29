@@ -555,6 +555,33 @@ function updateWorkflowNav() {
 
 async function navigateWorkflowState(targetState) {
     if (targetState === "upload") {
+        // Step 274: clicking the Upload tab while sitting on a results
+        // (or completed/cancelled processing) URL was leaving the URL
+        // pinned at /results/{id} and `currentJobId` set, so the upload
+        // flow could not actually start a fresh run. If a job is loaded
+        // and the user navigates back to upload, treat it as a real
+        // "start over": clear job state and reset the URL to "/".
+        const onResults = currentState === "results";
+        const completedJob = currentJobData && [
+            "completed", "cancelled", "failed",
+        ].includes(currentJobData.status);
+        if (currentJobId && (onResults || completedJob)) {
+            resetApp();
+            history.replaceState(null, "", "/");
+            // Also clear residual job/results refs that resetApp doesn't
+            // touch (those live outside the upload-form scope).
+            currentJobData = null;
+            currentResults = null;
+            currentTenantIndex = 0;
+            stopPolling();
+            if (expiryTimer) { clearInterval(expiryTimer); expiryTimer = null; }
+            const expiryEl = $("#expiry-notice");
+            if (expiryEl) expiryEl.classList.add("hidden");
+            const navContent = $("#nav-sidebar-content");
+            if (navContent) navContent.innerHTML = "";
+            enterApp();
+            return;
+        }
         showState("upload");
         return;
     }
@@ -9690,7 +9717,18 @@ function resetApp() {
     renderTemplateFileList();
     renderTenantFileList();
 
-    // 2. Clear email fields, reset email confirmation notices, close accordion
+    // 2. Clear email fields, reset email confirmation notices.
+    //
+    // Step 276 root-cause fix: the email accordion's HTML default state
+    // is body-visible (no `hidden` class on `email-accordion-body` at
+    // page load). The expand/collapse trigger element
+    // (`email-accordion-trigger`) referenced by older code does NOT
+    // exist in `index.html` — the "accordion" was never wired up as a
+    // real collapsible widget. Adding `hidden` here therefore took the
+    // email inputs out of layout with no path back, so users navigating
+    // back to upload from results saw a "stuck" / non-typable email
+    // field. We rebuild the inputs to clear values and DELETE any
+    // residual `hidden` class so the body is visible like the default.
     const accBody = document.getElementById('email-accordion-body');
     if (accBody) {
         delete accBody.dataset.emailSet;
@@ -9700,18 +9738,46 @@ function resetApp() {
             <label class="input-label mt-2" for="email-confirm-input">Confirm email</label>
             <input type="email" id="email-confirm-input" class="input-field" placeholder="Retype your email" autocomplete="off">
             <div id="email-mismatch-error" class="email-mismatch-error hidden">Email addresses don't match</div>`;
-        accBody.classList.add('hidden');
+        accBody.classList.remove('hidden');
     }
+    // Legacy accordion-trigger reference — element doesn't exist in
+    // current HTML; left as a no-op safeguard for older deploys.
     const accTrigger = document.getElementById('email-accordion-trigger');
     if (accTrigger) accTrigger.classList.remove('open');
 
-    // Reset processing email capture card
+    // Reset processing email capture card. The card's innerHTML may
+    // still hold a "Notifications will be sent to ..." confirmation
+    // div from a prior run — restore the original capture markup so a
+    // future processing screen renders writable inputs again.
     const procCard = document.getElementById('processing-email-capture');
-    if (procCard) delete procCard.dataset.emailSet;
+    if (procCard) {
+        delete procCard.dataset.emailSet;
+        procCard.innerHTML = `
+            <label class="input-label" for="processing-email-input">Email me when complete <span class="muted">(optional)</span></label>
+            <input type="email" id="processing-email-input" class="input-field" placeholder="you@lawfirm.com" autocomplete="off">
+            <button class="btn btn-secondary" id="processing-email-submit-btn" type="button">Save email</button>
+            <div id="processing-email-status" class="muted"></div>`;
+    }
 
-    // Reset mobile email row
+    // Reset mobile email row. Same shape as the processing card —
+    // restore writable inputs after a prior confirmation replaced them.
     const mobileEmailRow = document.querySelector('.mobile-results-email-row');
     if (mobileEmailRow) delete mobileEmailRow.dataset.emailSet;
+
+    // Step 276: explicitly clear text inputs that exist outside the
+    // email accordion. innerHTML rebuild above handles the email
+    // accordion inputs; this catches any other free-standing inputs
+    // on the upload form (currently none, but guards against future
+    // additions like instructions textarea).
+    const uploadSection = document.getElementById('state-upload');
+    if (uploadSection) {
+        uploadSection.querySelectorAll('input[type="text"], input[type="email"], textarea')
+            .forEach(el => {
+                // Skip inputs we just rebuilt inside the email accordion
+                if (el.closest('#email-accordion-body')) return;
+                el.value = '';
+            });
+    }
 
     // 3. Step 139: Reset to phase 1 (deactivate step 2)
     const summaryContainer = $("#template-summary-container");

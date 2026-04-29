@@ -1,0 +1,24 @@
+{
+  "outcome": "B",
+  "justification": "No classification or evidence variance; 5 call(s) differed only in exposure_statement phrasing.",
+  "model_path_calls": [
+    "LP-07",
+    "LP-09",
+    "LP-11",
+    "LP-13",
+    "LP-14"
+  ],
+  "n_calls": 5,
+  "n_repeats_per_call": 3,
+  "n_total_replays": 15,
+  "classification_variance_calls": [],
+  "evidence_variance_calls": [],
+  "wording_variance_calls": [
+    "LP-07",
+    "LP-09",
+    "LP-11",
+    "LP-13",
+    "LP-14"
+  ],
+  "no_variance_calls": []
+}

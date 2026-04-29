@@ -1,0 +1,48 @@
+{
+  "lp_id": "LP-14",
+  "model_label": "claude",
+  "model_target": "anthropic:claude-sonnet-4-20250514",
+  "system_prompt": "You are a careful commercial-lease reviewer. You classify a single issue area against a schema definition and the lease's actual clause text. You answer ONLY in JSON, no preamble or commentary.",
+  "user_prompt": "You are reviewing a commercial lease provision from the TENANT'S perspective.\n\n## ISSUE AREA\n- ID: LP-14\n- Name: Force Majeure\n- Applicability: required\n- Activation clues (signals issue area is in scope): []\n- Exclusion clues (signals issue area does NOT apply): []\n- Notes: Cascade risk: definition expansions silently affect LP-05 continuous operation obligations. v1.1.3: Added partial-abatement expected_element and 'wholly untenantable only' pattern to covered_unfavorable rule.\n\n## EXPECTED ELEMENTS (what the schema says should be addressed)\n  1. definition of qualifying force majeure events\n  2. scope of excused obligations (which parties, which obligations)\n  3. rent abatement during force majeure period\n  4. partial rent abatement or adjustment for operational impairment\n  5. notice requirement to invoke\n  6. termination right if force majeure exceeds threshold period\n\n## COVERAGE STATE RULES (schema's guidance)\n  - missing: No force majeure provision\n  - partial: Events defined but rent abatement, notice requirement, or termination right absent\n  - covered_unfavorable: Abatement limited to 'wholly untenantable' standard with no partial abatement for operational impairment; OR tenant required to vacate to claim any abatement; OR force majeure excludes rent obligations entirely\n  - ambiguous: Force majeure definition includes catch-all language without enumeration\n\n## COVERAGE STATE VOCABULARY (permitted values for `coverage_state`)\n  - covered: Provision present and consistent with standard form\n  - covered_unfavorable: Present but materially one-sided against tenant\n  - partial: Some expected elements present, others missing or weakened\n  - ambiguous: Present but interpretation-dependent; practical effect unclear\n  - missing: Issue area expected in this lease but provision is absent\n  - broken_xref: Provision references a section, exhibit, or defined term not found in the document\n  - potentially_unenforceable: Structural or legal defect that may limit enforceability\n  - review_needed: Insufficient evidence to assert a state; surface for human judgment\n  - not_applicable: Issue area does not apply to this lease based on exclusion clues or document type\n  - applicability_unclear: Cannot determine whether this issue area should be present; needs human judgment\n\n## RISK IF MISSING\nNo excused performance; common law impossibility doctrine rarely applies to commercial leases\n\n## LEASE CLAUSE TEXT\nARTICLE XVI — FORCE MAJEURE (LP-14)\n\nSection 16.1. Force Majeure.\n\nNeither party shall be in default under this Lease for failure to perform any obligation hereunder (other than the obligation to pay Rent) to the extent such failure is caused by a Force Majeure Event. The affected party shall give prompt notice to the other party of the occurrence of any Force Majeure Event and shall use reasonable efforts to mitigate its effects and resume performance as soon as practicable.\n\nSection 16.2. Duration.\n\nIf a Force Majeure Event prevents performance for a period exceeding one hundred eighty (180) days, either party may terminate this Lease by written notice to the other party, delivered within thirty (30) days after the expiration of such one hundred eighty (180) day period.\n\nSection 16.3. Rent During Force Majeure.\n\nTenant's obligation to pay Rent shall not be excused or abated during any Force Majeure Event, except to the extent the Premises are rendered wholly untenantable and Tenant has vacated the Premises, in which case Base Rent shall be abated proportionally until the Premises are restored to a tenantable condition.\n\n## YOUR TASK\n\nIndependently classify this issue area for this lease. Identify which expected elements are addressed in the clause text, which are missing, and what the practical exposure to the tenant is.\n\nRespond ONLY in JSON, no preamble or commentary outside the JSON object:\n\n{\n  \"coverage_state\": \"<one of the values from the COVERAGE STATE VOCABULARY above>\",\n  \"elements_present\": [\"<expected_element string>\", ...],\n  \"elements_missing\": [\"<expected_element string>\", ...],\n  \"justification\": \"<1-3 sentences citing specific lease language for the classification>\",\n  \"tenant_concern_summary\": \"<1 sentence: practical exposure from tenant perspective>\"\n}\n",
+  "regex_classification": {
+    "coverage_state": "covered_unfavorable",
+    "elements_found": [
+      "definition of qualifying force majeure events",
+      "scope of excused obligations (which parties, which obligations)",
+      "rent abatement during force majeure period",
+      "notice requirement to invoke",
+      "termination right if force majeure exceeds threshold period"
+    ],
+    "elements_missing": [
+      "partial rent abatement or adjustment for operational impairment"
+    ],
+    "evidence_summary": "Abatement limited to 'wholly/totally untenantable' standard with no partial-abatement mechanism for operational impairment",
+    "partial_class": null,
+    "materiality": "high"
+  },
+  "response": {
+    "model_label": "anthropic:claude-sonnet-4-20250514",
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-20250514",
+    "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\"definition of qualifying force majeure events\", \"scope of excused obligations (which parties, which obligations)\", \"rent abatement during force majeure period\", \"notice requirement to invoke\", \"termination right if force majeure exceeds threshold period\"],\n  \"elements_missing\": [\"partial rent abatement or adjustment for operational impairment\"],\n  \"justification\": \"The provision explicitly states rent abatement is limited to situations where 'the Premises are rendered wholly untenantable and Tenant has vacated the Premises,' with no partial abatement for operational impairment, matching the covered_unfavorable pattern of 'wholly untenantable only' standard.\",\n  \"tenant_concern_summary\": \"Tenant must both vacate and prove complete untenantability to receive any rent relief, with no protection for partial operational disruptions that could significantly impact business operations.\"\n}",
+    "parsed": {
+      "coverage_state": "covered_unfavorable",
+      "elements_present": [
+        "definition of qualifying force majeure events",
+        "scope of excused obligations (which parties, which obligations)",
+        "rent abatement during force majeure period",
+        "notice requirement to invoke",
+        "termination right if force majeure exceeds threshold period"
+      ],
+      "elements_missing": [
+        "partial rent abatement or adjustment for operational impairment"
+      ],
+      "justification": "The provision explicitly states rent abatement is limited to situations where 'the Premises are rendered wholly untenantable and Tenant has vacated the Premises,' with no partial abatement for operational impairment, matching the covered_unfavorable pattern of 'wholly untenantable only' standard.",
+      "tenant_concern_summary": "Tenant must both vacate and prove complete untenantability to receive any rent relief, with no protection for partial operational disruptions that could significantly impact business operations."
+    },
+    "json_parse_error": null,
+    "out_of_vocab_state": null,
+    "call_error": null,
+    "elapsed_sec": 4.33
+  }
+}

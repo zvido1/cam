@@ -1,0 +1,86 @@
+{
+  "input": {
+    "issue_area_id": "LP-09",
+    "issue_area_name": "Subletting & Assignment",
+    "applicability": "required",
+    "coverage_state": "partial",
+    "evidence_summary": "4 of 6 expected elements found; missing: recapture right (landlord can terminate and lease directly), assignment in connection with sale of business",
+    "supporting_provision_ids": [
+      "LP-09"
+    ],
+    "elements_found": [
+      "landlord consent requirement",
+      "grounds for withholding consent (reasonableness standard)",
+      "affiliate exception (no consent required for related entities)",
+      "profit sharing on sublet above base rent"
+    ],
+    "elements_missing": [
+      "recapture right (landlord can terminate and lease directly)",
+      "assignment in connection with sale of business"
+    ],
+    "negative_space_signals": [
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Affiliate exception section marked Reserved",
+        "evidence": "Affiliate exception section marked Reserved",
+        "severity": "medium"
+      }
+    ],
+    "caution_signals": [
+      "common_dispute_area",
+      "landlord_leverage_point"
+    ],
+    "caution_signal_definitions": {
+      "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+      "landlord_leverage_point": "Landlord typically holds stronger enforcement position if disputed"
+    },
+    "related_issue_areas": [
+      "LP-03",
+      "LP-11"
+    ],
+    "requires_attention": true,
+    "materiality": "high",
+    "partial_class": "partial_material"
+  },
+  "repeats": [
+    {
+      "exposure_statement": "Landlord can recapture the space when Tenant seeks to assign or sublet, cutting off Tenant\u2019s ability to monetize the remaining term and potentially forcing an early exit without compensation. Tenant also lacks clear permission to assign in connection with a sale of its business, which can delay or reduce deal value and leave Tenant stuck on the hook for the lease.",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "recapture right (landlord can terminate and lease directly)",
+        "assignment in connection with sale of business"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 0,
+      "_replay_elapsed_sec": 3.926
+    },
+    {
+      "exposure_statement": "Landlord can recapture the space when Tenant seeks to sublet or assign, forcing Tenant to lose the premises and any deal value while still carrying relocation and transition costs. Tenant also lacks clear rights to assign in connection with a sale of its business, which can delay or derail a sale or reduce purchase price if the lease can\u2019t transfer cleanly.",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "recapture right (landlord can terminate and lease directly)",
+        "assignment in connection with sale of business"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 1,
+      "_replay_elapsed_sec": 2.61
+    },
+    {
+      "exposure_statement": "Landlord can block Tenant\u2019s attempt to transfer the space and capture the upside by terminating the lease and leasing directly to the proposed replacement, leaving Tenant with relocation costs and potential downtime. Tenant also has no clear right to assign the lease as part of a sale of its business, which can delay or reduce the value of an exit deal.",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "recapture right (landlord can terminate and lease directly)",
+        "assignment in connection with sale of business"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 2,
+      "_replay_elapsed_sec": 4.03
+    }
+  ]
+}

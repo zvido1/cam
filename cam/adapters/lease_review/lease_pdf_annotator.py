@@ -105,21 +105,26 @@ def _severity_color(severity: str) -> tuple:
     return colors.get(severity, (1.0, 0.9, 0.0))  # Default yellow
 
 
-def _format_coverage_annotation_text(coverage_item: dict, cov_resolution: dict = None) -> str:
-    """Format the sticky note text for a coverage gap finding."""
+def _format_coverage_annotation_text(coverage_item: dict, cov_resolution: dict = None,
+                                     perspective: str = "tenant") -> str:
+    """Format the sticky note text for a coverage gap finding.
+
+    Step 273: state_label is now perspective-aware (Landlord runs render
+    `covered_unfavorable` items as "FAVORABLE TERMS"; Neutral runs as
+    "TILTS TOWARD LANDLORD"). Tenant labels match the pre-Step-273 mapping
+    byte-for-byte.
+    """
+    from cam.adapters.lease_review.lease_display import _resolve_display
+
     pid = coverage_item.get("issue_area_id", "?")
     pname = coverage_item.get("provision_name", "")
-    state = coverage_item.get("coverage_state", "")
     materiality = coverage_item.get("materiality", "medium")
     exposure = coverage_item.get("exposure_statement", "")
     elements_missing = coverage_item.get("elements_missing", [])
 
-    state_labels = {
-        "partial": "INCOMPLETE",
-        "covered_unfavorable": "UNFAVORABLE TERMS",
-    }
+    disp = _resolve_display(coverage_item, perspective)
+    state_label = disp["label"]
     mat_labels = {"high": "HIGH", "medium": "MEDIUM", "low": "LOW"}
-    state_label = state_labels.get(state, state.upper())
     mat_label = mat_labels.get(materiality, materiality.upper())
 
     lines = [f"[GAP] {pid} {pname} \u2014 {state_label} ({mat_label} materiality)"]
@@ -265,9 +270,16 @@ def annotate_pdf(
                 print(f"[pdf_annotator] Could not locate text for {pid}", flush=True)
 
     # === Coverage gap annotations ===
-    # Drop [GAP] sticky notes on provisions that are present-but-incomplete or
-    # covered-but-unfavorable. Provisions that are entirely missing have no
-    # anchor in the PDF - those stay in the Synopsis only.
+    # Drop [GAP] sticky notes on provisions whose display bucket is one of
+    # the surfaced annotation buckets (Step 273 — needs_attention,
+    # favorable_to_your_side, asymmetric_terms, worth_reviewing). Items
+    # that are entirely missing have no anchor in the PDF body and are
+    # skipped (they still appear in the Synopsis).
+    from cam.adapters.lease_review.lease_display import (
+        _resolve_display, ANNOTATED_BUCKETS, resolve_perspective,
+    )
+
+    perspective = resolve_perspective(results)
     coverage_assessment = results.get("coverage_assessment", []) or []
     provisions_by_id = {p.get("provision_id"): p for p in results.get("provisions", [])}
 
@@ -276,22 +288,10 @@ def annotate_pdf(
     cov_color = _coverage_color()
 
     for cov in coverage_assessment:
-        # Match UI bucketing (Coverage & Gaps page):
-        #   Need Attention = covered_unfavorable + partial_material + missing
-        #   Worth Reviewing = partial_review
-        # partial_typical items are treated as "Covered" in the UI and skipped here.
-        state = cov.get("coverage_state", "covered")
-        pcls = cov.get("partial_class", "")
-        is_attention = (
-            state == "covered_unfavorable"
-            or state == "missing"
-            or pcls == "partial_material"
-        )
-        is_review = pcls == "partial_review"
-        if not (is_attention or is_review):
+        disp = _resolve_display(cov, perspective)
+        if disp["bucket"] not in ANNOTATED_BUCKETS:
             continue
-        # "missing" provisions have no anchor in the PDF body - skip stickies
-        # for those (they still appear in the Synopsis).
+        state = cov.get("coverage_state", "covered")
         if state == "missing":
             continue
 
@@ -317,7 +317,7 @@ def annotate_pdf(
                 or cov_resolutions.get(f"cov:{pid}")
             )
 
-        comment_text = _sanitize_for_pdf(_format_coverage_annotation_text(cov, cov_resolution))
+        comment_text = _sanitize_for_pdf(_format_coverage_annotation_text(cov, cov_resolution, perspective))
 
         # Try anchor text first, then section reference, then issue-area name, then id.
         # Mode A typically resolves on anchor_text; Mode C falls through to name/id.

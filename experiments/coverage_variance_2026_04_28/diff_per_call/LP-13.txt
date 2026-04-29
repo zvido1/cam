@@ -1,0 +1,21 @@
+=== LP-13 ===
+  input.coverage_state    : partial
+  input.materiality       : high
+  input.elements_missing  : ['cap on liability (if any)']
+  input.elements_found    : ['tenant indemnification of landlord scope', 'landlord indemnification of tenant scope', 'mutual vs one-way indemnification structure', 'exclusion of consequential or punitive damages', 'carve-outs for indemnitee negligence']
+  exposure_source(s)      : ['model', 'model', 'model']
+  exposure_reason_code(s) : ['high_materiality_missing_element', 'high_materiality_missing_element', 'high_materiality_missing_element']
+  elements_used per repeat:
+    repeat[0] = ['cap on liability (if any)']
+    repeat[1] = ['cap on liability (if any)']
+    repeat[2] = ['cap on liability (if any)']
+  classification_diff     : False
+  evidence_diff           : False
+  wording_diff            : True
+
+  repeat[0]:
+    Tenant has uncapped indemnity and liability exposure, so a single claim could trigger open-ended costs for damages, defense, and settlements. Tenant bears the risk of losses exceeding insurance limits or internal reserves without a contractual ceiling.
+  repeat[1]:
+    Tenant has no limit on its indemnity and liability exposure, so a single claim can trigger uncapped defense costs, settlements, and damages that exceed insurance limits and the value of the lease. Tenant bears the risk of catastrophic loss and balance‑sheet impact if multiple claims or a large event occurs.
+  repeat[2]:
+    Tenant faces potentially uncapped indemnity and liability exposure, so a single claim could exceed the lease economics and materially impact cash flow. Tenant bears the risk of large defense and settlement costs with no contractual ceiling on total responsibility.

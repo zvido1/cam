@@ -237,20 +237,29 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
 
         # -- Findings (Mode C: coverage-first) --
         if is_mode_c:
+            from cam.adapters.lease_review.lease_display import (
+                _resolve_display, resolve_perspective, resolve_sections,
+            )
+            perspective = resolve_perspective(results)
             coverage_assessment = results.get("coverage_assessment", []) or []
-            # Bucket per UI semantics:
-            #   Need Attention  = covered_unfavorable | partial_material | missing
-            #   Worth Reviewing = partial_review
-            #   Covered         = everything else
+
+            # Bucket counts (for the summary line) — kept at bucket level
+            # because the line is a quick-scan summary. Section structure
+            # below is independent.
             attention_items = []
+            favorable_items = []
+            asymmetric_items = []
             review_items = []
             covered_count = 0
             for item in coverage_assessment:
-                st = item.get("coverage_state", "")
-                pcls = item.get("partial_class", "")
-                if st == "covered_unfavorable" or st == "missing" or pcls == "partial_material":
+                bucket = _resolve_display(item, perspective)["bucket"]
+                if bucket == "needs_attention":
                     attention_items.append(item)
-                elif pcls == "partial_review":
+                elif bucket == "favorable_to_your_side":
+                    favorable_items.append(item)
+                elif bucket == "asymmetric_terms":
+                    asymmetric_items.append(item)
+                elif bucket == "worth_reviewing":
                     review_items.append(item)
                 else:
                     covered_count += 1
@@ -258,20 +267,20 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
             y = new_page_if_needed(y, 60)
             y = add_text(page, M, y, "Findings", size=13, bold=True, color=(0.1, 0.2, 0.36))
             y += 4
+            summary_parts = [f"{len(attention_items)} issue area(s) require attention"]
+            if favorable_items:
+                summary_parts.append(f"{len(favorable_items)} favorable term(s)")
+            if asymmetric_items:
+                summary_parts.append(f"{len(asymmetric_items)} asymmetric term(s)")
+            summary_parts.append(f"{len(review_items)} worth reviewing")
+            summary_parts.append(f"{covered_count} covered.")
             y = add_text(
                 page, M, y,
-                f"{len(attention_items)} issue area(s) require attention, "
-                f"{len(review_items)} worth reviewing, "
-                f"{covered_count} covered.",
+                ", ".join(summary_parts),
                 size=10, bold=True, color=(0.1, 0.2, 0.36),
             )
             y += 6
 
-            state_labels = {
-                "missing": "MISSING",
-                "partial": "INCOMPLETE",
-                "covered_unfavorable": "UNFAVORABLE TERMS",
-            }
             mat_order = {"high": 0, "medium": 1, "low": 2}
 
             # Note: add_text is closed over `page`, not parameterised, so that
@@ -280,8 +289,9 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
             def _render_coverage_item(cy, item, tier_color):
                 pid = item.get("issue_area_id", "")
                 pname = item.get("provision_name", item.get("issue_area_name", pid))
-                state = item.get("coverage_state", "")
-                label = state_labels.get(state, state.upper() or "REVIEW")
+                # Step 273: per-item label flows through `_resolve_display`
+                # so it reads consistently with the section header.
+                label = _resolve_display(item, perspective)["label"]
                 exposure = item.get("exposure_statement", "")
                 missing_els = item.get("elements_missing", [])
 
@@ -329,19 +339,38 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
 
                 return cy + 6
 
-            if attention_items:
-                attention_items.sort(key=lambda it: mat_order.get(it.get("materiality", "medium"), 1))
-                y = new_page_if_needed(y, 20)
-                y = add_text(page, M, y, "Needs Attention", size=11, bold=True, color=(0.76, 0.27, 0.05))
-                for item in attention_items:
-                    y = _render_coverage_item(y, item, (0.76, 0.27, 0.05))
-
-            if review_items:
-                review_items.sort(key=lambda it: mat_order.get(it.get("materiality", "medium"), 1))
-                y = new_page_if_needed(y, 20)
-                y = add_text(page, M, y, "Worth Reviewing", size=11, bold=True, color=(0.65, 0.47, 0.02))
-                for item in review_items:
-                    y = _render_coverage_item(y, item, (0.65, 0.47, 0.02))
+            # Step 275: section-level rendering via `resolve_sections`.
+            # Tenant runs see "Coverage & Gaps" only (single section);
+            # Landlord runs see "Asymmetric Provisions in Your Favor" then
+            # "Coverage & Gaps"; Neutral runs see "Asymmetric Provisions"
+            # then "Coverage & Gaps". Empty sections are filtered upstream.
+            # The "Covered" tail is intentionally omitted from the cover
+            # because the bucket-level summary line above already counts
+            # covered items.
+            sections = [
+                s for s in resolve_sections(coverage_assessment, perspective)
+                if s["key"] != "covered"
+            ]
+            section_colors = {
+                "asymmetric_favor": (0.09, 0.64, 0.29),  # green
+                "asymmetric":       (0.49, 0.23, 0.93),  # purple
+                "coverage_gaps":    (0.76, 0.27, 0.05),  # red/orange
+            }
+            for section in sections:
+                tier_color = section_colors.get(section["key"], (0.76, 0.27, 0.05))
+                y = new_page_if_needed(y, 30)
+                y = add_text(page, M, y, section["title"], size=11, bold=True, color=tier_color)
+                if section.get("intro"):
+                    y = new_page_if_needed(y, 16)
+                    y = add_text(page, M, y, section["intro"], size=8.5,
+                                 color=(0.45, 0.47, 0.52))
+                # Sort items inside the section: high materiality first
+                section_items = sorted(
+                    [pair[0] for pair in section["items"]],
+                    key=lambda it: mat_order.get(it.get("materiality", "medium"), 1),
+                )
+                for item in section_items:
+                    y = _render_coverage_item(y, item, tier_color)
 
             # Skip the deviation findings block below when Mode C
             deviations = []
@@ -492,12 +521,16 @@ def generate_outputs(
     # Detect input format
     ext = Path(tenant_file_path).suffix.lower()
 
+    # Coverage resolutions ride alongside results; mirror the cover-page lookup.
+    cov_resolutions = results.get("cov_resolutions") or {}
+
     if ext == ".docx":
         try:
             from cam.adapters.lease_review.lease_docx_annotator import annotate_docx
             annotated_name = Path(tenant_file_path).stem + "_annotated.docx"
             annotated_path = os.path.join(output_dir, annotated_name)
-            annotate_docx(tenant_file_path, results, annotated_path)
+            annotate_docx(tenant_file_path, results, annotated_path,
+                          cov_resolutions=cov_resolutions)
             output_info["annotated_document"] = annotated_path
             output_info["annotation_method"] = "docx_comments"
         except Exception as e:
@@ -509,7 +542,8 @@ def generate_outputs(
             from cam.adapters.lease_review.lease_pdf_annotator import annotate_pdf
             annotated_name = Path(tenant_file_path).stem + "_annotated.pdf"
             annotated_path = os.path.join(output_dir, annotated_name)
-            annotate_pdf(tenant_file_path, results, annotated_path)
+            annotate_pdf(tenant_file_path, results, annotated_path,
+                         cov_resolutions=cov_resolutions)
             output_info["annotated_document"] = annotated_path
             output_info["annotation_method"] = "pdf_highlights"
         except Exception as e:
@@ -528,7 +562,8 @@ def generate_outputs(
                 from cam.adapters.lease_review.lease_pdf_annotator import annotate_pdf
                 annotated_name = Path(tenant_file_path).stem + "_annotated.pdf"
                 annotated_path = os.path.join(output_dir, annotated_name)
-                annotate_pdf(str(converted_pdf), results, annotated_path)
+                annotate_pdf(str(converted_pdf), results, annotated_path,
+                             cov_resolutions=cov_resolutions)
                 output_info["annotated_document"] = annotated_path
                 output_info["annotation_method"] = "pdf_highlights"
                 # Clean up intermediate converted PDF

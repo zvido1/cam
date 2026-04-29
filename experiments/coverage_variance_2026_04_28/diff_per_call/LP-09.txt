@@ -1,0 +1,21 @@
+=== LP-09 ===
+  input.coverage_state    : partial
+  input.materiality       : high
+  input.elements_missing  : ['recapture right (landlord can terminate and lease directly)', 'assignment in connection with sale of business']
+  input.elements_found    : ['landlord consent requirement', 'grounds for withholding consent (reasonableness standard)', 'affiliate exception (no consent required for related entities)', 'profit sharing on sublet above base rent']
+  exposure_source(s)      : ['model', 'model', 'model']
+  exposure_reason_code(s) : ['high_materiality_missing_element', 'high_materiality_missing_element', 'high_materiality_missing_element']
+  elements_used per repeat:
+    repeat[0] = ['recapture right (landlord can terminate and lease directly)', 'assignment in connection with sale of business']
+    repeat[1] = ['recapture right (landlord can terminate and lease directly)', 'assignment in connection with sale of business']
+    repeat[2] = ['recapture right (landlord can terminate and lease directly)', 'assignment in connection with sale of business']
+  classification_diff     : False
+  evidence_diff           : False
+  wording_diff            : True
+
+  repeat[0]:
+    Landlord can recapture the space when Tenant seeks to assign or sublet, cutting off Tenant’s ability to monetize the remaining term and potentially forcing an early exit without compensation. Tenant also lacks clear permission to assign in connection with a sale of its business, which can delay or reduce deal value and leave Tenant stuck on the hook for the lease.
+  repeat[1]:
+    Landlord can recapture the space when Tenant seeks to sublet or assign, forcing Tenant to lose the premises and any deal value while still carrying relocation and transition costs. Tenant also lacks clear rights to assign in connection with a sale of its business, which can delay or derail a sale or reduce purchase price if the lease can’t transfer cleanly.
+  repeat[2]:
+    Landlord can block Tenant’s attempt to transfer the space and capture the upside by terminating the lease and leasing directly to the proposed replacement, leaving Tenant with relocation costs and potential downtime. Tenant also has no clear right to assign the lease as part of a sale of its business, which can delay or reduce the value of an exit deal.

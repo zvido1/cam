@@ -1,0 +1,62 @@
+{
+  "issue_area_id": "LP-11",
+  "model_label": "claude",
+  "model_target": "anthropic:claude-sonnet-4-20250514",
+  "input": {
+    "issue_area_id": "LP-11",
+    "issue_area_name": "Default & Remedies",
+    "applicability": "required",
+    "coverage_state": "partial",
+    "evidence_summary": "6 of 7 expected elements found; missing: tenant's right to cure third-party defaults",
+    "supporting_provision_ids": [
+      "LP-11"
+    ],
+    "elements_found": [
+      "monetary default definition and cure period (typically 5 days)",
+      "non-monetary default definition and cure period (typically 30 days)",
+      "notice requirement before default declaration",
+      "landlord termination right",
+      "landlord re-entry right",
+      "rent acceleration on default"
+    ],
+    "elements_missing": [
+      "tenant's right to cure third-party defaults"
+    ],
+    "negative_space_signals": [
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Notice requirement section marked Reserved",
+        "evidence": "Notice requirement section marked Reserved",
+        "severity": "medium"
+      }
+    ],
+    "caution_signals": [
+      "common_dispute_area",
+      "governing_law_sensitive",
+      "potentially_unenforceable"
+    ],
+    "caution_signal_definitions": {
+      "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+      "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+      "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+    },
+    "related_issue_areas": [
+      "LP-01",
+      "LP-09",
+      "LP-12"
+    ],
+    "requires_attention": true,
+    "materiality": "high",
+    "partial_class": "partial_material"
+  },
+  "system_prompt": "You write concise, practical exposure assessments for commercial lease provisions.\n\nRules:\n- Exactly 1-2 sentences. No more.\n- Plain English. No legal citations. No case law. No jurisdiction references.\n- Describe practical TENANT exposure -- what can go wrong, who bears the risk.\n- Do not restate the clause mechanically.\n- Do not speculate beyond the evidence supplied.\n- Do not use \"may or may not\" or similar hedge phrases unless state is explicitly ambiguous.\n- Focus on the business/legal consequence of what is absent or unfavorable.\n- Tone: direct and specific. \"Tenant has no protection against X\" not \"This provision appears to potentially suggest...\"\n- Never start with \"This provision\" or \"The clause\".\n- Start with the risk actor: \"Tenant\", \"Landlord\", or the specific consequence.\n",
+  "user_prompt": "Provision: Default & Remedies\nCoverage state: partial\nMissing or unfavorable elements: tenant's right to cure third-party defaults\nEvidence note: 6 of 7 expected elements found; missing: tenant's right to cure third-party defaults\nFallback schema statement: none\n\nWrite a 1-2 sentence exposure statement describing the practical risk to the tenant.",
+  "response": {
+    "model_label": "anthropic:claude-sonnet-4-20250514",
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-20250514",
+    "statement": "Tenant cannot cure defaults by third parties (such as contractors or subtenants), leaving tenant vulnerable to lease termination or other remedies even when tenant could readily fix the problem. Landlord retains full control over default resolution regardless of tenant's ability or willingness to remedy third-party breaches.",
+    "error": null,
+    "elapsed_sec": 3.52
+  }
+}

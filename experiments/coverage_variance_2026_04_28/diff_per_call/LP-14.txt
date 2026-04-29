@@ -1,0 +1,21 @@
+=== LP-14 ===
+  input.coverage_state    : covered_unfavorable
+  input.materiality       : high
+  input.elements_missing  : ['partial rent abatement or adjustment for operational impairment']
+  input.elements_found    : ['definition of qualifying force majeure events', 'scope of excused obligations (which parties, which obligations)', 'rent abatement during force majeure period', 'notice requirement to invoke', 'termination right if force majeure exceeds threshold period']
+  exposure_source(s)      : ['model', 'model', 'model']
+  exposure_reason_code(s) : ['unfavorable_provision', 'unfavorable_provision', 'unfavorable_provision']
+  elements_used per repeat:
+    repeat[0] = ['definition of qualifying force majeure events', 'scope of excused obligations (which parties, which obligations)', 'rent abatement during force majeure period']
+    repeat[1] = ['definition of qualifying force majeure events', 'scope of excused obligations (which parties, which obligations)', 'rent abatement during force majeure period']
+    repeat[2] = ['definition of qualifying force majeure events', 'scope of excused obligations (which parties, which obligations)', 'rent abatement during force majeure period']
+  classification_diff     : False
+  evidence_diff           : False
+  wording_diff            : True
+
+  repeat[0]:
+    Tenant bears the risk that many disruptions won’t qualify for relief and that key obligations (especially rent) still must be paid because the clause is narrow and unclear about what is excused. Tenant also has no meaningful protection for partial shutdowns or impaired operations since any rent relief is limited to situations where the space is wholly untenantable, leaving Tenant to absorb ongoing costs during a force majeure event.
+  repeat[1]:
+    Tenant bears the risk of most disruptions because force majeure coverage is narrowly defined and may not excuse key tenant obligations, leaving performance and cost exposure during outages. Tenant also has no meaningful rent relief unless the space is wholly untenantable, so partial shutdowns or operational impairment can still require full rent and continued compliance.
+  repeat[2]:
+    Tenant bears most interruption risk because force majeure relief is narrowly defined and unclear on which duties are excused, so Tenant can still be in default for nonperformance during many disruption scenarios. Tenant has no meaningful rent relief unless the space is wholly untenantable, leaving Tenant paying full rent even if operations are materially impaired but the premises remain partially usable.

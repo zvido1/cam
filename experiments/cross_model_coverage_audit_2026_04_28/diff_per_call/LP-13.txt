@@ -1,0 +1,20 @@
+=== LP-13 ===
+  input.coverage_state    : partial
+  input.partial_class     : partial_material
+  input.materiality       : high
+  input.elements_missing  : ['cap on liability (if any)']
+  input.elements_found    : ['tenant indemnification of landlord scope', 'landlord indemnification of tenant scope', 'mutual vs one-way indemnification structure', 'exclusion of consequential or punitive damages', 'carve-outs for indemnitee negligence']
+  exposure_elements_used  : ['cap on liability (if any)']
+  exposure_reason_code    : None
+
+  models_responded        : ['claude', 'gpt', 'grok']
+  statement_text_diverged : True
+
+  [CLAUDE]  (anthropic:claude-sonnet-4-20250514)  elapsed=2.78s  
+    Tenant faces unlimited liability exposure for indemnification claims, with no cap to limit potential financial damages. Without a liability ceiling, tenant could be responsible for catastrophic losses far exceeding the lease value or tenant's financial capacity.
+
+  [GPT]  (openai:gpt-5.2)  elapsed=3.71s  
+    Tenant has no limit on its indemnity and liability exposure, so a single claim could trigger uncapped defense costs, settlement payments, and damages. Tenant bears the risk of open-ended financial loss even when the claim size exceeds insurance limits or budgeted reserves.
+
+  [GROK]  (xai:grok-4)  elapsed=5.66s  
+    Tenant faces unlimited financial exposure under the indemnification and liability provisions, bearing the full risk of potentially catastrophic claims or damages without any cap to limit losses.

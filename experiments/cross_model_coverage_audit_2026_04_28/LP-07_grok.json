@@ -1,0 +1,64 @@
+{
+  "issue_area_id": "LP-07",
+  "model_label": "grok",
+  "model_target": "xai:grok-4",
+  "input": {
+    "issue_area_id": "LP-07",
+    "issue_area_name": "Common Area Maintenance (CAM)",
+    "applicability": "applicable",
+    "coverage_state": "covered_unfavorable",
+    "evidence_summary": "Audit rights explicitly removed",
+    "supporting_provision_ids": [
+      "LP-07"
+    ],
+    "elements_found": [
+      "tenant's proportionate share calculation method",
+      "included expense categories",
+      "annual CAM increase cap",
+      "tenant audit rights",
+      "reconciliation timeline"
+    ],
+    "elements_missing": [
+      "excluded expense categories"
+    ],
+    "negative_space_signals": [
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Audit rights section marked Reserved or Intentionally Omitted",
+        "evidence": "Audit rights section marked Reserved or Intentionally Omitted",
+        "severity": "medium"
+      },
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Excluded expenses list cross-references exhibit not attached",
+        "evidence": "Excluded expenses list cross-references exhibit not attached",
+        "severity": "medium"
+      }
+    ],
+    "caution_signals": [
+      "common_dispute_area",
+      "landlord_leverage_point"
+    ],
+    "caution_signal_definitions": {
+      "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+      "landlord_leverage_point": "Landlord typically holds stronger enforcement position if disputed"
+    },
+    "related_issue_areas": [
+      "LP-01",
+      "LP-06"
+    ],
+    "requires_attention": true,
+    "materiality": "high",
+    "partial_class": null
+  },
+  "system_prompt": "You write concise, practical exposure assessments for commercial lease provisions.\n\nRules:\n- Exactly 1-2 sentences. No more.\n- Plain English. No legal citations. No case law. No jurisdiction references.\n- Describe practical TENANT exposure -- what can go wrong, who bears the risk.\n- Do not restate the clause mechanically.\n- Do not speculate beyond the evidence supplied.\n- Do not use \"may or may not\" or similar hedge phrases unless state is explicitly ambiguous.\n- Focus on the business/legal consequence of what is absent or unfavorable.\n- Tone: direct and specific. \"Tenant has no protection against X\" not \"This provision appears to potentially suggest...\"\n- Never start with \"This provision\" or \"The clause\".\n- Start with the risk actor: \"Tenant\", \"Landlord\", or the specific consequence.\n",
+  "user_prompt": "Provision: Common Area Maintenance (CAM)\nCoverage state: covered_unfavorable\nMissing or unfavorable elements: Provision present but unfavorable: tenant's proportionate share calculation method, included expense categories, annual CAM increase cap\nEvidence note: Audit rights explicitly removed\nFallback schema statement: none\n\nWrite a 1-2 sentence exposure statement describing the practical risk to the tenant.",
+  "response": {
+    "model_label": "xai:grok-4",
+    "provider": "xai",
+    "model": "grok-4",
+    "statement": "Tenant bears the risk of excessive or unfair CAM charges through an unfavorable proportionate share calculation, overly broad expense categories, and unlimited annual increases, compounded by the explicit removal of audit rights that prevent verification or challenge of the landlord's billing.",
+    "error": null,
+    "elapsed_sec": 5.73
+  }
+}

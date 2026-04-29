@@ -1,0 +1,48 @@
+{
+  "lp_id": "LP-07",
+  "model_label": "gpt",
+  "model_target": "openai:gpt-5.2",
+  "system_prompt": "You are a careful commercial-lease reviewer. You classify a single issue area against a schema definition and the lease's actual clause text. You answer ONLY in JSON, no preamble or commentary.",
+  "user_prompt": "You are reviewing a commercial lease provision from the TENANT'S perspective.\n\n## ISSUE AREA\n- ID: LP-07\n- Name: Common Area Maintenance (CAM)\n- Applicability: conditional\n- Activation clues (signals issue area is in scope): ['common area', 'CAM', 'CAM charges', 'operating expenses', 'triple net', 'NNN', 'proportionate share', 'shared expenses', 'common facilities']\n- Exclusion clues (signals issue area does NOT apply): ['gross lease', 'full service lease', 'all-inclusive rent', 'no additional charges', 'landlord pays all operating']\n- Notes: Not applicable in gross or full-service leases.\n\n## EXPECTED ELEMENTS (what the schema says should be addressed)\n  1. tenant's proportionate share calculation method\n  2. included expense categories\n  3. excluded expense categories\n  4. annual CAM increase cap\n  5. tenant audit rights\n  6. reconciliation timeline\n\n## COVERAGE STATE RULES (schema's guidance)\n  - missing: CAM references present in lease but no CAM provision found\n  - partial: Share calculation present but exclusions, cap, or audit rights absent\n  - covered_unfavorable: No annual CAM cap; audit rights absent or time-limited to 30 days\n  - ambiguous: Proportionate share defined by landlord's reasonable determination with no formula\n  - not_applicable: Gross or full-service lease structure confirmed\n\n## COVERAGE STATE VOCABULARY (permitted values for `coverage_state`)\n  - covered: Provision present and consistent with standard form\n  - covered_unfavorable: Present but materially one-sided against tenant\n  - partial: Some expected elements present, others missing or weakened\n  - ambiguous: Present but interpretation-dependent; practical effect unclear\n  - missing: Issue area expected in this lease but provision is absent\n  - broken_xref: Provision references a section, exhibit, or defined term not found in the document\n  - potentially_unenforceable: Structural or legal defect that may limit enforceability\n  - review_needed: Insufficient evidence to assert a state; surface for human judgment\n  - not_applicable: Issue area does not apply to this lease based on exclusion clues or document type\n  - applicability_unclear: Cannot determine whether this issue area should be present; needs human judgment\n\n## RISK IF MISSING\nTenant may owe undefined share of all building operating expenses with no audit protection\n\n## LEASE CLAUSE TEXT\nARTICLE IX — COMMON AREA MAINTENANCE (LP-07)\n\nSection 9.1. CAM Charges.\n\nTenant shall pay to Landlord, as Additional Rent, Tenant's Proportionate Share of all costs and expenses incurred by Landlord in maintaining, operating, repairing, and managing the Common Areas of the Shopping Center (\"CAM Charges\"). CAM Charges shall include, without limitation, costs of landscaping, parking lot maintenance and repaving, exterior lighting, snow and ice removal, security, trash removal, management fees (not to exceed three percent (3%) of gross rents), insurance for Common Areas, property taxes allocable to Common Areas, and reasonable reserves for capital replacements.\n\nSection 9.2. Estimated Payments.\n\nLandlord shall provide Tenant with an estimate of CAM Charges for each calendar year. Tenant shall pay one-twelfth (1/12) of the estimated annual CAM Charges monthly, together with Base Rent. Within ninety (90) days after the end of each calendar year, Landlord shall furnish Tenant with a statement of actual CAM Charges. If actual charges exceed estimated payments, Tenant shall pay the deficiency within thirty (30) days. If estimated payments exceed actual charges, Landlord shall credit the overpayment against the next due CAM Charge installments.\n\nSection 9.3. Records and Audit.\n\nLandlord shall maintain records of all CAM Charges for a period of three (3) years. Tenant shall not have the right to audit or inspect Landlord's books and records relating to CAM Charges.\n\n## YOUR TASK\n\nIndependently classify this issue area for this lease. Identify which expected elements are addressed in the clause text, which are missing, and what the practical exposure to the tenant is.\n\nRespond ONLY in JSON, no preamble or commentary outside the JSON object:\n\n{\n  \"coverage_state\": \"<one of the values from the COVERAGE STATE VOCABULARY above>\",\n  \"elements_present\": [\"<expected_element string>\", ...],\n  \"elements_missing\": [\"<expected_element string>\", ...],\n  \"justification\": \"<1-3 sentences citing specific lease language for the classification>\",\n  \"tenant_concern_summary\": \"<1 sentence: practical exposure from tenant perspective>\"\n}\n",
+  "regex_classification": {
+    "coverage_state": "covered_unfavorable",
+    "elements_found": [
+      "tenant's proportionate share calculation method",
+      "included expense categories",
+      "annual CAM increase cap",
+      "tenant audit rights",
+      "reconciliation timeline"
+    ],
+    "elements_missing": [
+      "excluded expense categories"
+    ],
+    "evidence_summary": "Audit rights explicitly removed",
+    "partial_class": null,
+    "materiality": "high"
+  },
+  "response": {
+    "model_label": "openai:gpt-5.2",
+    "provider": "openai",
+    "model": "gpt-5.2",
+    "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\n    \"included expense categories\",\n    \"tenant audit rights\",\n    \"reconciliation timeline\"\n  ],\n  \"elements_missing\": [\n    \"tenant's proportionate share calculation method\",\n    \"excluded expense categories\",\n    \"annual CAM increase cap\"\n  ],\n  \"justification\": \"The clause requires Tenant to pay its \\\"Proportionate Share\\\" of CAM as Additional Rent and lists broad included categories (e.g., landscaping, repaving, taxes, insurance, and \\\"reasonable reserves for capital replacements\\\") but provides no formula for calculating the Proportionate Share. It provides annual reconciliation within ninety (90) days after year-end, but expressly states \\\"Tenant shall not have the right to audit or inspect\\\" CAM records and includes no annual cap on CAM increases.\",\n  \"tenant_concern_summary\": \"Tenant is exposed to potentially unlimited and broadly defined CAM increases (including reserves/capital-related items) with no clear share calculation method and no ability to audit the landlord’s CAM charges.\"\n}",
+    "parsed": {
+      "coverage_state": "covered_unfavorable",
+      "elements_present": [
+        "included expense categories",
+        "tenant audit rights",
+        "reconciliation timeline"
+      ],
+      "elements_missing": [
+        "tenant's proportionate share calculation method",
+        "excluded expense categories",
+        "annual CAM increase cap"
+      ],
+      "justification": "The clause requires Tenant to pay its \"Proportionate Share\" of CAM as Additional Rent and lists broad included categories (e.g., landscaping, repaving, taxes, insurance, and \"reasonable reserves for capital replacements\") but provides no formula for calculating the Proportionate Share. It provides annual reconciliation within ninety (90) days after year-end, but expressly states \"Tenant shall not have the right to audit or inspect\" CAM records and includes no annual cap on CAM increases.",
+      "tenant_concern_summary": "Tenant is exposed to potentially unlimited and broadly defined CAM increases (including reserves/capital-related items) with no clear share calculation method and no ability to audit the landlord’s CAM charges."
+    },
+    "json_parse_error": null,
+    "out_of_vocab_state": null,
+    "call_error": null,
+    "elapsed_sec": 7.26
+  }
+}

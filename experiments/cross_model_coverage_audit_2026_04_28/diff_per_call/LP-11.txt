@@ -1,0 +1,20 @@
+=== LP-11 ===
+  input.coverage_state    : partial
+  input.partial_class     : partial_material
+  input.materiality       : high
+  input.elements_missing  : ["tenant's right to cure third-party defaults"]
+  input.elements_found    : ['monetary default definition and cure period (typically 5 days)', 'non-monetary default definition and cure period (typically 30 days)', 'notice requirement before default declaration', 'landlord termination right', 'landlord re-entry right', 'rent acceleration on default']
+  exposure_elements_used  : ["tenant's right to cure third-party defaults"]
+  exposure_reason_code    : None
+
+  models_responded        : ['claude', 'gpt', 'grok']
+  statement_text_diverged : True
+
+  [CLAUDE]  (anthropic:claude-sonnet-4-20250514)  elapsed=3.52s  
+    Tenant cannot cure defaults by third parties (such as contractors or subtenants), leaving tenant vulnerable to lease termination or other remedies even when tenant could readily fix the problem. Landlord retains full control over default resolution regardless of tenant's ability or willingness to remedy third-party breaches.
+
+  [GPT]  (openai:gpt-5.2)  elapsed=2.98s  
+    Tenant has no right to step in and cure a third party’s default (such as a lender, service provider, or other obligor) that could trigger Landlord’s remedies, so Tenant can lose the space or suffer disruptions even when Tenant is willing and able to fix the problem. Landlord controls whether the default gets cured and Tenant bears the fallout and related costs.
+
+  [GROK]  (xai:grok-4)  elapsed=10.13s  
+    Tenant bears the risk of lease disruptions or termination due to uncured third-party defaults, as the lease provides no right for tenant to step in and remedy those issues. This leaves tenant exposed to landlord's remedies that could indirectly harm tenant's operations without recourse.

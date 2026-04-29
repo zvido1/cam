@@ -691,6 +691,64 @@ def _get_highest_severity(summary: dict) -> str:
     return "CONFORMS"
 
 
+def _resolve_perspective(result: dict) -> str:
+    """Determine the document-level perspective from a pipeline result dict.
+
+    Order of precedence: top-level "perspective" -> coverage_assessment[].exposure_perspective
+    (most common non-empty value, with first-seen as tiebreak) -> "tenant".
+    """
+    top_level = (result.get("perspective") or "").strip().lower()
+    if top_level:
+        return top_level
+    counts = {}
+    order = []
+    for item in result.get("coverage_assessment", []) or []:
+        val = (item.get("exposure_perspective") or "").strip().lower()
+        if not val:
+            continue
+        if val not in counts:
+            order.append(val)
+        counts[val] = counts.get(val, 0) + 1
+    if not counts:
+        return "tenant"
+    # Most common, with first-seen as tiebreak
+    best = order[0]
+    for val in order:
+        if counts[val] > counts[best]:
+            best = val
+    return best
+
+
+_PERSPECTIVE_LABELS = {
+    "tenant": "Tenant",
+    "landlord": "Landlord",
+    "neutral": "Neutral / Both Sides",
+}
+
+_PERSPECTIVE_FRAMING = {
+    "tenant": "This analysis presents coverage gaps and exposure statements from the tenant's perspective.",
+    "landlord": "This analysis presents coverage gaps and exposure statements from the landlord's perspective.",
+    "neutral": "This analysis presents coverage gaps and exposure statements without taking sides.",
+}
+
+
+# Step 273: Perspective-aware display resolution lives in
+# `cam/adapters/lease_review/lease_display.py` so the annotators (PDF, DOCX,
+# cover PDF) and this Synopsis generator share one source of truth for
+# bucket / label / marker decisions.
+# Step 275: same module hosts `resolve_sections` (section-grouping) and
+# `PERSPECTIVE_SCOPE_DISCLOSURE` (one-line disclosure shown beneath the
+# perspective declaration on the Synopsis cover).
+from cam.adapters.lease_review.lease_display import (  # noqa: E402
+    _resolve_display,
+    resolve_sections,
+    PERSPECTIVE_SCOPE_DISCLOSURE,
+    BUCKET_SECTION_HEADERS as _BUCKET_SECTION_HEADERS,
+    BUCKET_ORDER_BY_PERSPECTIVE as _BUCKET_ORDER_BY_PERSPECTIVE,
+    BUCKET_COLORS_HEX as _BUCKET_COLORS,
+)
+
+
 def generate_combined_summary_pdf(
     job: dict,
     tenant_results: List[dict],
@@ -838,6 +896,35 @@ def _generate_combined_synopsis_inner(
     elements.append(Paragraph(" | ".join(subtitle_parts), styles["SynopsisSubtitle"]))
     elements.append(Spacer(1, 10))
 
+    # ── Perspective declaration (Step 271) ──
+    # Surface the analysis perspective on page 1 so a CRE attorney reviewing
+    # the synopsis sees whose interests the exposure statements are framed
+    # against without having to infer it from the prose.
+    perspective_key = _resolve_perspective(first_result)
+    perspective_label = _PERSPECTIVE_LABELS.get(perspective_key, perspective_key.capitalize() or "Tenant")
+    perspective_framing = _PERSPECTIVE_FRAMING.get(
+        perspective_key, _PERSPECTIVE_FRAMING["tenant"]
+    )
+    elements.append(Paragraph(
+        f'<b>Perspective:</b> {_esc_xml(perspective_label)}',
+        styles["BodyBold"],
+    ))
+    elements.append(Paragraph(
+        f'<i>{_esc_xml(perspective_framing)}</i>',
+        styles["SmallMuted"],
+    ))
+    # Step 275: scope disclosure — clinical one-line note about what the
+    # classifier actually detects. Same shape across all three
+    # perspectives so the Synopsis is honest about its own scope rather
+    # than hiding the limitation inside the bucketing.
+    scope_disclosure = PERSPECTIVE_SCOPE_DISCLOSURE.get(perspective_key, "")
+    if scope_disclosure:
+        elements.append(Paragraph(
+            f'<i>{_esc_xml(scope_disclosure)}</i>',
+            styles["SmallMuted"],
+        ))
+    elements.append(Spacer(1, 8))
+
     # ── Deal Overview section ──
     # Mode C: a single "DOCUMENT OVERVIEW" panel with neutral subtitle (no
     # reference-template framing). Mode A: unchanged "REFERENCE DOCUMENT OVERVIEW".
@@ -944,30 +1031,33 @@ def _generate_combined_synopsis_inner(
     elements.append(Paragraph("RUN SYNOPSIS", styles["SynopsisHeading"]))
 
     if is_mode_c:
-        # Mode C uses three-bucket coverage semantics. Aggregate across all
-        # tenant coverage_assessment arrays using the UI bucketing rule:
-        #   Need Attention  = covered_unfavorable | partial_material | missing
-        #   Worth Reviewing = partial_review
-        #   Covered         = covered | partial_typical | not_applicable | other
-        need_attention = 0
-        worth_review = 0
-        covered_total = 0
+        # Mode C uses perspective-aware bucketing (Step 273). The classifier
+        # is perspective-blind; `_resolve_display` translates each item into
+        # its display bucket based on coverage_state + partial_class +
+        # perspective. Tenant order: needs_attention / worth_reviewing /
+        # covered. Landlord adds favorable_to_your_side. Neutral adds
+        # asymmetric_terms.
+        bucket_counts = {k: 0 for k in _BUCKET_SECTION_HEADERS}
         total_issue_areas = 0
         for tr in tenant_results:
             for item in tr.get("coverage_assessment", []):
                 total_issue_areas += 1
-                st = item.get("coverage_state", "")
-                pcls = item.get("partial_class", "")
-                if st == "covered_unfavorable" or st == "missing" or pcls == "partial_material":
-                    need_attention += 1
-                elif pcls == "partial_review":
-                    worth_review += 1
-                else:
-                    covered_total += 1
+                disp = _resolve_display(item, perspective_key)
+                bucket_counts[disp["bucket"]] += 1
 
+        # Per-perspective summary line. Tenant phrasing is preserved
+        # byte-for-byte; Landlord/Neutral get an additional bucket clause.
+        order = _BUCKET_ORDER_BY_PERSPECTIVE.get(perspective_key, _BUCKET_ORDER_BY_PERSPECTIVE["tenant"])
+        bucket_phrase = {
+            "needs_attention":         "require attention",
+            "favorable_to_your_side":  "favorable terms",
+            "asymmetric_terms":        "asymmetric terms",
+            "worth_reviewing":         "worth reviewing",
+            "covered":                 "covered",
+        }
+        parts = [f"{bucket_counts[b]} {bucket_phrase[b]}" for b in order]
         elements.append(Paragraph(
-            f"{need_attention} require attention, {worth_review} worth reviewing, "
-            f"{covered_total} covered (across {total_issue_areas} issue areas analyzed)",
+            ", ".join(parts) + f" (across {total_issue_areas} issue areas analyzed)",
             styles["BodyBold"],
         ))
         if len(tenant_results) > 1:
@@ -992,51 +1082,49 @@ def _generate_combined_synopsis_inner(
     elements.append(Spacer(1, 12))
 
     # ── Provision Checklist (traffic-light grid, matches screen) ──
-    # Mode C: grouped by coverage tier (Need Attention / Worth Reviewing / Covered),
-    # driven by coverage_assessment (provisions[] is empty in Mode C).
+    # Mode C: grouped by perspective-aware bucket (Step 273) via
+    # `_resolve_display`. Tenant tiers stay needs_attention / worth_reviewing
+    # / covered with markers ✕ / ○ / ✓ (byte-identical to post-Step-272).
+    # Landlord runs add a "Favorable Terms to Preserve" tier (✚) for items
+    # the classifier flagged as covered_unfavorable. Neutral runs add an
+    # "Asymmetric Terms" tier (≠).
     if is_mode_c:
-        # Aggregate LP issue areas across tenants; take the worst tier observed per pid.
-        tier_rank = {"attention": 0, "review": 1, "covered": 2}
-        worst_tier = {}  # pid -> (rank, tier, name)
+        bucket_order = _BUCKET_ORDER_BY_PERSPECTIVE.get(perspective_key, _BUCKET_ORDER_BY_PERSPECTIVE["tenant"])
+        bucket_rank = {b: i for i, b in enumerate(bucket_order)}
+        worst_bucket = {}  # pid -> (bucket, marker, color, name)
         for tr in tenant_results:
             for item in tr.get("coverage_assessment", []):
                 pid = item.get("issue_area_id", "")
                 if not pid:
                     continue
                 name = item.get("provision_name", item.get("issue_area_name", pid))
-                st = item.get("coverage_state", "")
-                pcls = item.get("partial_class", "")
-                if st == "covered_unfavorable" or st == "missing" or pcls == "partial_material":
-                    tier = "attention"
-                elif pcls == "partial_review":
-                    tier = "review"
-                else:
-                    tier = "covered"
-                prev = worst_tier.get(pid)
-                if prev is None or tier_rank[tier] < tier_rank[prev[0]]:
-                    worst_tier[pid] = (tier, name)
+                disp = _resolve_display(item, perspective_key)
+                bucket = disp["bucket"]
+                marker = disp["marker"]
+                color = _BUCKET_COLORS.get(bucket, "#64748b")
+                prev = worst_bucket.get(pid)
+                if prev is None or bucket_rank.get(bucket, 99) < bucket_rank.get(prev[0], 99):
+                    worst_bucket[pid] = (bucket, marker, color, name)
 
-        buckets = {"attention": [], "review": [], "covered": []}
-        for pid, (tier, name) in worst_tier.items():
-            buckets[tier].append((pid, name))
+        buckets_pids = {b: [] for b in bucket_order}
+        for pid, (bucket, _marker, _color, name) in worst_bucket.items():
+            buckets_pids.setdefault(bucket, []).append((pid, name))
 
-        if worst_tier:
+        if worst_bucket:
             elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
                                         spaceBefore=4, spaceAfter=6))
             elements.append(Paragraph("PROVISION CHECKLIST", styles["SynopsisHeading"]))
 
-            cov_tier_meta = [
-                ("attention", "Needs Attention", "#dc2626", "\u2715"),
-                ("review",    "Worth Reviewing", "#d97706", "\u25cb"),
-                ("covered",   "Covered",         "#16a34a", "\u2713"),
-            ]
-            for key, label, color, icon in cov_tier_meta:
-                items = sorted(buckets[key], key=lambda x: x[0])
+            for bucket in bucket_order:
+                items = sorted(buckets_pids.get(bucket, []), key=lambda x: x[0])
                 if not items:
                     continue
+                rep_pid = items[0][0]
+                _b, marker, color, _n = worst_bucket[rep_pid]
+                label = _BUCKET_SECTION_HEADERS[bucket]
                 names = ", ".join(f"{_esc_xml(pid)} {_esc_xml(name)}" for pid, name in items)
                 elements.append(Paragraph(
-                    f'<font color="{color}"><b>{icon} {label}:</b></font>  {names}',
+                    f'<font color="{color}"><b>{marker} {label}:</b></font>  {names}',
                     styles["BodyText"],
                 ))
 
@@ -1222,95 +1310,81 @@ def _generate_combined_synopsis_inner(
     # COVERAGE & GAPS SECTION
     # ════════════════════════════════════════════════
 
-    # Collect coverage issues across all tenants.
-    # Filter to match UI "Coverage & Gaps" bucketing:
-    #   - Need Attention = covered_unfavorable + partial_material + missing
-    #   - Worth Reviewing = partial_review
-    # Items classified partial_typical are treated as "Covered" by the UI
-    # and intentionally excluded from the Synopsis to keep counts consistent.
-    coverage_issues = []
+    # Step 275: section-level grouping flows through
+    # `lease_display.resolve_sections`. For Tenant runs the result is a
+    # single "Coverage & Gaps" section (byte-identical to post-Step-273).
+    # Landlord runs get an "Asymmetric Provisions in Your Favor" section
+    # ahead of "Coverage & Gaps". Neutral runs get an "Asymmetric
+    # Provisions" section ahead of "Coverage & Gaps". Empty sections are
+    # filtered out by `resolve_sections` so empty headers never render.
+    #
+    # The Mode C "Covered" tail is intentionally NOT rendered in this
+    # body section — it would duplicate the Provision Checklist's
+    # Covered tier. Section ordering and headers come from
+    # `resolve_sections`; this loop skips the "covered" key.
+    all_coverage_items = []
     for tr in tenant_results:
-        ca = tr.get("coverage_assessment", [])
-        tenant_file = tr.get("tenant_file", "")
-        for item in ca:
-            state = item.get("coverage_state", "covered")
-            pcls = item.get("partial_class", "")
-            is_attention = (
-                state == "covered_unfavorable"
-                or state == "missing"
-                or pcls == "partial_material"
-            )
-            is_review = pcls == "partial_review"
-            if not (is_attention or is_review):
-                continue
-            coverage_issues.append({
-                "pid": item.get("issue_area_id", ""),
-                "name": item.get("provision_name", item.get("issue_area_id", "")),
-                "state": state,
-                "partial_class": pcls,
-                "materiality": item.get("materiality", "medium"),
-                "exposure": item.get("exposure_statement", ""),
-                "tenant": tenant_file,
-                "elements_missing": item.get("elements_missing", []),
-            })
+        for item in tr.get("coverage_assessment", []) or []:
+            all_coverage_items.append(item)
 
-    if coverage_issues:
-        # Sort: high materiality first
-        mat_order = {"high": 0, "medium": 1, "low": 2}
-        coverage_issues.sort(key=lambda x: mat_order.get(x["materiality"], 1))
+    sections = resolve_sections(all_coverage_items, perspective_key)
+    sections = [s for s in sections if s["key"] != "covered"]
 
-        elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
-                                   spaceBefore=12, spaceAfter=8))
-        elements.append(Paragraph("COVERAGE & GAPS", styles["SynopsisHeading"]))
-        elements.append(Spacer(1, 4))
-        elements.append(Paragraph(
-            "The following provisions were present but incomplete, unfavorable, or missing entirely.",
-            styles["FindingBody"],
-        ))
-        elements.append(Spacer(1, 6))
-
-        state_labels = {
-            "missing": "MISSING",
-            "partial": "INCOMPLETE",
-            "covered_unfavorable": "UNFAVORABLE TERMS",
-        }
+    if sections:
         state_colors = {
             "missing": "#c2410c",
             "partial": "#856404",
             "covered_unfavorable": "#0369a1",
         }
+        mat_order = {"high": 0, "medium": 1, "low": 2}
         mat_icons = {"high": "!", "medium": "~", "low": "-"}
 
-        for issue in coverage_issues:
-            state = issue["state"]
-            label = state_labels.get(state, state.upper())
-            color = state_colors.get(state, "#64748b")
-            icon = mat_icons.get(issue["materiality"], "~")
-            pid = issue["pid"]
-            name = issue["name"] or pid
-            exposure = _sanitize_for_pdf(issue["exposure"] or "")
-            missing_els = issue.get("elements_missing", [])
-
-            # Heading line
-            heading_line = (
-                f'[{icon}] <font color="{color}"><b>{_esc_xml(pid)} {_esc_xml(name)}</b></font>'
-                f' <font color="#64748b">— {_esc_xml(label)}</font>'
-            )
-            elements.append(Paragraph(heading_line, styles["FindingBody"]))
-
-            # Missing elements if any
-            if missing_els:
-                missing_str = ", ".join(_esc_xml(str(e)) for e in missing_els[:5])
-                elements.append(Paragraph(
-                    f'<i>Missing: {missing_str}</i>',
-                    styles["ClauseText"],
-                ))
-
-            # Exposure statement
-            if exposure:
-                elements.append(Paragraph(_esc_xml(exposure), styles["ClauseText"]))
-
+        for sec_idx, section in enumerate(sections):
+            spaceBefore = 12 if sec_idx == 0 else 10
+            elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
+                                       spaceBefore=spaceBefore, spaceAfter=8))
+            elements.append(Paragraph(section["title"].upper(), styles["SynopsisHeading"]))
             elements.append(Spacer(1, 4))
+            if section.get("intro"):
+                elements.append(Paragraph(
+                    _esc_xml(section["intro"]),
+                    styles["FindingBody"],
+                ))
+                elements.append(Spacer(1, 6))
+
+            # Sort items inside the section: high materiality first
+            section_items = sorted(
+                section["items"],
+                key=lambda pair: mat_order.get(pair[0].get("materiality", "medium"), 1),
+            )
+
+            for item, disp in section_items:
+                state = item.get("coverage_state", "")
+                label = disp["label"]
+                color = state_colors.get(state, "#64748b")
+                icon = mat_icons.get(item.get("materiality", "medium"), "~")
+                pid = item.get("issue_area_id", "")
+                name = item.get("provision_name", item.get("issue_area_id", "")) or pid
+                exposure = _sanitize_for_pdf(item.get("exposure_statement", "") or "")
+                missing_els = item.get("elements_missing", []) or []
+
+                heading_line = (
+                    f'[{icon}] <font color="{color}"><b>{_esc_xml(pid)} {_esc_xml(name)}</b></font>'
+                    f' <font color="#64748b">— {_esc_xml(label)}</font>'
+                )
+                elements.append(Paragraph(heading_line, styles["FindingBody"]))
+
+                if missing_els:
+                    missing_str = ", ".join(_esc_xml(str(e)) for e in missing_els[:5])
+                    elements.append(Paragraph(
+                        f'<i>Missing: {missing_str}</i>',
+                        styles["ClauseText"],
+                    ))
+
+                if exposure:
+                    elements.append(Paragraph(_esc_xml(exposure), styles["ClauseText"]))
+
+                elements.append(Spacer(1, 4))
 
         elements.append(Spacer(1, 6))
 

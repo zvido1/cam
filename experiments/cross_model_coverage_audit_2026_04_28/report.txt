@@ -1,0 +1,84 @@
+Cross-Model Coverage Audit — Mechanical Diff Report
+Date: 2026-04-28
+Lease: T-10_Negotiated_Tennant_Lease.docx
+Input source: experiments\coverage_variance_2026_04_28\00_fresh_run_pipeline_results.json
+Perspective: tenant
+
+Models:
+  - claude → anthropic:claude-sonnet-4-20250514
+  - gpt    → openai:gpt-5.2
+  - grok   → xai:grok-4
+
+Calls: 5 model-path × 3 models = 15
+Failures: 0
+
+Per-call breakdown:
+
+  LP-07:
+    coverage_state         : covered_unfavorable
+    partial_class          : None
+    materiality            : high
+    reason_code            : None
+    elements_used (input)  : ["tenant's proportionate share calculation method", 'included expense categories', 'annual CAM increase cap']
+    models_responded       : ['claude', 'gpt', 'grok']
+    statement_text_diverged: True
+    statement_lengths      : {'claude': 325, 'gpt': 397, 'grok': 294}
+    elapsed_sec            : {'claude': 3.82, 'gpt': 3.77, 'grok': 5.73}
+
+  LP-09:
+    coverage_state         : partial
+    partial_class          : partial_material
+    materiality            : high
+    reason_code            : None
+    elements_used (input)  : ['recapture right (landlord can terminate and lease directly)', 'assignment in connection with sale of business']
+    models_responded       : ['claude', 'gpt', 'grok']
+    statement_text_diverged: True
+    statement_lengths      : {'claude': 316, 'gpt': 344, 'grok': 300}
+    elapsed_sec            : {'claude': 3.11, 'gpt': 4.89, 'grok': 101.33}
+
+  LP-11:
+    coverage_state         : partial
+    partial_class          : partial_material
+    materiality            : high
+    reason_code            : None
+    elements_used (input)  : ["tenant's right to cure third-party defaults"]
+    models_responded       : ['claude', 'gpt', 'grok']
+    statement_text_diverged: True
+    statement_lengths      : {'claude': 326, 'gpt': 363, 'grok': 287}
+    elapsed_sec            : {'claude': 3.52, 'gpt': 2.98, 'grok': 10.13}
+
+  LP-13:
+    coverage_state         : partial
+    partial_class          : partial_material
+    materiality            : high
+    reason_code            : None
+    elements_used (input)  : ['cap on liability (if any)']
+    models_responded       : ['claude', 'gpt', 'grok']
+    statement_text_diverged: True
+    statement_lengths      : {'claude': 262, 'gpt': 273, 'grok': 194}
+    elapsed_sec            : {'claude': 2.78, 'gpt': 3.71, 'grok': 5.66}
+
+  LP-14:
+    coverage_state         : covered_unfavorable
+    partial_class          : None
+    materiality            : high
+    reason_code            : None
+    elements_used (input)  : ['definition of qualifying force majeure events', 'scope of excused obligations (which parties, which obligations)', 'rent abatement during force majeure period']
+    models_responded       : ['claude', 'gpt', 'grok']
+    statement_text_diverged: True
+    statement_lengths      : {'claude': 423, 'gpt': 383, 'grok': 321}
+    elapsed_sec            : {'claude': 3.39, 'gpt': 3.87, 'grok': 5.52}
+
+
+Notes for analysis:
+  - All input-derived fields (coverage_state, partial_class, materiality,
+    exposure_elements_used, exposure_reason_code) are identical across all
+    three models BY CONSTRUCTION — they are upstream-deterministic inputs to
+    the model call, not model outputs. Field-level divergence on these is
+    impossible without modifying the script.
+  - The per-call divergence axis the audit can observe is the prose content
+    of `exposure_statement`. Whether divergence in prose reflects different
+    facts cited (Outcome C/D) vs. only different phrasing of the same facts
+    (Outcome A/B) is a content-level judgement, not a field-level diff.
+  - Full statement text per call×model: see diff_per_call/<LP>.txt and the
+    individual <LP>_<label>.json files.

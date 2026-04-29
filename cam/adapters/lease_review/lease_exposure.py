@@ -112,10 +112,24 @@ def _classify_partial(assessment: dict, materiality: str) -> Optional[str]:
     return "partial_typical"
 
 
-def _build_schema_exposure(assessment: dict) -> dict:
+def _get_exposure_statement(issue_area_def, perspective):
+    """Return the perspective-appropriate exposure statement.
+
+    Schema v1.1.5 supports object form for perspective variants. Falls back
+    to the tenant variant if the perspective key is missing. Falls back to
+    the raw string if the field is still string-shaped (older LPs that
+    haven't been extended yet).
+    """
+    stmt = issue_area_def.get("exposure_statement", "")
+    if isinstance(stmt, dict):
+        return stmt.get(perspective) or stmt.get("tenant") or ""
+    return stmt
+
+
+def _build_schema_exposure(assessment: dict, perspective: str = "tenant") -> dict:
     state = assessment.get("coverage_state", "")
     missing = assessment.get("elements_missing", [])
-    schema_statement = assessment.get("exposure_statement", "")
+    schema_statement = _get_exposure_statement(assessment, perspective)
     pid = assessment.get("issue_area_id", "")
     name = assessment.get("issue_area_name", pid)
 
@@ -249,14 +263,17 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
     missing = assessment.get("elements_missing", [])
     found = assessment.get("elements_found", [])
     evidence = assessment.get("evidence_summary", "")
-    fallback = assessment.get("exposure_statement", "")
-
     # Step 262: pick prompt + tail by perspective. Unknown values fall back to tenant.
     perspective = ((cfg or {}).get("perspective") or "tenant").lower()
     if perspective not in _EXPOSURE_SYSTEM_PROMPTS:
         perspective = "tenant"
     system_prompt = _EXPOSURE_SYSTEM_PROMPTS[perspective]
     user_tail = _EXPOSURE_USER_TEMPLATE_TAIL[perspective]
+
+    # Step 272: schema-path fallback string is now perspective-aware for the
+    # six v1.1.5 LPs. Older string-shaped LPs continue to return the same
+    # static string for any perspective.
+    fallback = _get_exposure_statement(assessment, perspective)
 
     if state == "covered_unfavorable":
         elements_used = found[:3]
@@ -287,7 +304,7 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
 
         if not statement or len(statement) < 20:
             logger.warning(f"[lease_exposure] Short response for {pid}, using schema fallback")
-            result = _build_schema_exposure(assessment)
+            result = _build_schema_exposure(assessment, perspective)
             result["exposure_source"] = "schema_fallback"
             result["exposure_reason_code"] = reason_code
             result["exposure_perspective"] = perspective
@@ -311,7 +328,7 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
 
     except Exception as e:
         logger.warning(f"[lease_exposure] Model call failed for {pid}: {e}, using schema fallback")
-        result = _build_schema_exposure(assessment)
+        result = _build_schema_exposure(assessment, perspective)
         result["exposure_source"] = "schema_fallback"
         result["exposure_reason_code"] = reason_code
         result["exposure_perspective"] = perspective
@@ -359,7 +376,11 @@ def generate_exposure(coverage_assessment: list, cfg: dict) -> list:
             exposure = _build_model_exposure(assessment, cfg, reason_code)
             model_calls += 1
         else:
-            exposure = _build_schema_exposure(assessment)
+            # Step 272: schema-path now reads the perspective-aware variant
+            # for the six v1.1.5 LPs (object-shaped exposure_statement). All
+            # other LPs continue to return their single string regardless of
+            # perspective.
+            exposure = _build_schema_exposure(assessment, perspective)
             # Step 262: tag schema-only outputs with perspective too so downstream
             # consumers can audit which lens this run was rendered under.
             exposure["exposure_perspective"] = perspective
@@ -442,7 +463,7 @@ if __name__ == "__main__":
         if would_use_model:
             model_would_fire += 1
 
-        exposure = _build_schema_exposure(assessment)
+        exposure = _build_schema_exposure(assessment, "tenant")
         stmt = exposure["exposure_statement"]
 
         source_marker = "[MODEL]" if would_use_model else "[schema]"

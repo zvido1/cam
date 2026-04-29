@@ -1,0 +1,151 @@
+{
+  "started_at": "2026-04-28T21:38:21.489478+00:00",
+  "total_elapsed_sec": 1778.5,
+  "tenants": [
+    {
+      "tenant": "T-01",
+      "file": "T-01_clean.txt",
+      "status": "success",
+      "elapsed_sec": 92.4,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-02",
+      "file": "T-02_cosmetic.txt",
+      "status": "success",
+      "elapsed_sec": 97.2,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-03",
+      "file": "T-03_obvious.txt",
+      "status": "success",
+      "elapsed_sec": 130.7,
+      "api_calls": 5,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-04",
+      "file": "T-04_subtle.docx",
+      "status": "success",
+      "elapsed_sec": 136.7,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-05",
+      "file": "T-05_definition.txt",
+      "status": "success",
+      "elapsed_sec": 133.0,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-06",
+      "file": "T-06_caps.txt",
+      "status": "success",
+      "elapsed_sec": 97.2,
+      "api_calls": 6,
+      "lp11": "partial",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-07",
+      "file": "T-07_aggressive.docx",
+      "status": "success",
+      "elapsed_sec": 121.7,
+      "api_calls": 4,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-08",
+      "file": "T-08_force_majeure.txt",
+      "status": "success",
+      "elapsed_sec": 94.1,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-09",
+      "file": "T-09_mixed.txt",
+      "status": "success",
+      "elapsed_sec": 126.2,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-10",
+      "file": "T-10_Negotiated_Tennant_Lease.docx",
+      "status": "success",
+      "elapsed_sec": 101.7,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-11",
+      "file": "T-11_custom_clauses.txt",
+      "status": "success",
+      "elapsed_sec": 92.5,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-12",
+      "file": "T-12_missing_clauses.txt",
+      "status": "success",
+      "elapsed_sec": 75.8,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-13",
+      "file": "T-13_lp00_heavy.txt",
+      "status": "success",
+      "elapsed_sec": 130.9,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-14",
+      "file": "T-14_ambiguous.txt",
+      "status": "success",
+      "elapsed_sec": 130.3,
+      "api_calls": 4,
+      "lp11": "partial",
+      "lp13": "partial"
+    },
+    {
+      "tenant": "T-15",
+      "file": "T-15_lp00_edge_cases.txt",
+      "status": "success",
+      "elapsed_sec": 117.0,
+      "api_calls": 6,
+      "lp11": "covered_unfavorable",
+      "lp13": "covered_unfavorable"
+    },
+    {
+      "tenant": "T-16",
+      "file": "T-16_crystal_clear.txt",
+      "status": "success",
+      "elapsed_sec": 101.2,
+      "api_calls": 5,
+      "lp11": "partial",
+      "lp13": "covered_unfavorable"
+    }
+  ],
+  "failures": []
+}

@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.1.3",
+  "schema_version": "1.1.5",
   "created": "2026-03-27",
-  "updated": "2026-04-19",
+  "updated": "2026-04-29",
   "contract_type": "retail_lease",
   "display_name": "Retail / Commercial Lease",
   "description": "Issue-area knowledge schema for retail and commercial lease analysis. Defines expected coverage, applicability gating, exposure statements, caution signals, and negative-space clues.",
-  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection.",
+  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants.",
 
   "coverage_states": {
     "covered":                  "Provision present and consistent with standard form",
@@ -95,7 +95,11 @@
         "not_applicable":      "Document explicitly states rent is fixed for the full term"
       },
       "risk_if_missing": "Rent frozen at initial amount for entire term; landlord loses inflation protection",
-      "exposure_statement": "No rent escalation mechanism; landlord bears full inflation risk or tenant bears uncapped exposure",
+      "exposure_statement": {
+        "tenant":   "No rent escalation cap; tenant bears uncapped exposure to inflation-driven rent increases over the lease term",
+        "landlord": "No rent escalation cap; landlord retains pricing flexibility but bears the dispute risk that comes with uncapped or formula-driven increases",
+        "neutral":  "Rent escalation lacks a cap or fully defined calculation methodology; future rent increases may become disputed or difficult to price over the lease term"
+      },
       "caution_signals": ["governing_law_sensitive"],
       "negative_space_clues": [
         "Escalation section header present but body blank or marked Reserved",
@@ -131,7 +135,11 @@
         "covered_unfavorable": "Renewal notice period unusually short (under 90 days)"
       },
       "risk_if_missing": "Lease duration undefined; tenancy may be at-will or interpreted as month-to-month",
-      "exposure_statement": "Term and renewal rights unclear; tenant may lose right to remain in premises or face holdover penalties",
+      "exposure_statement": {
+        "tenant":   "Term and renewal rights unclear; tenant may lose right to remain in premises or face holdover penalties",
+        "landlord": "Renewal mechanism undefined; landlord faces uncertainty over future occupancy and has weakened leverage to reset rent or terms at expiration",
+        "neutral":  "Lease term and renewal rights are incompletely defined; the absence of a renewal rent mechanism leaves both occupancy continuity and pricing unresolved at expiration"
+      },
       "caution_signals": ["common_dispute_area", "landlord_leverage_point"],
       "negative_space_clues": [
         "Renewal option section header with body struck or marked Reserved",
@@ -320,7 +328,11 @@
         "potentially_unenforceable": "Named insured requirement conflicts with standard policy structure"
       },
       "risk_if_missing": "Tenant may operate uninsured; landlord has no recourse against tenant insurer for losses",
-      "exposure_statement": "Insurance obligations undefined; landlord has no protection against tenant-caused losses and no subrogation waiver",
+      "exposure_statement": {
+        "tenant":   "Insurance obligations incompletely defined; tenant may face uncovered losses and disputed coverage scope without a clear subrogation waiver",
+        "landlord": "Insurance obligations incompletely defined; landlord lacks reliable recourse against tenant insurers for premises-related losses and has no subrogation waiver to limit cross-claims",
+        "neutral":  "Insurance requirements are incomplete; the missing waiver of subrogation leaves either party exposed to recovery actions by the other's insurer following a covered loss"
+      },
       "caution_signals": ["potentially_unenforceable"],
       "negative_space_clues": [
         "Waiver of subrogation section present but obligation direction reversed or blank",
@@ -389,7 +401,11 @@
         "broken_xref":         "Tenant improvement allowance cross-references Work Letter exhibit not attached"
       },
       "risk_if_missing": "Tenant may not make any alterations without implied landlord consent; improvements may revert to landlord",
-      "exposure_statement": "Alteration rights undefined; tenant faces removal obligation uncertainty and potential forfeiture of improvement investment",
+      "exposure_statement": {
+        "tenant":   "Alteration rights undefined; tenant faces removal obligation uncertainty and potential forfeiture of improvement investment",
+        "landlord": "Tenant improvement allowance undefined; landlord faces uncertainty over its capital contribution exposure and the scope of improvements it may inherit at lease end",
+        "neutral":  "Alteration rights and improvement-cost allocation are undefined; ownership and removal obligations for tenant-funded improvements at lease end are unresolved"
+      },
       "caution_signals": ["common_dispute_area"],
       "negative_space_clues": [
         "Tenant improvement allowance section marked Reserved or amount is $0",
@@ -421,10 +437,11 @@
       "coverage_state_rules": {
         "missing":                "No default provision",
         "partial":                "Monetary default present but non-monetary default, notice requirement, or cure period absent",
-        "covered_unfavorable":    "Cure period unusually short; no notice requirement before landlord re-entry",
+        "covered_unfavorable":    "Cure period unusually short (under 30 days for non-monetary); OR landlord remedies aggressive but conditioned on prior notice and cure opportunity",
         "broken_xref":            "Remedies cross-reference deleted exhibit or section",
-        "potentially_unenforceable": "Self-help re-entry provision without court order"
+        "potentially_unenforceable": "Self-help re-entry language permitting landlord to re-enter and remove tenant or property without judicial process AND without explicit reservation of tenant's right to legal process; covered_unfavorable governs when re-entry language is aggressive but conditioned on notice and cure"
       },
+      "notes": "Rule precedence v1.1.4: covered_unfavorable governs aggressive remedies that are still gated by notice/cure procedures. potentially_unenforceable is reserved for self-help language that bypasses judicial process entirely. When both could arguably apply, covered_unfavorable is the safer default; potentially_unenforceable should require explicit absence of legal-process reservation (e.g. clause states landlord 'may re-enter without legal process' or equivalent).",
       "risk_if_missing": "Landlord remedies limited to common law; no contractual right to accelerate rent or re-enter",
       "exposure_statement": "Default and remedy framework absent or incomplete; landlord enforcement position significantly weakened",
       "caution_signals": ["common_dispute_area", "governing_law_sensitive", "potentially_unenforceable"],
@@ -477,7 +494,11 @@
         "not_applicable":      "No termination right language anywhere in document; absence is by design"
       },
       "risk_if_missing": "Tenant has no exit mechanism; full remaining lease obligations survive business failure or relocation",
-      "exposure_statement": "No early exit right; tenant bears full term obligation regardless of operational changes",
+      "exposure_statement": {
+        "tenant":   "No early exit right; tenant bears full term obligation regardless of operational changes",
+        "landlord": "No tenant early termination right; landlord retains full-term revenue certainty but loses the ability to recapture and re-let the space if a better tenant emerges",
+        "neutral":  "No early termination right is defined; full-term obligations persist unless another lease provision independently permits termination"
+      },
       "caution_signals": ["common_dispute_area"],
       "negative_space_clues": [
         "Early termination section present but triggering conditions blank",
@@ -508,7 +529,7 @@
       "coverage_state_rules": {
         "missing":                "No indemnification provision",
         "partial":                "One-way indemnification present (tenant → landlord only) without reciprocal protection",
-        "covered_unfavorable":    "No liability cap; consequential damages not excluded",
+        "covered_unfavorable":    "No liability cap; consequential damages not excluded; OR mutual indemnification structurally present but materially asymmetric (e.g. tenant indemnifies for broad scope including ordinary negligence while landlord indemnification is limited to gross negligence or willful misconduct)",
         "potentially_unenforceable": "Indemnification for indemnitee's own gross negligence"
       },
       "risk_if_missing": "Liability defaults to common law negligence standards",
@@ -516,7 +537,9 @@
       "caution_signals": ["common_dispute_area", "governing_law_sensitive", "potentially_unenforceable"],
       "negative_space_clues": [
         "Landlord indemnification section marked Reserved or deleted",
-        "Liability cap provision header present but amount blank"
+        "Liability cap provision header present but amount blank",
+        "Landlord indemnification limited to gross negligence or willful misconduct while tenant indemnification covers ordinary negligence or all premises accidents",
+        "Tenant indemnifies for accidents 'in or about the Premises' regardless of cause without carve-out for landlord's own negligence"
       ],
       "common_tenant_modifications": [
         "Added mutual/reciprocal indemnification",
@@ -668,7 +691,11 @@
         "potentially_unenforceable": "Mandatory arbitration clause may be unenforceable against certain tenant types"
       },
       "risk_if_missing": "Dispute venue and cost allocation undefined; may favor party with greater litigation resources",
-      "exposure_statement": "Dispute framework absent; attorney fee allocation and venue undefined, creating uncertainty in enforcement cost",
+      "exposure_statement": {
+        "tenant":   "Dispute framework absent; attorney fee allocation and venue undefined, creating uncertainty in enforcement cost",
+        "landlord": "Dispute framework incomplete; attorney fee allocation and claim limitation periods undefined, creating uncertainty in landlord's enforcement leverage and defense costs",
+        "neutral":  "Dispute framework is incomplete; the absence of a defined claims-limitation period and clear fee allocation leaves enforcement cost and timing exposure on both sides"
+      },
       "caution_signals": ["common_dispute_area", "governing_law_sensitive", "potentially_unenforceable"],
       "negative_space_clues": [
         "Attorney fee allocation section blank or marked Reserved",

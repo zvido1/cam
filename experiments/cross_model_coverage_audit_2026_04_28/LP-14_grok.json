@@ -1,0 +1,70 @@
+{
+  "issue_area_id": "LP-14",
+  "model_label": "grok",
+  "model_target": "xai:grok-4",
+  "input": {
+    "issue_area_id": "LP-14",
+    "issue_area_name": "Force Majeure",
+    "applicability": "required",
+    "coverage_state": "covered_unfavorable",
+    "evidence_summary": "Abatement limited to 'wholly/totally untenantable' standard with no partial-abatement mechanism for operational impairment",
+    "supporting_provision_ids": [
+      "LP-14"
+    ],
+    "elements_found": [
+      "definition of qualifying force majeure events",
+      "scope of excused obligations (which parties, which obligations)",
+      "rent abatement during force majeure period",
+      "notice requirement to invoke",
+      "termination right if force majeure exceeds threshold period"
+    ],
+    "elements_missing": [
+      "partial rent abatement or adjustment for operational impairment"
+    ],
+    "negative_space_signals": [
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Force majeure section present but rent abatement carve-out blank or deleted",
+        "evidence": "Force majeure section present but rent abatement carve-out blank or deleted",
+        "severity": "medium"
+      },
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Event list ends with 'including without limitation' with body truncated",
+        "evidence": "Event list ends with 'including without limitation' with body truncated",
+        "severity": "medium"
+      },
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Abatement conditioned on tenant vacating the premises",
+        "evidence": "Abatement conditioned on tenant vacating the premises",
+        "severity": "medium"
+      }
+    ],
+    "caution_signals": [
+      "common_dispute_area",
+      "cascade_risk"
+    ],
+    "caution_signal_definitions": {
+      "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+      "cascade_risk": "Change to this provision may silently affect other provisions via cross-reference"
+    },
+    "related_issue_areas": [
+      "LP-05",
+      "LP-03"
+    ],
+    "requires_attention": true,
+    "materiality": "high",
+    "partial_class": null
+  },
+  "system_prompt": "You write concise, practical exposure assessments for commercial lease provisions.\n\nRules:\n- Exactly 1-2 sentences. No more.\n- Plain English. No legal citations. No case law. No jurisdiction references.\n- Describe practical TENANT exposure -- what can go wrong, who bears the risk.\n- Do not restate the clause mechanically.\n- Do not speculate beyond the evidence supplied.\n- Do not use \"may or may not\" or similar hedge phrases unless state is explicitly ambiguous.\n- Focus on the business/legal consequence of what is absent or unfavorable.\n- Tone: direct and specific. \"Tenant has no protection against X\" not \"This provision appears to potentially suggest...\"\n- Never start with \"This provision\" or \"The clause\".\n- Start with the risk actor: \"Tenant\", \"Landlord\", or the specific consequence.\n",
+  "user_prompt": "Provision: Force Majeure\nCoverage state: covered_unfavorable\nMissing or unfavorable elements: Provision present but unfavorable: definition of qualifying force majeure events, scope of excused obligations (which parties, which obligations), rent abatement during force majeure period\nEvidence note: Abatement limited to 'wholly/totally untenantable' standard with no partial-abatement mechanism for operational impairment\nFallback schema statement: none\n\nWrite a 1-2 sentence exposure statement describing the practical risk to the tenant.",
+  "response": {
+    "model_label": "xai:grok-4",
+    "provider": "xai",
+    "model": "grok-4",
+    "statement": "Tenant bears the risk of continuing to pay full rent during force majeure events that impair but do not totally prevent operations, with no partial abatement available. Tenant also faces uncertainty in excusing performance due to a narrow definition of qualifying events and unclear scope of obligations for both parties.",
+    "error": null,
+    "elapsed_sec": 5.52
+  }
+}

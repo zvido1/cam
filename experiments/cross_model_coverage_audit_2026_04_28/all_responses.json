@@ -1,0 +1,417 @@
+{
+  "LP-07": {
+    "input": {
+      "issue_area_id": "LP-07",
+      "issue_area_name": "Common Area Maintenance (CAM)",
+      "applicability": "applicable",
+      "coverage_state": "covered_unfavorable",
+      "evidence_summary": "Audit rights explicitly removed",
+      "supporting_provision_ids": [
+        "LP-07"
+      ],
+      "elements_found": [
+        "tenant's proportionate share calculation method",
+        "included expense categories",
+        "annual CAM increase cap",
+        "tenant audit rights",
+        "reconciliation timeline"
+      ],
+      "elements_missing": [
+        "excluded expense categories"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Audit rights section marked Reserved or Intentionally Omitted",
+          "evidence": "Audit rights section marked Reserved or Intentionally Omitted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Excluded expenses list cross-references exhibit not attached",
+          "evidence": "Excluded expenses list cross-references exhibit not attached",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "landlord_leverage_point"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "landlord_leverage_point": "Landlord typically holds stronger enforcement position if disputed"
+      },
+      "related_issue_areas": [
+        "LP-01",
+        "LP-06"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": null
+    },
+    "system_prompt": "You write concise, practical exposure assessments for commercial lease provisions.\n\nRules:\n- Exactly 1-2 sentences. No more.\n- Plain English. No legal citations. No case law. No jurisdiction references.\n- Describe practical TENANT exposure -- what can go wrong, who bears the risk.\n- Do not restate the clause mechanically.\n- Do not speculate beyond the evidence supplied.\n- Do not use \"may or may not\" or similar hedge phrases unless state is explicitly ambiguous.\n- Focus on the business/legal consequence of what is absent or unfavorable.\n- Tone: direct and specific. \"Tenant has no protection against X\" not \"This provision appears to potentially suggest...\"\n- Never start with \"This provision\" or \"The clause\".\n- Start with the risk actor: \"Tenant\", \"Landlord\", or the specific consequence.\n",
+    "user_prompt": "Provision: Common Area Maintenance (CAM)\nCoverage state: covered_unfavorable\nMissing or unfavorable elements: Provision present but unfavorable: tenant's proportionate share calculation method, included expense categories, annual CAM increase cap\nEvidence note: Audit rights explicitly removed\nFallback schema statement: none\n\nWrite a 1-2 sentence exposure statement describing the practical risk to the tenant.",
+    "elements_used_input_slice": [
+      "tenant's proportionate share calculation method",
+      "included expense categories",
+      "annual CAM increase cap"
+    ],
+    "responses": {
+      "claude": {
+        "model_label": "anthropic:claude-sonnet-4-20250514",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "statement": "Tenant bears unlimited CAM cost increases with no audit rights to verify charges, creating exposure to uncapped annual escalations and potentially inflated or inappropriate expense allocations. The unfavorable proportionate share calculation method may result in tenant paying more than its fair portion of common area costs.",
+        "error": null,
+        "elapsed_sec": 3.82
+      },
+      "gpt": {
+        "model_label": "openai:gpt-5.2",
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "statement": "Tenant bears the risk of unpredictable and escalating CAM charges because the share calculation, what costs are included, and any annual increase limits are unfavorable, and there’s no cap to stop sharp year-over-year spikes. Tenant also has no ability to audit or verify CAM billings, so Landlord’s allocations and expense classifications are effectively unchallengeable and tenant pays the cost.",
+        "error": null,
+        "elapsed_sec": 3.77
+      },
+      "grok": {
+        "model_label": "xai:grok-4",
+        "provider": "xai",
+        "model": "grok-4",
+        "statement": "Tenant bears the risk of excessive or unfair CAM charges through an unfavorable proportionate share calculation, overly broad expense categories, and unlimited annual increases, compounded by the explicit removal of audit rights that prevent verification or challenge of the landlord's billing.",
+        "error": null,
+        "elapsed_sec": 5.73
+      }
+    }
+  },
+  "LP-09": {
+    "input": {
+      "issue_area_id": "LP-09",
+      "issue_area_name": "Subletting & Assignment",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "4 of 6 expected elements found; missing: recapture right (landlord can terminate and lease directly), assignment in connection with sale of business",
+      "supporting_provision_ids": [
+        "LP-09"
+      ],
+      "elements_found": [
+        "landlord consent requirement",
+        "grounds for withholding consent (reasonableness standard)",
+        "affiliate exception (no consent required for related entities)",
+        "profit sharing on sublet above base rent"
+      ],
+      "elements_missing": [
+        "recapture right (landlord can terminate and lease directly)",
+        "assignment in connection with sale of business"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Affiliate exception section marked Reserved",
+          "evidence": "Affiliate exception section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "landlord_leverage_point"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "landlord_leverage_point": "Landlord typically holds stronger enforcement position if disputed"
+      },
+      "related_issue_areas": [
+        "LP-03",
+        "LP-11"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": "partial_material"
+    },
+    "system_prompt": "You write concise, practical exposure assessments for commercial lease provisions.\n\nRules:\n- Exactly 1-2 sentences. No more.\n- Plain English. No legal citations. No case law. No jurisdiction references.\n- Describe practical TENANT exposure -- what can go wrong, who bears the risk.\n- Do not restate the clause mechanically.\n- Do not speculate beyond the evidence supplied.\n- Do not use \"may or may not\" or similar hedge phrases unless state is explicitly ambiguous.\n- Focus on the business/legal consequence of what is absent or unfavorable.\n- Tone: direct and specific. \"Tenant has no protection against X\" not \"This provision appears to potentially suggest...\"\n- Never start with \"This provision\" or \"The clause\".\n- Start with the risk actor: \"Tenant\", \"Landlord\", or the specific consequence.\n",
+    "user_prompt": "Provision: Subletting & Assignment\nCoverage state: partial\nMissing or unfavorable elements: recapture right (landlord can terminate and lease directly), assignment in connection with sale of business\nEvidence note: 4 of 6 expected elements found; missing: recapture right (landlord can terminate and lease directly), assignment in connection with sale of business\nFallback schema statement: none\n\nWrite a 1-2 sentence exposure statement describing the practical risk to the tenant.",
+    "elements_used_input_slice": [
+      "recapture right (landlord can terminate and lease directly)",
+      "assignment in connection with sale of business"
+    ],
+    "responses": {
+      "claude": {
+        "model_label": "anthropic:claude-sonnet-4-20250514",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "statement": "Landlord can recapture the premises and lease directly to any proposed subtenant or assignee, effectively blocking tenant's ability to monetize the lease. Tenant cannot assign the lease in connection with selling its business without separate landlord approval, potentially complicating or preventing business sales.",
+        "error": null,
+        "elapsed_sec": 3.11
+      },
+      "gpt": {
+        "model_label": "openai:gpt-5.2",
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "statement": "Landlord can recapture the space if Tenant tries to sublease or assign, forcing Tenant to lose the premises and any deal value tied to the transfer. Tenant also lacks a clear right to assign the lease as part of a business sale, which can block or devalue an exit transaction and leave Tenant stuck on the hook for ongoing rent and obligations.",
+        "error": null,
+        "elapsed_sec": 4.89
+      },
+      "grok": {
+        "model_label": "xai:grok-4",
+        "provider": "xai",
+        "model": "grok-4",
+        "statement": "Tenant risks the landlord terminating the lease to recapture the space and deal directly with a proposed subtenant or assignee, blocking tenant's subletting plans. Tenant cannot freely assign the lease as part of selling its business, exposing it to landlord denial that could derail the transaction.",
+        "error": null,
+        "elapsed_sec": 101.33
+      }
+    }
+  },
+  "LP-11": {
+    "input": {
+      "issue_area_id": "LP-11",
+      "issue_area_name": "Default & Remedies",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "6 of 7 expected elements found; missing: tenant's right to cure third-party defaults",
+      "supporting_provision_ids": [
+        "LP-11"
+      ],
+      "elements_found": [
+        "monetary default definition and cure period (typically 5 days)",
+        "non-monetary default definition and cure period (typically 30 days)",
+        "notice requirement before default declaration",
+        "landlord termination right",
+        "landlord re-entry right",
+        "rent acceleration on default"
+      ],
+      "elements_missing": [
+        "tenant's right to cure third-party defaults"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Notice requirement section marked Reserved",
+          "evidence": "Notice requirement section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "governing_law_sensitive",
+        "potentially_unenforceable"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+        "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+      },
+      "related_issue_areas": [
+        "LP-01",
+        "LP-09",
+        "LP-12"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": "partial_material"
+    },
+    "system_prompt": "You write concise, practical exposure assessments for commercial lease provisions.\n\nRules:\n- Exactly 1-2 sentences. No more.\n- Plain English. No legal citations. No case law. No jurisdiction references.\n- Describe practical TENANT exposure -- what can go wrong, who bears the risk.\n- Do not restate the clause mechanically.\n- Do not speculate beyond the evidence supplied.\n- Do not use \"may or may not\" or similar hedge phrases unless state is explicitly ambiguous.\n- Focus on the business/legal consequence of what is absent or unfavorable.\n- Tone: direct and specific. \"Tenant has no protection against X\" not \"This provision appears to potentially suggest...\"\n- Never start with \"This provision\" or \"The clause\".\n- Start with the risk actor: \"Tenant\", \"Landlord\", or the specific consequence.\n",
+    "user_prompt": "Provision: Default & Remedies\nCoverage state: partial\nMissing or unfavorable elements: tenant's right to cure third-party defaults\nEvidence note: 6 of 7 expected elements found; missing: tenant's right to cure third-party defaults\nFallback schema statement: none\n\nWrite a 1-2 sentence exposure statement describing the practical risk to the tenant.",
+    "elements_used_input_slice": [
+      "tenant's right to cure third-party defaults"
+    ],
+    "responses": {
+      "claude": {
+        "model_label": "anthropic:claude-sonnet-4-20250514",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "statement": "Tenant cannot cure defaults by third parties (such as contractors or subtenants), leaving tenant vulnerable to lease termination or other remedies even when tenant could readily fix the problem. Landlord retains full control over default resolution regardless of tenant's ability or willingness to remedy third-party breaches.",
+        "error": null,
+        "elapsed_sec": 3.52
+      },
+      "gpt": {
+        "model_label": "openai:gpt-5.2",
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "statement": "Tenant has no right to step in and cure a third party’s default (such as a lender, service provider, or other obligor) that could trigger Landlord’s remedies, so Tenant can lose the space or suffer disruptions even when Tenant is willing and able to fix the problem. Landlord controls whether the default gets cured and Tenant bears the fallout and related costs.",
+        "error": null,
+        "elapsed_sec": 2.98
+      },
+      "grok": {
+        "model_label": "xai:grok-4",
+        "provider": "xai",
+        "model": "grok-4",
+        "statement": "Tenant bears the risk of lease disruptions or termination due to uncured third-party defaults, as the lease provides no right for tenant to step in and remedy those issues. This leaves tenant exposed to landlord's remedies that could indirectly harm tenant's operations without recourse.",
+        "error": null,
+        "elapsed_sec": 10.13
+      }
+    }
+  },
+  "LP-13": {
+    "input": {
+      "issue_area_id": "LP-13",
+      "issue_area_name": "Indemnification & Liability",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "5 of 6 expected elements found; missing: cap on liability (if any)",
+      "supporting_provision_ids": [
+        "LP-13"
+      ],
+      "elements_found": [
+        "tenant indemnification of landlord scope",
+        "landlord indemnification of tenant scope",
+        "mutual vs one-way indemnification structure",
+        "exclusion of consequential or punitive damages",
+        "carve-outs for indemnitee negligence"
+      ],
+      "elements_missing": [
+        "cap on liability (if any)"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Landlord indemnification section marked Reserved or deleted",
+          "evidence": "Landlord indemnification section marked Reserved or deleted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Liability cap provision header present but amount blank",
+          "evidence": "Liability cap provision header present but amount blank",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "governing_law_sensitive",
+        "potentially_unenforceable"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+        "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+      },
+      "related_issue_areas": [
+        "LP-08",
+        "LP-11"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": "partial_material"
+    },
+    "system_prompt": "You write concise, practical exposure assessments for commercial lease provisions.\n\nRules:\n- Exactly 1-2 sentences. No more.\n- Plain English. No legal citations. No case law. No jurisdiction references.\n- Describe practical TENANT exposure -- what can go wrong, who bears the risk.\n- Do not restate the clause mechanically.\n- Do not speculate beyond the evidence supplied.\n- Do not use \"may or may not\" or similar hedge phrases unless state is explicitly ambiguous.\n- Focus on the business/legal consequence of what is absent or unfavorable.\n- Tone: direct and specific. \"Tenant has no protection against X\" not \"This provision appears to potentially suggest...\"\n- Never start with \"This provision\" or \"The clause\".\n- Start with the risk actor: \"Tenant\", \"Landlord\", or the specific consequence.\n",
+    "user_prompt": "Provision: Indemnification & Liability\nCoverage state: partial\nMissing or unfavorable elements: cap on liability (if any)\nEvidence note: 5 of 6 expected elements found; missing: cap on liability (if any)\nFallback schema statement: none\n\nWrite a 1-2 sentence exposure statement describing the practical risk to the tenant.",
+    "elements_used_input_slice": [
+      "cap on liability (if any)"
+    ],
+    "responses": {
+      "claude": {
+        "model_label": "anthropic:claude-sonnet-4-20250514",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "statement": "Tenant faces unlimited liability exposure for indemnification claims, with no cap to limit potential financial damages. Without a liability ceiling, tenant could be responsible for catastrophic losses far exceeding the lease value or tenant's financial capacity.",
+        "error": null,
+        "elapsed_sec": 2.78
+      },
+      "gpt": {
+        "model_label": "openai:gpt-5.2",
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "statement": "Tenant has no limit on its indemnity and liability exposure, so a single claim could trigger uncapped defense costs, settlement payments, and damages. Tenant bears the risk of open-ended financial loss even when the claim size exceeds insurance limits or budgeted reserves.",
+        "error": null,
+        "elapsed_sec": 3.71
+      },
+      "grok": {
+        "model_label": "xai:grok-4",
+        "provider": "xai",
+        "model": "grok-4",
+        "statement": "Tenant faces unlimited financial exposure under the indemnification and liability provisions, bearing the full risk of potentially catastrophic claims or damages without any cap to limit losses.",
+        "error": null,
+        "elapsed_sec": 5.66
+      }
+    }
+  },
+  "LP-14": {
+    "input": {
+      "issue_area_id": "LP-14",
+      "issue_area_name": "Force Majeure",
+      "applicability": "required",
+      "coverage_state": "covered_unfavorable",
+      "evidence_summary": "Abatement limited to 'wholly/totally untenantable' standard with no partial-abatement mechanism for operational impairment",
+      "supporting_provision_ids": [
+        "LP-14"
+      ],
+      "elements_found": [
+        "definition of qualifying force majeure events",
+        "scope of excused obligations (which parties, which obligations)",
+        "rent abatement during force majeure period",
+        "notice requirement to invoke",
+        "termination right if force majeure exceeds threshold period"
+      ],
+      "elements_missing": [
+        "partial rent abatement or adjustment for operational impairment"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Force majeure section present but rent abatement carve-out blank or deleted",
+          "evidence": "Force majeure section present but rent abatement carve-out blank or deleted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Event list ends with 'including without limitation' with body truncated",
+          "evidence": "Event list ends with 'including without limitation' with body truncated",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Abatement conditioned on tenant vacating the premises",
+          "evidence": "Abatement conditioned on tenant vacating the premises",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "cascade_risk"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "cascade_risk": "Change to this provision may silently affect other provisions via cross-reference"
+      },
+      "related_issue_areas": [
+        "LP-05",
+        "LP-03"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": null
+    },
+    "system_prompt": "You write concise, practical exposure assessments for commercial lease provisions.\n\nRules:\n- Exactly 1-2 sentences. No more.\n- Plain English. No legal citations. No case law. No jurisdiction references.\n- Describe practical TENANT exposure -- what can go wrong, who bears the risk.\n- Do not restate the clause mechanically.\n- Do not speculate beyond the evidence supplied.\n- Do not use \"may or may not\" or similar hedge phrases unless state is explicitly ambiguous.\n- Focus on the business/legal consequence of what is absent or unfavorable.\n- Tone: direct and specific. \"Tenant has no protection against X\" not \"This provision appears to potentially suggest...\"\n- Never start with \"This provision\" or \"The clause\".\n- Start with the risk actor: \"Tenant\", \"Landlord\", or the specific consequence.\n",
+    "user_prompt": "Provision: Force Majeure\nCoverage state: covered_unfavorable\nMissing or unfavorable elements: Provision present but unfavorable: definition of qualifying force majeure events, scope of excused obligations (which parties, which obligations), rent abatement during force majeure period\nEvidence note: Abatement limited to 'wholly/totally untenantable' standard with no partial-abatement mechanism for operational impairment\nFallback schema statement: none\n\nWrite a 1-2 sentence exposure statement describing the practical risk to the tenant.",
+    "elements_used_input_slice": [
+      "definition of qualifying force majeure events",
+      "scope of excused obligations (which parties, which obligations)",
+      "rent abatement during force majeure period"
+    ],
+    "responses": {
+      "claude": {
+        "model_label": "anthropic:claude-sonnet-4-20250514",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "statement": "Tenant must continue paying full rent during force majeure events unless the premises becomes wholly untenantable, with no relief for partial operational impairments that still allow some business use. The narrow definition of qualifying events and limited scope of excused obligations leaves tenant exposed to continued lease obligations during disruptions that significantly impact but don't completely prevent occupancy.",
+        "error": null,
+        "elapsed_sec": 3.39
+      },
+      "gpt": {
+        "model_label": "openai:gpt-5.2",
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "statement": "Tenant bears most of the business interruption risk because only extreme events that make the space wholly untenantable excuse performance, leaving no relief for partial loss of access or operational impairment. Tenant must keep paying full rent and comply with most obligations during force majeure unless the disruption meets that high threshold, shifting downtime costs to Tenant.",
+        "error": null,
+        "elapsed_sec": 3.87
+      },
+      "grok": {
+        "model_label": "xai:grok-4",
+        "provider": "xai",
+        "model": "grok-4",
+        "statement": "Tenant bears the risk of continuing to pay full rent during force majeure events that impair but do not totally prevent operations, with no partial abatement available. Tenant also faces uncertainty in excusing performance due to a narrow definition of qualifying events and unclear scope of obligations for both parties.",
+        "error": null,
+        "elapsed_sec": 5.52
+      }
+    }
+  }
+}

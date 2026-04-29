@@ -371,9 +371,11 @@ _UNFAVORABLE_PATTERNS = {
     ],
     "LP-11": [
         (r"(?:one|1|two|2|three|3)\s+(?:business\s+)?days.{0,40}(?:cure|default)", "Unusually short cure period"),
+        (r"(?:perform|covenant|condition).{0,200}(?:ten|10|fifteen|15)\s*\(?\d*\)?\s*(?:business\s+)?days?\s+after\s+written\s+notice", "Non-monetary cure period unusually short (under 30 days) — typical is 30 days"),
     ],
     "LP-13": [
         (r"(?:no\s+cap|uncapped|unlimited).{0,50}(?:liability|damages)", "No liability cap"),
+        (r"landlord\s+(?:shall|will|agrees?\s+to)\s+indemnif.{0,200}gross\s+negligence\s+(?:or|and)\s+willful\s+misconduct", "Asymmetric mutual indemnification: landlord indemnification limited to gross negligence or willful misconduct"),
     ],
     "LP-14": [
         (r"(?:wholly|totally)\s+untenantable", "Abatement limited to 'wholly/totally untenantable' standard with no partial-abatement mechanism for operational impairment"),

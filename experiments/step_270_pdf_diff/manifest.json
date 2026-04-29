@@ -1,0 +1,73 @@
+{
+  "pre_v1.1.3": {
+    "out_dir": "experiments\\step_270_pdf_diff\\pre_v1.1.3",
+    "source_pipeline_results": "experiments\\coverage_variance_2026_04_28\\00_fresh_run_pipeline_results.json",
+    "files": [
+      [
+        "Lease_Analysis_Synopsis.pdf",
+        8166
+      ],
+      [
+        "T-10_Negotiated_Tennant_Lease_annotated.docx",
+        41199
+      ],
+      [
+        "pipeline_results.json",
+        95019
+      ]
+    ],
+    "report_info": {
+      "dashboard_json": "C:\\Users\\Owner\\OneDrive\\CAM\\experiments\\step_270_pdf_diff\\pre_v1.1.3\\pipeline_results.json",
+      "annotated_document": "C:\\Users\\Owner\\OneDrive\\CAM\\experiments\\step_270_pdf_diff\\pre_v1.1.3\\T-10_Negotiated_Tennant_Lease_annotated.docx",
+      "annotation_method": "docx_comments",
+      "comparison_view_pdf": null,
+      "summary": {
+        "total_provisions_checked": 19,
+        "conforms": 0,
+        "deviates": 0,
+        "unclear": 0,
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "synopsis_pdf": "C:\\Users\\Owner\\OneDrive\\CAM\\experiments\\step_270_pdf_diff\\pre_v1.1.3\\Lease_Analysis_Synopsis.pdf"
+    }
+  },
+  "post_v1.1.4": {
+    "out_dir": "experiments\\step_270_pdf_diff\\post_v1.1.4",
+    "source_pipeline_results": "experiments\\step_268_t10_post_bump\\pipeline_results.json",
+    "files": [
+      [
+        "Lease_Analysis_Synopsis.pdf",
+        8274
+      ],
+      [
+        "T-10_Negotiated_Tennant_Lease_annotated.docx",
+        41199
+      ],
+      [
+        "pipeline_results.json",
+        97351
+      ]
+    ],
+    "report_info": {
+      "dashboard_json": "C:\\Users\\Owner\\OneDrive\\CAM\\experiments\\step_270_pdf_diff\\post_v1.1.4\\pipeline_results.json",
+      "annotated_document": "C:\\Users\\Owner\\OneDrive\\CAM\\experiments\\step_270_pdf_diff\\post_v1.1.4\\T-10_Negotiated_Tennant_Lease_annotated.docx",
+      "annotation_method": "docx_comments",
+      "comparison_view_pdf": null,
+      "summary": {
+        "total_provisions_checked": 19,
+        "conforms": 0,
+        "deviates": 0,
+        "unclear": 0,
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0
+      },
+      "synopsis_pdf": "C:\\Users\\Owner\\OneDrive\\CAM\\experiments\\step_270_pdf_diff\\post_v1.1.4\\Lease_Analysis_Synopsis.pdf"
+    }
+  },
+  "tenant_file": "05 Lease Analyzer\\test_data\\tenants\\T-10_Negotiated_Tennant_Lease.docx"
+}

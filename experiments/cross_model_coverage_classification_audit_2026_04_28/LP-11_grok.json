@@ -1,0 +1,50 @@
+{
+  "lp_id": "LP-11",
+  "model_label": "grok",
+  "model_target": "xai:grok-4",
+  "system_prompt": "You are a careful commercial-lease reviewer. You classify a single issue area against a schema definition and the lease's actual clause text. You answer ONLY in JSON, no preamble or commentary.",
+  "user_prompt": "You are reviewing a commercial lease provision from the TENANT'S perspective.\n\n## ISSUE AREA\n- ID: LP-11\n- Name: Default & Remedies\n- Applicability: required\n- Activation clues (signals issue area is in scope): []\n- Exclusion clues (signals issue area does NOT apply): []\n\n\n## EXPECTED ELEMENTS (what the schema says should be addressed)\n  1. monetary default definition and cure period (typically 5 days)\n  2. non-monetary default definition and cure period (typically 30 days)\n  3. notice requirement before default declaration\n  4. landlord termination right\n  5. landlord re-entry right\n  6. tenant's right to cure third-party defaults\n  7. rent acceleration on default\n\n## COVERAGE STATE RULES (schema's guidance)\n  - missing: No default provision\n  - partial: Monetary default present but non-monetary default, notice requirement, or cure period absent\n  - covered_unfavorable: Cure period unusually short; no notice requirement before landlord re-entry\n  - broken_xref: Remedies cross-reference deleted exhibit or section\n  - potentially_unenforceable: Self-help re-entry provision without court order\n\n## COVERAGE STATE VOCABULARY (permitted values for `coverage_state`)\n  - covered: Provision present and consistent with standard form\n  - covered_unfavorable: Present but materially one-sided against tenant\n  - partial: Some expected elements present, others missing or weakened\n  - ambiguous: Present but interpretation-dependent; practical effect unclear\n  - missing: Issue area expected in this lease but provision is absent\n  - broken_xref: Provision references a section, exhibit, or defined term not found in the document\n  - potentially_unenforceable: Structural or legal defect that may limit enforceability\n  - review_needed: Insufficient evidence to assert a state; surface for human judgment\n  - not_applicable: Issue area does not apply to this lease based on exclusion clues or document type\n  - applicability_unclear: Cannot determine whether this issue area should be present; needs human judgment\n\n## RISK IF MISSING\nLandlord remedies limited to common law; no contractual right to accelerate rent or re-enter\n\n## LEASE CLAUSE TEXT\nARTICLE XIII — DEFAULT AND REMEDIES (LP-11)\n\nSection 13.1. Tenant Default.\n\nEach of the following shall constitute a default by Tenant under this Lease:\n\n(a) Failure to pay any installment of Rent or any other sum due hereunder within five (5) days after written notice from Landlord that the same is past due;\n\n(b) Failure to perform or observe any material term, covenant, or condition of this Lease, if such failure continues for a period of ten (10) days after written notice from Landlord specifying the nature of such failure (or, if such failure cannot reasonably be cured within ten (10) days, failure to commence cure within such ten (10) day period and diligently prosecute such cure to completion);\n\n(c) The filing of a petition by or against Tenant under any bankruptcy or insolvency law, or the appointment of a receiver or trustee for Tenant's assets, if such proceeding is not dismissed within sixty (60) days;\n\n(d) Abandonment of the Premises for a period exceeding thirty (30) consecutive days.\n\nSection 13.2. Landlord's Remedies.\n\nUpon the occurrence of a Tenant default, Landlord shall have the right, at its option, to pursue any one or more of the following remedies:\n\n(a) Terminate this Lease by written notice to Tenant, in which event Tenant shall immediately surrender the Premises to Landlord and Tenant shall pay to Landlord all Rent and other sums due and owing through the date of termination, plus damages;\n\n(b) Re-enter the Premises and remove Tenant and all persons and property therefrom, with or without terminating this Lease, and relet the Premises for such term, at such rental, and upon such conditions as Landlord deems appropriate;\n\n(c) Accelerate all Rent due for the remainder of the Lease Term, discounted to present value at six percent (6%) per annum;\n\n(d) Exercise any other rights or remedies available to Landlord at law or in equity.\n\nSection 13.3. Landlord Default.\n\nLandlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder within thirty (30) days after written notice from Tenant specifying the nature of such failure (or, if such failure cannot reasonably be cured within thirty (30) days, failure to commence cure within such period and diligently prosecute such cure to completion).\n\n## YOUR TASK\n\nIndependently classify this issue area for this lease. Identify which expected elements are addressed in the clause text, which are missing, and what the practical exposure to the tenant is.\n\nRespond ONLY in JSON, no preamble or commentary outside the JSON object:\n\n{\n  \"coverage_state\": \"<one of the values from the COVERAGE STATE VOCABULARY above>\",\n  \"elements_present\": [\"<expected_element string>\", ...],\n  \"elements_missing\": [\"<expected_element string>\", ...],\n  \"justification\": \"<1-3 sentences citing specific lease language for the classification>\",\n  \"tenant_concern_summary\": \"<1 sentence: practical exposure from tenant perspective>\"\n}\n",
+  "regex_classification": {
+    "coverage_state": "partial",
+    "elements_found": [
+      "monetary default definition and cure period (typically 5 days)",
+      "non-monetary default definition and cure period (typically 30 days)",
+      "notice requirement before default declaration",
+      "landlord termination right",
+      "landlord re-entry right",
+      "rent acceleration on default"
+    ],
+    "elements_missing": [
+      "tenant's right to cure third-party defaults"
+    ],
+    "evidence_summary": "6 of 7 expected elements found; missing: tenant's right to cure third-party defaults",
+    "partial_class": "partial_material",
+    "materiality": "high"
+  },
+  "response": {
+    "model_label": "xai:grok-4",
+    "provider": "xai",
+    "model": "grok-4",
+    "raw_response": "{\n  \"coverage_state\": \"potentially_unenforceable\",\n  \"elements_present\": [\n    \"monetary default definition and cure period (typically 5 days)\",\n    \"non-monetary default definition and cure period (typically 30 days)\",\n    \"notice requirement before default declaration\",\n    \"landlord termination right\",\n    \"landlord re-entry right\",\n    \"rent acceleration on default\"\n  ],\n  \"elements_missing\": [\n    \"tenant's right to cure third-party defaults\"\n  ],\n  \"justification\": \"The lease's Section 13.2(b) allows the landlord to re-enter the Premises and remove the tenant and property without specifying a court order, fitting the schema's definition of a potentially unenforceable self-help re-entry provision. While monetary and non-monetary defaults are defined with cure periods in Section 13.1(a) and (b), the non-monetary cure period is only 10 days, which is unusually short compared to the typical 30 days. Notice is required before declaring most defaults, but the re-entry remedy may still be exercised without additional legal process.\",\n  \"tenant_concern_summary\": \"From the tenant's perspective, the self-help re-entry provision exposes them to potential unlawful eviction without court protection, while the short 10-day non-monetary cure period heightens the risk of default, and the absence of a right to cure third-party defaults limits tenant protections.\"\n}",
+    "parsed": {
+      "coverage_state": "potentially_unenforceable",
+      "elements_present": [
+        "monetary default definition and cure period (typically 5 days)",
+        "non-monetary default definition and cure period (typically 30 days)",
+        "notice requirement before default declaration",
+        "landlord termination right",
+        "landlord re-entry right",
+        "rent acceleration on default"
+      ],
+      "elements_missing": [
+        "tenant's right to cure third-party defaults"
+      ],
+      "justification": "The lease's Section 13.2(b) allows the landlord to re-enter the Premises and remove the tenant and property without specifying a court order, fitting the schema's definition of a potentially unenforceable self-help re-entry provision. While monetary and non-monetary defaults are defined with cure periods in Section 13.1(a) and (b), the non-monetary cure period is only 10 days, which is unusually short compared to the typical 30 days. Notice is required before declaring most defaults, but the re-entry remedy may still be exercised without additional legal process.",
+      "tenant_concern_summary": "From the tenant's perspective, the self-help re-entry provision exposes them to potential unlawful eviction without court protection, while the short 10-day non-monetary cure period heightens the risk of default, and the absence of a right to cure third-party defaults limits tenant protections."
+    },
+    "json_parse_error": null,
+    "out_of_vocab_state": null,
+    "call_error": null,
+    "elapsed_sec": 46.2
+  }
+}

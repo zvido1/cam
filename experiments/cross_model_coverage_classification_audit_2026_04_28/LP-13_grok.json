@@ -1,0 +1,48 @@
+{
+  "lp_id": "LP-13",
+  "model_label": "grok",
+  "model_target": "xai:grok-4",
+  "system_prompt": "You are a careful commercial-lease reviewer. You classify a single issue area against a schema definition and the lease's actual clause text. You answer ONLY in JSON, no preamble or commentary.",
+  "user_prompt": "You are reviewing a commercial lease provision from the TENANT'S perspective.\n\n## ISSUE AREA\n- ID: LP-13\n- Name: Indemnification & Liability\n- Applicability: required\n- Activation clues (signals issue area is in scope): []\n- Exclusion clues (signals issue area does NOT apply): []\n\n\n## EXPECTED ELEMENTS (what the schema says should be addressed)\n  1. tenant indemnification of landlord scope\n  2. landlord indemnification of tenant scope\n  3. mutual vs one-way indemnification structure\n  4. cap on liability (if any)\n  5. exclusion of consequential or punitive damages\n  6. carve-outs for indemnitee negligence\n\n## COVERAGE STATE RULES (schema's guidance)\n  - missing: No indemnification provision\n  - partial: One-way indemnification present (tenant → landlord only) without reciprocal protection\n  - covered_unfavorable: No liability cap; consequential damages not excluded\n  - potentially_unenforceable: Indemnification for indemnitee's own gross negligence\n\n## COVERAGE STATE VOCABULARY (permitted values for `coverage_state`)\n  - covered: Provision present and consistent with standard form\n  - covered_unfavorable: Present but materially one-sided against tenant\n  - partial: Some expected elements present, others missing or weakened\n  - ambiguous: Present but interpretation-dependent; practical effect unclear\n  - missing: Issue area expected in this lease but provision is absent\n  - broken_xref: Provision references a section, exhibit, or defined term not found in the document\n  - potentially_unenforceable: Structural or legal defect that may limit enforceability\n  - review_needed: Insufficient evidence to assert a state; surface for human judgment\n  - not_applicable: Issue area does not apply to this lease based on exclusion clues or document type\n  - applicability_unclear: Cannot determine whether this issue area should be present; needs human judgment\n\n## RISK IF MISSING\nLiability defaults to common law negligence standards\n\n## LEASE CLAUSE TEXT\nARTICLE XV — INDEMNIFICATION AND LIABILITY (LP-13)\n\nSection 15.1. Tenant's Indemnification.\n\nTenant shall indemnify, defend, and hold harmless Landlord, its officers, directors, employees, agents, and contractors from and against any and all claims, demands, actions, damages, losses, liabilities, judgments, costs, and expenses (including reasonable attorneys' fees) arising out of or related to: (a) Tenant's use and occupancy of the Premises; (b) any act, omission, or negligence of Tenant or Tenant's employees, agents, contractors, customers, or invitees; (c) any breach of this Lease by Tenant; or (d) any accident, injury, or damage occurring in or about the Premises.\n\nSection 15.2. Landlord's Indemnification.\n\nLandlord shall indemnify, defend, and hold harmless Tenant from and against any and all claims, demands, damages, losses, and expenses (including reasonable attorneys' fees) arising out of Landlord's gross negligence or willful misconduct in connection with Landlord's maintenance and operation of the Common Areas and the structural elements of the Building.\n\nSection 15.3. Limitation of Landlord's Liability.\n\nNotwithstanding anything to the contrary in this Lease, Landlord shall not be liable for any consequential, incidental, or punitive damages. Landlord's liability under this Lease shall in no event extend beyond Landlord's interest in the Shopping Center and the proceeds thereof. Tenant agrees to use commercially reasonable efforts to mitigate any damages arising from Landlord's default.\n\nSection 15.4. Waiver of Subrogation.\n\nEach party hereby waives any right of recovery against the other party for any loss or damage to the extent covered by insurance maintained by the waiving party, and each party shall cause its insurance policies to include a waiver of subrogation endorsement.\n\n## YOUR TASK\n\nIndependently classify this issue area for this lease. Identify which expected elements are addressed in the clause text, which are missing, and what the practical exposure to the tenant is.\n\nRespond ONLY in JSON, no preamble or commentary outside the JSON object:\n\n{\n  \"coverage_state\": \"<one of the values from the COVERAGE STATE VOCABULARY above>\",\n  \"elements_present\": [\"<expected_element string>\", ...],\n  \"elements_missing\": [\"<expected_element string>\", ...],\n  \"justification\": \"<1-3 sentences citing specific lease language for the classification>\",\n  \"tenant_concern_summary\": \"<1 sentence: practical exposure from tenant perspective>\"\n}\n",
+  "regex_classification": {
+    "coverage_state": "partial",
+    "elements_found": [
+      "tenant indemnification of landlord scope",
+      "landlord indemnification of tenant scope",
+      "mutual vs one-way indemnification structure",
+      "exclusion of consequential or punitive damages",
+      "carve-outs for indemnitee negligence"
+    ],
+    "elements_missing": [
+      "cap on liability (if any)"
+    ],
+    "evidence_summary": "5 of 6 expected elements found; missing: cap on liability (if any)",
+    "partial_class": "partial_material",
+    "materiality": "high"
+  },
+  "response": {
+    "model_label": "xai:grok-4",
+    "provider": "xai",
+    "model": "grok-4",
+    "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\n    \"tenant indemnification of landlord scope\",\n    \"landlord indemnification of tenant scope\",\n    \"mutual vs one-way indemnification structure\",\n    \"cap on liability (if any)\",\n    \"exclusion of consequential or punitive damages\"\n  ],\n  \"elements_missing\": [\n    \"carve-outs for indemnitee negligence\"\n  ],\n  \"justification\": \"The lease includes mutual indemnification, with Section 15.1 providing broad tenant indemnification of landlord for various acts including any accident in the Premises, and Section 15.2 limiting landlord's indemnification to only gross negligence or willful misconduct in specific areas. Section 15.3 caps landlord's liability to its interest in the Shopping Center and excludes consequential or punitive damages, but these protections are one-sided in favor of the landlord. There is no explicit carve-out in Section 15.1 for the landlord's own negligence, making the structure materially unfavorable to the tenant.\",\n  \"tenant_concern_summary\": \"Tenant faces broad indemnification obligations without reciprocal protections, potentially exposing them to liability for incidents including the landlord's simple negligence, while landlord's liability is capped and limited to gross negligence.\"\n}",
+    "parsed": {
+      "coverage_state": "covered_unfavorable",
+      "elements_present": [
+        "tenant indemnification of landlord scope",
+        "landlord indemnification of tenant scope",
+        "mutual vs one-way indemnification structure",
+        "cap on liability (if any)",
+        "exclusion of consequential or punitive damages"
+      ],
+      "elements_missing": [
+        "carve-outs for indemnitee negligence"
+      ],
+      "justification": "The lease includes mutual indemnification, with Section 15.1 providing broad tenant indemnification of landlord for various acts including any accident in the Premises, and Section 15.2 limiting landlord's indemnification to only gross negligence or willful misconduct in specific areas. Section 15.3 caps landlord's liability to its interest in the Shopping Center and excludes consequential or punitive damages, but these protections are one-sided in favor of the landlord. There is no explicit carve-out in Section 15.1 for the landlord's own negligence, making the structure materially unfavorable to the tenant.",
+      "tenant_concern_summary": "Tenant faces broad indemnification obligations without reciprocal protections, potentially exposing them to liability for incidents including the landlord's simple negligence, while landlord's liability is capped and limited to gross negligence."
+    },
+    "json_parse_error": null,
+    "out_of_vocab_state": null,
+    "call_error": null,
+    "elapsed_sec": 16.42
+  }
+}

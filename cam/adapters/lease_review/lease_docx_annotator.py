@@ -10,6 +10,7 @@ proved incompatible with python-docx 0.8.11's Part/OPC structure (corrupts
 the document on save).  Callout blocks are the reliable approach.
 """
 
+import re
 from pathlib import Path
 from typing import List, Optional
 
@@ -374,11 +375,129 @@ def _insert_summary_section(doc, results):
     _add_para("--- End of CAM Summary ---", size=8, bold=True, color="94A3B8", space_after=12)
 
 
+def _format_coverage_callout_text(coverage_item: dict, cov_resolution: dict = None,
+                                  perspective: str = "tenant") -> str:
+    """Format the callout text for a Mode C coverage gap finding.
+
+    Mirrors `lease_pdf_annotator._format_coverage_annotation_text` so DOCX
+    and PDF coverage callouts read the same. Step 273: state_label is now
+    perspective-aware via `_resolve_display`.
+    """
+    from cam.adapters.lease_review.lease_display import _resolve_display
+
+    pid = coverage_item.get("issue_area_id", "?")
+    pname = coverage_item.get("provision_name", "") or coverage_item.get("issue_area_name", "")
+    materiality = coverage_item.get("materiality", "medium")
+    exposure = coverage_item.get("exposure_statement", "")
+    elements_missing = coverage_item.get("elements_missing", [])
+
+    disp = _resolve_display(coverage_item, perspective)
+    state_label = disp["label"]
+    mat_labels = {"high": "HIGH", "medium": "MEDIUM", "low": "LOW"}
+    mat_label = mat_labels.get(materiality, materiality.upper())
+
+    lines = [f"[GAP] {pid} {pname} — {state_label} ({mat_label} materiality)"]
+    lines.append("")
+
+    if elements_missing:
+        missing_str = ", ".join(str(e) for e in elements_missing[:5])
+        lines.append(f"Missing: {missing_str}")
+        lines.append("")
+
+    if exposure:
+        lines.append(exposure)
+
+    if cov_resolution:
+        status = cov_resolution.get("status", "")
+        status_labels = {
+            "reviewed": "Reviewed",
+            "flagged": "Flagged for follow-up",
+            "accepted": "Risk accepted",
+        }
+        if status and status != "open":
+            lines.append("")
+            lines.append("— Lawyer's Review —")
+            lines.append(f"Decision: {status_labels.get(status, status)}")
+        notes = cov_resolution.get("notes", []) or []
+        for note in notes:
+            text = note.get("text", "") if isinstance(note, dict) else str(note)
+            if text:
+                lines.append(f"Note: {text}")
+
+    result = "\n".join(line for line in lines if line is not None)
+    # Strip markdown bold/italic markers (mirrors deviation annotation handling)
+    result = re.sub(r'\*\*(.+?)\*\*', r'\1', result)
+    result = re.sub(r'\*(.+?)\*', r'\1', result)
+    return result
+
+
+# Distinct purple palette for coverage gap callouts. Mirrors the PDF
+# annotator's `_coverage_color` choice so the two formats are visually
+# consistent. The hex border color is `7B5EAB`, with a light-lavender fill.
+_COVERAGE_BORDER_HEX = "7B5EAB"
+_COVERAGE_FILL_HEX = "F1ECFA"
+
+
+def _add_coverage_callout_block(document, paragraph, comment_text):
+    """Insert a purple coverage-gap callout block after the paragraph.
+
+    Mirrors `_add_callout_block` but uses the coverage palette so the gap
+    callouts read as distinct from deviation callouts in Mode A documents
+    where both can appear on the same provision.
+    """
+    parent = paragraph._element.getparent()
+    idx = list(parent).index(paragraph._element)
+
+    callout_para = OxmlElement("w:p")
+
+    ppr = OxmlElement("w:pPr")
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:val"), "clear")
+    shd.set(qn("w:color"), "auto")
+    shd.set(qn("w:fill"), _COVERAGE_FILL_HEX)
+    ppr.append(shd)
+    borders = OxmlElement("w:pBdr")
+    for side in ["top", "left", "bottom", "right"]:
+        border = OxmlElement(f"w:{side}")
+        border.set(qn("w:val"), "single")
+        border.set(qn("w:sz"), "4")
+        border.set(qn("w:space"), "1")
+        border.set(qn("w:color"), _COVERAGE_BORDER_HEX)
+        borders.append(border)
+    ppr.append(borders)
+    callout_para.append(ppr)
+
+    for line in comment_text.split("\n"):
+        if line:
+            run = OxmlElement("w:r")
+            rpr = OxmlElement("w:rPr")
+            sz = OxmlElement("w:sz")
+            sz.set(qn("w:val"), "18")  # 9pt
+            rpr.append(sz)
+            clr = OxmlElement("w:color")
+            clr.set(qn("w:val"), _COVERAGE_BORDER_HEX)
+            rpr.append(clr)
+            run.append(rpr)
+            t = OxmlElement("w:t")
+            t.set(qn("xml:space"), "preserve")
+            t.text = line
+            run.append(t)
+            callout_para.append(run)
+
+            br_run = OxmlElement("w:r")
+            br = OxmlElement("w:br")
+            br_run.append(br)
+            callout_para.append(br_run)
+
+    parent.insert(idx + 1, callout_para)
+
+
 def annotate_docx(
     original_docx_path: str,
     results: dict,
     output_path: str,
     resolutions: dict = None,
+    cov_resolutions: dict = None,
 ) -> str:
     """Insert Word comments on deviating provisions in tenant DOCX.
 
@@ -434,10 +553,80 @@ def annotate_docx(
         _add_callout_block(doc, para, comment_text, provision.get("severity", "MEDIUM"))
         annotations_added += 1
 
+    # === Coverage gap callouts (Step 271, perspective-aware Step 273) ===
+    # Drop [GAP] callout blocks for provisions whose display bucket is one
+    # of the surfaced annotation buckets (needs_attention,
+    # favorable_to_your_side, asymmetric_terms, worth_reviewing). Items
+    # entirely missing from the document have no anchor and are skipped
+    # (same as the PDF annotator) — they still appear in the Synopsis.
+    from cam.adapters.lease_review.lease_display import (
+        _resolve_display, ANNOTATED_BUCKETS, resolve_perspective,
+    )
+
+    perspective = resolve_perspective(results)
+    coverage_assessment = results.get("coverage_assessment", []) or []
+    provisions_by_id = {p.get("provision_id"): p for p in results.get("provisions", []) or []}
+
+    coverage_callouts_added = 0
+    coverage_not_found = 0
+
+    for cov in coverage_assessment:
+        disp = _resolve_display(cov, perspective)
+        if disp["bucket"] not in ANNOTATED_BUCKETS:
+            continue
+        state = cov.get("coverage_state", "covered")
+        if state == "missing":
+            continue
+
+        pid = cov.get("issue_area_id", "")
+        if not pid:
+            continue
+
+        prov = provisions_by_id.get(pid, {})
+        anchor_text = (prov.get("tenant_text", "") or "").strip()
+        section_ref = (prov.get("tenant_section_ref", "") or "").strip()
+        issue_area_name = (cov.get("issue_area_name") or cov.get("provision_name") or "").strip()
+
+        cov_resolution = None
+        if cov_resolutions:
+            cov_resolution = (
+                cov_resolutions.get(f"cov:0:{pid}")
+                or cov_resolutions.get(f"cov:{pid}")
+            )
+
+        comment_text = _format_coverage_callout_text(cov, cov_resolution, perspective)
+
+        # Anchor fallback chain mirrors the PDF annotator coverage path:
+        # tenant_text -> section_ref -> issue_area_name -> issue_area_id.
+        # Mode A typically resolves on tenant_text; Mode C falls through to
+        # name/id since provisions[] is empty.
+        para = None
+        if anchor_text:
+            para = _find_paragraph_by_text(doc, anchor_text)
+        if para is None and section_ref:
+            para = _find_paragraph_by_text(doc, section_ref, min_match_chars=15)
+        if para is None and issue_area_name:
+            para = _find_paragraph_by_text(doc, issue_area_name, min_match_chars=10)
+        if para is None and pid:
+            para = _find_paragraph_by_text(doc, pid, min_match_chars=4)
+
+        if para is None:
+            coverage_not_found += 1
+            print(f"[docx_annotator] Could not anchor coverage gap for {pid}", flush=True)
+            continue
+
+        _add_coverage_callout_block(doc, para, comment_text)
+        coverage_callouts_added += 1
+
     # Save the annotated document
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     doc.save(output_path)
 
-    print(f"[docx_annotator] Saved {output_path} ({annotations_added} annotations, {not_found} not found)", flush=True)
+    print(
+        f"[docx_annotator] Saved {output_path} "
+        f"({annotations_added} deviations, {coverage_callouts_added} coverage gaps, "
+        f"{not_found + coverage_not_found} not found)",
+        flush=True,
+    )
 
     return output_path

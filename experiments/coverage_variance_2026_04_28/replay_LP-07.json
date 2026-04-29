@@ -1,0 +1,95 @@
+{
+  "input": {
+    "issue_area_id": "LP-07",
+    "issue_area_name": "Common Area Maintenance (CAM)",
+    "applicability": "applicable",
+    "coverage_state": "covered_unfavorable",
+    "evidence_summary": "Audit rights explicitly removed",
+    "supporting_provision_ids": [
+      "LP-07"
+    ],
+    "elements_found": [
+      "tenant's proportionate share calculation method",
+      "included expense categories",
+      "annual CAM increase cap",
+      "tenant audit rights",
+      "reconciliation timeline"
+    ],
+    "elements_missing": [
+      "excluded expense categories"
+    ],
+    "negative_space_signals": [
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Audit rights section marked Reserved or Intentionally Omitted",
+        "evidence": "Audit rights section marked Reserved or Intentionally Omitted",
+        "severity": "medium"
+      },
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Excluded expenses list cross-references exhibit not attached",
+        "evidence": "Excluded expenses list cross-references exhibit not attached",
+        "severity": "medium"
+      }
+    ],
+    "caution_signals": [
+      "common_dispute_area",
+      "landlord_leverage_point"
+    ],
+    "caution_signal_definitions": {
+      "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+      "landlord_leverage_point": "Landlord typically holds stronger enforcement position if disputed"
+    },
+    "related_issue_areas": [
+      "LP-01",
+      "LP-06"
+    ],
+    "requires_attention": true,
+    "materiality": "high",
+    "partial_class": null
+  },
+  "repeats": [
+    {
+      "exposure_statement": "Tenant bears open-ended CAM cost risk because the landlord controls the proportionate-share math and what expense categories get included, with no cap on annual increases. Tenant also has no audit rights to verify charges, so the tenant pays inflated or misallocated CAM with little practical ability to challenge it.",
+      "exposure_source": "model",
+      "exposure_reason_code": "unfavorable_provision",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "tenant's proportionate share calculation method",
+        "included expense categories",
+        "annual CAM increase cap"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 0,
+      "_replay_elapsed_sec": 3.733
+    },
+    {
+      "exposure_statement": "Tenant bears open-ended CAM costs because the share calculation and included expenses are skewed against Tenant and there\u2019s no cap on annual increases, creating unpredictable operating expense spikes. Tenant also has no audit rights to verify charges, so Landlord\u2019s CAM allocations and categories effectively go unchecked and Tenant pays the bill.",
+      "exposure_source": "model",
+      "exposure_reason_code": "unfavorable_provision",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "tenant's proportionate share calculation method",
+        "included expense categories",
+        "annual CAM increase cap"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 1,
+      "_replay_elapsed_sec": 4.141
+    },
+    {
+      "exposure_statement": "Tenant bears an open-ended CAM cost risk because the share calculation and expense categories can be applied broadly and there\u2019s no cap on annual increases, making operating costs unpredictable and potentially unaffordable. Tenant also has no ability to audit or challenge CAM billings, so overcharges or misallocations stick.",
+      "exposure_source": "model",
+      "exposure_reason_code": "unfavorable_provision",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "tenant's proportionate share calculation method",
+        "included expense categories",
+        "annual CAM increase cap"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 2,
+      "_replay_elapsed_sec": 3.61
+    }
+  ]
+}

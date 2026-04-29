@@ -1,0 +1,20 @@
+=== LP-07 ===
+  input.coverage_state    : covered_unfavorable
+  input.partial_class     : None
+  input.materiality       : high
+  input.elements_missing  : ['excluded expense categories']
+  input.elements_found    : ["tenant's proportionate share calculation method", 'included expense categories', 'annual CAM increase cap', 'tenant audit rights', 'reconciliation timeline']
+  exposure_elements_used  : ["tenant's proportionate share calculation method", 'included expense categories', 'annual CAM increase cap']
+  exposure_reason_code    : None
+
+  models_responded        : ['claude', 'gpt', 'grok']
+  statement_text_diverged : True
+
+  [CLAUDE]  (anthropic:claude-sonnet-4-20250514)  elapsed=3.82s  
+    Tenant bears unlimited CAM cost increases with no audit rights to verify charges, creating exposure to uncapped annual escalations and potentially inflated or inappropriate expense allocations. The unfavorable proportionate share calculation method may result in tenant paying more than its fair portion of common area costs.
+
+  [GPT]  (openai:gpt-5.2)  elapsed=3.77s  
+    Tenant bears the risk of unpredictable and escalating CAM charges because the share calculation, what costs are included, and any annual increase limits are unfavorable, and there’s no cap to stop sharp year-over-year spikes. Tenant also has no ability to audit or verify CAM billings, so Landlord’s allocations and expense classifications are effectively unchallengeable and tenant pays the cost.
+
+  [GROK]  (xai:grok-4)  elapsed=5.73s  
+    Tenant bears the risk of excessive or unfair CAM charges through an unfavorable proportionate share calculation, overly broad expense categories, and unlimited annual increases, compounded by the explicit removal of audit rights that prevent verification or challenge of the landlord's billing.

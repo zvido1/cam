@@ -1,0 +1,21 @@
+=== LP-11 ===
+  input.coverage_state    : partial
+  input.materiality       : high
+  input.elements_missing  : ["tenant's right to cure third-party defaults"]
+  input.elements_found    : ['monetary default definition and cure period (typically 5 days)', 'non-monetary default definition and cure period (typically 30 days)', 'notice requirement before default declaration', 'landlord termination right', 'landlord re-entry right', 'rent acceleration on default']
+  exposure_source(s)      : ['model', 'model', 'model']
+  exposure_reason_code(s) : ['high_materiality_missing_element', 'high_materiality_missing_element', 'high_materiality_missing_element']
+  elements_used per repeat:
+    repeat[0] = ["tenant's right to cure third-party defaults"]
+    repeat[1] = ["tenant's right to cure third-party defaults"]
+    repeat[2] = ["tenant's right to cure third-party defaults"]
+  classification_diff     : False
+  evidence_diff           : False
+  wording_diff            : True
+
+  repeat[0]:
+    Tenant has no right to step in and cure a third party’s default (such as a lender, HOA, or utility issue) that threatens the premises, so Landlord can treat the problem as unresolved and the Tenant bears the business disruption and potential costs without a contractual tool to keep the lease and operations intact.
+  repeat[1]:
+    Tenant has no right to step in and cure a third-party’s default (such as a lender, utility, or service provider issue), so Landlord can treat the resulting disruption or noncompliance as Tenant’s problem and enforce default remedies. Tenant bears the business risk of losing services or space access without the ability to fix the root cause directly.
+  repeat[2]:
+    Tenant cannot step in to cure a third party’s default that affects the premises or building services, so Landlord can treat the situation as continuing and enforce default remedies against Tenant even when Tenant is willing and able to fix the issue. Tenant bears the resulting disruption and costs, including potential termination and damages.

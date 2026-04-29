@@ -1,0 +1,500 @@
+{
+  "LP-07": {
+    "lp_id": "LP-07",
+    "lp_name": "Common Area Maintenance (CAM)",
+    "system_prompt": "You are a careful commercial-lease reviewer. You classify a single issue area against a schema definition and the lease's actual clause text. You answer ONLY in JSON, no preamble or commentary.",
+    "user_prompt": "You are reviewing a commercial lease provision from the TENANT'S perspective.\n\n## ISSUE AREA\n- ID: LP-07\n- Name: Common Area Maintenance (CAM)\n- Applicability: conditional\n- Activation clues (signals issue area is in scope): ['common area', 'CAM', 'CAM charges', 'operating expenses', 'triple net', 'NNN', 'proportionate share', 'shared expenses', 'common facilities']\n- Exclusion clues (signals issue area does NOT apply): ['gross lease', 'full service lease', 'all-inclusive rent', 'no additional charges', 'landlord pays all operating']\n- Notes: Not applicable in gross or full-service leases.\n\n## EXPECTED ELEMENTS (what the schema says should be addressed)\n  1. tenant's proportionate share calculation method\n  2. included expense categories\n  3. excluded expense categories\n  4. annual CAM increase cap\n  5. tenant audit rights\n  6. reconciliation timeline\n\n## COVERAGE STATE RULES (schema's guidance)\n  - missing: CAM references present in lease but no CAM provision found\n  - partial: Share calculation present but exclusions, cap, or audit rights absent\n  - covered_unfavorable: No annual CAM cap; audit rights absent or time-limited to 30 days\n  - ambiguous: Proportionate share defined by landlord's reasonable determination with no formula\n  - not_applicable: Gross or full-service lease structure confirmed\n\n## COVERAGE STATE VOCABULARY (permitted values for `coverage_state`)\n  - covered: Provision present and consistent with standard form\n  - covered_unfavorable: Present but materially one-sided against tenant\n  - partial: Some expected elements present, others missing or weakened\n  - ambiguous: Present but interpretation-dependent; practical effect unclear\n  - missing: Issue area expected in this lease but provision is absent\n  - broken_xref: Provision references a section, exhibit, or defined term not found in the document\n  - potentially_unenforceable: Structural or legal defect that may limit enforceability\n  - review_needed: Insufficient evidence to assert a state; surface for human judgment\n  - not_applicable: Issue area does not apply to this lease based on exclusion clues or document type\n  - applicability_unclear: Cannot determine whether this issue area should be present; needs human judgment\n\n## RISK IF MISSING\nTenant may owe undefined share of all building operating expenses with no audit protection\n\n## LEASE CLAUSE TEXT\nARTICLE IX — COMMON AREA MAINTENANCE (LP-07)\n\nSection 9.1. CAM Charges.\n\nTenant shall pay to Landlord, as Additional Rent, Tenant's Proportionate Share of all costs and expenses incurred by Landlord in maintaining, operating, repairing, and managing the Common Areas of the Shopping Center (\"CAM Charges\"). CAM Charges shall include, without limitation, costs of landscaping, parking lot maintenance and repaving, exterior lighting, snow and ice removal, security, trash removal, management fees (not to exceed three percent (3%) of gross rents), insurance for Common Areas, property taxes allocable to Common Areas, and reasonable reserves for capital replacements.\n\nSection 9.2. Estimated Payments.\n\nLandlord shall provide Tenant with an estimate of CAM Charges for each calendar year. Tenant shall pay one-twelfth (1/12) of the estimated annual CAM Charges monthly, together with Base Rent. Within ninety (90) days after the end of each calendar year, Landlord shall furnish Tenant with a statement of actual CAM Charges. If actual charges exceed estimated payments, Tenant shall pay the deficiency within thirty (30) days. If estimated payments exceed actual charges, Landlord shall credit the overpayment against the next due CAM Charge installments.\n\nSection 9.3. Records and Audit.\n\nLandlord shall maintain records of all CAM Charges for a period of three (3) years. Tenant shall not have the right to audit or inspect Landlord's books and records relating to CAM Charges.\n\n## YOUR TASK\n\nIndependently classify this issue area for this lease. Identify which expected elements are addressed in the clause text, which are missing, and what the practical exposure to the tenant is.\n\nRespond ONLY in JSON, no preamble or commentary outside the JSON object:\n\n{\n  \"coverage_state\": \"<one of the values from the COVERAGE STATE VOCABULARY above>\",\n  \"elements_present\": [\"<expected_element string>\", ...],\n  \"elements_missing\": [\"<expected_element string>\", ...],\n  \"justification\": \"<1-3 sentences citing specific lease language for the classification>\",\n  \"tenant_concern_summary\": \"<1 sentence: practical exposure from tenant perspective>\"\n}\n",
+    "regex_classification": {
+      "coverage_state": "covered_unfavorable",
+      "elements_found": [
+        "tenant's proportionate share calculation method",
+        "included expense categories",
+        "annual CAM increase cap",
+        "tenant audit rights",
+        "reconciliation timeline"
+      ],
+      "elements_missing": [
+        "excluded expense categories"
+      ],
+      "evidence_summary": "Audit rights explicitly removed",
+      "partial_class": null,
+      "materiality": "high"
+    },
+    "responses": {
+      "claude": {
+        "model_label": "anthropic:claude-sonnet-4-20250514",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\"tenant's proportionate share calculation method\", \"included expense categories\", \"reconciliation timeline\"],\n  \"elements_missing\": [\"excluded expense categories\", \"annual CAM increase cap\", \"tenant audit rights\"],\n  \"justification\": \"The lease defines CAM charges and proportionate share calculation, includes specific expense categories, and provides a 90-day reconciliation timeline. However, Section 9.3 explicitly denies tenant audit rights, there is no annual CAM increase cap, and no excluded expense categories are specified.\",\n  \"tenant_concern_summary\": \"Tenant has no audit protection to verify CAM charges and no cap on annual increases, creating unlimited exposure to potentially inflated operating expenses.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "tenant's proportionate share calculation method",
+            "included expense categories",
+            "reconciliation timeline"
+          ],
+          "elements_missing": [
+            "excluded expense categories",
+            "annual CAM increase cap",
+            "tenant audit rights"
+          ],
+          "justification": "The lease defines CAM charges and proportionate share calculation, includes specific expense categories, and provides a 90-day reconciliation timeline. However, Section 9.3 explicitly denies tenant audit rights, there is no annual CAM increase cap, and no excluded expense categories are specified.",
+          "tenant_concern_summary": "Tenant has no audit protection to verify CAM charges and no cap on annual increases, creating unlimited exposure to potentially inflated operating expenses."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 4.83
+      },
+      "gpt": {
+        "model_label": "openai:gpt-5.2",
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\n    \"included expense categories\",\n    \"tenant audit rights\",\n    \"reconciliation timeline\"\n  ],\n  \"elements_missing\": [\n    \"tenant's proportionate share calculation method\",\n    \"excluded expense categories\",\n    \"annual CAM increase cap\"\n  ],\n  \"justification\": \"The clause obligates Tenant to pay \\\"Tenant's Proportionate Share\\\" of CAM Charges but provides no formula or basis for calculating that share. It includes broad expense categories and \\\"reasonable reserves for capital replacements\\\" (Section 9.1) and provides annual reconciliation within 90 days (Section 9.2). Audit rights are expressly denied: \\\"Tenant shall not have the right to audit or inspect\\\" (Section 9.3), and there is no CAM increase cap.\",\n  \"tenant_concern_summary\": \"Tenant faces potentially uncapped and broadly defined CAM pass-throughs (including reserves/capital items) with no ability to verify charges and no defined method to confirm its proportionate share.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "included expense categories",
+            "tenant audit rights",
+            "reconciliation timeline"
+          ],
+          "elements_missing": [
+            "tenant's proportionate share calculation method",
+            "excluded expense categories",
+            "annual CAM increase cap"
+          ],
+          "justification": "The clause obligates Tenant to pay \"Tenant's Proportionate Share\" of CAM Charges but provides no formula or basis for calculating that share. It includes broad expense categories and \"reasonable reserves for capital replacements\" (Section 9.1) and provides annual reconciliation within 90 days (Section 9.2). Audit rights are expressly denied: \"Tenant shall not have the right to audit or inspect\" (Section 9.3), and there is no CAM increase cap.",
+          "tenant_concern_summary": "Tenant faces potentially uncapped and broadly defined CAM pass-throughs (including reserves/capital items) with no ability to verify charges and no defined method to confirm its proportionate share."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 4.7
+      },
+      "grok": {
+        "model_label": "xai:grok-4",
+        "provider": "xai",
+        "model": "grok-4",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\n    \"included expense categories\",\n    \"reconciliation timeline\"\n  ],\n  \"elements_missing\": [\n    \"tenant's proportionate share calculation method\",\n    \"excluded expense categories\",\n    \"annual CAM increase cap\",\n    \"tenant audit rights\"\n  ],\n  \"justification\": \"The lease includes a CAM provision with included expense categories listed in Section 9.1 and a reconciliation timeline in Section 9.2, but it lacks a calculation method for the proportionate share, excluded categories, an annual increase cap, and explicitly denies audit rights in Section 9.3. This matches the 'covered_unfavorable' state due to the absence of an annual CAM cap and audit rights. The provision is present but materially one-sided against the tenant.\",\n  \"tenant_concern_summary\": \"Tenant faces unlimited CAM charges without audit rights, no cap on increases, undefined proportionate share, and no exclusions, potentially leading to unchecked and excessive expenses.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "included expense categories",
+            "reconciliation timeline"
+          ],
+          "elements_missing": [
+            "tenant's proportionate share calculation method",
+            "excluded expense categories",
+            "annual CAM increase cap",
+            "tenant audit rights"
+          ],
+          "justification": "The lease includes a CAM provision with included expense categories listed in Section 9.1 and a reconciliation timeline in Section 9.2, but it lacks a calculation method for the proportionate share, excluded categories, an annual increase cap, and explicitly denies audit rights in Section 9.3. This matches the 'covered_unfavorable' state due to the absence of an annual CAM cap and audit rights. The provision is present but materially one-sided against the tenant.",
+          "tenant_concern_summary": "Tenant faces unlimited CAM charges without audit rights, no cap on increases, undefined proportionate share, and no exclusions, potentially leading to unchecked and excessive expenses."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 13.34
+      }
+    }
+  },
+  "LP-09": {
+    "lp_id": "LP-09",
+    "lp_name": "Subletting & Assignment",
+    "system_prompt": "You are a careful commercial-lease reviewer. You classify a single issue area against a schema definition and the lease's actual clause text. You answer ONLY in JSON, no preamble or commentary.",
+    "user_prompt": "You are reviewing a commercial lease provision from the TENANT'S perspective.\n\n## ISSUE AREA\n- ID: LP-09\n- Name: Subletting & Assignment\n- Applicability: required\n- Activation clues (signals issue area is in scope): []\n- Exclusion clues (signals issue area does NOT apply): []\n\n\n## EXPECTED ELEMENTS (what the schema says should be addressed)\n  1. landlord consent requirement\n  2. grounds for withholding consent (reasonableness standard)\n  3. affiliate exception (no consent required for related entities)\n  4. profit sharing on sublet above base rent\n  5. recapture right (landlord can terminate and lease directly)\n  6. assignment in connection with sale of business\n\n## COVERAGE STATE RULES (schema's guidance)\n  - missing: No assignment provision\n  - partial: Consent requirement present but affiliate exception, recapture, or profit sharing absent\n  - covered_unfavorable: Landlord consent in sole and absolute discretion; no affiliate exception\n  - broken_xref: Affiliate defined by cross-reference to definition section not present in document\n\n## COVERAGE STATE VOCABULARY (permitted values for `coverage_state`)\n  - covered: Provision present and consistent with standard form\n  - covered_unfavorable: Present but materially one-sided against tenant\n  - partial: Some expected elements present, others missing or weakened\n  - ambiguous: Present but interpretation-dependent; practical effect unclear\n  - missing: Issue area expected in this lease but provision is absent\n  - broken_xref: Provision references a section, exhibit, or defined term not found in the document\n  - potentially_unenforceable: Structural or legal defect that may limit enforceability\n  - review_needed: Insufficient evidence to assert a state; surface for human judgment\n  - not_applicable: Issue area does not apply to this lease based on exclusion clues or document type\n  - applicability_unclear: Cannot determine whether this issue area should be present; needs human judgment\n\n## RISK IF MISSING\nAssignment rights undefined; tenant unable to sell business or transfer lease in routine transactions\n\n## LEASE CLAUSE TEXT\nARTICLE XI — SUBLETTING AND ASSIGNMENT (LP-09)\n\nSection 11.1. Restriction.\n\nTenant shall not assign this Lease, or sublet the Premises or any part thereof, or transfer any interest in this Lease, or permit the use or occupancy of the Premises by any party other than Tenant, without the prior written consent of Landlord in each instance, which consent shall not be unreasonably withheld, conditioned, or delayed. Notwithstanding the foregoing, Tenant may assign this Lease or sublet the Premises to an Affiliate without Landlord's prior written consent, provided that (a) Tenant delivers written notice to Landlord at least thirty (30) days prior to such assignment or subletting, (b) such Affiliate assumes all obligations of Tenant under this Lease, and (c) Tenant remains primarily liable for all obligations hereunder. Any assignment, subletting, or transfer in violation of this Section shall be void and of no force or effect, and shall constitute a default under this Lease.\n\nSection 11.2. Conditions to Consent.\n\nLandlord's consent to any assignment or subletting shall be conditioned upon: (a) the proposed assignee or subtenant being a reputable entity with financial capability to perform the obligations of this Lease; (b) the proposed use being consistent with the Permitted Use; (c) the proposed assignment or subletting not violating any exclusive use rights granted to other tenants; and (d) Tenant delivering to Landlord an executed copy of the assignment or sublease agreement at least thirty (30) days prior to the effective date thereof.\n\nSection 11.3. No Release.\n\nNo assignment or subletting shall release Tenant from its obligations under this Lease. Tenant shall remain fully liable for the performance of all terms, covenants, and conditions of this Lease, including the payment of Rent.\n\nSection 11.4. Profit Sharing.\n\nIf Tenant receives rent or other consideration from a subtenant or assignee in excess of the Rent payable by Tenant under this Lease (after deducting Tenant's reasonable costs of subletting or assignment, including brokerage commissions, legal fees, and tenant improvement costs), Tenant shall pay fifty percent (50%) of such excess to Landlord as Additional Rent.\n\n## YOUR TASK\n\nIndependently classify this issue area for this lease. Identify which expected elements are addressed in the clause text, which are missing, and what the practical exposure to the tenant is.\n\nRespond ONLY in JSON, no preamble or commentary outside the JSON object:\n\n{\n  \"coverage_state\": \"<one of the values from the COVERAGE STATE VOCABULARY above>\",\n  \"elements_present\": [\"<expected_element string>\", ...],\n  \"elements_missing\": [\"<expected_element string>\", ...],\n  \"justification\": \"<1-3 sentences citing specific lease language for the classification>\",\n  \"tenant_concern_summary\": \"<1 sentence: practical exposure from tenant perspective>\"\n}\n",
+    "regex_classification": {
+      "coverage_state": "partial",
+      "elements_found": [
+        "landlord consent requirement",
+        "grounds for withholding consent (reasonableness standard)",
+        "affiliate exception (no consent required for related entities)",
+        "profit sharing on sublet above base rent"
+      ],
+      "elements_missing": [
+        "recapture right (landlord can terminate and lease directly)",
+        "assignment in connection with sale of business"
+      ],
+      "evidence_summary": "4 of 6 expected elements found; missing: recapture right (landlord can terminate and lease directly), assignment in connection with sale of business",
+      "partial_class": "partial_material",
+      "materiality": "high"
+    },
+    "responses": {
+      "claude": {
+        "model_label": "anthropic:claude-sonnet-4-20250514",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "raw_response": "{\n  \"coverage_state\": \"partial\",\n  \"elements_present\": [\"landlord consent requirement\", \"grounds for withholding consent (reasonableness standard)\", \"affiliate exception (no consent required for related entities)\", \"profit sharing on sublet above base rent\"],\n  \"elements_missing\": [\"recapture right (landlord can terminate and lease directly)\", \"assignment in connection with sale of business\"],\n  \"justification\": \"The clause includes landlord consent with reasonableness standard (Section 11.1), affiliate exception with notice requirement (Section 11.1), and 50% profit sharing on excess rent (Section 11.4), but lacks any recapture right for landlord and does not specifically address assignment in connection with business sale.\",\n  \"tenant_concern_summary\": \"Tenant lacks protection against landlord recapture and may face uncertainty regarding assignment rights when selling the business.\"\n}",
+        "parsed": {
+          "coverage_state": "partial",
+          "elements_present": [
+            "landlord consent requirement",
+            "grounds for withholding consent (reasonableness standard)",
+            "affiliate exception (no consent required for related entities)",
+            "profit sharing on sublet above base rent"
+          ],
+          "elements_missing": [
+            "recapture right (landlord can terminate and lease directly)",
+            "assignment in connection with sale of business"
+          ],
+          "justification": "The clause includes landlord consent with reasonableness standard (Section 11.1), affiliate exception with notice requirement (Section 11.1), and 50% profit sharing on excess rent (Section 11.4), but lacks any recapture right for landlord and does not specifically address assignment in connection with business sale.",
+          "tenant_concern_summary": "Tenant lacks protection against landlord recapture and may face uncertainty regarding assignment rights when selling the business."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 5.13
+      },
+      "gpt": {
+        "model_label": "openai:gpt-5.2",
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "raw_response": "{\n  \"coverage_state\": \"partial\",\n  \"elements_present\": [\n    \"landlord consent requirement\",\n    \"grounds for withholding consent (reasonableness standard)\",\n    \"affiliate exception (no consent required for related entities)\",\n    \"profit sharing on sublet above base rent\"\n  ],\n  \"elements_missing\": [\n    \"recapture right (landlord can terminate and lease directly)\",\n    \"assignment in connection with sale of business\"\n  ],\n  \"justification\": \"Section 11.1 requires Landlord’s prior written consent for assignments/sublets, with consent “not be unreasonably withheld, conditioned, or delayed,” and provides an Affiliate no-consent exception with notice and assumption conditions. Section 11.4 requires Tenant to pay Landlord 50% of any excess consideration over Tenant’s Rent (net of specified reasonable costs). The clause does not grant Landlord a recapture right and does not address assignments tied to a sale of Tenant’s business.\",\n  \"tenant_concern_summary\": \"Tenant can transfer to Affiliates without consent but otherwise must satisfy consent conditions and share 50% of net “profit,” and the lack of a sale-of-business assignment right may complicate routine M&A or ownership-change transactions.\"\n}",
+        "parsed": {
+          "coverage_state": "partial",
+          "elements_present": [
+            "landlord consent requirement",
+            "grounds for withholding consent (reasonableness standard)",
+            "affiliate exception (no consent required for related entities)",
+            "profit sharing on sublet above base rent"
+          ],
+          "elements_missing": [
+            "recapture right (landlord can terminate and lease directly)",
+            "assignment in connection with sale of business"
+          ],
+          "justification": "Section 11.1 requires Landlord’s prior written consent for assignments/sublets, with consent “not be unreasonably withheld, conditioned, or delayed,” and provides an Affiliate no-consent exception with notice and assumption conditions. Section 11.4 requires Tenant to pay Landlord 50% of any excess consideration over Tenant’s Rent (net of specified reasonable costs). The clause does not grant Landlord a recapture right and does not address assignments tied to a sale of Tenant’s business.",
+          "tenant_concern_summary": "Tenant can transfer to Affiliates without consent but otherwise must satisfy consent conditions and share 50% of net “profit,” and the lack of a sale-of-business assignment right may complicate routine M&A or ownership-change transactions."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 6.16
+      },
+      "grok": {
+        "model_label": "xai:grok-4",
+        "provider": "xai",
+        "model": "grok-4",
+        "raw_response": "{\n  \"coverage_state\": \"partial\",\n  \"elements_present\": [\"landlord consent requirement\", \"grounds for withholding consent (reasonableness standard)\", \"affiliate exception (no consent required for related entities)\", \"profit sharing on sublet above base rent\"],\n  \"elements_missing\": [\"recapture right (landlord can terminate and lease directly)\", \"assignment in connection with sale of business\"],\n  \"justification\": \"The lease clause includes a landlord consent requirement that shall not be unreasonably withheld (Section 11.1), specifies reasonable grounds for withholding consent (Section 11.2), provides an affiliate exception without consent (Section 11.1), and requires 50% profit sharing on excess rent (Section 11.4). However, it lacks any mention of a landlord recapture right or a specific exception for assignments in connection with a sale of business. The term 'Affiliate' is used but not defined in the provided text, though no explicit cross-reference is broken.\",\n  \"tenant_concern_summary\": \"Tenant benefits from reasonable consent standards and no recapture right but may face hurdles in assigning the lease during a business sale to non-affiliates without a dedicated exception, potentially requiring landlord approval, while remaining liable and sharing profits.\"\n}",
+        "parsed": {
+          "coverage_state": "partial",
+          "elements_present": [
+            "landlord consent requirement",
+            "grounds for withholding consent (reasonableness standard)",
+            "affiliate exception (no consent required for related entities)",
+            "profit sharing on sublet above base rent"
+          ],
+          "elements_missing": [
+            "recapture right (landlord can terminate and lease directly)",
+            "assignment in connection with sale of business"
+          ],
+          "justification": "The lease clause includes a landlord consent requirement that shall not be unreasonably withheld (Section 11.1), specifies reasonable grounds for withholding consent (Section 11.2), provides an affiliate exception without consent (Section 11.1), and requires 50% profit sharing on excess rent (Section 11.4). However, it lacks any mention of a landlord recapture right or a specific exception for assignments in connection with a sale of business. The term 'Affiliate' is used but not defined in the provided text, though no explicit cross-reference is broken.",
+          "tenant_concern_summary": "Tenant benefits from reasonable consent standards and no recapture right but may face hurdles in assigning the lease during a business sale to non-affiliates without a dedicated exception, potentially requiring landlord approval, while remaining liable and sharing profits."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 38.8
+      }
+    }
+  },
+  "LP-11": {
+    "lp_id": "LP-11",
+    "lp_name": "Default & Remedies",
+    "system_prompt": "You are a careful commercial-lease reviewer. You classify a single issue area against a schema definition and the lease's actual clause text. You answer ONLY in JSON, no preamble or commentary.",
+    "user_prompt": "You are reviewing a commercial lease provision from the TENANT'S perspective.\n\n## ISSUE AREA\n- ID: LP-11\n- Name: Default & Remedies\n- Applicability: required\n- Activation clues (signals issue area is in scope): []\n- Exclusion clues (signals issue area does NOT apply): []\n- Notes: Rule precedence v1.1.4: covered_unfavorable governs aggressive remedies that are still gated by notice/cure procedures. potentially_unenforceable is reserved for self-help language that bypasses judicial process entirely. When both could arguably apply, covered_unfavorable is the safer default; potentially_unenforceable should require explicit absence of legal-process reservation (e.g. clause states landlord 'may re-enter without legal process' or equivalent).\n\n## EXPECTED ELEMENTS (what the schema says should be addressed)\n  1. monetary default definition and cure period (typically 5 days)\n  2. non-monetary default definition and cure period (typically 30 days)\n  3. notice requirement before default declaration\n  4. landlord termination right\n  5. landlord re-entry right\n  6. tenant's right to cure third-party defaults\n  7. rent acceleration on default\n\n## COVERAGE STATE RULES (schema's guidance)\n  - missing: No default provision\n  - partial: Monetary default present but non-monetary default, notice requirement, or cure period absent\n  - covered_unfavorable: Cure period unusually short (under 30 days for non-monetary); OR landlord remedies aggressive but conditioned on prior notice and cure opportunity\n  - broken_xref: Remedies cross-reference deleted exhibit or section\n  - potentially_unenforceable: Self-help re-entry language permitting landlord to re-enter and remove tenant or property without judicial process AND without explicit reservation of tenant's right to legal process; covered_unfavorable governs when re-entry language is aggressive but conditioned on notice and cure\n\n## COVERAGE STATE VOCABULARY (permitted values for `coverage_state`)\n  - covered: Provision present and consistent with standard form\n  - covered_unfavorable: Present but materially one-sided against tenant\n  - partial: Some expected elements present, others missing or weakened\n  - ambiguous: Present but interpretation-dependent; practical effect unclear\n  - missing: Issue area expected in this lease but provision is absent\n  - broken_xref: Provision references a section, exhibit, or defined term not found in the document\n  - potentially_unenforceable: Structural or legal defect that may limit enforceability\n  - review_needed: Insufficient evidence to assert a state; surface for human judgment\n  - not_applicable: Issue area does not apply to this lease based on exclusion clues or document type\n  - applicability_unclear: Cannot determine whether this issue area should be present; needs human judgment\n\n## RISK IF MISSING\nLandlord remedies limited to common law; no contractual right to accelerate rent or re-enter\n\n## LEASE CLAUSE TEXT\nARTICLE XIII — DEFAULT AND REMEDIES (LP-11)\n\nSection 13.1. Tenant Default.\n\nEach of the following shall constitute a default by Tenant under this Lease:\n\n(a) Failure to pay any installment of Rent or any other sum due hereunder within five (5) days after written notice from Landlord that the same is past due;\n\n(b) Failure to perform or observe any material term, covenant, or condition of this Lease, if such failure continues for a period of ten (10) days after written notice from Landlord specifying the nature of such failure (or, if such failure cannot reasonably be cured within ten (10) days, failure to commence cure within such ten (10) day period and diligently prosecute such cure to completion);\n\n(c) The filing of a petition by or against Tenant under any bankruptcy or insolvency law, or the appointment of a receiver or trustee for Tenant's assets, if such proceeding is not dismissed within sixty (60) days;\n\n(d) Abandonment of the Premises for a period exceeding thirty (30) consecutive days.\n\nSection 13.2. Landlord's Remedies.\n\nUpon the occurrence of a Tenant default, Landlord shall have the right, at its option, to pursue any one or more of the following remedies:\n\n(a) Terminate this Lease by written notice to Tenant, in which event Tenant shall immediately surrender the Premises to Landlord and Tenant shall pay to Landlord all Rent and other sums due and owing through the date of termination, plus damages;\n\n(b) Re-enter the Premises and remove Tenant and all persons and property therefrom, with or without terminating this Lease, and relet the Premises for such term, at such rental, and upon such conditions as Landlord deems appropriate;\n\n(c) Accelerate all Rent due for the remainder of the Lease Term, discounted to present value at six percent (6%) per annum;\n\n(d) Exercise any other rights or remedies available to Landlord at law or in equity.\n\nSection 13.3. Landlord Default.\n\nLandlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder within thirty (30) days after written notice from Tenant specifying the nature of such failure (or, if such failure cannot reasonably be cured within thirty (30) days, failure to commence cure within such period and diligently prosecute such cure to completion).\n\n## YOUR TASK\n\nIndependently classify this issue area for this lease. Identify which expected elements are addressed in the clause text, which are missing, and what the practical exposure to the tenant is.\n\nRespond ONLY in JSON, no preamble or commentary outside the JSON object:\n\n{\n  \"coverage_state\": \"<one of the values from the COVERAGE STATE VOCABULARY above>\",\n  \"elements_present\": [\"<expected_element string>\", ...],\n  \"elements_missing\": [\"<expected_element string>\", ...],\n  \"justification\": \"<1-3 sentences citing specific lease language for the classification>\",\n  \"tenant_concern_summary\": \"<1 sentence: practical exposure from tenant perspective>\"\n}\n",
+    "regex_classification": {
+      "coverage_state": "covered_unfavorable",
+      "elements_found": [
+        "monetary default definition and cure period (typically 5 days)",
+        "non-monetary default definition and cure period (typically 30 days)",
+        "notice requirement before default declaration",
+        "landlord termination right",
+        "landlord re-entry right",
+        "rent acceleration on default"
+      ],
+      "elements_missing": [
+        "tenant's right to cure third-party defaults"
+      ],
+      "evidence_summary": "Non-monetary cure period unusually short (under 30 days) — typical is 30 days",
+      "partial_class": null,
+      "materiality": "high"
+    },
+    "responses": {
+      "claude": {
+        "model_label": "anthropic:claude-sonnet-4-20250514",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\"monetary default definition and cure period (typically 5 days)\", \"non-monetary default definition and cure period (typically 30 days)\", \"notice requirement before default declaration\", \"landlord termination right\", \"landlord re-entry right\", \"rent acceleration on default\"],\n  \"elements_missing\": [\"tenant's right to cure third-party defaults\"],\n  \"justification\": \"The clause provides only 10 days to cure non-monetary defaults (well below the typical 30 days), and Section 13.2(b) grants landlord aggressive re-entry rights to 'remove Tenant and all persons and property' but conditions these on prior default and notice requirements.\",\n  \"tenant_concern_summary\": \"Tenant faces unusually short cure periods for non-monetary defaults and aggressive landlord remedies including forced removal, though remedies are properly conditioned on notice and default procedures.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "monetary default definition and cure period (typically 5 days)",
+            "non-monetary default definition and cure period (typically 30 days)",
+            "notice requirement before default declaration",
+            "landlord termination right",
+            "landlord re-entry right",
+            "rent acceleration on default"
+          ],
+          "elements_missing": [
+            "tenant's right to cure third-party defaults"
+          ],
+          "justification": "The clause provides only 10 days to cure non-monetary defaults (well below the typical 30 days), and Section 13.2(b) grants landlord aggressive re-entry rights to 'remove Tenant and all persons and property' but conditions these on prior default and notice requirements.",
+          "tenant_concern_summary": "Tenant faces unusually short cure periods for non-monetary defaults and aggressive landlord remedies including forced removal, though remedies are properly conditioned on notice and default procedures."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 5.02
+      },
+      "gpt": {
+        "model_label": "openai:gpt-5.2",
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\n    \"monetary default definition and cure period (typically 5 days)\",\n    \"non-monetary default definition and cure period (typically 30 days)\",\n    \"notice requirement before default declaration\",\n    \"landlord termination right\",\n    \"landlord re-entry right\",\n    \"rent acceleration on default\"\n  ],\n  \"elements_missing\": [\n    \"tenant's right to cure third-party defaults\"\n  ],\n  \"justification\": \"The clause defines monetary default with a 5-day post-notice cure (13.1(a)) and non-monetary default with only a 10-day post-notice cure/commence-cure standard (13.1(b)), which is shorter than typical. Landlord remedies include termination (13.2(a)), re-entry and removal of Tenant/persons/property (13.2(b)), and rent acceleration (13.2(c)), all triggered upon a default that is subject to written notice and cure.\",\n  \"tenant_concern_summary\": \"Tenant faces a short 10-day non-monetary cure window and aggressive remedies (re-entry/removal and rent acceleration) with no express right to cure third-party defaults that could otherwise prevent termination or acceleration.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "monetary default definition and cure period (typically 5 days)",
+            "non-monetary default definition and cure period (typically 30 days)",
+            "notice requirement before default declaration",
+            "landlord termination right",
+            "landlord re-entry right",
+            "rent acceleration on default"
+          ],
+          "elements_missing": [
+            "tenant's right to cure third-party defaults"
+          ],
+          "justification": "The clause defines monetary default with a 5-day post-notice cure (13.1(a)) and non-monetary default with only a 10-day post-notice cure/commence-cure standard (13.1(b)), which is shorter than typical. Landlord remedies include termination (13.2(a)), re-entry and removal of Tenant/persons/property (13.2(b)), and rent acceleration (13.2(c)), all triggered upon a default that is subject to written notice and cure.",
+          "tenant_concern_summary": "Tenant faces a short 10-day non-monetary cure window and aggressive remedies (re-entry/removal and rent acceleration) with no express right to cure third-party defaults that could otherwise prevent termination or acceleration."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 3.89
+      },
+      "grok": {
+        "model_label": "xai:grok-4",
+        "provider": "xai",
+        "model": "grok-4",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\n    \"monetary default definition and cure period (typically 5 days)\",\n    \"non-monetary default definition and cure period (typically 30 days)\",\n    \"notice requirement before default declaration\",\n    \"landlord termination right\",\n    \"landlord re-entry right\",\n    \"rent acceleration on default\"\n  ],\n  \"elements_missing\": [\n    \"tenant's right to cure third-party defaults\"\n  ],\n  \"justification\": \"The lease defines monetary defaults with a 5-day cure period after notice in Section 13.1(a) and non-monetary defaults with a 10-day cure period after notice in Section 13.1(b), which is unusually short under 30 days, triggering covered_unfavorable; landlord remedies including termination, re-entry, and rent acceleration in Section 13.2 are aggressive but conditioned on prior notice and cure opportunities as per Section 13.1; re-entry language in Section 13.2(b) implies self-help but does not explicitly bypass judicial process, so covered_unfavorable applies over potentially_unenforceable per rule precedence.\",\n  \"tenant_concern_summary\": \"Tenant faces heightened risk from short non-monetary cure periods and aggressive landlord remedies like self-help re-entry and rent acceleration, potentially leading to quicker eviction or financial penalties despite notice requirements.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "monetary default definition and cure period (typically 5 days)",
+            "non-monetary default definition and cure period (typically 30 days)",
+            "notice requirement before default declaration",
+            "landlord termination right",
+            "landlord re-entry right",
+            "rent acceleration on default"
+          ],
+          "elements_missing": [
+            "tenant's right to cure third-party defaults"
+          ],
+          "justification": "The lease defines monetary defaults with a 5-day cure period after notice in Section 13.1(a) and non-monetary defaults with a 10-day cure period after notice in Section 13.1(b), which is unusually short under 30 days, triggering covered_unfavorable; landlord remedies including termination, re-entry, and rent acceleration in Section 13.2 are aggressive but conditioned on prior notice and cure opportunities as per Section 13.1; re-entry language in Section 13.2(b) implies self-help but does not explicitly bypass judicial process, so covered_unfavorable applies over potentially_unenforceable per rule precedence.",
+          "tenant_concern_summary": "Tenant faces heightened risk from short non-monetary cure periods and aggressive landlord remedies like self-help re-entry and rent acceleration, potentially leading to quicker eviction or financial penalties despite notice requirements."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 15.36
+      }
+    }
+  },
+  "LP-13": {
+    "lp_id": "LP-13",
+    "lp_name": "Indemnification & Liability",
+    "system_prompt": "You are a careful commercial-lease reviewer. You classify a single issue area against a schema definition and the lease's actual clause text. You answer ONLY in JSON, no preamble or commentary.",
+    "user_prompt": "You are reviewing a commercial lease provision from the TENANT'S perspective.\n\n## ISSUE AREA\n- ID: LP-13\n- Name: Indemnification & Liability\n- Applicability: required\n- Activation clues (signals issue area is in scope): []\n- Exclusion clues (signals issue area does NOT apply): []\n\n\n## EXPECTED ELEMENTS (what the schema says should be addressed)\n  1. tenant indemnification of landlord scope\n  2. landlord indemnification of tenant scope\n  3. mutual vs one-way indemnification structure\n  4. cap on liability (if any)\n  5. exclusion of consequential or punitive damages\n  6. carve-outs for indemnitee negligence\n\n## COVERAGE STATE RULES (schema's guidance)\n  - missing: No indemnification provision\n  - partial: One-way indemnification present (tenant → landlord only) without reciprocal protection\n  - covered_unfavorable: No liability cap; consequential damages not excluded; OR mutual indemnification structurally present but materially asymmetric (e.g. tenant indemnifies for broad scope including ordinary negligence while landlord indemnification is limited to gross negligence or willful misconduct)\n  - potentially_unenforceable: Indemnification for indemnitee's own gross negligence\n\n## COVERAGE STATE VOCABULARY (permitted values for `coverage_state`)\n  - covered: Provision present and consistent with standard form\n  - covered_unfavorable: Present but materially one-sided against tenant\n  - partial: Some expected elements present, others missing or weakened\n  - ambiguous: Present but interpretation-dependent; practical effect unclear\n  - missing: Issue area expected in this lease but provision is absent\n  - broken_xref: Provision references a section, exhibit, or defined term not found in the document\n  - potentially_unenforceable: Structural or legal defect that may limit enforceability\n  - review_needed: Insufficient evidence to assert a state; surface for human judgment\n  - not_applicable: Issue area does not apply to this lease based on exclusion clues or document type\n  - applicability_unclear: Cannot determine whether this issue area should be present; needs human judgment\n\n## RISK IF MISSING\nLiability defaults to common law negligence standards\n\n## LEASE CLAUSE TEXT\nARTICLE XV — INDEMNIFICATION AND LIABILITY (LP-13)\n\nSection 15.1. Tenant's Indemnification.\n\nTenant shall indemnify, defend, and hold harmless Landlord, its officers, directors, employees, agents, and contractors from and against any and all claims, demands, actions, damages, losses, liabilities, judgments, costs, and expenses (including reasonable attorneys' fees) arising out of or related to: (a) Tenant's use and occupancy of the Premises; (b) any act, omission, or negligence of Tenant or Tenant's employees, agents, contractors, customers, or invitees; (c) any breach of this Lease by Tenant; or (d) any accident, injury, or damage occurring in or about the Premises.\n\nSection 15.2. Landlord's Indemnification.\n\nLandlord shall indemnify, defend, and hold harmless Tenant from and against any and all claims, demands, damages, losses, and expenses (including reasonable attorneys' fees) arising out of Landlord's gross negligence or willful misconduct in connection with Landlord's maintenance and operation of the Common Areas and the structural elements of the Building.\n\nSection 15.3. Limitation of Landlord's Liability.\n\nNotwithstanding anything to the contrary in this Lease, Landlord shall not be liable for any consequential, incidental, or punitive damages. Landlord's liability under this Lease shall in no event extend beyond Landlord's interest in the Shopping Center and the proceeds thereof. Tenant agrees to use commercially reasonable efforts to mitigate any damages arising from Landlord's default.\n\nSection 15.4. Waiver of Subrogation.\n\nEach party hereby waives any right of recovery against the other party for any loss or damage to the extent covered by insurance maintained by the waiving party, and each party shall cause its insurance policies to include a waiver of subrogation endorsement.\n\n## YOUR TASK\n\nIndependently classify this issue area for this lease. Identify which expected elements are addressed in the clause text, which are missing, and what the practical exposure to the tenant is.\n\nRespond ONLY in JSON, no preamble or commentary outside the JSON object:\n\n{\n  \"coverage_state\": \"<one of the values from the COVERAGE STATE VOCABULARY above>\",\n  \"elements_present\": [\"<expected_element string>\", ...],\n  \"elements_missing\": [\"<expected_element string>\", ...],\n  \"justification\": \"<1-3 sentences citing specific lease language for the classification>\",\n  \"tenant_concern_summary\": \"<1 sentence: practical exposure from tenant perspective>\"\n}\n",
+    "regex_classification": {
+      "coverage_state": "covered_unfavorable",
+      "elements_found": [
+        "tenant indemnification of landlord scope",
+        "landlord indemnification of tenant scope",
+        "mutual vs one-way indemnification structure",
+        "exclusion of consequential or punitive damages",
+        "carve-outs for indemnitee negligence"
+      ],
+      "elements_missing": [
+        "cap on liability (if any)"
+      ],
+      "evidence_summary": "Asymmetric mutual indemnification: landlord indemnification limited to gross negligence or willful misconduct",
+      "partial_class": null,
+      "materiality": "high"
+    },
+    "responses": {
+      "claude": {
+        "model_label": "anthropic:claude-sonnet-4-20250514",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\"tenant indemnification of landlord scope\", \"landlord indemnification of tenant scope\", \"mutual vs one-way indemnification structure\", \"exclusion of consequential or punitive damages\"],\n  \"elements_missing\": [\"cap on liability (if any)\", \"carve-outs for indemnitee negligence\"],\n  \"justification\": \"The provision establishes mutual indemnification but is materially asymmetric - tenant indemnifies for ordinary negligence and broad activities (Section 15.1) while landlord only indemnifies for gross negligence or willful misconduct (Section 15.2). Section 15.3 excludes consequential damages but only for landlord's benefit.\",\n  \"tenant_concern_summary\": \"Tenant faces broad indemnification obligations for ordinary negligence while landlord's reciprocal obligations are limited to gross negligence/willful misconduct, creating significant asymmetric exposure.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "tenant indemnification of landlord scope",
+            "landlord indemnification of tenant scope",
+            "mutual vs one-way indemnification structure",
+            "exclusion of consequential or punitive damages"
+          ],
+          "elements_missing": [
+            "cap on liability (if any)",
+            "carve-outs for indemnitee negligence"
+          ],
+          "justification": "The provision establishes mutual indemnification but is materially asymmetric - tenant indemnifies for ordinary negligence and broad activities (Section 15.1) while landlord only indemnifies for gross negligence or willful misconduct (Section 15.2). Section 15.3 excludes consequential damages but only for landlord's benefit.",
+          "tenant_concern_summary": "Tenant faces broad indemnification obligations for ordinary negligence while landlord's reciprocal obligations are limited to gross negligence/willful misconduct, creating significant asymmetric exposure."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 4.78
+      },
+      "gpt": {
+        "model_label": "openai:gpt-5.2",
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\n    \"tenant indemnification of landlord scope\",\n    \"landlord indemnification of tenant scope\",\n    \"mutual vs one-way indemnification structure\",\n    \"cap on liability (if any)\",\n    \"exclusion of consequential or punitive damages\"\n  ],\n  \"elements_missing\": [\n    \"carve-outs for indemnitee negligence\"\n  ],\n  \"justification\": \"Tenant must indemnify Landlord for very broad triggers, including any accident/injury/damage “in or about the Premises” and Tenant parties’ “act, omission, or negligence” (Section 15.1), without an express carve-out for Landlord’s own negligence. Landlord’s indemnity is narrowly limited to “gross negligence or willful misconduct” (Section 15.2), while Landlord also disclaims consequential/incidental/punitive damages and caps liability to its interest in the Shopping Center/proceeds (Section 15.3), creating a materially asymmetric risk allocation against Tenant.\",\n  \"tenant_concern_summary\": \"Tenant faces broad defense/indemnity exposure for premises-related claims (potentially including scenarios involving Landlord’s ordinary negligence) while receiving only limited gross-negligence/willful-misconduct protection and being subject to Landlord liability caps and damages waivers.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "tenant indemnification of landlord scope",
+            "landlord indemnification of tenant scope",
+            "mutual vs one-way indemnification structure",
+            "cap on liability (if any)",
+            "exclusion of consequential or punitive damages"
+          ],
+          "elements_missing": [
+            "carve-outs for indemnitee negligence"
+          ],
+          "justification": "Tenant must indemnify Landlord for very broad triggers, including any accident/injury/damage “in or about the Premises” and Tenant parties’ “act, omission, or negligence” (Section 15.1), without an express carve-out for Landlord’s own negligence. Landlord’s indemnity is narrowly limited to “gross negligence or willful misconduct” (Section 15.2), while Landlord also disclaims consequential/incidental/punitive damages and caps liability to its interest in the Shopping Center/proceeds (Section 15.3), creating a materially asymmetric risk allocation against Tenant.",
+          "tenant_concern_summary": "Tenant faces broad defense/indemnity exposure for premises-related claims (potentially including scenarios involving Landlord’s ordinary negligence) while receiving only limited gross-negligence/willful-misconduct protection and being subject to Landlord liability caps and damages waivers."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 4.54
+      },
+      "grok": {
+        "model_label": "xai:grok-4",
+        "provider": "xai",
+        "model": "grok-4",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\n    \"tenant indemnification of landlord scope\",\n    \"landlord indemnification of tenant scope\",\n    \"mutual vs one-way indemnification structure\",\n    \"cap on liability (if any)\",\n    \"exclusion of consequential or punitive damages\",\n    \"carve-outs for indemnitee negligence\"\n  ],\n  \"elements_missing\": [],\n  \"justification\": \"The lease includes mutual indemnification, but it is materially asymmetric as Tenant indemnifies Landlord for broad scopes including ordinary negligence under Section 15.1, while Landlord indemnifies Tenant only for gross negligence or willful misconduct under Section 15.2. Section 15.3 provides a cap on Landlord's liability and excludes consequential or punitive damages, but these protections are one-sided in favor of Landlord. Carve-outs exist implicitly in the limited scope of Landlord's indemnification for its own gross negligence.\",\n  \"tenant_concern_summary\": \"Tenant faces broad indemnification obligations without reciprocal protection, exposing it to significant liability for ordinary negligence while Landlord's liability is capped and limited to gross misconduct.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "tenant indemnification of landlord scope",
+            "landlord indemnification of tenant scope",
+            "mutual vs one-way indemnification structure",
+            "cap on liability (if any)",
+            "exclusion of consequential or punitive damages",
+            "carve-outs for indemnitee negligence"
+          ],
+          "elements_missing": [],
+          "justification": "The lease includes mutual indemnification, but it is materially asymmetric as Tenant indemnifies Landlord for broad scopes including ordinary negligence under Section 15.1, while Landlord indemnifies Tenant only for gross negligence or willful misconduct under Section 15.2. Section 15.3 provides a cap on Landlord's liability and excludes consequential or punitive damages, but these protections are one-sided in favor of Landlord. Carve-outs exist implicitly in the limited scope of Landlord's indemnification for its own gross negligence.",
+          "tenant_concern_summary": "Tenant faces broad indemnification obligations without reciprocal protection, exposing it to significant liability for ordinary negligence while Landlord's liability is capped and limited to gross misconduct."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 14.59
+      }
+    }
+  },
+  "LP-14": {
+    "lp_id": "LP-14",
+    "lp_name": "Force Majeure",
+    "system_prompt": "You are a careful commercial-lease reviewer. You classify a single issue area against a schema definition and the lease's actual clause text. You answer ONLY in JSON, no preamble or commentary.",
+    "user_prompt": "You are reviewing a commercial lease provision from the TENANT'S perspective.\n\n## ISSUE AREA\n- ID: LP-14\n- Name: Force Majeure\n- Applicability: required\n- Activation clues (signals issue area is in scope): []\n- Exclusion clues (signals issue area does NOT apply): []\n- Notes: Cascade risk: definition expansions silently affect LP-05 continuous operation obligations. v1.1.3: Added partial-abatement expected_element and 'wholly untenantable only' pattern to covered_unfavorable rule.\n\n## EXPECTED ELEMENTS (what the schema says should be addressed)\n  1. definition of qualifying force majeure events\n  2. scope of excused obligations (which parties, which obligations)\n  3. rent abatement during force majeure period\n  4. partial rent abatement or adjustment for operational impairment\n  5. notice requirement to invoke\n  6. termination right if force majeure exceeds threshold period\n\n## COVERAGE STATE RULES (schema's guidance)\n  - missing: No force majeure provision\n  - partial: Events defined but rent abatement, notice requirement, or termination right absent\n  - covered_unfavorable: Abatement limited to 'wholly untenantable' standard with no partial abatement for operational impairment; OR tenant required to vacate to claim any abatement; OR force majeure excludes rent obligations entirely\n  - ambiguous: Force majeure definition includes catch-all language without enumeration\n\n## COVERAGE STATE VOCABULARY (permitted values for `coverage_state`)\n  - covered: Provision present and consistent with standard form\n  - covered_unfavorable: Present but materially one-sided against tenant\n  - partial: Some expected elements present, others missing or weakened\n  - ambiguous: Present but interpretation-dependent; practical effect unclear\n  - missing: Issue area expected in this lease but provision is absent\n  - broken_xref: Provision references a section, exhibit, or defined term not found in the document\n  - potentially_unenforceable: Structural or legal defect that may limit enforceability\n  - review_needed: Insufficient evidence to assert a state; surface for human judgment\n  - not_applicable: Issue area does not apply to this lease based on exclusion clues or document type\n  - applicability_unclear: Cannot determine whether this issue area should be present; needs human judgment\n\n## RISK IF MISSING\nNo excused performance; common law impossibility doctrine rarely applies to commercial leases\n\n## LEASE CLAUSE TEXT\nARTICLE XVI — FORCE MAJEURE (LP-14)\n\nSection 16.1. Force Majeure.\n\nNeither party shall be in default under this Lease for failure to perform any obligation hereunder (other than the obligation to pay Rent) to the extent such failure is caused by a Force Majeure Event. The affected party shall give prompt notice to the other party of the occurrence of any Force Majeure Event and shall use reasonable efforts to mitigate its effects and resume performance as soon as practicable.\n\nSection 16.2. Duration.\n\nIf a Force Majeure Event prevents performance for a period exceeding one hundred eighty (180) days, either party may terminate this Lease by written notice to the other party, delivered within thirty (30) days after the expiration of such one hundred eighty (180) day period.\n\nSection 16.3. Rent During Force Majeure.\n\nTenant's obligation to pay Rent shall not be excused or abated during any Force Majeure Event, except to the extent the Premises are rendered wholly untenantable and Tenant has vacated the Premises, in which case Base Rent shall be abated proportionally until the Premises are restored to a tenantable condition.\n\n## YOUR TASK\n\nIndependently classify this issue area for this lease. Identify which expected elements are addressed in the clause text, which are missing, and what the practical exposure to the tenant is.\n\nRespond ONLY in JSON, no preamble or commentary outside the JSON object:\n\n{\n  \"coverage_state\": \"<one of the values from the COVERAGE STATE VOCABULARY above>\",\n  \"elements_present\": [\"<expected_element string>\", ...],\n  \"elements_missing\": [\"<expected_element string>\", ...],\n  \"justification\": \"<1-3 sentences citing specific lease language for the classification>\",\n  \"tenant_concern_summary\": \"<1 sentence: practical exposure from tenant perspective>\"\n}\n",
+    "regex_classification": {
+      "coverage_state": "covered_unfavorable",
+      "elements_found": [
+        "definition of qualifying force majeure events",
+        "scope of excused obligations (which parties, which obligations)",
+        "rent abatement during force majeure period",
+        "notice requirement to invoke",
+        "termination right if force majeure exceeds threshold period"
+      ],
+      "elements_missing": [
+        "partial rent abatement or adjustment for operational impairment"
+      ],
+      "evidence_summary": "Abatement limited to 'wholly/totally untenantable' standard with no partial-abatement mechanism for operational impairment",
+      "partial_class": null,
+      "materiality": "high"
+    },
+    "responses": {
+      "claude": {
+        "model_label": "anthropic:claude-sonnet-4-20250514",
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-20250514",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\"definition of qualifying force majeure events\", \"scope of excused obligations (which parties, which obligations)\", \"rent abatement during force majeure period\", \"notice requirement to invoke\", \"termination right if force majeure exceeds threshold period\"],\n  \"elements_missing\": [\"partial rent abatement or adjustment for operational impairment\"],\n  \"justification\": \"The provision explicitly states rent abatement is limited to situations where 'the Premises are rendered wholly untenantable and Tenant has vacated the Premises,' with no partial abatement for operational impairment, matching the covered_unfavorable pattern of 'wholly untenantable only' standard.\",\n  \"tenant_concern_summary\": \"Tenant must both vacate and prove complete untenantability to receive any rent relief, with no protection for partial operational disruptions that could significantly impact business operations.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "definition of qualifying force majeure events",
+            "scope of excused obligations (which parties, which obligations)",
+            "rent abatement during force majeure period",
+            "notice requirement to invoke",
+            "termination right if force majeure exceeds threshold period"
+          ],
+          "elements_missing": [
+            "partial rent abatement or adjustment for operational impairment"
+          ],
+          "justification": "The provision explicitly states rent abatement is limited to situations where 'the Premises are rendered wholly untenantable and Tenant has vacated the Premises,' with no partial abatement for operational impairment, matching the covered_unfavorable pattern of 'wholly untenantable only' standard.",
+          "tenant_concern_summary": "Tenant must both vacate and prove complete untenantability to receive any rent relief, with no protection for partial operational disruptions that could significantly impact business operations."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 4.33
+      },
+      "gpt": {
+        "model_label": "openai:gpt-5.2",
+        "provider": "openai",
+        "model": "gpt-5.2",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\n    \"scope of excused obligations (which parties, which obligations)\",\n    \"notice requirement to invoke\",\n    \"termination right if force majeure exceeds threshold period\"\n  ],\n  \"elements_missing\": [\n    \"definition of qualifying force majeure events\",\n    \"rent abatement during force majeure period\",\n    \"partial rent abatement or adjustment for operational impairment\"\n  ],\n  \"justification\": \"Section 16.1 excuses non-rent obligations for \\\"Force Majeure Event\\\" with prompt notice, but the lease does not define what qualifies as a Force Majeure Event. Section 16.3 states Rent is not excused or abated except if the Premises are \\\"rendered wholly untenantable\\\" and Tenant has \\\"vacated,\\\" and then only Base Rent is abated proportionally, with no partial-abatement mechanism for operational impairment. Section 16.2 provides a termination right after 180 days.\",\n  \"tenant_concern_summary\": \"Tenant remains obligated to pay Rent during force majeure unless it fully vacates due to the Premises being wholly untenantable (and even then only Base Rent abates), leaving Tenant exposed to continued rent while operations are materially impaired but not totally shut down.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "scope of excused obligations (which parties, which obligations)",
+            "notice requirement to invoke",
+            "termination right if force majeure exceeds threshold period"
+          ],
+          "elements_missing": [
+            "definition of qualifying force majeure events",
+            "rent abatement during force majeure period",
+            "partial rent abatement or adjustment for operational impairment"
+          ],
+          "justification": "Section 16.1 excuses non-rent obligations for \"Force Majeure Event\" with prompt notice, but the lease does not define what qualifies as a Force Majeure Event. Section 16.3 states Rent is not excused or abated except if the Premises are \"rendered wholly untenantable\" and Tenant has \"vacated,\" and then only Base Rent is abated proportionally, with no partial-abatement mechanism for operational impairment. Section 16.2 provides a termination right after 180 days.",
+          "tenant_concern_summary": "Tenant remains obligated to pay Rent during force majeure unless it fully vacates due to the Premises being wholly untenantable (and even then only Base Rent abates), leaving Tenant exposed to continued rent while operations are materially impaired but not totally shut down."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 4.32
+      },
+      "grok": {
+        "model_label": "xai:grok-4",
+        "provider": "xai",
+        "model": "grok-4",
+        "raw_response": "{\n  \"coverage_state\": \"covered_unfavorable\",\n  \"elements_present\": [\n    \"scope of excused obligations (which parties, which obligations)\",\n    \"rent abatement during force majeure period\",\n    \"notice requirement to invoke\",\n    \"termination right if force majeure exceeds threshold period\"\n  ],\n  \"elements_missing\": [\n    \"definition of qualifying force majeure events\",\n    \"partial rent abatement or adjustment for operational impairment\"\n  ],\n  \"justification\": \"The provision excuses non-rent obligations for both parties due to Force Majeure Events and includes notice and termination rights, but rent abatement is limited to cases where the Premises are 'wholly untenantable' and Tenant vacates, with no partial abatement for operational impairment, fitting the covered_unfavorable criteria. The definition of Force Majeure Events is not provided in the clause text, contributing to partial coverage of expected elements.\",\n  \"tenant_concern_summary\": \"Tenant faces significant risk of continued rent obligations during force majeure events unless the Premises are completely untenantable and vacated, with no relief for partial impairments and potential uncertainty due to undefined events.\"\n}",
+        "parsed": {
+          "coverage_state": "covered_unfavorable",
+          "elements_present": [
+            "scope of excused obligations (which parties, which obligations)",
+            "rent abatement during force majeure period",
+            "notice requirement to invoke",
+            "termination right if force majeure exceeds threshold period"
+          ],
+          "elements_missing": [
+            "definition of qualifying force majeure events",
+            "partial rent abatement or adjustment for operational impairment"
+          ],
+          "justification": "The provision excuses non-rent obligations for both parties due to Force Majeure Events and includes notice and termination rights, but rent abatement is limited to cases where the Premises are 'wholly untenantable' and Tenant vacates, with no partial abatement for operational impairment, fitting the covered_unfavorable criteria. The definition of Force Majeure Events is not provided in the clause text, contributing to partial coverage of expected elements.",
+          "tenant_concern_summary": "Tenant faces significant risk of continued rent obligations during force majeure events unless the Premises are completely untenantable and vacated, with no relief for partial impairments and potential uncertainty due to undefined events."
+        },
+        "json_parse_error": null,
+        "out_of_vocab_state": null,
+        "call_error": null,
+        "elapsed_sec": 14.65
+      }
+    }
+  }
+}

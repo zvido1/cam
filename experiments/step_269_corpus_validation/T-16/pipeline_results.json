@@ -1,0 +1,1440 @@
+{
+  "run_id": "step_269_T-16",
+  "mode": "analyze",
+  "template_file": "",
+  "tenant_file": "T-16_crystal_clear.txt",
+  "timestamp": "2026-04-28T22:08:00.024654+00:00",
+  "pipeline_version": "1.0.0",
+  "pipeline_domain": "commercial_lease_review",
+  "pipeline_domain_label": "Commercial Lease Coverage Analysis",
+  "models_used": {
+    "extractor": "gemini-3.1-pro-preview",
+    "extractor_provider": "google",
+    "extractor_fallback_used": false,
+    "extraction": "gemini-3.1-pro-preview",
+    "exposure": ""
+  },
+  "api_calls_total": 5,
+  "elapsed_sec": 101.19,
+  "contract_metadata": {
+    "landlord": "MERIDIAN COMMERCIAL PROPERTIES LLC",
+    "tenant": "CLEARWATER RETAIL GROUP LLC",
+    "property_description": "Meridian Town Center, 4500 Commerce Boulevard, Fairfield, State of Columbia, Suite 210 (approx. 3,200 sq ft)",
+    "effective_date": "March 1, 2025",
+    "term_length": "5 years",
+    "expiration_date": "5 years after the Commencement Date",
+    "governing_law": "State of Columbia",
+    "base_rent": "$22,000.00 per month",
+    "permitted_use": "Retail business for the sale of home furnishings and accessories"
+  },
+  "deal_overview": {
+    "landlord_name": "MERIDIAN COMMERCIAL PROPERTIES LLC",
+    "tenant_name": "CLEARWATER RETAIL GROUP LLC",
+    "property_address": "4500 Commerce Boulevard, Fairfield, State of Columbia",
+    "property_type": "Retail / Shopping Center",
+    "lease_term_years": 5,
+    "commencement_date": "March 1, 2025",
+    "expiration_date": "5 years after the Commencement Date",
+    "renewal_options": "One (1) additional period of five (5) years",
+    "base_rent_monthly": "$22,000.00",
+    "escalation": "1.5% annually",
+    "security_deposit": "One (1) month's Base Rent",
+    "cam_structure": "Proportionate Share, capped at $8.00 per square foot annually",
+    "permitted_use": "Retail business for the sale of home furnishings and accessories",
+    "key_terms_summary": [
+      "5-year initial term with one 5-year renewal option.",
+      "Base rent of $22,000/month with 1.5% annual escalation.",
+      "Triple net lease with CAM charges capped at $8.00/sq ft annually.",
+      "Tenant has exclusive right to operate a home furnishings and accessories business in the center.",
+      "Early termination right after 2nd Lease Year with 180 days' notice and 2 months' rent fee."
+    ]
+  },
+  "full_template_text": "",
+  "full_tenant_text": "STANDARD RETAIL LEASE AGREEMENT\n\nTHIS LEASE AGREEMENT (this \"Lease\") is entered into as of the 1st day of March, 2025, by and between MERIDIAN COMMERCIAL PROPERTIES LLC, a Delaware limited liability company (\"Landlord\"), and CLEARWATER RETAIL GROUP LLC, a Delaware limited liability company (\"Tenant\").\n\nRECITALS\n\nWHEREAS, Landlord is the owner of that certain shopping center known as Meridian Town Center, located at 4500 Commerce Boulevard, Fairfield, State of Columbia (the \"Shopping Center\"); and\n\nWHEREAS, Tenant desires to lease certain premises within the Shopping Center for the purpose of operating a retail business therein, subject to the terms and conditions set forth herein;\n\nNOW, THEREFORE, in consideration of the mutual covenants and agreements contained herein, and for other good and valuable consideration, the receipt and sufficiency of which are hereby acknowledged, the parties agree as follows:\n\n================================================================================\nARTICLE I \u2014 DEFINITIONS\n================================================================================\n\nSection 1.1. Defined Terms. As used in this Lease, the following terms shall have the meanings set forth below:\n\n(a) \"Affiliate\" shall mean any entity that directly or indirectly controls, is controlled by, or is under common control with Tenant, where \"control\" means the ownership of fifty percent (50%) or more of the voting interests in such entity.\n\n(b) \"Base Rent\" shall mean the monthly rent payable by Tenant as set forth in Section 3.1.\n\n(c) \"Building\" shall mean the building within the Shopping Center in which the Premises are located.\n\n(d) \"CAM Charges\" shall mean Common Area Maintenance charges as defined in Section 9.1.\n\n(e) \"Commencement Date\" shall mean the date on which the Lease Term commences as specified in Section 4.1.\n\n(f) \"Common Areas\" shall mean all areas within the Shopping Center that are not leased to tenants, including but not limited to parking areas, walkways, landscaped areas, service corridors, loading docks, management offices, restrooms, and other shared facilities.\n\n(g) \"Default Rate\" shall mean the lesser of (i) eighteen percent (18%) per annum, or (ii) the maximum rate permitted by applicable law.\n\n(h) \"Expiration Date\" shall mean the date on which the Lease Term expires as specified in Section 4.1.\n\n(i) \"Force Majeure Event\" shall mean acts of God, fire, flood, earthquake, hurricane, tornado, war, terrorism, civil unrest, strikes, labor disputes, or government actions beyond the reasonable control of the affected party.\n\n(j) \"Landlord's Work\" shall mean any construction, renovation, or improvement to the Premises to be performed by Landlord prior to the Commencement Date, as described in Exhibit B.\n\n(k) \"Lease Year\" shall mean each successive twelve (12) month period during the Lease Term, with the first Lease Year commencing on the Commencement Date.\n\n(l) \"Permitted Use\" shall mean the operation of a retail business consistent with the uses described in Section 7.1.\n\n(m) \"Premises\" shall mean that certain retail space within the Shopping Center designated as Suite 210, consisting of approximately 3,200 square feet of rentable area, as more particularly described in Exhibit A attached hereto.\n\n(n) \"Security Deposit\" shall mean the deposit required under Section 5.1.\n\n(o) \"Tenant's Proportionate Share\" shall mean a fraction, the numerator of which is the rentable area of the Premises and the denominator of which is the total rentable area of the Shopping Center, as reasonably determined by Landlord.\n\n================================================================================\nARTICLE II \u2014 GRANT OF LEASE\n================================================================================\n\nSection 2.1. Demise. Landlord hereby leases to Tenant, and Tenant hereby leases from Landlord, the Premises for the Lease Term, subject to the terms and conditions of this Lease. Tenant accepts the Premises in their \"as-is\" condition, subject to Landlord's completion of Landlord's Work, if any.\n\nSection 2.2. Reservation of Rights. Landlord reserves the right to make changes to the Shopping Center, including without limitation, changes to the Common Areas, building facades, and tenant mix, provided that such changes do not materially impair Tenant's access to or use of the Premises.\n\n================================================================================\nARTICLE III \u2014 RENT AND PAYMENT TERMS (LP-01)\n================================================================================\n\nSection 3.1. Base Rent. Tenant shall pay to Landlord Base Rent in the amount of Twenty-Two Thousand Dollars ($22,000.00) per month, payable in advance on the first day of each calendar month during the Lease Term. All payments shall be made by check, wire transfer, or ACH payment to such account as Landlord may designate in writing from time to time.\n\nSection 3.2. Late Payment. If any installment of Base Rent or any other amount due hereunder is not received by Landlord within ten (10) days after the date when due, Tenant shall pay a late charge equal to two percent (2%) of the overdue amount. In addition, any amounts not paid within thirty (30) days of the due date shall bear interest at the Default Rate from the due date until paid in full.\n\nSection 3.3. Additional Rent. All sums payable by Tenant under this Lease, other than Base Rent, including without limitation CAM Charges, insurance premiums, property taxes, and any other charges, shall constitute \"Additional Rent.\" The term \"Rent\" as used herein shall mean Base Rent and Additional Rent collectively.\n\nSection 3.4. Net Lease. This Lease is intended to be a triple net lease. Tenant shall pay all costs, expenses, and obligations of every kind relating to the Premises that may arise during the Lease Term, except as otherwise expressly provided herein.\n\n================================================================================\nARTICLE IV \u2014 LEASE TERM AND RENEWAL (LP-03)\n================================================================================\n\nSection 4.1. Initial Term. The Lease Term shall commence on the Commencement Date and shall expire on the date that is five (5) years after the Commencement Date (the \"Expiration Date\"), unless sooner terminated in accordance with the provisions of this Lease.\n\nSection 4.2. Renewal Option. Tenant shall have the option to renew this Lease for one (1) additional period of five (5) years (the \"Renewal Term\"), upon the same terms and conditions as set forth herein, except that the Base Rent during the Renewal Term shall be adjusted as provided in Section 3.5 of this Lease. Tenant shall exercise such renewal option by delivering written notice to Landlord no later than six (6) months prior to the Expiration Date. If Tenant fails to deliver such notice within the required time period, the renewal option shall be deemed waived and of no further force or effect.\n\nSection 4.3. Holdover. If Tenant remains in possession of the Premises after the expiration or termination of this Lease without Landlord's written consent, Tenant shall be deemed a holdover tenant on a month-to-month basis, subject to all of the terms and conditions of this Lease, except that the Base Rent during any holdover period shall be one hundred ten percent (110%) of the Base Rent in effect immediately prior to the expiration or termination of this Lease. Landlord may terminate such holdover tenancy at any time upon sixty (60) days' written notice to Tenant.\n\n================================================================================\nARTICLE V \u2014 SECURITY DEPOSIT (LP-04)\n================================================================================\n\nSection 5.1. Deposit Amount. Upon execution of this Lease, Tenant shall deposit with Landlord a Security Deposit equal to one (1) month's Base Rent. The Security Deposit shall be held by Landlord as security for the faithful performance by Tenant of all terms, covenants, and conditions of this Lease.\n\nSection 5.2. Application of Deposit. Landlord may apply all or any portion of the Security Deposit to cure any default by Tenant hereunder, including without limitation the payment of overdue Rent, the repair of damage to the Premises caused by Tenant, or the payment of any other amounts owed by Tenant. In the event Landlord applies any portion of the Security Deposit, Tenant shall, within ten (10) days of written notice from Landlord, restore the Security Deposit to its full amount.\n\nSection 5.3. Return of Deposit. Provided Tenant has faithfully performed all of its obligations under this Lease, Landlord shall return the Security Deposit to Tenant within thirty (30) days after the later of (a) the Expiration Date or earlier termination of this Lease, or (b) the date Tenant vacates and surrenders the Premises in the condition required by this Lease. Landlord shall not be required to pay interest on the Security Deposit. Landlord may deduct from the Security Deposit any amounts owed by Tenant for unpaid Rent, repairs, cleaning, or other charges.\n\n================================================================================\nARTICLE VI \u2014 RENT ESCALATION (LP-02)\n================================================================================\n\nSection 6.1. Annual Escalation. Commencing on the first anniversary of the Commencement Date, and on each anniversary thereafter during the Lease Term (including any Renewal Term), the Base Rent shall increase by one and one-half percent (1.5%) over the Base Rent payable during the immediately preceding Lease Year. For the avoidance of doubt, the escalation shall be compounded annually.\n\nSection 6.2. Escalation Example. By way of example only, if the initial Base Rent is $10,000.00 per month, the Base Rent for the second Lease Year shall be $10,150.00 per month, and the Base Rent for the third Lease Year shall be $10,302.25 per month.\n\n================================================================================\nARTICLE VII \u2014 PERMITTED USE (LP-05)\n================================================================================\n\nSection 7.1. Permitted Use. Tenant shall use and occupy the Premises solely for the operation of a retail business for the sale of home furnishings and accessories and for no other purpose without the prior written consent of Landlord, which consent shall not be unreasonably withheld, conditioned, or delayed. Tenant shall not use the Premises for any purpose that is unlawful, creates a nuisance, or unreasonably disturbs other tenants of the Shopping Center.\n\nSection 7.2. Exclusive Use. Landlord grants to Tenant the exclusive right to operate a home furnishings and accessories business within the Shopping Center during the Lease Term, provided that Tenant continuously operates such business throughout the Lease Term. If Tenant ceases to operate such business for a period of ninety (90) consecutive days (other than for permitted renovations or Force Majeure Events), the exclusive use right shall terminate.\n\nSection 7.3. Compliance with Laws. Tenant shall, at its sole cost and expense, comply with all applicable federal, state, and local laws, ordinances, regulations, and codes in connection with its use and occupancy of the Premises, including without limitation all health, safety, environmental, and zoning requirements.\n\n================================================================================\nARTICLE VIII \u2014 MAINTENANCE AND REPAIRS (LP-06)\n================================================================================\n\nSection 8.1. Tenant's Obligations. Tenant shall, at its sole cost and expense, maintain the interior of the Premises in good order, condition, and repair throughout the Lease Term, including without limitation all interior walls, ceilings, floors, fixtures, equipment, plate glass, storefronts, doors, and all electrical, plumbing, and mechanical systems exclusively serving the Premises. Tenant shall keep the Premises in a clean and sanitary condition at all times.\n\nSection 8.2. Landlord's Obligations. Landlord shall maintain, repair, and replace as necessary the structural elements of the Building, including the roof, foundation, exterior walls, and structural columns, as well as the HVAC systems serving the Premises and the Common Areas. Landlord shall also maintain all Common Area facilities including parking lots, walkways, landscaping, lighting, and drainage systems. The cost of such maintenance shall be included in CAM Charges to the extent permitted under Article IX.\n\nSection 8.3. Tenant's Failure to Maintain. If Tenant fails to maintain the Premises as required by Section 8.1, Landlord may, after ten (10) days' written notice to Tenant (or without notice in the case of an emergency), enter the Premises and perform such maintenance. All costs incurred by Landlord in performing such maintenance shall be reimbursed by Tenant as Additional Rent within thirty (30) days of Landlord's written demand.\n\n================================================================================\nARTICLE IX \u2014 COMMON AREA MAINTENANCE (LP-07)\n================================================================================\n\nSection 9.1. CAM Charges. Tenant shall pay to Landlord, as Additional Rent, Tenant's Proportionate Share of all costs and expenses incurred by Landlord in maintaining, operating, repairing, and managing the Common Areas of the Shopping Center (\"CAM Charges\"). CAM Charges shall include, without limitation, costs of landscaping, parking lot maintenance and repaving, exterior lighting, snow and ice removal, security, trash removal, management fees (not to exceed three percent (3%) of gross rents), insurance for Common Areas, property taxes allocable to Common Areas, and reasonable reserves for capital replacements. Notwithstanding the foregoing, Tenant's annual CAM Charges shall not exceed eight dollars ($8.00) per square foot of rentable area of the Premises in any calendar year.\n\nSection 9.2. Estimated Payments. Landlord shall provide Tenant with an estimate of CAM Charges for each calendar year. Tenant shall pay one-twelfth (1/12) of the estimated annual CAM Charges monthly, together with Base Rent. Within ninety (90) days after the end of each calendar year, Landlord shall furnish Tenant with a statement of actual CAM Charges. If actual charges exceed estimated payments, Tenant shall pay the deficiency within thirty (30) days. If estimated payments exceed actual charges, Landlord shall credit the overpayment against the next due CAM Charge installments.\n\nSection 9.3. Records and Audit. Landlord shall maintain records of all CAM Charges for a period of three (3) years. Tenant shall not have the right to audit or inspect Landlord's books and records relating to CAM Charges.\n\n================================================================================\nARTICLE X \u2014 INSURANCE REQUIREMENTS (LP-08)\n================================================================================\n\nSection 10.1. Tenant's Insurance. Throughout the Lease Term, Tenant shall maintain, at its sole cost and expense, the following insurance coverages:\n\n(a) Commercial general liability insurance with limits of not less than One Million Dollars ($1,000,000) per occurrence and Two Million Dollars ($2,000,000) in the aggregate, covering bodily injury, property damage, personal injury, and advertising injury arising out of Tenant's use and occupancy of the Premises;\n\n(b) Property insurance covering Tenant's personal property, inventory, trade fixtures, and improvements within the Premises, on an all-risk basis, in an amount equal to the full replacement cost thereof;\n\n(c) Workers' compensation insurance as required by applicable law, and employer's liability insurance with limits of not less than One Million Dollars ($1,000,000) per accident;\n\n(d) Business interruption insurance in an amount sufficient to cover twelve (12) months of Tenant's obligations under this Lease, including Base Rent and Additional Rent.\n\nSection 10.2. Policy Requirements. All insurance policies required to be maintained by Tenant under this Article shall (a) name Landlord, Landlord's managing agent, and Landlord's lender (if any) as additional insureds, (b) be issued by insurance companies rated A-VII or better by A.M. Best, (c) provide that the policies shall not be cancelled or materially modified without thirty (30) days' prior written notice to Landlord, and (d) be primary and non-contributing with any insurance carried by Landlord.\n\nSection 10.3. Certificates of Insurance. Tenant shall deliver to Landlord certificates of insurance evidencing the required coverages prior to the Commencement Date and at least thirty (30) days prior to the expiration of each policy period.\n\nSection 10.4. Landlord's Insurance. Landlord shall maintain property insurance covering the Building and Common Areas, commercial general liability insurance, and such other insurance as Landlord deems reasonably necessary. The cost of Landlord's insurance shall be included in CAM Charges.\n\n================================================================================\nARTICLE XI \u2014 SUBLETTING AND ASSIGNMENT (LP-09)\n================================================================================\n\nSection 11.1. Restriction. Tenant shall not assign this Lease, or sublet the Premises or any part thereof, or transfer any interest in this Lease, or permit the use or occupancy of the Premises by any party other than Tenant, without the prior written consent of Landlord in each instance, which consent shall not be unreasonably withheld, conditioned, or delayed. Notwithstanding the foregoing, Tenant may assign this Lease or sublet the Premises to an Affiliate without Landlord's prior written consent, provided that (a) Tenant delivers written notice to Landlord at least thirty (30) days prior to such assignment or subletting, (b) such Affiliate assumes all obligations of Tenant under this Lease, and (c) Tenant remains primarily liable for all obligations hereunder. Any assignment, subletting, or transfer in violation of this Section shall be void and of no force or effect, and shall constitute a default under this Lease.\n\nSection 11.2. Conditions to Consent. Landlord's consent to any assignment or subletting shall be conditioned upon: (a) the proposed assignee or subtenant being a reputable entity with financial capability to perform the obligations of this Lease; (b) the proposed use being consistent with the Permitted Use; (c) the proposed assignment or subletting not violating any exclusive use rights granted to other tenants; and (d) Tenant delivering to Landlord an executed copy of the assignment or sublease agreement at least thirty (30) days prior to the effective date thereof.\n\nSection 11.3. No Release. No assignment or subletting shall release Tenant from its obligations under this Lease. Tenant shall remain fully liable for the performance of all terms, covenants, and conditions of this Lease, including the payment of Rent.\n\nSection 11.4. Profit Sharing. If Tenant receives rent or other consideration from a subtenant or assignee in excess of the Rent payable by Tenant under this Lease (after deducting Tenant's reasonable costs of subletting or assignment, including brokerage commissions, legal fees, and tenant improvement costs), Tenant shall pay zero percent (0%) of such excess to Landlord as Additional Rent.\n\n================================================================================\nARTICLE XII \u2014 ALTERATIONS AND IMPROVEMENTS (LP-10)\n================================================================================\n\nSection 12.1. Landlord Consent Required. Tenant shall not make any alterations, additions, or improvements to the Premises without the prior written consent of Landlord, which consent shall not be unreasonably withheld for non-structural alterations costing less than Twenty-Five Thousand Dollars ($25,000). All alterations shall be performed in a good and workmanlike manner, in compliance with all applicable laws, codes, and regulations, and in accordance with plans and specifications approved by Landlord.\n\nSection 12.2. Ownership of Improvements. All alterations, additions, and improvements made to the Premises, whether by Landlord or Tenant, shall become the property of Landlord upon installation and shall remain upon the Premises at the expiration or termination of this Lease, unless Landlord requests their removal in writing at least thirty (30) days prior to the Expiration Date, in which case Tenant shall remove such improvements and restore the Premises to their original condition at Tenant's sole cost and expense.\n\nSection 12.3. Liens. Tenant shall not permit any mechanic's lien or other lien to be filed against the Premises or the Shopping Center arising out of work performed or materials furnished to the Premises at Tenant's request. If any such lien is filed, Tenant shall cause it to be discharged within thirty (30) days after Tenant's receipt of notice thereof, by payment, bond, or otherwise.\n\n================================================================================\nARTICLE XIII \u2014 DEFAULT AND REMEDIES (LP-11)\n================================================================================\n\nSection 13.1. Tenant Default. Each of the following shall constitute a default by Tenant under this Lease:\n\n(a) Failure to pay any installment of Rent or any other sum due hereunder within five (5) days after written notice from Landlord that the same is past due;\n\n(b) Failure to perform or observe any other term, covenant, or condition of this Lease, if such failure continues for a period of thirty (30) days after written notice from Landlord specifying the nature of such failure (or, if such failure cannot reasonably be cured within thirty (30) days, failure to commence cure within such thirty (30) day period and diligently prosecute such cure to completion);\n\n(c) The filing of a petition by or against Tenant under any bankruptcy or insolvency law, or the appointment of a receiver or trustee for Tenant's assets, if such proceeding is not dismissed within sixty (60) days;\n\n(d) Abandonment of the Premises for a period exceeding thirty (30) consecutive days.\n\nSection 13.2. Landlord's Remedies. Upon the occurrence of a Tenant default, Landlord shall have the right, at its option, to pursue any one or more of the following remedies:\n\n(a) Terminate this Lease by written notice to Tenant, in which event Tenant shall immediately surrender the Premises to Landlord and Tenant shall pay to Landlord all Rent and other sums due and owing through the date of termination, plus damages;\n\n(b) Re-enter the Premises and remove Tenant and all persons and property therefrom, with or without terminating this Lease, and relet the Premises for such term, at such rental, and upon such conditions as Landlord deems appropriate;\n\n(c) Accelerate all Rent due for the remainder of the Lease Term, discounted to present value at six percent (6%) per annum;\n\n(d) Exercise any other rights or remedies available to Landlord at law or in equity.\n\nSection 13.3. Landlord Default. Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder within thirty (30) days after written notice from Tenant specifying the nature of such failure (or, if such failure cannot reasonably be cured within thirty (30) days, failure to commence cure within such period and diligently prosecute such cure to completion).\n\n================================================================================\nARTICLE XIV \u2014 EARLY TERMINATION (LP-12)\n================================================================================\n\nSection 14.1. Tenant's Early Termination Right. Tenant shall have the right to terminate this Lease prior to the Expiration Date, subject to the following conditions:\n\n(a) Tenant shall provide Landlord with not less than one hundred eighty (180) days' prior written notice of its intent to terminate;\n\n(b) Tenant shall pay to Landlord an early termination fee equal to two (2) months' Base Rent then in effect (the \"Termination Fee\");\n\n(c) Tenant shall not be in default under this Lease at the time of delivery of the termination notice or at the time of termination;\n\n(d) The effective date of termination shall be no earlier than the end of the second (2nd) Lease Year.\n\nSection 14.2. Obligations Upon Termination. Upon early termination, Tenant shall surrender the Premises in the condition required by Article XX and shall have no further obligations under this Lease except for those which by their nature survive termination, including without limitation indemnification obligations and any amounts accrued but unpaid as of the termination date.\n\n================================================================================\nARTICLE XV \u2014 INDEMNIFICATION AND LIABILITY (LP-13)\n================================================================================\n\nSection 15.1. Tenant's Indemnification. Tenant shall indemnify, defend, and hold harmless Landlord, its officers, directors, employees, agents, and contractors from and against any and all claims, demands, actions, damages, losses, liabilities, judgments, costs, and expenses (including reasonable attorneys' fees) arising out of or related to: (a) Tenant's use and occupancy of the Premises; (b) any act, omission, or negligence of Tenant or Tenant's employees, agents, contractors, customers, or invitees; (c) any breach of this Lease by Tenant; or (d) any accident, injury, or damage occurring in or about the Premises.\n\nSection 15.2. Landlord's Indemnification. Landlord shall indemnify, defend, and hold harmless Tenant from and against any and all claims, demands, damages, losses, and expenses (including reasonable attorneys' fees) arising out of Landlord's gross negligence or willful misconduct in connection with Landlord's maintenance and operation of the Common Areas and the structural elements of the Building.\n\nSection 15.3. Limitation of Landlord's Liability. Notwithstanding anything to the contrary in this Lease, Landlord shall not be liable for any consequential, incidental, or punitive damages. Landlord's liability under this Lease shall in no event extend beyond Landlord's interest in the Shopping Center and the proceeds thereof. Tenant agrees to use its reasonable efforts to mitigate any damages arising from Landlord's default.\n\nSection 15.4. Waiver of Subrogation. Each party hereby waives any right of recovery against the other party for any loss or damage to the extent covered by insurance maintained by the waiving party, and each party shall cause its insurance policies to include a waiver of subrogation endorsement.\n\n================================================================================\nARTICLE XVI \u2014 FORCE MAJEURE (LP-14)\n================================================================================\n\nSection 16.1. Force Majeure. Neither party shall be in default under this Lease for failure to perform any obligation hereunder (other than the obligation to pay Rent) to the extent such failure is caused by a Force Majeure Event. The affected party shall give prompt notice to the other party of the occurrence of any Force Majeure Event and shall use reasonable efforts to mitigate its effects and resume performance as soon as practicable.\n\nSection 16.2. Duration. If a Force Majeure Event prevents performance for a period exceeding one hundred eighty (180) days, either party may terminate this Lease by written notice to the other party, delivered within thirty (30) days after the expiration of such one hundred eighty (180) day period.\n\nSection 16.3. Rent During Force Majeure. Tenant's obligation to pay Rent shall be abated during any Force Majeure Event to the extent the Premises are rendered wholly or partially untenantable, in proportion to the degree of untenantability, regardless of whether Tenant has vacated the Premises.\n\n================================================================================\nARTICLE XVII \u2014 SIGNAGE RIGHTS (LP-15)\n================================================================================\n\nSection 17.1. Tenant Signage. Tenant shall have the right to install and maintain one (1) sign on the exterior storefront of the Premises, subject to Landlord's prior written approval of the size, design, materials, location, and illumination of such sign, which approval shall not be unreasonably withheld. All signage must comply with Landlord's sign criteria for the Shopping Center and all applicable laws and regulations.\n\nSection 17.2. Directory Listing. Landlord shall include Tenant's name in the Shopping Center directory, if any, at no additional charge to Tenant.\n\nSection 17.3. Prohibited Signage. Tenant shall not install any signs on the roof, any exterior wall other than the storefront, or in any Common Area of the Shopping Center without Landlord's prior written consent. Window signs shall not cover more than twenty-five percent (25%) of the window area.\n\nSection 17.4. Removal. Upon expiration or termination of this Lease, Tenant shall remove all signage and repair any damage caused by such removal at Tenant's sole cost and expense.\n\n================================================================================\nARTICLE XVIII \u2014 PARKING (LP-16)\n================================================================================\n\nSection 18.1. Parking Rights. Tenant shall have the non-exclusive right to use the Common Area parking facilities of the Shopping Center. Landlord shall allocate to Tenant a minimum of four (4) parking spaces per one thousand (1,000) square feet of rentable area of the Premises. Such spaces shall be unreserved and available on a first-come, first-served basis.\n\nSection 18.2. Parking Regulations. Tenant and its employees shall comply with all parking regulations established by Landlord from time to time, including designated employee parking areas. Tenant shall not use parking spaces allocated in excess of its allocation, and Landlord reserves the right to tow vehicles in violation of the parking regulations at the vehicle owner's expense.\n\nSection 18.3. Modifications. Landlord reserves the right to reconfigure the parking areas, install parking meters or gates, or implement paid parking, provided that Tenant's minimum parking allocation under Section 18.1 is maintained.\n\n================================================================================\nARTICLE XIX \u2014 DISPUTE RESOLUTION (LP-17)\n================================================================================\n\nSection 19.1. Mediation. In the event of any dispute arising out of or relating to this Lease, the parties shall first attempt to resolve such dispute through good faith mediation administered by the American Arbitration Association (\"AAA\") or such other mediator as the parties may mutually agree upon. The mediation shall be conducted in the county in which the Shopping Center is located. The costs of mediation shall be shared equally by the parties.\n\nSection 19.2. Litigation. If mediation is unsuccessful or if either party refuses to participate in mediation, either party may commence litigation in the state or federal courts located in the county in which the Shopping Center is situated. The prevailing party in any litigation arising under this Lease shall be entitled to recover its reasonable attorneys' fees and court costs from the non-prevailing party.\n\nSection 19.3. Governing Law. This Lease shall be governed by and construed in accordance with the laws of the State of Columbia, without regard to its conflict of laws principles.\n\nSection 19.4. Waiver of Jury Trial. EACH PARTY HEREBY IRREVOCABLY WAIVES THE RIGHT TO A TRIAL BY JURY IN ANY ACTION OR PROCEEDING ARISING OUT OF OR RELATING TO THIS LEASE.\n\n================================================================================\nARTICLE XX \u2014 HOLDOVER PROVISIONS (LP-18)\n================================================================================\n\nSection 20.1. Holdover Tenancy. In the event Tenant remains in possession of the Premises after the expiration or termination of this Lease without a new lease agreement, Tenant shall be deemed a holdover tenant on a month-to-month basis. During any holdover period, Tenant shall be subject to all of the terms and conditions of this Lease, except that:\n\n(a) The Base Rent during the holdover period shall be one hundred ten percent (110%) of the Base Rent in effect immediately prior to the expiration or termination of this Lease;\n\n(b) Either party may terminate the holdover tenancy upon sixty (60) days' prior written notice to the other party;\n\n(c) Tenant shall have no renewal rights during the holdover period.\n\nSection 20.2. Holdover Damages. Tenant acknowledges that if Tenant holds over without Landlord's consent, Landlord may suffer damages in excess of the holdover Rent, including without limitation the loss of prospective tenants. Tenant shall indemnify Landlord against all claims, damages, and losses resulting from Tenant's failure to timely surrender the Premises.\n\n================================================================================\nARTICLE XXI \u2014 ADDITIONAL PROVISIONS\n================================================================================\n\nSection 21.1. Notices. All notices, demands, requests, and other communications required or permitted under this Lease shall be in writing and shall be deemed duly given (a) when personally delivered, (b) one (1) business day after deposit with a nationally recognized overnight courier, or (c) three (3) business days after deposit in the United States mail, certified or registered, return receipt requested, postage prepaid, addressed to the respective parties at the addresses set forth in this Lease or at such other address as either party may designate by notice.\n\nSection 21.2. Entire Agreement. This Lease, including all exhibits and addenda attached hereto, constitutes the entire agreement between the parties with respect to the subject matter hereof and supersedes all prior agreements, representations, and understandings, whether oral or written.\n\nSection 21.3. Amendments. This Lease may not be amended or modified except by a written instrument signed by both parties.\n\nSection 21.4. Severability. If any provision of this Lease is held to be invalid, illegal, or unenforceable, such provision shall be modified to the minimum extent necessary to make it valid, legal, and enforceable, and the validity, legality, and enforceability of the remaining provisions shall not be affected thereby.\n\nSection 21.5. Waiver. The failure of either party to enforce any provision of this Lease shall not constitute a waiver of such provision or of the right to enforce such provision at a later time. No waiver shall be effective unless in writing and signed by the party against whom enforcement is sought.\n\nSection 21.6. Successors and Assigns. Subject to the restrictions on assignment set forth herein, this Lease shall be binding upon and inure to the benefit of the parties hereto and their respective heirs, executors, administrators, successors, and permitted assigns.\n\nSection 21.7. Quiet Enjoyment. So long as Tenant is not in default under this Lease, Tenant shall have the right to quiet and peaceful enjoyment of the Premises without interference from Landlord or any party claiming through Landlord.\n\nSection 21.8. Surrender of Premises. Upon the expiration or earlier termination of this Lease, Tenant shall surrender the Premises to Landlord in good condition, ordinary wear and tear and casualty damage excepted, and shall remove all of Tenant's personal property, trade fixtures, and equipment. Any property not removed within ten (10) days after the expiration or termination of this Lease shall be deemed abandoned and may be disposed of by Landlord at Tenant's expense.\n\nSection 21.9. Subordination. This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord, provided that the holder of such encumbrance agrees not to disturb Tenant's possession of the Premises so long as Tenant is not in default hereunder.\n\nSection 21.10. Estoppel Certificates. Within ten (10) days after Landlord's written request, Tenant shall execute and deliver to Landlord an estoppel certificate in the form reasonably required by Landlord or Landlord's lender, certifying the status of this Lease and such other matters as may be reasonably requested.\n\nSection 21.11. Confidentiality. The terms of this Lease shall be kept confidential by both parties and shall not be disclosed to any third party, except as required by law or as necessary in connection with the enforcement of this Lease, financing of the Shopping Center, or sale of Landlord's interest therein.\n\nSection 21.12. Counterparts. This Lease may be executed in counterparts, each of which shall be deemed an original, and all of which together shall constitute one and the same instrument.\n\n================================================================================\nSIGNATURE PAGE\n================================================================================\n\nIN WITNESS WHEREOF, the parties have executed this Lease as of the date first above written.\n\nLANDLORD:\nMERIDIAN COMMERCIAL PROPERTIES LLC\n\nBy: _________________________________\nName: _______________________________\nTitle: ________________________________\nDate: ________________________________\n\n\nTENANT:\nCLEARWATER RETAIL GROUP LLC\n\nBy: _________________________________\nName: _______________________________\nTitle: ________________________________\nDate: ________________________________\n\n\n================================================================================\nEXHIBIT A \u2014 PREMISES DESCRIPTION\n================================================================================\n\n[Floor plan and legal description of the Premises to be attached]\n\n\n================================================================================\nEXHIBIT B \u2014 LANDLORD'S WORK\n================================================================================\n\n[Description of any construction or improvements to be performed by Landlord prior to the Commencement Date, if applicable]\n\n\n================================================================================\nEXHIBIT C \u2014 SIGN CRITERIA\n================================================================================\n\n[Landlord's signage criteria for the Shopping Center, including permitted materials, dimensions, illumination standards, and approval process]\n",
+  "summary": {
+    "total_provisions_checked": 19,
+    "conforms": 0,
+    "deviates": 0,
+    "unclear": 0,
+    "critical": 0,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "provisions": [],
+  "deviations": [],
+  "cascade_findings": [],
+  "challenge_findings": [],
+  "severity_assignments": [],
+  "dispositions": [],
+  "discoveries": {
+    "folded": [],
+    "standalone": []
+  },
+  "cam_contract_summary": {},
+  "analysis_completeness": {},
+  "human_feedback": [],
+  "coverage_assessment": [
+    {
+      "issue_area_id": "LP-01",
+      "issue_area_name": "Rent & Payment Terms",
+      "applicability": "required",
+      "coverage_state": "covered",
+      "evidence_summary": "All 6 expected elements found",
+      "exposure_statement": "Rent & Payment Terms is addressed and consistent with standard form.",
+      "supporting_provision_ids": [
+        "LP-01"
+      ],
+      "elements_found": [
+        "base rent amount or formula",
+        "payment due date (day of month)",
+        "late payment fee or penalty mechanism",
+        "grace period for late payment",
+        "accepted payment methods",
+        "additional rent definition (what constitutes additional rent)"
+      ],
+      "elements_missing": [],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Reference to 'Exhibit A \u2014 Rent Schedule' with no Exhibit A attached",
+          "evidence": "Reference to 'Exhibit A \u2014 Rent Schedule' with no Exhibit A attached",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Blank dollar amount placeholder not filled in",
+          "evidence": "Blank dollar amount placeholder not filled in",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent"
+      },
+      "related_issue_areas": [
+        "LP-02",
+        "LP-07"
+      ],
+      "requires_attention": false,
+      "materiality": "low",
+      "partial_class": null,
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-02",
+      "issue_area_name": "Rent Escalation",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "Only 2 of 4 expected elements found",
+      "exposure_statement": "No rent escalation mechanism; landlord bears full inflation risk or tenant bears uncapped exposure",
+      "supporting_provision_ids": [
+        "LP-02"
+      ],
+      "elements_found": [
+        "annual increase mechanism (fixed percentage or CPI)",
+        "effective date of first escalation"
+      ],
+      "elements_missing": [
+        "escalation cap or ceiling",
+        "calculation methodology"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Escalation section header present but body blank or marked Reserved",
+          "evidence": "Escalation section header present but body blank or marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "governing_law_sensitive"
+      ],
+      "caution_signal_definitions": {
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction"
+      },
+      "related_issue_areas": [
+        "LP-01"
+      ],
+      "requires_attention": true,
+      "materiality": "medium",
+      "partial_class": "partial_review",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "escalation cap or ceiling",
+        "calculation methodology"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-03",
+      "issue_area_name": "Lease Term & Renewal",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "5 of 6 expected elements found; missing: rent at renewal (formula or fair market value mechanism)",
+      "exposure_statement": "Term and renewal rights unclear; tenant may lose right to remain in premises or face holdover penalties",
+      "supporting_provision_ids": [
+        "LP-03"
+      ],
+      "elements_found": [
+        "initial term duration",
+        "commencement date or conditions",
+        "expiration date",
+        "renewal option count and duration",
+        "renewal notice period and deadline"
+      ],
+      "elements_missing": [
+        "rent at renewal (formula or fair market value mechanism)"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "broken_xref",
+          "description": "Lease Term & Renewal: references Section 3.5 which was not found in document",
+          "evidence": "Section 3.5",
+          "severity": "high"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Renewal option section header with body struck or marked Reserved",
+          "evidence": "Renewal option section header with body struck or marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "landlord_leverage_point"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "landlord_leverage_point": "Landlord typically holds stronger enforcement position if disputed"
+      },
+      "related_issue_areas": [
+        "LP-18"
+      ],
+      "requires_attention": true,
+      "materiality": "medium",
+      "partial_class": "partial_review",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "rent at renewal (formula or fair market value mechanism)"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-04",
+      "issue_area_name": "Security Deposit",
+      "applicability": "applicable",
+      "coverage_state": "partial",
+      "evidence_summary": "4 of 5 expected elements found; missing: letter of credit alternative conditions",
+      "exposure_statement": "Deposit obligation referenced but terms undefined; return and deduction rights unprotected",
+      "supporting_provision_ids": [
+        "LP-04"
+      ],
+      "elements_found": [
+        "deposit amount",
+        "return deadline after lease expiration",
+        "permitted deduction conditions",
+        "interest obligation (if any)"
+      ],
+      "elements_missing": [
+        "letter of credit alternative conditions"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Deposit amount shown as blank or $0.00 in lease summary",
+          "evidence": "Deposit amount shown as blank or $0.00 in lease summary",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "governing_law_sensitive"
+      ],
+      "caution_signal_definitions": {
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction"
+      },
+      "related_issue_areas": [
+        "LP-11"
+      ],
+      "requires_attention": true,
+      "materiality": "low",
+      "partial_class": "partial_typical",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "letter of credit alternative conditions"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-05",
+      "issue_area_name": "Permitted Use",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "4 of 5 expected elements found; missing: co-tenancy or anchor dependency language",
+      "exposure_statement": "Use restrictions absent or undefined; tenant may face exclusive use violations or continuous operation penalties",
+      "supporting_provision_ids": [
+        "LP-05"
+      ],
+      "elements_found": [
+        "specific permitted use description",
+        "exclusive use right scope (if any)",
+        "continuous operation obligation",
+        "prohibited use restrictions"
+      ],
+      "elements_missing": [
+        "co-tenancy or anchor dependency language"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Exclusive use clause header present but body blank",
+          "evidence": "Exclusive use clause header present but body blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Reference to 'Exhibit B \u2014 Exclusive Use Area' with no exhibit attached",
+          "evidence": "Reference to 'Exhibit B \u2014 Exclusive Use Area' with no exhibit attached",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "cascade_risk"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "cascade_risk": "Change to this provision may silently affect other provisions via cross-reference"
+      },
+      "related_issue_areas": [
+        "LP-14"
+      ],
+      "requires_attention": true,
+      "materiality": "low",
+      "partial_class": "partial_typical",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "co-tenancy or anchor dependency language"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-06",
+      "issue_area_name": "Maintenance & Repairs",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "4 of 5 expected elements found; missing: damage and destruction repair process",
+      "exposure_statement": "Maintenance allocation undefined; tenant may bear unexpected capital repair costs including structural and HVAC replacement",
+      "supporting_provision_ids": [
+        "LP-06"
+      ],
+      "elements_found": [
+        "tenant maintenance obligations (interior, non-structural)",
+        "landlord maintenance obligations (structural, roof, exterior)",
+        "HVAC responsibility allocation",
+        "repair response time obligations"
+      ],
+      "elements_missing": [
+        "damage and destruction repair process"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: HVAC section header present but body struck or blank",
+          "evidence": "HVAC section header present but body struck or blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Landlord repair obligation section marked Reserved",
+          "evidence": "Landlord repair obligation section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "governing_law_sensitive"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction"
+      },
+      "related_issue_areas": [
+        "LP-07",
+        "LP-10"
+      ],
+      "requires_attention": true,
+      "materiality": "low",
+      "partial_class": "partial_typical",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "damage and destruction repair process"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-07",
+      "issue_area_name": "Common Area Maintenance (CAM)",
+      "applicability": "applicable",
+      "coverage_state": "covered_unfavorable",
+      "evidence_summary": "Audit rights explicitly removed",
+      "exposure_statement": "Tenant faces uncapped, unauditable CAM charges because the share calculation, included expense categories, and any annual increase cap are unfavorable, so operating costs can spike without clear limits. Tenant has no protection against overbilling or improper pass-throughs because audit rights are expressly removed, leaving tenant to pay charges it cannot verify or effectively challenge.",
+      "supporting_provision_ids": [
+        "LP-07"
+      ],
+      "elements_found": [
+        "tenant's proportionate share calculation method",
+        "included expense categories",
+        "annual CAM increase cap",
+        "tenant audit rights",
+        "reconciliation timeline"
+      ],
+      "elements_missing": [
+        "excluded expense categories"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Audit rights section marked Reserved or Intentionally Omitted",
+          "evidence": "Audit rights section marked Reserved or Intentionally Omitted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Excluded expenses list cross-references exhibit not attached",
+          "evidence": "Excluded expenses list cross-references exhibit not attached",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "landlord_leverage_point"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "landlord_leverage_point": "Landlord typically holds stronger enforcement position if disputed"
+      },
+      "related_issue_areas": [
+        "LP-01",
+        "LP-06"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": null,
+      "exposure_source": "model",
+      "exposure_reason_code": "unfavorable_provision",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "tenant's proportionate share calculation method",
+        "included expense categories",
+        "annual CAM increase cap"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-08",
+      "issue_area_name": "Insurance Requirements",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "5 of 6 expected elements found; missing: waiver of subrogation",
+      "exposure_statement": "Insurance obligations undefined; landlord has no protection against tenant-caused losses and no subrogation waiver",
+      "supporting_provision_ids": [
+        "LP-08"
+      ],
+      "elements_found": [
+        "tenant commercial general liability minimum ($1M per occurrence, $2M aggregate standard)",
+        "property insurance obligation",
+        "business interruption coverage",
+        "landlord as additional insured",
+        "certificate of insurance delivery obligation"
+      ],
+      "elements_missing": [
+        "waiver of subrogation"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Waiver of subrogation section present but obligation direction reversed or blank",
+          "evidence": "Waiver of subrogation section present but obligation direction reversed or blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Certificate delivery obligation cross-references deleted notice section",
+          "evidence": "Certificate delivery obligation cross-references deleted notice section",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "potentially_unenforceable"
+      ],
+      "caution_signal_definitions": {
+        "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+      },
+      "related_issue_areas": [
+        "LP-13"
+      ],
+      "requires_attention": true,
+      "materiality": "medium",
+      "partial_class": "partial_review",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "waiver of subrogation"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-09",
+      "issue_area_name": "Subletting & Assignment",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "4 of 6 expected elements found; missing: recapture right (landlord can terminate and lease directly), assignment in connection with sale of business",
+      "exposure_statement": "Landlord can recapture the space when Tenant seeks to sublet or assign, letting Landlord terminate and lease directly and leaving Tenant without the expected deal value or continuity. Tenant also lacks clear rights to assign in connection with a sale of its business, which can block or devalue a routine exit or financing transaction.",
+      "supporting_provision_ids": [
+        "LP-09"
+      ],
+      "elements_found": [
+        "landlord consent requirement",
+        "grounds for withholding consent (reasonableness standard)",
+        "affiliate exception (no consent required for related entities)",
+        "profit sharing on sublet above base rent"
+      ],
+      "elements_missing": [
+        "recapture right (landlord can terminate and lease directly)",
+        "assignment in connection with sale of business"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Affiliate exception section marked Reserved",
+          "evidence": "Affiliate exception section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "landlord_leverage_point"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "landlord_leverage_point": "Landlord typically holds stronger enforcement position if disputed"
+      },
+      "related_issue_areas": [
+        "LP-03",
+        "LP-11"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": "partial_material",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "recapture right (landlord can terminate and lease directly)",
+        "assignment in connection with sale of business"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-10",
+      "issue_area_name": "Alterations & Improvements",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "4 of 5 expected elements found; missing: landlord contribution to tenant improvements (if any)",
+      "exposure_statement": "Alteration rights undefined; tenant faces removal obligation uncertainty and potential forfeiture of improvement investment",
+      "supporting_provision_ids": [
+        "LP-10"
+      ],
+      "elements_found": [
+        "threshold for required landlord approval (dollar amount or scope)",
+        "ownership of improvements at lease end",
+        "removal obligation at lease expiration",
+        "lien discharge or bond requirement"
+      ],
+      "elements_missing": [
+        "landlord contribution to tenant improvements (if any)"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Tenant improvement allowance section marked Reserved or amount is $0",
+          "evidence": "Tenant improvement allowance section marked Reserved or amount is $0",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Work Letter cross-referenced but exhibit absent from document",
+          "evidence": "Work Letter cross-referenced but exhibit absent from document",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent"
+      },
+      "related_issue_areas": [
+        "LP-06"
+      ],
+      "requires_attention": true,
+      "materiality": "medium",
+      "partial_class": "partial_review",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "landlord contribution to tenant improvements (if any)"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-11",
+      "issue_area_name": "Default & Remedies",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "6 of 7 expected elements found; missing: tenant's right to cure third-party defaults",
+      "exposure_statement": "Tenant has no protection if a third party\u2019s default (such as a contractor, assignee, or subtenant) triggers a lease default, so Tenant can be exposed to termination, damages, or other remedies without a clear right to step in and fix the problem. Landlord controls enforcement and can escalate remedies even when Tenant is willing and able to cure the third party\u2019s breach.",
+      "supporting_provision_ids": [
+        "LP-11"
+      ],
+      "elements_found": [
+        "monetary default definition and cure period (typically 5 days)",
+        "non-monetary default definition and cure period (typically 30 days)",
+        "notice requirement before default declaration",
+        "landlord termination right",
+        "landlord re-entry right",
+        "rent acceleration on default"
+      ],
+      "elements_missing": [
+        "tenant's right to cure third-party defaults"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Notice requirement section marked Reserved",
+          "evidence": "Notice requirement section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "governing_law_sensitive",
+        "potentially_unenforceable"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+        "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+      },
+      "related_issue_areas": [
+        "LP-01",
+        "LP-09",
+        "LP-12"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": "partial_material",
+      "exposure_source": "model",
+      "exposure_reason_code": "high_materiality_missing_element",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "tenant's right to cure third-party defaults"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-12",
+      "issue_area_name": "Early Termination",
+      "applicability": "applicable",
+      "coverage_state": "partial",
+      "evidence_summary": "3 of 5 expected elements found; missing: unamortized tenant improvement cost recovery, co-tenancy termination trigger (if applicable)",
+      "exposure_statement": "No early exit right; tenant bears full term obligation regardless of operational changes",
+      "supporting_provision_ids": [
+        "LP-12"
+      ],
+      "elements_found": [
+        "triggering conditions for early termination right",
+        "notice period required",
+        "termination fee or penalty formula"
+      ],
+      "elements_missing": [
+        "unamortized tenant improvement cost recovery",
+        "co-tenancy termination trigger (if applicable)"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Early termination section present but triggering conditions blank",
+          "evidence": "Early termination section present but triggering conditions blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Co-tenancy termination right cross-references anchor tenant definition not in document",
+          "evidence": "Co-tenancy termination right cross-references anchor tenant definition not in document",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent"
+      },
+      "related_issue_areas": [
+        "LP-03",
+        "LP-11"
+      ],
+      "requires_attention": true,
+      "materiality": "medium",
+      "partial_class": "partial_review",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "unamortized tenant improvement cost recovery",
+        "co-tenancy termination trigger (if applicable)"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-13",
+      "issue_area_name": "Indemnification & Liability",
+      "applicability": "required",
+      "coverage_state": "covered_unfavorable",
+      "evidence_summary": "Asymmetric mutual indemnification: landlord indemnification limited to gross negligence or willful misconduct",
+      "exposure_statement": "Tenant bears broad indemnity exposure to protect Landlord, while Landlord only indemnifies Tenant for gross negligence or willful misconduct, leaving Tenant to absorb most third\u2011party claims, losses, and defense costs tied to the property or operations. Tenant has little reciprocal protection if Landlord\u2019s ordinary negligence or building conditions cause harm, shifting those risks and costs back to Tenant.",
+      "supporting_provision_ids": [
+        "LP-13"
+      ],
+      "elements_found": [
+        "tenant indemnification of landlord scope",
+        "landlord indemnification of tenant scope",
+        "mutual vs one-way indemnification structure",
+        "exclusion of consequential or punitive damages",
+        "carve-outs for indemnitee negligence"
+      ],
+      "elements_missing": [
+        "cap on liability (if any)"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Landlord indemnification section marked Reserved or deleted",
+          "evidence": "Landlord indemnification section marked Reserved or deleted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Liability cap provision header present but amount blank",
+          "evidence": "Liability cap provision header present but amount blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Landlord indemnification limited to gross negligence or willful misconduct while tenant indemnification covers ordinary negligence or all premises accidents",
+          "evidence": "Landlord indemnification limited to gross negligence or willful misconduct while tenant indemnification covers ordinary negligence or all premises accidents",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Tenant indemnifies for accidents 'in or about the Premises' regardless of cause without carve-out for landlord's own negligence",
+          "evidence": "Tenant indemnifies for accidents 'in or about the Premises' regardless of cause without carve-out for landlord's own negligence",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "governing_law_sensitive",
+        "potentially_unenforceable"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+        "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+      },
+      "related_issue_areas": [
+        "LP-08",
+        "LP-11"
+      ],
+      "requires_attention": true,
+      "materiality": "high",
+      "partial_class": null,
+      "exposure_source": "model",
+      "exposure_reason_code": "unfavorable_provision",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "tenant indemnification of landlord scope",
+        "landlord indemnification of tenant scope",
+        "mutual vs one-way indemnification structure"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-14",
+      "issue_area_name": "Force Majeure",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "5 of 6 expected elements found; missing: scope of excused obligations (which parties, which obligations)",
+      "exposure_statement": "Force majeure protection absent or limited to total untenantability; tenant may be obligated to pay full rent during partial operational impairment (utility loss, restricted access, regulatory shutdown, HVAC failure) that leaves premises legally occupiable but operationally unusable for the tenant's permitted business",
+      "supporting_provision_ids": [
+        "LP-14"
+      ],
+      "elements_found": [
+        "definition of qualifying force majeure events",
+        "rent abatement during force majeure period",
+        "partial rent abatement or adjustment for operational impairment",
+        "notice requirement to invoke",
+        "termination right if force majeure exceeds threshold period"
+      ],
+      "elements_missing": [
+        "scope of excused obligations (which parties, which obligations)"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Force majeure section present but rent abatement carve-out blank or deleted",
+          "evidence": "Force majeure section present but rent abatement carve-out blank or deleted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Event list ends with 'including without limitation' with body truncated",
+          "evidence": "Event list ends with 'including without limitation' with body truncated",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Abatement conditioned on tenant vacating the premises",
+          "evidence": "Abatement conditioned on tenant vacating the premises",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "cascade_risk"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "cascade_risk": "Change to this provision may silently affect other provisions via cross-reference"
+      },
+      "related_issue_areas": [
+        "LP-05",
+        "LP-03"
+      ],
+      "requires_attention": true,
+      "materiality": "low",
+      "partial_class": "partial_typical",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "scope of excused obligations (which parties, which obligations)"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-15",
+      "issue_area_name": "Signage Rights",
+      "applicability": "applicable",
+      "coverage_state": "partial",
+      "evidence_summary": "5 of 6 expected elements found; missing: pylon or monument sign right",
+      "exposure_statement": "Signage rights undefined; tenant's brand visibility at premises unprotected and subject to landlord discretion",
+      "supporting_provision_ids": [
+        "LP-15"
+      ],
+      "elements_found": [
+        "exterior signage right (storefront/facade)",
+        "directory listing right",
+        "approval process and timeline",
+        "landlord's right to modify or remove",
+        "compliance with code and center standards"
+      ],
+      "elements_missing": [
+        "pylon or monument sign right"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Signage specification cross-references Sign Criteria exhibit not attached",
+          "evidence": "Signage specification cross-references Sign Criteria exhibit not attached",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Pylon sign right granted but panel dimensions blank",
+          "evidence": "Pylon sign right granted but panel dimensions blank",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [],
+      "caution_signal_definitions": {},
+      "related_issue_areas": [],
+      "requires_attention": true,
+      "materiality": "low",
+      "partial_class": "partial_typical",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "pylon or monument sign right"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-16",
+      "issue_area_name": "Parking",
+      "applicability": "applicable",
+      "coverage_state": "partial",
+      "evidence_summary": "4 of 6 expected elements found; missing: parking cost (included in rent or separately charged), visitor / customer parking access",
+      "exposure_statement": "Parking rights undefined or unprotected; tenant customers and employees may face parking restrictions without recourse",
+      "supporting_provision_ids": [
+        "LP-16"
+      ],
+      "elements_found": [
+        "parking space allocation (count or ratio per square foot)",
+        "reserved vs unreserved designation",
+        "landlord's right to modify parking area",
+        "exclusive parking protection"
+      ],
+      "elements_missing": [
+        "parking cost (included in rent or separately charged)",
+        "visitor / customer parking access"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Parking Exhibit referenced but not attached",
+          "evidence": "Parking Exhibit referenced but not attached",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Reserved space locations cross-reference site plan not included in document",
+          "evidence": "Reserved space locations cross-reference site plan not included in document",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [],
+      "caution_signal_definitions": {},
+      "related_issue_areas": [],
+      "requires_attention": true,
+      "materiality": "low",
+      "partial_class": "partial_typical",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "parking cost (included in rent or separately charged)",
+        "visitor / customer parking access"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-17",
+      "issue_area_name": "Dispute Resolution",
+      "applicability": "required",
+      "coverage_state": "partial",
+      "evidence_summary": "5 of 6 expected elements found; missing: time limit for bringing claims",
+      "exposure_statement": "Dispute framework absent; attorney fee allocation and venue undefined, creating uncertainty in enforcement cost",
+      "supporting_provision_ids": [
+        "LP-17"
+      ],
+      "elements_found": [
+        "dispute resolution mechanism (mediation, arbitration, or litigation)",
+        "governing law (state)",
+        "venue / jurisdiction",
+        "attorney fee allocation (one-way or prevailing party)",
+        "jury trial waiver"
+      ],
+      "elements_missing": [
+        "time limit for bringing claims"
+      ],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Attorney fee allocation section blank or marked Reserved",
+          "evidence": "Attorney fee allocation section blank or marked Reserved",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Jury trial waiver section marked Intentionally Omitted",
+          "evidence": "Jury trial waiver section marked Intentionally Omitted",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "common_dispute_area",
+        "governing_law_sensitive",
+        "potentially_unenforceable"
+      ],
+      "caution_signal_definitions": {
+        "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+        "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+      },
+      "related_issue_areas": [
+        "LP-11"
+      ],
+      "requires_attention": true,
+      "materiality": "medium",
+      "partial_class": "partial_review",
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "time limit for bringing claims"
+      ],
+      "exposure_perspective": "tenant"
+    },
+    {
+      "issue_area_id": "LP-18",
+      "issue_area_name": "Holdover Provisions",
+      "applicability": "required",
+      "coverage_state": "covered",
+      "evidence_summary": "All 5 expected elements found",
+      "exposure_statement": "Holdover Provisions is addressed and consistent with standard form.",
+      "supporting_provision_ids": [
+        "LP-18"
+      ],
+      "elements_found": [
+        "holdover rent rate (typically 150% of final month's rent)",
+        "month-to-month vs tenancy-at-sufferance characterization",
+        "notice required to terminate holdover",
+        "landlord's right to collect consequential damages from holdover",
+        "conversion to new lease conditions"
+      ],
+      "elements_missing": [],
+      "negative_space_signals": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Holdover rate multiplier blank",
+          "evidence": "Holdover rate multiplier blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Consequential damages section marked Reserved",
+          "evidence": "Consequential damages section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "caution_signals": [
+        "governing_law_sensitive",
+        "potentially_unenforceable"
+      ],
+      "caution_signal_definitions": {
+        "governing_law_sensitive": "Practical effect varies significantly by jurisdiction",
+        "potentially_unenforceable": "Known structural defect or clause pattern with enforceability concerns"
+      },
+      "related_issue_areas": [
+        "LP-03"
+      ],
+      "requires_attention": false,
+      "materiality": "low",
+      "partial_class": null,
+      "exposure_source": "schema",
+      "exposure_reason_code": "schema_default",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [],
+      "exposure_perspective": "tenant"
+    }
+  ],
+  "coverage_summary": {
+    "total_assessed": 18,
+    "state_counts": {
+      "covered": 2,
+      "partial": 14,
+      "covered_unfavorable": 2
+    },
+    "attention_count": 16,
+    "attention_items": [
+      {
+        "id": "LP-07",
+        "name": "Common Area Maintenance (CAM)",
+        "state": "covered_unfavorable",
+        "exposure": "CAM exposure uncapped and unauditable; tenant cannot verify or challenge operating expense pass-throughs"
+      },
+      {
+        "id": "LP-13",
+        "name": "Indemnification & Liability",
+        "state": "covered_unfavorable",
+        "exposure": "Indemnification absent or one-sided; tenant bears uncapped liability exposure with no landlord reciprocal protection"
+      },
+      {
+        "id": "LP-02",
+        "name": "Rent Escalation",
+        "state": "partial",
+        "exposure": "No rent escalation mechanism; landlord bears full inflation risk or tenant bears uncapped exposure"
+      },
+      {
+        "id": "LP-03",
+        "name": "Lease Term & Renewal",
+        "state": "partial",
+        "exposure": "Term and renewal rights unclear; tenant may lose right to remain in premises or face holdover penalties"
+      },
+      {
+        "id": "LP-04",
+        "name": "Security Deposit",
+        "state": "partial",
+        "exposure": "Deposit obligation referenced but terms undefined; return and deduction rights unprotected"
+      },
+      {
+        "id": "LP-05",
+        "name": "Permitted Use",
+        "state": "partial",
+        "exposure": "Use restrictions absent or undefined; tenant may face exclusive use violations or continuous operation penalties"
+      },
+      {
+        "id": "LP-06",
+        "name": "Maintenance & Repairs",
+        "state": "partial",
+        "exposure": "Maintenance allocation undefined; tenant may bear unexpected capital repair costs including structural and HVAC replacement"
+      },
+      {
+        "id": "LP-08",
+        "name": "Insurance Requirements",
+        "state": "partial",
+        "exposure": "Insurance obligations undefined; landlord has no protection against tenant-caused losses and no subrogation waiver"
+      },
+      {
+        "id": "LP-09",
+        "name": "Subletting & Assignment",
+        "state": "partial",
+        "exposure": "Assignment rights absent or over-restricted; tenant cannot execute routine business transactions including sale of business"
+      },
+      {
+        "id": "LP-10",
+        "name": "Alterations & Improvements",
+        "state": "partial",
+        "exposure": "Alteration rights undefined; tenant faces removal obligation uncertainty and potential forfeiture of improvement investment"
+      },
+      {
+        "id": "LP-11",
+        "name": "Default & Remedies",
+        "state": "partial",
+        "exposure": "Default and remedy framework absent or incomplete; landlord enforcement position significantly weakened"
+      },
+      {
+        "id": "LP-12",
+        "name": "Early Termination",
+        "state": "partial",
+        "exposure": "No early exit right; tenant bears full term obligation regardless of operational changes"
+      },
+      {
+        "id": "LP-14",
+        "name": "Force Majeure",
+        "state": "partial",
+        "exposure": "Force majeure protection absent or limited to total untenantability; tenant may be obligated to pay full rent during partial operational impairment (utility loss, restricted access, regulatory shutdown, HVAC failure) that leaves premises legally occupiable but operationally unusable for the tenant's permitted business"
+      },
+      {
+        "id": "LP-15",
+        "name": "Signage Rights",
+        "state": "partial",
+        "exposure": "Signage rights undefined; tenant's brand visibility at premises unprotected and subject to landlord discretion"
+      },
+      {
+        "id": "LP-16",
+        "name": "Parking",
+        "state": "partial",
+        "exposure": "Parking rights undefined or unprotected; tenant customers and employees may face parking restrictions without recourse"
+      },
+      {
+        "id": "LP-17",
+        "name": "Dispute Resolution",
+        "state": "partial",
+        "exposure": "Dispute framework absent; attorney fee allocation and venue undefined, creating uncertainty in enforcement cost"
+      }
+    ],
+    "not_applicable_count": 0,
+    "covered_count": 2
+  },
+  "exposure_summary": {
+    "model_calls": 4,
+    "schema_only": 14,
+    "high_materiality": 4,
+    "medium_materiality": 6,
+    "partial_typical": 6,
+    "partial_material": 2,
+    "partial_review": 6
+  },
+  "_stage_data": {
+    "extraction_meta": {
+      "model": "gemini-3.1-pro-preview",
+      "provider": "google",
+      "fallback_used": false,
+      "elapsed_sec": 91.61,
+      "errors": [],
+      "single_doc": true
+    },
+    "negative_space": {
+      "LP-00": [],
+      "LP-01": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Reference to 'Exhibit A \u2014 Rent Schedule' with no Exhibit A attached",
+          "evidence": "Reference to 'Exhibit A \u2014 Rent Schedule' with no Exhibit A attached",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Blank dollar amount placeholder not filled in",
+          "evidence": "Blank dollar amount placeholder not filled in",
+          "severity": "medium"
+        }
+      ],
+      "LP-02": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Escalation section header present but body blank or marked Reserved",
+          "evidence": "Escalation section header present but body blank or marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "LP-03": [
+        {
+          "signal_type": "broken_xref",
+          "description": "Lease Term & Renewal: references Section 3.5 which was not found in document",
+          "evidence": "Section 3.5",
+          "severity": "high"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Renewal option section header with body struck or marked Reserved",
+          "evidence": "Renewal option section header with body struck or marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "LP-04": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Deposit amount shown as blank or $0.00 in lease summary",
+          "evidence": "Deposit amount shown as blank or $0.00 in lease summary",
+          "severity": "medium"
+        }
+      ],
+      "LP-05": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Exclusive use clause header present but body blank",
+          "evidence": "Exclusive use clause header present but body blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Reference to 'Exhibit B \u2014 Exclusive Use Area' with no exhibit attached",
+          "evidence": "Reference to 'Exhibit B \u2014 Exclusive Use Area' with no exhibit attached",
+          "severity": "medium"
+        }
+      ],
+      "LP-06": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: HVAC section header present but body struck or blank",
+          "evidence": "HVAC section header present but body struck or blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Landlord repair obligation section marked Reserved",
+          "evidence": "Landlord repair obligation section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "LP-07": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Audit rights section marked Reserved or Intentionally Omitted",
+          "evidence": "Audit rights section marked Reserved or Intentionally Omitted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Excluded expenses list cross-references exhibit not attached",
+          "evidence": "Excluded expenses list cross-references exhibit not attached",
+          "severity": "medium"
+        }
+      ],
+      "LP-08": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Waiver of subrogation section present but obligation direction reversed or blank",
+          "evidence": "Waiver of subrogation section present but obligation direction reversed or blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Certificate delivery obligation cross-references deleted notice section",
+          "evidence": "Certificate delivery obligation cross-references deleted notice section",
+          "severity": "medium"
+        }
+      ],
+      "LP-09": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Affiliate exception section marked Reserved",
+          "evidence": "Affiliate exception section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "LP-10": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Tenant improvement allowance section marked Reserved or amount is $0",
+          "evidence": "Tenant improvement allowance section marked Reserved or amount is $0",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Work Letter cross-referenced but exhibit absent from document",
+          "evidence": "Work Letter cross-referenced but exhibit absent from document",
+          "severity": "medium"
+        }
+      ],
+      "LP-11": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Notice requirement section marked Reserved",
+          "evidence": "Notice requirement section marked Reserved",
+          "severity": "medium"
+        }
+      ],
+      "LP-12": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Early termination section present but triggering conditions blank",
+          "evidence": "Early termination section present but triggering conditions blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Co-tenancy termination right cross-references anchor tenant definition not in document",
+          "evidence": "Co-tenancy termination right cross-references anchor tenant definition not in document",
+          "severity": "medium"
+        }
+      ],
+      "LP-13": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Landlord indemnification section marked Reserved or deleted",
+          "evidence": "Landlord indemnification section marked Reserved or deleted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Liability cap provision header present but amount blank",
+          "evidence": "Liability cap provision header present but amount blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Landlord indemnification limited to gross negligence or willful misconduct while tenant indemnification covers ordinary negligence or all premises accidents",
+          "evidence": "Landlord indemnification limited to gross negligence or willful misconduct while tenant indemnification covers ordinary negligence or all premises accidents",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Tenant indemnifies for accidents 'in or about the Premises' regardless of cause without carve-out for landlord's own negligence",
+          "evidence": "Tenant indemnifies for accidents 'in or about the Premises' regardless of cause without carve-out for landlord's own negligence",
+          "severity": "medium"
+        }
+      ],
+      "LP-14": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Force majeure section present but rent abatement carve-out blank or deleted",
+          "evidence": "Force majeure section present but rent abatement carve-out blank or deleted",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Event list ends with 'including without limitation' with body truncated",
+          "evidence": "Event list ends with 'including without limitation' with body truncated",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Abatement conditioned on tenant vacating the premises",
+          "evidence": "Abatement conditioned on tenant vacating the premises",
+          "severity": "medium"
+        }
+      ],
+      "LP-15": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Signage specification cross-references Sign Criteria exhibit not attached",
+          "evidence": "Signage specification cross-references Sign Criteria exhibit not attached",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Pylon sign right granted but panel dimensions blank",
+          "evidence": "Pylon sign right granted but panel dimensions blank",
+          "severity": "medium"
+        }
+      ],
+      "LP-16": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Parking Exhibit referenced but not attached",
+          "evidence": "Parking Exhibit referenced but not attached",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Reserved space locations cross-reference site plan not included in document",
+          "evidence": "Reserved space locations cross-reference site plan not included in document",
+          "severity": "medium"
+        }
+      ],
+      "LP-17": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Attorney fee allocation section blank or marked Reserved",
+          "evidence": "Attorney fee allocation section blank or marked Reserved",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Jury trial waiver section marked Intentionally Omitted",
+          "evidence": "Jury trial waiver section marked Intentionally Omitted",
+          "severity": "medium"
+        }
+      ],
+      "LP-18": [
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Holdover rate multiplier blank",
+          "evidence": "Holdover rate multiplier blank",
+          "severity": "medium"
+        },
+        {
+          "signal_type": "schema_clue_match",
+          "description": "Schema clue matched: Consequential damages section marked Reserved",
+          "evidence": "Consequential damages section marked Reserved",
+          "severity": "medium"
+        }
+      ]
+    }
+  }
+}

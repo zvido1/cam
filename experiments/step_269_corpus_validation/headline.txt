@@ -1,0 +1,31 @@
+Step 269 — Full Pipeline Corpus Validation Headline
+
+Tenants attempted: 16
+Tenants extracted successfully: 16
+Tenants failed: []
+
+LP-13 classifications (post-bump):
+  - covered_unfavorable: 15
+  - partial: 1
+
+LP-11 classifications (post-bump):
+  - covered_unfavorable: 13
+  - partial: 3
+
+LP-13 flips from cached pre-bump (where data available):
+  - partial -> covered_unfavorable: 3
+  - no comparison available: 13
+
+LP-11 flips from cached pre-bump (where data available):
+  - partial -> covered_unfavorable: 3
+  - no comparison available: 13
+
+Cross-LP regression check (pre-bump vs post-bump on cached tenants):
+  - Other LPs with classification changes: NONE
+  - Other LPs unchanged: 48
+
+Step 268 shortcut prediction vs full pipeline reality:
+  - LP-13 shortcut said: 15/16 would flip
+  - LP-13 actual full pipeline classified covered_unfavorable: 15/16
+  - LP-11 shortcut said: 13/16 would flip
+  - LP-11 actual full pipeline classified covered_unfavorable: 13/16

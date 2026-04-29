@@ -1,0 +1,21 @@
+=== LP-07 ===
+  input.coverage_state    : covered_unfavorable
+  input.materiality       : high
+  input.elements_missing  : ['excluded expense categories']
+  input.elements_found    : ["tenant's proportionate share calculation method", 'included expense categories', 'annual CAM increase cap', 'tenant audit rights', 'reconciliation timeline']
+  exposure_source(s)      : ['model', 'model', 'model']
+  exposure_reason_code(s) : ['unfavorable_provision', 'unfavorable_provision', 'unfavorable_provision']
+  elements_used per repeat:
+    repeat[0] = ["tenant's proportionate share calculation method", 'included expense categories', 'annual CAM increase cap']
+    repeat[1] = ["tenant's proportionate share calculation method", 'included expense categories', 'annual CAM increase cap']
+    repeat[2] = ["tenant's proportionate share calculation method", 'included expense categories', 'annual CAM increase cap']
+  classification_diff     : False
+  evidence_diff           : False
+  wording_diff            : True
+
+  repeat[0]:
+    Tenant bears open-ended CAM cost risk because the landlord controls the proportionate-share math and what expense categories get included, with no cap on annual increases. Tenant also has no audit rights to verify charges, so the tenant pays inflated or misallocated CAM with little practical ability to challenge it.
+  repeat[1]:
+    Tenant bears open-ended CAM costs because the share calculation and included expenses are skewed against Tenant and there’s no cap on annual increases, creating unpredictable operating expense spikes. Tenant also has no audit rights to verify charges, so Landlord’s CAM allocations and categories effectively go unchecked and Tenant pays the bill.
+  repeat[2]:
+    Tenant bears an open-ended CAM cost risk because the share calculation and expense categories can be applied broadly and there’s no cap on annual increases, making operating costs unpredictable and potentially unaffordable. Tenant also has no ability to audit or challenge CAM billings, so overcharges or misallocations stick.

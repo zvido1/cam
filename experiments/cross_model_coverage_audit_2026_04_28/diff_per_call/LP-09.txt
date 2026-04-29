@@ -1,0 +1,20 @@
+=== LP-09 ===
+  input.coverage_state    : partial
+  input.partial_class     : partial_material
+  input.materiality       : high
+  input.elements_missing  : ['recapture right (landlord can terminate and lease directly)', 'assignment in connection with sale of business']
+  input.elements_found    : ['landlord consent requirement', 'grounds for withholding consent (reasonableness standard)', 'affiliate exception (no consent required for related entities)', 'profit sharing on sublet above base rent']
+  exposure_elements_used  : ['recapture right (landlord can terminate and lease directly)', 'assignment in connection with sale of business']
+  exposure_reason_code    : None
+
+  models_responded        : ['claude', 'gpt', 'grok']
+  statement_text_diverged : True
+
+  [CLAUDE]  (anthropic:claude-sonnet-4-20250514)  elapsed=3.11s  
+    Landlord can recapture the premises and lease directly to any proposed subtenant or assignee, effectively blocking tenant's ability to monetize the lease. Tenant cannot assign the lease in connection with selling its business without separate landlord approval, potentially complicating or preventing business sales.
+
+  [GPT]  (openai:gpt-5.2)  elapsed=4.89s  
+    Landlord can recapture the space if Tenant tries to sublease or assign, forcing Tenant to lose the premises and any deal value tied to the transfer. Tenant also lacks a clear right to assign the lease as part of a business sale, which can block or devalue an exit transaction and leave Tenant stuck on the hook for ongoing rent and obligations.
+
+  [GROK]  (xai:grok-4)  elapsed=101.33s  
+    Tenant risks the landlord terminating the lease to recapture the space and deal directly with a proposed subtenant or assignee, blocking tenant's subletting plans. Tenant cannot freely assign the lease as part of selling its business, exposing it to landlord denial that could derail the transaction.

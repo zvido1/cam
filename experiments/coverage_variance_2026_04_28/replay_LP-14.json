@@ -1,0 +1,101 @@
+{
+  "input": {
+    "issue_area_id": "LP-14",
+    "issue_area_name": "Force Majeure",
+    "applicability": "required",
+    "coverage_state": "covered_unfavorable",
+    "evidence_summary": "Abatement limited to 'wholly/totally untenantable' standard with no partial-abatement mechanism for operational impairment",
+    "supporting_provision_ids": [
+      "LP-14"
+    ],
+    "elements_found": [
+      "definition of qualifying force majeure events",
+      "scope of excused obligations (which parties, which obligations)",
+      "rent abatement during force majeure period",
+      "notice requirement to invoke",
+      "termination right if force majeure exceeds threshold period"
+    ],
+    "elements_missing": [
+      "partial rent abatement or adjustment for operational impairment"
+    ],
+    "negative_space_signals": [
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Force majeure section present but rent abatement carve-out blank or deleted",
+        "evidence": "Force majeure section present but rent abatement carve-out blank or deleted",
+        "severity": "medium"
+      },
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Event list ends with 'including without limitation' with body truncated",
+        "evidence": "Event list ends with 'including without limitation' with body truncated",
+        "severity": "medium"
+      },
+      {
+        "signal_type": "schema_clue_match",
+        "description": "Schema clue matched: Abatement conditioned on tenant vacating the premises",
+        "evidence": "Abatement conditioned on tenant vacating the premises",
+        "severity": "medium"
+      }
+    ],
+    "caution_signals": [
+      "common_dispute_area",
+      "cascade_risk"
+    ],
+    "caution_signal_definitions": {
+      "common_dispute_area": "Frequently litigated provision type; outcome heavily fact-dependent",
+      "cascade_risk": "Change to this provision may silently affect other provisions via cross-reference"
+    },
+    "related_issue_areas": [
+      "LP-05",
+      "LP-03"
+    ],
+    "requires_attention": true,
+    "materiality": "high",
+    "partial_class": null
+  },
+  "repeats": [
+    {
+      "exposure_statement": "Tenant bears the risk that many disruptions won\u2019t qualify for relief and that key obligations (especially rent) still must be paid because the clause is narrow and unclear about what is excused. Tenant also has no meaningful protection for partial shutdowns or impaired operations since any rent relief is limited to situations where the space is wholly untenantable, leaving Tenant to absorb ongoing costs during a force majeure event.",
+      "exposure_source": "model",
+      "exposure_reason_code": "unfavorable_provision",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "definition of qualifying force majeure events",
+        "scope of excused obligations (which parties, which obligations)",
+        "rent abatement during force majeure period"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 0,
+      "_replay_elapsed_sec": 3.077
+    },
+    {
+      "exposure_statement": "Tenant bears the risk of most disruptions because force majeure coverage is narrowly defined and may not excuse key tenant obligations, leaving performance and cost exposure during outages. Tenant also has no meaningful rent relief unless the space is wholly untenantable, so partial shutdowns or operational impairment can still require full rent and continued compliance.",
+      "exposure_source": "model",
+      "exposure_reason_code": "unfavorable_provision",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "definition of qualifying force majeure events",
+        "scope of excused obligations (which parties, which obligations)",
+        "rent abatement during force majeure period"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 1,
+      "_replay_elapsed_sec": 2.776
+    },
+    {
+      "exposure_statement": "Tenant bears most interruption risk because force majeure relief is narrowly defined and unclear on which duties are excused, so Tenant can still be in default for nonperformance during many disruption scenarios. Tenant has no meaningful rent relief unless the space is wholly untenantable, leaving Tenant paying full rent even if operations are materially impaired but the premises remain partially usable.",
+      "exposure_source": "model",
+      "exposure_reason_code": "unfavorable_provision",
+      "exposure_confidence_note": null,
+      "exposure_elements_used": [
+        "definition of qualifying force majeure events",
+        "scope of excused obligations (which parties, which obligations)",
+        "rent abatement during force majeure period"
+      ],
+      "exposure_perspective": "tenant",
+      "_replay_index": 2,
+      "_replay_elapsed_sec": 3.954
+    }
+  ]
+}
