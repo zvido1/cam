@@ -11,7 +11,7 @@ const ANALYSIS_TYPES = [
     {
         id: "lease_review",
         domain: "Legal",
-        name: "CAM Demo",
+        name: "CAM™ Intelligence",
         description: "Compare tenant leases against a standard template to detect deviations, assess risk, and generate annotated reports.",
         endpoint: "/api/jobs/lease",
         provisions_endpoint: "/api/provisions"
@@ -19,6 +19,7 @@ const ANALYSIS_TYPES = [
 ];
 
 const POLL_INTERVAL_MS = 5000;
+const HEADER_TAGLINE = "by Vered.ai";
 const SEVERITY_ORDER = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 const SEVERITY_DISPLAY = { CRITICAL: "Critical", HIGH: "High", MEDIUM: "Medium", LOW: "Low", CONFORMS: "Conforms" };
 function sevDisplay(s) { return SEVERITY_DISPLAY[(s || "").toUpperCase()] || s || ""; }
@@ -431,12 +432,10 @@ function showState(name) {
 
     const tagline = $("#header-tagline");
     if (name === "gate") {
-        tagline.textContent = "CAM Demo";
+        tagline.textContent = HEADER_TAGLINE;
         $("#app-header").style.display = "none";
     } else {
-        tagline.textContent = selectedAnalysisType
-            ? selectedAnalysisType.name
-            : "CAM Demo";
+        tagline.textContent = HEADER_TAGLINE;
         $("#app-header").style.display = "";
     }
 

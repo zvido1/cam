@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CAM Demo</title>
+    <title>CAM&#8482; Intelligence by Vered.ai</title>
     <link rel="stylesheet" href="/static/style.css?v=333">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,10 +13,10 @@
 
     <!-- ═══ HEADER ═══ -->
     <header class="app-header" id="app-header">
-        <span class="logo" id="logo-home" onclick="window.CAM.resetApp(); return false;" style="cursor:pointer;" title="Back to home">CAM&#8482;</span>
-        <span class="tagline" id="header-tagline">CAM Demo</span>
+        <span class="logo" id="logo-home" onclick="window.CAM.resetApp(); return false;" style="cursor:pointer;" title="Back to home">CAM&#8482; Intelligence</span>
+        <span class="tagline" id="header-tagline">by Vered.ai</span>
         <span id="expiry-notice" class="expiry-notice hidden">&#128274; <span id="expiry-countdown"></span> to deletion</span>
-        <a class="privacy-link" id="about-cam-toggle">About CAM's Analysis</a>
+        <a class="privacy-link" id="about-cam-toggle">About CAM&#8482; Intelligence</a>
         <a class="privacy-link" id="privacy-toggle">Privacy &amp; Data</a>
     </header>
     <nav id="workflow-nav" class="workflow-nav hidden" aria-label="Workflow navigation">
@@ -40,8 +40,8 @@
         <!-- ══ STATE 1: Access Gate ══ -->
         <section id="state-gate">
             <div class="gate-card">
-                <div class="logo">CAM&#8482;</div>
-                <div class="subtitle">CAM Demo</div>
+                <div class="logo">CAM&#8482; Intelligence</div>
+                <div class="subtitle">by Vered.ai</div>
                 <div id="gate-error" class="alert alert-error hidden"></div>
                 <input
                     type="password"
@@ -934,13 +934,13 @@
 
     <!-- ═══ FOOTER ═══ -->
     <footer class="app-footer">
-        CAM&#8482; &middot; Patent Pending &middot; &copy; 2026
+        CAM&#8482; Intelligence by Vered.ai &middot; Patent Pending &middot; &copy; 2026
     </footer>
 
     <!-- ═══ ABOUT CAM MODAL (1G) ═══ -->
     <div class="modal-overlay" id="about-cam-modal">
         <div class="modal-content about-cam-content">
-            <h2>How CAM Analyzes Your Lease</h2>
+            <h2>How CAM&#8482; Intelligence Analyzes Your Lease</h2>
 
             <!-- Step 280: mode disambiguation. The body of this page describes
                  the multi-evaluator Comparison Analysis pipeline. Coverage
@@ -949,6 +949,7 @@
                  confidence-score machinery below does not apply to it. -->
             <section class="about-cam-intro">
                 <h3 style="margin:0 0 0.5rem 0;">How CAM analyzes leases &mdash; two modes</h3>
+                <p>CAM stands for Constrained Assertion Method, Vered.ai&rsquo;s framework for evidence-aware AI analysis. In lease text, Common Area Maintenance (CAM) is a separate lease issue area.</p>
                 <p>CAM operates in two analysis modes. The behaviors described on this page apply differently depending on which mode produced your report:</p>
                 <p style="margin-top:0.75rem;"><strong>Coverage Analysis (single document)</strong> &mdash; When you upload a single lease without a reference template, CAM runs <strong>Coverage Analysis</strong>. This mode uses CAM&rsquo;s schema-governed assertion architecture to evaluate the lease against a curated library of expected provisions. Each issue area is classified by materiality (covered, worth reviewing, needs attention) and surfaced with exposure prose framed for the perspective you selected (tenant, landlord, or neutral). Coverage Analysis surfaces what&rsquo;s missing, what&rsquo;s incomplete, and what&rsquo;s structurally asymmetric &mdash; without requiring a reference document to compare against.</p>
                 <p style="margin-top:0.5rem;"><strong>Comparison Analysis (lease vs template)</strong> &mdash; When you upload a tenant lease alongside a reference template, CAM runs <strong>Comparison Analysis</strong>. This mode uses CAM&rsquo;s full multi-evaluator pipeline: independent evaluator roles, challenger review, severity assessment, and the disagreement governance described below. The confidence indicators, Finding Reliability scores, and Assertion Sensitivity Gap all apply to Comparison Analysis findings.</p>
