@@ -1254,8 +1254,7 @@ function clearTemplateFile() {
     deactivateStep2();
     const gateErrorEl = $("#template-gate-error");
     if (gateErrorEl) gateErrorEl.classList.add("hidden");
-    const stepLabel = $("#upload-step-label");
-    if (stepLabel) stepLabel.textContent = "Step 3: Upload your reference lease";
+    updateUploadModeLabels();
     const subtitle = $("#upload-subtitle");
     if (subtitle) subtitle.textContent = "Upload your reference lease (standard template or prior executed lease).";
 
@@ -1838,6 +1837,28 @@ function handlePerspectiveChange() {
     updateSubmitState();
 }
 
+function updateUploadModeLabels(mode = getSelectedMode()) {
+    const uploadStepLabel = document.getElementById("upload-step-label");
+    if (uploadStepLabel) {
+        uploadStepLabel.textContent = "Step 2: Upload your reference lease";
+    }
+
+    const tenantStepLabel = document.getElementById("tenant-step-label");
+    if (tenantStepLabel) {
+        tenantStepLabel.textContent = "Step 3: Upload Tenant Leases";
+    }
+
+    const sidebarTitle = document.querySelector(".provisions-panel-title");
+    if (sidebarTitle) {
+        sidebarTitle.textContent = "Issue Areas to Check";
+    }
+
+    const sidebarSubtitle = document.querySelector(".provisions-subtitle");
+    if (sidebarSubtitle) {
+        sidebarSubtitle.textContent = "Select issue areas to check, then click Review Leases. CAM also discovers additional issue areas automatically.";
+    }
+}
+
 function handleModeChange() {
     const mode = getSelectedMode();
     const grid = document.querySelector(".upload-cols-grid");
@@ -1895,28 +1916,9 @@ function handleModeChange() {
             if (persCard) persCard.classList.remove("required-indicator");
         }
     }
-    // Step 254: relabel the upload-page provisions sidebar when mode changes.
-    const sidebarTitle = document.querySelector(".provisions-panel-title");
-    const sidebarSubtitle = document.querySelector(".provisions-subtitle");
-    if (sidebarTitle) {
-        sidebarTitle.textContent = mode === "analyze"
-            ? "Issue Areas to Assess"
-            : "Provisions to Check";
-    }
-    if (sidebarSubtitle) {
-        sidebarSubtitle.textContent = mode === "analyze"
-            ? "These issue areas will be assessed for coverage in the uploaded document."
-            : "Select provisions to check, then click Review Leases. CAM also discovers additional provisions automatically.";
-    }
-    // Step 263: relabel the tenant-leases card so the step number is correct.
-    // Mode A has Step 3 = reference lease, so tenant leases are Step 4.
-    // Mode C has no reference lease, so the single uploaded document is Step 3.
-    const tenantStepLabel = document.getElementById("tenant-step-label");
-    if (tenantStepLabel) {
-        tenantStepLabel.textContent = mode === "analyze"
-            ? "Step 3: Upload the lease to analyze"
-            : "Step 4: Upload Tenant Leases";
-    }
+    // Step 285: keep visible upload steps gap-free in both modes and keep the
+    // sidebar label mode-neutral.
+    updateUploadModeLabels(mode);
     // Step 256 fix: keep Step 2 gating in sync with mode change.
     // Mode C never has Step 1, so Step 2 must be active. Mode A re-gates on templateSummary.
     if (mode === "analyze" || templateSummary || addMoreMode === "addmore") {
@@ -9869,8 +9871,7 @@ function resetApp() {
     deactivateStep2();
     const gateErrorEl = $("#template-gate-error");
     if (gateErrorEl) gateErrorEl.classList.add("hidden");
-    const stepLabel = $("#upload-step-label");
-    if (stepLabel) stepLabel.textContent = "Step 1: Upload your reference lease";
+    updateUploadModeLabels();
     const subtitle = $("#upload-subtitle");
     if (subtitle) subtitle.textContent = "Upload your reference lease (standard template or prior executed lease).";
 
