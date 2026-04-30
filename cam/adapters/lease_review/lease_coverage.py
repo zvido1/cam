@@ -88,7 +88,7 @@ def assess_coverage(
                 pid=pid, area=area, coverage_state="not_applicable",
                 applicability=applicability_result, evidence_summary=reason,
                 supporting_provisions=[], negative_space=[],
-                elements_found=[], elements_missing=[],
+                elements_found=[], elements_missing=[], tenant_text="",
             ))
             continue
 
@@ -99,7 +99,7 @@ def assess_coverage(
                 applicability=applicability_result,
                 evidence_summary=f"Cannot determine whether this issue area applies; defaulting to '{default_state}'",
                 supporting_provisions=[], negative_space=ns_signals.get(pid, []),
-                elements_found=[], elements_missing=[],
+                elements_found=[], elements_missing=[], tenant_text="",
             ))
             continue
 
@@ -119,6 +119,7 @@ def assess_coverage(
                 evidence_summary="Section or subsection explicitly marked as omitted or reserved",
                 supporting_provisions=[pid] if prov else [], negative_space=ns,
                 elements_found=[], elements_missing=get_expected_elements(pid),
+                tenant_text=tenant_text,
             ))
             continue
 
@@ -136,6 +137,7 @@ def assess_coverage(
                 applicability=applicability_result, evidence_summary=evidence,
                 supporting_provisions=[], negative_space=ns,
                 elements_found=[], elements_missing=get_expected_elements(pid),
+                tenant_text="",
             ))
             continue
 
@@ -156,6 +158,7 @@ def assess_coverage(
             applicability=applicability_result, evidence_summary=evidence_summary,
             supporting_provisions=[pid] if prov else [], negative_space=ns,
             elements_found=elements_found, elements_missing=elements_missing,
+            tenant_text=tenant_text,
         ))
 
     logger.info(f"[lease_coverage] Coverage assessment complete: {len(assessments)} issue areas assessed")
@@ -428,7 +431,8 @@ def _check_unenforceable_patterns(pid, text_lower):
 # ── Assessment builder ─────────────────────────────────────────────────────────
 
 def _build_assessment(pid, area, coverage_state, applicability, evidence_summary,
-                      supporting_provisions, negative_space, elements_found, elements_missing):
+                      supporting_provisions, negative_space, elements_found, elements_missing,
+                      tenant_text=""):
     from cam.adapters.lease_review.lease_knowledge import (
         get_caution_signals, get_caution_signal_definition,
         get_exposure_statement, get_risk_if_missing, get_related_issue_areas,
@@ -459,6 +463,7 @@ def _build_assessment(pid, area, coverage_state, applicability, evidence_summary
             "missing", "broken_xref", "covered_unfavorable",
             "partial", "potentially_unenforceable"
         ),
+        "tenant_text": tenant_text,
     }
 
 

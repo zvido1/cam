@@ -14681,6 +14681,10 @@ function renderCoveragePanel() {
             : "";
 
         const srcNote = src === "model" ? '<span class="cv-source-model">AI assessed</span>' : "";
+        const tenantText = (a.tenant_text || "").trim();
+        const leaseTextHtml = tenantText
+            ? `<div class="cv-lease-text-row" onclick="(function(row){var body=row.nextElementSibling;var opening=body.style.display==='none';body.style.display=opening?'block':'none';row.querySelector('.cv-lt-arrow').textContent=opening?'▾':'▸';row.querySelector('.cv-lt-label').textContent=opening?'Hide lease text':'Show lease text';})(this)"><span class="cv-lt-arrow">▸</span><span class="cv-lt-label"> Show lease text</span></div><div class="cv-lease-text-body" style="display:none"><pre class="cv-lease-text-pre">${esc(tenantText)}</pre></div>`
+            : "";
 
         const toolbarHtml = buildCovToolbar(a, tenantIdx);
 
@@ -14702,6 +14706,7 @@ function renderCoveragePanel() {
                 <span class="cv-badge ${stateInfo.cls}">${stateInfo.label}</span>
                 ${pclsBadge}
             </div>
+            ${leaseTextHtml}
             ${stmt ? `<div class="cv-item-stmt">${esc(stmt)} ${srcNote}</div>` : ""}
             ${state === 'missing' ? '<div class="cv-missing-provision-note">⚠ This provision is absent from the lease. Use <strong>Draft Missing Clause</strong> to request language from the landlord.</div>' : ''}
             ${missingHtml}
