@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.2.0",
+  "schema_version": "1.3.0",
   "created": "2026-03-27",
-  "updated": "2026-04-30",
+  "updated": "2026-05-01",
   "contract_type": "retail_lease",
   "display_name": "Retail / Commercial Lease",
   "description": "Issue-area knowledge schema for retail and commercial lease analysis. Defines expected coverage, applicability gating, exposure statements, caution signals, and negative-space clues.",
-  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants. v1.2.0: Added LP-19 Utilities (required), LP-20 Exclusivity (conditional, extracted from LP-05), LP-21 Guaranty of Lease (conditional, promoted from discovered_provision_patterns). LP-05 expected_elements updated: removed 'exclusive use right scope' (now LP-20's responsibility); related_issue_areas updated to include LP-20. discovered_provision_patterns updated: removed 'Guaranty' pattern (now LP-21).",
+  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants. v1.2.0: Added LP-19 Utilities (required), LP-20 Exclusivity (conditional, extracted from LP-05), LP-21 Guaranty of Lease (conditional, promoted from discovered_provision_patterns). LP-05 expected_elements updated: removed 'exclusive use right scope' (now LP-20's responsibility); related_issue_areas updated to include LP-20. discovered_provision_patterns updated: removed 'Guaranty' pattern (now LP-21). v1.3.0: Added LP-22 SNDA, LP-23 Percentage Rent, LP-24 Damage & Destruction, LP-25 Condemnation/Eminent Domain, LP-26 Quiet Enjoyment, LP-27 Landlord Default & Tenant Remedies, LP-28 Compliance with Laws, LP-29 Right of Entry/Landlord Access, LP-30 Estoppel Certificate, LP-31 Co-Tenancy, LP-32 Hazardous Materials. Promoted SNDA, Percentage Rent, Co-Tenancy, and Hazardous Materials from discovered_provision_patterns. Schema now covers 32 issue areas per CAM_Schema_Selection_Methodology.md.",
 
   "coverage_states": {
     "covered":                  "Provision present and consistent with standard form",
@@ -199,7 +199,7 @@
       "activation_clues": [],
       "exclusion_clues": [],
       "default_when_unclear": "review_needed",
-      "related_issue_areas": ["LP-14", "LP-20"],
+      "related_issue_areas": ["LP-14", "LP-20", "LP-31"],
       "notes": "Cascade risk: force majeure definition changes can alter continuous operation obligations.",
       "expected_elements": [
         "specific permitted use description",
@@ -311,7 +311,7 @@
       "activation_clues": [],
       "exclusion_clues": [],
       "default_when_unclear": "review_needed",
-      "related_issue_areas": ["LP-13"],
+      "related_issue_areas": ["LP-13", "LP-24"],
       "expected_elements": [
         "tenant commercial general liability minimum ($1M per occurrence, $2M aggregate standard)",
         "property insurance obligation",
@@ -423,7 +423,7 @@
       "activation_clues": [],
       "exclusion_clues": [],
       "default_when_unclear": "review_needed",
-      "related_issue_areas": ["LP-01", "LP-09", "LP-12"],
+      "related_issue_areas": ["LP-01", "LP-09", "LP-12", "LP-27"],
       "expected_elements": [
         "monetary default definition and cure period (typically 5 days)",
         "non-monetary default definition and cure period (typically 30 days)",
@@ -553,7 +553,7 @@
       "activation_clues": [],
       "exclusion_clues": [],
       "default_when_unclear": "review_needed",
-      "related_issue_areas": ["LP-05", "LP-03"],
+      "related_issue_areas": ["LP-05", "LP-03", "LP-24"],
       "notes": "Cascade risk: definition expansions silently affect LP-05 continuous operation obligations. v1.1.3: Added partial-abatement expected_element and 'wholly untenantable only' pattern to covered_unfavorable rule.",
       "expected_elements": [
         "definition of qualifying force majeure events",
@@ -915,40 +915,551 @@
         "Release on assignment of lease to qualified assignee",
         "Limited guaranty scope (rent only, not all lease obligations)"
       ]
+    },
+    {
+      "id": "LP-22",
+      "name": "SNDA (Subordination, Non-Disturbance & Attornment)",
+      "applicability": "conditional",
+      "activation_clues": [
+        "SNDA", "subordination", "non-disturbance", "attornment",
+        "lender", "mortgagee", "deed of trust", "superior lien",
+        "senior mortgage", "recognize lender"
+      ],
+      "exclusion_clues": [
+        "no mortgage", "unencumbered", "fee simple without encumbrance",
+        "no lender consent required", "not subject to any mortgage"
+      ],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": ["LP-03", "LP-09", "LP-26"],
+      "notes": "Promoted from discovered_provision_patterns in schema v1.3.0. Critical for tenant protection when landlord has or may obtain financing secured by the property. Without a non-disturbance agreement, tenant's lease may be extinguished on landlord foreclosure. Common in institutional retail and any property with a mortgage.",
+      "expected_elements": [
+        "subordination of lease to senior mortgage or deed of trust",
+        "non-disturbance covenant from lender (lease survives foreclosure if tenant not in default)",
+        "attornment obligation (tenant recognizes successor landlord after foreclosure)",
+        "form of SNDA (landlord-prepared, tenant approval right, or recognized form)",
+        "lender obligation to execute SNDA within defined period",
+        "survival and binding effect on successors and assigns"
+      ],
+      "coverage_state_rules": {
+        "missing":             "SNDA referenced in lease or recitals but no SNDA provision or exhibit found",
+        "partial":             "Subordination or attornment present but non-disturbance covenant absent; OR SNDA form referenced but not attached",
+        "ambiguous":           "Lease states it is subject to mortgage but SNDA terms not defined",
+        "covered_unfavorable": "Non-disturbance limited to specific events or conditioned on lender approval at time of foreclosure; OR SNDA form is lender's standard form with no tenant modification right; OR no obligation on lender to execute within defined period",
+        "broken_xref":         "SNDA referenced as Exhibit or separate agreement but not attached to document",
+        "not_applicable":      "Property described as unencumbered and no mortgage referenced anywhere in document"
+      },
+      "risk_if_missing": "Tenant's lease may be extinguished on landlord's lender foreclosure; tenant loses occupancy right and all leasehold improvements without compensation regardless of default status",
+      "exposure_statement": {
+        "tenant":   "Non-disturbance protection absent; tenant's leasehold rights may be extinguished if landlord's lender forecloses, regardless of whether tenant is in default",
+        "landlord": "SNDA terms undefined; landlord may be unable to obtain financing without tenant cooperation, and successor landlord's obligations to existing tenants are uncertain",
+        "neutral":  "SNDA terms, non-disturbance scope, and attornment conditions are undefined; both parties face uncertainty over the lease's survival through a lender foreclosure"
+      },
+      "caution_signals": ["landlord_leverage_point", "governing_law_sensitive"],
+      "negative_space_clues": [
+        "Lease recitals reference existing mortgage but no SNDA article",
+        "Subordination clause present but non-disturbance absent",
+        "SNDA Exhibit placeholder present but exhibit not attached",
+        "Lender consent required for assignment but no SNDA addresses lender's obligations to tenant",
+        "Estoppel certificate obligation references SNDA but no SNDA found"
+      ],
+      "common_tenant_modifications": [
+        "Non-disturbance covenant added (key negotiating point — landlord often resists)",
+        "Lender SNDA form subject to tenant's reasonable approval",
+        "Lender required to execute SNDA within 30 days of tenant's written request",
+        "SNDA extends to all future mortgages, not just existing encumbrances",
+        "Lender bound by all landlord obligations under the lease after foreclosure"
+      ]
+    },
+    {
+      "id": "LP-23",
+      "name": "Percentage Rent",
+      "applicability": "conditional",
+      "activation_clues": [
+        "percentage rent", "gross sales", "natural breakpoint",
+        "percentage of gross", "breakpoint", "overage rent",
+        "sales volume", "percentage lease"
+      ],
+      "exclusion_clues": [
+        "no percentage rent", "fixed rent only", "percentage rent is not applicable",
+        "rent is not based on sales"
+      ],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": ["LP-01", "LP-02"],
+      "notes": "Promoted from discovered_provision_patterns in schema v1.3.0. Common in retail leases, particularly for food service, soft goods, and high-traffic retail. The calculation methodology and gross sales definition are the primary dispute vectors — broad gross sales definitions favor landlord; broad exclusions favor tenant.",
+      "expected_elements": [
+        "gross sales definition (what is included and excluded)",
+        "percentage rate applied to gross sales above breakpoint",
+        "natural or artificial breakpoint (base rent / percentage rate, or defined dollar amount)",
+        "reporting period and frequency (monthly, quarterly, or annual)",
+        "deadline for annual reconciliation statement",
+        "landlord audit rights over gross sales records",
+        "exclusions from gross sales (returns, exchanges, sales taxes, credit card fees)"
+      ],
+      "coverage_state_rules": {
+        "missing":             "Percentage rent referenced in base economics but no percentage rent article found",
+        "partial":             "Percentage rate and breakpoint defined but gross sales definition, reporting obligations, or audit rights absent",
+        "ambiguous":           "Percentage rent described generally without defined rate, breakpoint, or gross sales definition",
+        "covered_unfavorable": "Gross sales definition includes sales made outside premises or internet sales; OR no exclusion for sales tax or credit card processing fees; OR audit rights absent or limited to 12 months; OR landlord may estimate gross sales if tenant fails to report",
+        "broken_xref":         "Gross sales definition or breakpoint calculation references exhibit not attached"
+      },
+      "risk_if_missing": "Percentage rent obligations unenforceable or undefined; landlord cannot collect overage rent and tenant has no clear reporting or recordkeeping obligations",
+      "exposure_statement": {
+        "tenant":   "Percentage rent calculation, gross sales definition, and audit exposure are undefined; tenant may face disputed overage rent claims or be unable to limit gross sales inclusions",
+        "landlord": "Percentage rent calculation and reporting obligations undefined; landlord cannot reliably collect overage rent or audit tenant's sales records",
+        "neutral":  "Percentage rent rate, breakpoint, gross sales definition, and audit rights are undefined; both parties face uncertainty over overage rent obligations and verification rights"
+      },
+      "caution_signals": ["common_dispute_area"],
+      "negative_space_clues": [
+        "Lease summary shows percentage rate and breakpoint but no percentage rent article in body",
+        "Annual reconciliation deadline blank",
+        "Gross sales definition absent from Definitions article",
+        "Audit rights section header present but body blank or marked Reserved",
+        "Reporting schedule references exhibit not attached"
+      ],
+      "common_tenant_modifications": [
+        "Broad gross sales exclusions (online sales, catering, wholesale, gift cards)",
+        "Credit card processing fees excluded from gross sales",
+        "Artificial breakpoint set higher than natural breakpoint",
+        "Audit window limited to 2 years; findings deemed final if not contested",
+        "Annual gross sales cap after which no further percentage rent is owed"
+      ]
+    },
+    {
+      "id": "LP-24",
+      "name": "Damage & Destruction",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-08", "LP-14", "LP-12"],
+      "notes": "Required in every commercial lease. The landlord repair deadline and tenant's termination right are the key negotiating points — landlord wants maximum time and minimum termination exposure; tenant wants a hard deadline with a clean termination right. The 'total loss' threshold determines which party can exit.",
+      "expected_elements": [
+        "landlord's obligation to repair or rebuild following insured casualty",
+        "rent abatement during period of repair (full vs. partial based on usability)",
+        "landlord repair deadline (often 180-270 days from damage with architect certification)",
+        "tenant's right to terminate if repairs not completed within defined period",
+        "landlord's right to terminate if damage occurs near end of term or is uninsurable",
+        "definition of total loss or destruction threshold",
+        "disposition of insurance proceeds if lease terminates"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No damage and destruction provision found",
+        "partial":             "Repair obligation present but repair deadline, abatement scope, or termination right absent",
+        "ambiguous":           "Landlord obligated to repair 'as soon as practicable' without defined deadline or termination right",
+        "covered_unfavorable": "No rent abatement during repair period; OR landlord's repair deadline so long (>270 days) as to render tenant's termination right illusory; OR landlord retains right to terminate on any casualty without rebuilding; OR tenant bears cost of rebuilding tenant improvements above insurance proceeds",
+        "broken_xref":         "Damage & destruction provision cross-references insurance exhibit or architect certification procedure not present in document"
+      },
+      "risk_if_missing": "If premises are damaged, tenant has no guaranteed right to rent abatement, no landlord repair obligation, no termination right if repairs are never completed, and no clarity on insurance proceeds disposition",
+      "exposure_statement": {
+        "tenant":   "Damage and destruction obligations are undefined; tenant may be required to pay full rent on unusable premises, have no termination right if landlord fails to rebuild, and no clarity on insurance proceeds if the lease terminates",
+        "landlord": "Damage and destruction obligations are undefined; landlord faces uncertain repair obligations, dispute over insurance proceeds allocation, and potential tenant claims for abatement without a defined framework",
+        "neutral":  "Damage and destruction repair obligations, abatement rights, termination triggers, and insurance proceeds disposition are undefined; both parties face significant uncertainty following a casualty event"
+      },
+      "caution_signals": ["common_dispute_area", "cascade_risk"],
+      "negative_space_clues": [
+        "Casualty insurance required but no damage and destruction provision in lease body",
+        "Damage and destruction section header present but body blank or marked Reserved",
+        "Repair deadline blank in damage and destruction clause",
+        "Insurance proceeds allocation provision references separate agreement not attached",
+        "Force majeure provision references damage and destruction but no separate article found"
+      ],
+      "common_tenant_modifications": [
+        "Hard landlord repair deadline (180 days) with architect certification of completion",
+        "Tenant termination right if repairs exceed 180-270 days or are not commenced within 60 days",
+        "Full rent abatement during repair period (not just proportionate to unusable portion)",
+        "Tenant rebuild allowance for tenant improvements above base building insurance",
+        "Tenant right to terminate if damage occurs in last 12-18 months of term"
+      ]
+    },
+    {
+      "id": "LP-25",
+      "name": "Condemnation / Eminent Domain",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-12", "LP-03"],
+      "notes": "Required in every commercial lease. Often treated as a companion to the damage and destruction provision. The allocation of condemnation awards — particularly tenant's right to a separate award for trade fixtures, leasehold improvements, and business losses — is the primary negotiating point.",
+      "expected_elements": [
+        "definition of total taking vs. material partial taking",
+        "lease termination right on total taking or material partial taking",
+        "rent abatement or reduction on partial taking proportionate to loss of premises",
+        "allocation of condemnation award between landlord and tenant",
+        "tenant's right to separate award for trade fixtures, leasehold improvements, moving costs, and business losses",
+        "restoration obligation if lease continues after partial taking",
+        "definition of 'material' partial taking (e.g., loss of parking, access, or defined percentage of floor area)"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No condemnation or eminent domain provision found",
+        "partial":             "Termination right on total taking present but partial taking treatment, award allocation, or restoration obligation absent",
+        "ambiguous":           "General condemnation clause without definition of material partial taking or tenant award entitlement",
+        "covered_unfavorable": "Landlord entitled to entire condemnation award including value of leasehold; OR tenant has no termination right on partial taking that destroys utility of premises; OR no restoration obligation after partial taking",
+        "broken_xref":         "Condemnation award allocation or restoration procedure cross-references exhibit not attached"
+      },
+      "risk_if_missing": "On condemnation, tenant has no guaranteed right to share in the award, no termination right if partial taking renders premises unusable, and no rent reduction right — all defaults to state law which may be unfavorable",
+      "exposure_statement": {
+        "tenant":   "Condemnation rights are undefined; tenant may receive no portion of the condemnation award, have no termination right on material partial taking, and face full rent obligation on diminished premises",
+        "landlord": "Condemnation provisions are undefined; landlord faces uncertain obligations to restore, reduce rent, or allow termination after a partial taking, with increased dispute exposure",
+        "neutral":  "Condemnation termination triggers, award allocation, and restoration obligations are undefined; both parties face significant uncertainty on a government taking of all or part of the premises"
+      },
+      "caution_signals": ["governing_law_sensitive", "common_dispute_area"],
+      "negative_space_clues": [
+        "Eminent domain or condemnation section header present but body blank or marked Reserved",
+        "Lease summary references condemnation but no article in lease body",
+        "Award allocation provision references separate agreement not attached",
+        "Definition of 'material partial taking' blank or omitted from Definitions article"
+      ],
+      "common_tenant_modifications": [
+        "Tenant entitled to separate award for trade fixtures, leasehold improvements, and moving costs",
+        "Tenant termination right on partial taking that reduces usable floor area by defined percentage (e.g., 15%) or eliminates parking access",
+        "Rent reduction proportionate to loss of premises area following partial taking",
+        "Landlord restoration obligation if lease continues after partial taking",
+        "Business interruption damages excluded from landlord's award"
+      ]
+    },
+    {
+      "id": "LP-26",
+      "name": "Quiet Enjoyment",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-22", "LP-11", "LP-27"],
+      "notes": "Required in every commercial lease. A fundamental landlord covenant — its absence may be supplied by state law in many jurisdictions, but an express covenant is preferred to avoid jurisdictional ambiguity. The covenant should survive against lenders and successors for SNDA compatibility.",
+      "expected_elements": [
+        "express quiet enjoyment covenant by landlord",
+        "covenant conditioned on tenant's performance of lease obligations (not absolute)",
+        "survival and binding effect on landlord's successors, assigns, and lenders",
+        "covenant not subject to any undisclosed superior lien or encumbrance"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No quiet enjoyment covenant found; tenant relies solely on state law implied covenant",
+        "partial":             "Quiet enjoyment clause present but not conditioned on tenant performance OR does not bind successors and lenders",
+        "ambiguous":           "Quiet enjoyment referenced without definition of scope or conditions",
+        "covered_unfavorable": "Covenant is conditioned on landlord's receipt of rent from tenant rather than tenant's compliance with all lease obligations; OR covenant explicitly does not bind lenders or successors in interest",
+        "potentially_unenforceable": "Quiet enjoyment covenant purports to be absolute (not conditioned on tenant's performance) — may conflict with landlord's right to re-enter on tenant default"
+      },
+      "risk_if_missing": "Tenant's right to undisturbed possession depends on state law implied covenant, which varies by jurisdiction and may be narrower than an express covenant; particularly material if property is mortgaged and SNDA does not independently protect tenant",
+      "exposure_statement": {
+        "tenant":   "Quiet enjoyment covenant absent or undefined; tenant's right to undisturbed possession depends on state law, which varies and may not protect against lender interference",
+        "landlord": "Quiet enjoyment covenant undefined; landlord faces uncertainty over scope of obligation and whether covenant binds successors, creating potential dispute on transfer or financing",
+        "neutral":  "Quiet enjoyment scope, conditions, and survival against successors and lenders are undefined; both parties face uncertainty over tenant's right to undisturbed possession"
+      },
+      "caution_signals": ["governing_law_sensitive"],
+      "negative_space_clues": [
+        "Quiet enjoyment referenced in recitals or lease summary but no covenant in lease body",
+        "SNDA provision present but quiet enjoyment covenant absent",
+        "Landlord's representations section blank or marked Reserved"
+      ],
+      "common_tenant_modifications": [
+        "Covenant confirmed to bind lenders and mortgagees (coordinates with SNDA)",
+        "Absolute covenant for initial term (no conditioned-on-tenant-performance qualifier)",
+        "Explicit statement that landlord's right to re-enter does not breach quiet enjoyment covenant"
+      ]
+    },
+    {
+      "id": "LP-27",
+      "name": "Landlord Default & Tenant Remedies",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-11", "LP-26", "LP-22"],
+      "notes": "The counterpart to LP-11 (tenant default). Often conspicuously weaker or absent in landlord-form leases — landlords frequently attempt to limit tenant remedies to specific performance only, eliminating offset rights, self-help rights, and termination rights. The tenant's ability to offset rent against uncured landlord obligations is a major negotiating point.",
+      "expected_elements": [
+        "definition of landlord default events (failure to perform material obligations after notice and cure)",
+        "notice and cure period before tenant may exercise remedies (typically 30 days written + additional reasonable time for complex repairs)",
+        "tenant self-help right to cure at landlord's expense after cure period expires",
+        "rent offset right against verified self-help costs",
+        "tenant's right to terminate on material uncured landlord default",
+        "lender third-party cure right (lender may cure landlord default within additional cure period)",
+        "limitation on landlord's personal liability (typically limited to interest in the property)"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No landlord default provision found; tenant's remedies limited to state law defaults",
+        "partial":             "Landlord default defined but self-help right, offset right, or termination right absent",
+        "ambiguous":           "Landlord default clause present but remedies described as 'tenant's rights at law and equity' without enumeration",
+        "covered_unfavorable": "Tenant remedy limited to specific performance only (no termination, no offset, no self-help); OR notice and cure period so long as to render remedies impractical; OR landlord default provision explicitly excludes rent offset right",
+        "broken_xref":         "Landlord default cure procedure cross-references notice article or lender SNDA not present in document"
+      },
+      "risk_if_missing": "On landlord's failure to perform (e.g., failure to maintain HVAC, roof, or common areas), tenant has no clear self-help right, no rent offset, and may be unable to terminate — all remedies default to litigation, which is slow and expensive",
+      "exposure_statement": {
+        "tenant":   "Landlord default remedies undefined; tenant has no self-help right, no rent offset, and may be unable to terminate if landlord fails to maintain the premises or perform material obligations",
+        "landlord": "Landlord default terms undefined; landlord faces uncertainty over cure period and exposure to tenant self-help costs or termination claims without a defined notice-and-cure framework",
+        "neutral":  "Landlord default events, cure periods, and tenant remedies are undefined; both parties face uncertainty over what constitutes a material landlord breach and what remedies are available"
+      },
+      "caution_signals": ["common_dispute_area", "landlord_leverage_point"],
+      "negative_space_clues": [
+        "Tenant default section detailed but landlord default section absent or one sentence",
+        "Landlord default section header present but body blank or marked Reserved",
+        "Tenant remedies limited to 'rights at law' without enumeration",
+        "Self-help provision referenced in another article but no landlord default article found",
+        "SNDA requires lender cure right but no landlord default article defines what is being cured"
+      ],
+      "common_tenant_modifications": [
+        "Self-help right added: tenant may cure after 30-day notice + additional reasonable time",
+        "Rent offset right against verified self-help costs (limited to 2-3 months rent per event)",
+        "Termination right after material uncured default exceeding 90 days",
+        "Lender cure period limited to additional 30 days after landlord's cure period expires",
+        "Landlord liability not limited to property interest for fraud, willful misconduct, or gross negligence"
+      ]
+    },
+    {
+      "id": "LP-28",
+      "name": "Compliance with Laws",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-05", "LP-10", "LP-32"],
+      "notes": "Required in every commercial lease. The primary dispute vectors are ADA compliance cost allocation (structural ADA falls to landlord; tenant-use-specific ADA falls to tenant) and future law compliance (changes in law during the term that require expensive retrofits). Tenant should push to limit compliance obligations to those triggered by tenant's specific use.",
+      "expected_elements": [
+        "tenant's obligation to comply with applicable laws, codes, and regulations in connection with tenant's use",
+        "landlord's obligation to deliver premises in compliance with applicable laws at commencement",
+        "allocation of structural vs. use-specific compliance costs",
+        "ADA compliance allocation (structural = landlord; ADA modifications for tenant's specific operations = tenant)",
+        "future changes in law during the term (who bears the cost of code changes not triggered by tenant's use)",
+        "grandfathering for pre-existing non-compliant conditions at lease commencement"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No compliance with laws provision found",
+        "partial":             "General compliance obligation present but cost allocation, ADA responsibility, or future-law treatment absent",
+        "ambiguous":           "Compliance obligation stated without distinguishing between tenant-use-triggered and structural/code compliance costs",
+        "covered_unfavorable": "Tenant required to comply with all laws including structural requirements regardless of trigger; OR tenant bears cost of future law compliance not triggered by tenant's specific use; OR no grandfathering for pre-existing non-compliant conditions",
+        "broken_xref":         "Compliance obligation cross-references laws schedule or permitted-use exhibit not attached"
+      },
+      "risk_if_missing": "Tenant may be required to fund expensive structural compliance (ADA ramps, fire suppression upgrades) that should be landlord's responsibility, and may face uncapped exposure to future code changes during the lease term",
+      "exposure_statement": {
+        "tenant":   "Compliance with laws obligations are undefined; tenant may face liability for structural or pre-existing non-compliance, uncapped future code change costs, and ADA upgrade obligations not triggered by tenant's specific use",
+        "landlord": "Compliance with laws obligations are undefined; landlord may face tenant claims for reimbursement of compliance costs that should have been landlord's responsibility under a properly allocated lease",
+        "neutral":  "Compliance cost allocation, ADA responsibility, and future-law treatment are undefined; both parties face uncertainty over who bears the cost of legal compliance changes during the lease term"
+      },
+      "caution_signals": ["governing_law_sensitive", "common_dispute_area"],
+      "negative_space_clues": [
+        "Compliance with laws section header present but body blank or marked Reserved",
+        "ADA defined in Definitions article but not addressed in compliance provision",
+        "Tenant's permitted use triggers specific regulatory requirements not addressed in compliance clause",
+        "Structural compliance referenced in tenant's obligations without landlord carve-out"
+      ],
+      "common_tenant_modifications": [
+        "Tenant compliance limited to laws triggered by tenant's specific use (not all laws)",
+        "Landlord responsible for structural compliance and ADA baseline requirements",
+        "Grandfathering: tenant not responsible for pre-existing non-compliant conditions at commencement",
+        "Future law compliance costs above defined threshold allocated to landlord",
+        "Landlord representation that premises comply with all applicable laws at commencement"
+      ]
+    },
+    {
+      "id": "LP-29",
+      "name": "Right of Entry / Landlord Access",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-06", "LP-10"],
+      "notes": "Required in every commercial lease. The notice period and permitted purposes for access are the primary negotiating points. Insufficient notice or unlimited access purposes can interfere with tenant's business operations.",
+      "expected_elements": [
+        "notice period required before entry (standard: 24-48 hours prior written or verbal notice)",
+        "permitted purposes for entry (inspection, repair, showing to prospective tenants/buyers, emergency)",
+        "emergency entry without advance notice (limited to life-safety emergencies)",
+        "tenant's right to have representative present during non-emergency entry",
+        "restriction on entry frequency or timing (no entry during business hours without consent, or limited to defined hours)",
+        "landlord's obligation to minimize interference with tenant's business operations"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No right of entry provision found; access governed by state law defaults only",
+        "partial":             "Entry right defined but notice period, permitted purposes, or emergency entry limitation absent",
+        "ambiguous":           "Entry permitted 'at reasonable times' without defined notice period or purpose limitation",
+        "covered_unfavorable": "No notice required for any entry (not just emergencies); OR unlimited entry purposes including showing to competitors; OR no obligation to minimize interference with tenant's business; OR tenant's representative right absent",
+        "broken_xref":         "Entry notice procedure cross-references notice article not found in document"
+      },
+      "risk_if_missing": "Landlord may enter premises without notice, at any time, for any purpose — disrupting tenant's business operations, exposing confidential business information, and interfering with customers",
+      "exposure_statement": {
+        "tenant":   "Landlord access terms undefined; landlord may enter without notice at any time, disrupting business operations, exposing confidential information, and interfering with customers",
+        "landlord": "Landlord access terms undefined; landlord faces uncertain rights to inspect, maintain, and show the property without a defined notice and entry framework",
+        "neutral":  "Landlord entry notice requirements, permitted purposes, and frequency limitations are undefined; both parties face uncertainty over access rights and interference with business operations"
+      },
+      "caution_signals": ["common_dispute_area"],
+      "negative_space_clues": [
+        "Landlord's repair obligation present but no corresponding entry right or notice procedure",
+        "Showing rights during last year of term referenced but no general entry article found",
+        "Notice article references landlord's right of entry but no entry article exists",
+        "Emergency entry right asserted without definition of 'emergency'"
+      ],
+      "common_tenant_modifications": [
+        "48-hour advance notice required except for life-safety emergencies",
+        "Entry only during normal business hours (9am-5pm weekdays) without tenant consent",
+        "Tenant's representative right during all non-emergency entries",
+        "Landlord's minimization of business interference obligation",
+        "Showing rights limited to last 12 months of term and with tenant representative present"
+      ]
+    },
+    {
+      "id": "LP-30",
+      "name": "Estoppel Certificate",
+      "applicability": "conditional",
+      "activation_clues": [
+        "estoppel", "estoppel certificate", "tenant estoppel",
+        "landlord estoppel", "certify", "certificate of lease status",
+        "confirm the status of the lease"
+      ],
+      "exclusion_clues": [
+        "no estoppel required", "tenant shall not be required to certify"
+      ],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": ["LP-22", "LP-09"],
+      "notes": "Common in institutional retail leases where landlord may seek financing or sell the property. Tenant's obligation to provide accurate estoppels is important but should be limited in frequency and form to avoid overreach.",
+      "expected_elements": [
+        "tenant's obligation to provide estoppel certificate on landlord's written request",
+        "response deadline (typically 10-20 business days from request)",
+        "form of certificate (landlord-prepared form with tenant right to note exceptions)",
+        "scope of certification (lease status, rent payment current, no landlord default known, amendments listed)",
+        "consequence of failure to respond timely (deemed approval is common but problematic for tenant)",
+        "limitation on request frequency (maximum number per year, e.g., 2)"
+      ],
+      "coverage_state_rules": {
+        "missing":             "Estoppel certificate obligation referenced in lease economics or recitals but no article found",
+        "partial":             "Estoppel obligation present but response deadline, frequency limit, or form approval right absent",
+        "ambiguous":           "Estoppel obligation stated without defining content, form, or timeline",
+        "covered_unfavorable": "Failure to respond within deadline deemed conclusive admission that no landlord defaults exist; OR no frequency limit on requests; OR tenant must certify beyond actual knowledge; OR form prepared solely by landlord with no tenant exception right",
+        "broken_xref":         "Estoppel form referenced as exhibit but not attached to lease"
+      },
+      "risk_if_missing": "If landlord cannot obtain tenant estoppels for a sale or financing, landlord may claim tenant breach; conversely, an uncontrolled estoppel obligation may require tenant to certify statements that later prove inaccurate",
+      "exposure_statement": {
+        "tenant":   "Estoppel certificate terms undefined; tenant faces uncertainty over required scope of certification, liability for inaccurate statements, and deemed-approval traps if response obligations are not clearly limited",
+        "landlord": "Estoppel certificate procedure undefined; landlord may be unable to efficiently obtain tenant certifications needed for financing or property sale transactions",
+        "neutral":  "Estoppel certificate scope, timing, deemed-approval consequences, and frequency limits are undefined; both parties face uncertainty over tenant's certification obligations and exposure"
+      },
+      "caution_signals": ["landlord_leverage_point"],
+      "negative_space_clues": [
+        "SNDA references estoppel but no estoppel article found",
+        "Estoppel form referenced as exhibit but exhibit not attached",
+        "Lease table of contents lists estoppel article but article body is blank or Reserved",
+        "Assignment approval procedure requires estoppel but no estoppel article defines procedure"
+      ],
+      "common_tenant_modifications": [
+        "Response deadline extended to 15-20 business days",
+        "No deemed-approval provision (failure to respond is not a concession)",
+        "Frequency limited to 2 requests per calendar year",
+        "Tenant certifies only to actual knowledge (not constructive or imputed knowledge)",
+        "Tenant may note exceptions to landlord's form estoppel rather than sign as prepared"
+      ]
+    },
+    {
+      "id": "LP-31",
+      "name": "Co-Tenancy",
+      "applicability": "conditional",
+      "activation_clues": [
+        "co-tenancy", "anchor tenant", "co-anchor", "occupancy threshold",
+        "go dark", "major tenant", "key tenant", "required co-tenancy",
+        "anchor operating", "minimum occupancy"
+      ],
+      "exclusion_clues": [
+        "no co-tenancy", "co-tenancy not applicable", "tenant has no co-tenancy rights",
+        "co-tenancy clause is not included", "tenant waives co-tenancy"
+      ],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": ["LP-01", "LP-05", "LP-12"],
+      "notes": "Promoted from discovered_provision_patterns in schema v1.3.0. Significant for retail tenants whose traffic and sales depend on anchor tenants. Two types: opening co-tenancy (anchor must be open before tenant is required to open) and ongoing co-tenancy (anchor must continue operating). Both trigger rent modification or termination rights on failure.",
+      "expected_elements": [
+        "opening co-tenancy condition (named anchor tenant(s) open and operating before tenant opening obligation)",
+        "ongoing co-tenancy condition (anchor tenant(s) continue operating or minimum occupancy threshold maintained)",
+        "remedy during co-tenancy failure period (typically reduced rent or percentage-rent-only mode)",
+        "cure period before remedy activates (typically 60-180 days after anchor closure)",
+        "termination right if co-tenancy failure continues beyond defined period (typically 12-24 months)",
+        "definition of 'anchor tenant' or minimum occupancy percentage threshold"
+      ],
+      "coverage_state_rules": {
+        "missing":             "Co-tenancy referenced in lease economics or recitals but no co-tenancy provision found in body",
+        "partial":             "Co-tenancy condition defined but remedy, cure period, or termination right absent",
+        "ambiguous":           "Co-tenancy referenced without defining anchor tenant, occupancy threshold, or applicable remedy",
+        "covered_unfavorable": "Remedy during co-tenancy failure is merely percentage rent (no fixed floor); OR termination right not available until after extended co-tenancy failure period exceeding 24 months; OR definition of anchor tenant so broad that replacement tenant of any kind satisfies co-tenancy condition",
+        "not_applicable":      "Document explicitly states no co-tenancy rights, OR lease type (office, industrial) where co-tenancy is not market standard"
+      },
+      "risk_if_missing": "Tenant may be required to pay full rent and remain open even if the center's anchor tenant closes and foot traffic collapses, with no rent reduction right and no exit strategy",
+      "exposure_statement": {
+        "tenant":   "Co-tenancy protection absent or undefined; tenant may be required to pay full rent and remain open even if anchor tenants close and the center's viability materially deteriorates",
+        "landlord": "Co-tenancy terms undefined; landlord faces uncertain obligations to remedy anchor closures and may face tenant claims for unauthorized rent reduction",
+        "neutral":  "Co-tenancy conditions, remedies, cure periods, and termination rights are undefined; both parties face uncertainty over tenant obligations during center anchor vacancies"
+      },
+      "caution_signals": ["common_dispute_area", "tenant_leverage_point"],
+      "negative_space_clues": [
+        "Anchor tenant named in recitals but no co-tenancy article in lease body",
+        "Co-tenancy section header present but body blank or marked Reserved",
+        "Minimum occupancy threshold blank in co-tenancy clause",
+        "Termination right referenced in co-tenancy clause with blank cure period or trigger date",
+        "Lease summary shows co-tenancy condition but no governing provision found"
+      ],
+      "common_tenant_modifications": [
+        "Named anchor tenant(s) listed with obligation to reopen within 12 months if closed",
+        "Ongoing minimum occupancy threshold defined (e.g., 75% of GLA occupied by non-anchor tenants)",
+        "Remedy: fixed reduced rent (e.g., lesser of percentage rent or 50% of base rent) during failure",
+        "Termination right after 12 months of continuous co-tenancy failure",
+        "Replacement anchor standard tightened (replacement must be national brand or defined credit quality)"
+      ]
+    },
+    {
+      "id": "LP-32",
+      "name": "Hazardous Materials",
+      "applicability": "conditional",
+      "activation_clues": [
+        "hazardous", "hazmat", "environmental", "toxic", "contaminant",
+        "remediation", "CERCLA", "RCRA", "hazardous substances",
+        "hazardous materials", "hazardous waste", "environmental law",
+        "petroleum", "underground storage", "asbestos"
+      ],
+      "exclusion_clues": [
+        "no hazardous materials used", "non-industrial use only",
+        "no environmental obligations", "tenant's use involves no hazardous materials"
+      ],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": ["LP-05", "LP-28"],
+      "notes": "Promoted from discovered_provision_patterns in schema v1.3.0. Highly jurisdiction-sensitive. The primary dispute vectors are the scope of prohibited substances (particularly for food service, medical, dry cleaning, and gas station tenants), the carve-out for ordinary course materials, and remediation cost allocation for pre-existing contamination.",
+      "expected_elements": [
+        "definition of hazardous materials (by reference to CERCLA, RCRA, applicable state law, or enumeration)",
+        "carve-out for de minimis quantities of customary business materials (cleaning supplies, office materials, fuel for vehicles)",
+        "prohibition on use, storage, or disposal of hazardous materials except as permitted",
+        "tenant's remediation obligation at tenant's sole cost if contamination caused by tenant",
+        "landlord's representations on pre-existing contamination at commencement",
+        "tenant's right to conduct environmental testing if contamination suspected",
+        "notification requirement on release or discovery of hazardous condition",
+        "survival of hazardous materials obligations after lease expiration"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No hazardous materials provision found in lease; environmental obligations governed by applicable law only",
+        "partial":             "General hazardous materials prohibition present but carve-out for ordinary business materials, pre-existing contamination representations, or remediation allocation absent",
+        "ambiguous":           "Hazardous materials referenced without definition or reference to applicable law; scope of prohibition unclear",
+        "covered_unfavorable": "Tenant required to remediate pre-existing contamination not caused by tenant; OR carve-out for ordinary business materials absent or too narrow for tenant's permitted use; OR tenant required to indemnify landlord for all environmental claims regardless of cause",
+        "broken_xref":         "Hazardous materials exhibit, environmental baseline report, or permitted substances schedule referenced but not attached",
+        "potentially_unenforceable": "Tenant required to waive CERCLA or RCRA statutory rights in a manner that may not be permitted by applicable law"
+      },
+      "risk_if_missing": "Tenant faces unlimited environmental liability without a defined scope of prohibited substances, carve-out for ordinary business materials, or protection against pre-existing contamination — particularly material for food service, medical, and chemical-dependent tenants",
+      "exposure_statement": {
+        "tenant":   "Hazardous materials obligations are undefined; tenant may face liability for pre-existing contamination, have no carve-out for ordinary business materials, and face uncapped remediation costs for conditions not caused by tenant",
+        "landlord": "Hazardous materials obligations are undefined; landlord has no clear framework for monitoring tenant environmental compliance, allocating pre-existing contamination costs, or enforcing notification obligations",
+        "neutral":  "Hazardous materials scope, permitted substances, pre-existing contamination allocation, and remediation obligations are undefined; both parties face significant uncertainty over environmental liability during and after the lease term"
+      },
+      "caution_signals": ["governing_law_sensitive", "potentially_unenforceable"],
+      "negative_space_clues": [
+        "Tenant's permitted use involves food service, medical, dry cleaning, or chemicals but no hazardous materials provision found",
+        "Environmental indemnification in lease but no hazardous materials definition or carve-out",
+        "Hazardous materials section header present but body blank or marked Reserved",
+        "Environmental baseline report referenced in lease but not attached as exhibit",
+        "Permitted substances schedule referenced but not attached"
+      ],
+      "common_tenant_modifications": [
+        "Carve-out for ordinary course business materials in commercially reasonable quantities",
+        "Landlord representations on pre-existing contamination with indemnification for pre-lease conditions",
+        "Tenant remediation obligation limited to contamination caused or exacerbated by tenant",
+        "Tenant right to conduct Phase I/II environmental assessment at commencement",
+        "Notification right (not obligation) for third-party environmental claims not caused by tenant"
+      ]
     }
   ],
 
   "discovered_provision_patterns": {
     "description": "Common non-standard provisions discovered in tenant leases during CAM analysis (CUSTOM-XX entries).",
     "patterns": [
-      {
-        "name": "Co-Tenancy",
-        "applicability": "optional",
-        "activation_clues": ["co-tenancy", "anchor tenant", "co-anchor", "occupancy threshold"],
-        "coverage_concern": "Tenant seeks rent reduction or termination right tied to anchor tenant presence",
-        "caution_signals": ["common_dispute_area", "landlord_leverage_point"]
-      },
-      {
-        "name": "Percentage Rent",
-        "applicability": "optional",
-        "activation_clues": ["percentage rent", "gross sales", "natural breakpoint", "percentage of gross"],
-        "coverage_concern": "Revenue-based rent above natural breakpoint; calculation methodology and reporting obligations critical",
-        "caution_signals": ["common_dispute_area"]
-      },
-      {
-        "name": "SNDA",
-        "applicability": "conditional",
-        "activation_clues": ["SNDA", "subordination", "non-disturbance", "attornment", "lender", "mortgagee"],
-        "coverage_concern": "Tenant's right to remain in occupancy if landlord's lender forecloses",
-        "caution_signals": ["landlord_leverage_point"]
-      },
-      {
-        "name": "Hazardous Materials",
-        "applicability": "conditional",
-        "activation_clues": ["hazardous", "hazmat", "environmental", "toxic", "contaminant", "remediation"],
-        "coverage_concern": "Tenant's environmental obligations; definition of prohibited substances and remediation responsibilities",
-        "caution_signals": ["governing_law_sensitive", "potentially_unenforceable"]
-      },
       {
         "name": "Radius Restriction",
         "applicability": "optional",

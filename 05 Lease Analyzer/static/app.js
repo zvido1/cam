@@ -31,26 +31,20 @@ const SEVERITY_ICONS = {
     CONFORMS: "\u2705"
 };
 
-// ── Model Display Names (1A) ──
-const MODEL_DISPLAY_NAMES = {
-    // Anthropic
-    "claude-sonnet-4-20250514":   "Claude Sonnet 4",
-    "claude-opus-4-5-20250514":   "Claude Opus 4.5",
-    "claude-haiku-4-5":           "Claude Haiku 4.5",
-    // OpenAI
-    "gpt-5.2":                    "GPT-5.2",
-    "gpt-4o":                     "GPT-4o",
-    // xAI
-    "grok-3":                     "Grok 3",
-    "grok-2":                     "Grok 2",
-    // Google
-    "gemini-2.5-pro":             "Gemini 2.5 Pro",
-    "gemini-3.1-pro-preview":     "Gemini 3.1 Pro",
-    "gemini-2.0-flash":           "Gemini 2.0 Flash",
-    // Mistral (fallback)
-    "mistral-large-latest":       "Mistral Large",
-    "mistral-medium-latest":      "Mistral Medium",
-};
+// ── Model Display Names (populated from /api/models at startup) ──
+let MODEL_DISPLAY_NAMES = {};
+
+async function loadModelNames() {
+    try {
+        const resp = await fetch('/api/models');
+        if (resp.ok) {
+            const data = await resp.json();
+            MODEL_DISPLAY_NAMES = data.display_names || {};
+        }
+    } catch (e) {
+        console.warn('[CAM] Could not load model names:', e);
+    }
+}
 
 // ── Evaluator Color Classes ──
 const CAMShared = window.CAMShared || {};
@@ -676,6 +670,7 @@ function init() {
 }
 
 function enterApp() {
+    loadModelNames();
     if (ANALYSIS_TYPES.length === 1) {
         selectedAnalysisType = ANALYSIS_TYPES[0];
         showState("upload");
@@ -1625,7 +1620,7 @@ function buildProcessingChecklistSteps(job, tenant) {
             {
                 stage: 2,
                 title: "Extract provisions",
-                meta: "Extracting 18 issue-area clauses from the document (Gemini 3.1 Pro).",
+                meta: `Extracting ${provisionCount || 'all'} issue-area clauses from the document (Gemini 3.1 Pro).`,
             },
             {
                 stage: 3,
@@ -1888,30 +1883,23 @@ function handleModeChange() {
         grid.classList.toggle("mode-analyze", mode === "analyze");
     }
 
-    // Step 284: hide the perspective selector when Mode A is selected.
-    // Architectural reality: Mode A's deviation pipeline is tenant-anchored
-    // at the prompt layer regardless of selected perspective; only the
-    // coverage subset honors it. Asking for perspective and then partially
-    // discarding it is dishonest UX. The selector appears only in Mode C
-    // where the system delivers on it end-to-end. Mode A submissions
-    // always carry perspective="tenant" (the implicit value the deviation
-    // pipeline already uses).
+    // Perspective selector: show in both modes. Mode A's deviation pipeline
+    // detects changes objectively; perspective governs how the coverage layer,
+    // exposure statements, Synopsis, and annotated documents frame those changes.
+    // Default to tenant if user hasn't explicitly chosen (preserves pre-Step-293d behavior).
     const persWrap = document.getElementById("perspective-selector-wrapper");
     const persCard = document.querySelector(".perspective-selector-card");
     if (persWrap) {
+        persWrap.classList.remove("hidden");
         if (mode === "analyze") {
-            // Mode C: show selector, restore the user's prior choice (if any).
-            persWrap.classList.remove("hidden");
+            // Mode C: restore the user's prior choice (if any).
             if (_modeCPerspectiveCache) {
                 const restore = document.querySelector(
                     'input[name="analysis-perspective"][value="' + _modeCPerspectiveCache + '"]'
                 );
                 if (restore) restore.checked = true;
             } else {
-                // No cached choice — leave radios as-is. If they were
-                // programmatically set to "tenant" by a prior Mode A toggle
-                // (default-Mode-A page load before any Mode C selection),
-                // clear them so the required-validation flash works.
+                // No cached choice — leave radios as-is
                 document.querySelectorAll('input[name="analysis-perspective"]').forEach(r => {
                     if (r.checked && r.dataset.modeAForced === "1") {
                         r.checked = false;
@@ -1920,21 +1908,18 @@ function handleModeChange() {
                 });
             }
         } else {
-            // Mode A: cache any user-selected Mode C value, force tenant,
-            // hide the wrapper. The required-indicator flash gets cleared
-            // too since the selector is no longer surfaced.
+            // Mode A: if user hasn't chosen yet, default to tenant (the historical default).
+            // But don't override an explicit user selection.
             const checked = document.querySelector('input[name="analysis-perspective"]:checked');
-            if (checked && checked.dataset.modeAForced !== "1") {
-                _modeCPerspectiveCache = checked.value;
+            if (!checked || checked.dataset.modeAForced === "1") {
+                const tenantRadio = document.querySelector(
+                    'input[name="analysis-perspective"][value="tenant"]'
+                );
+                if (tenantRadio) {
+                    tenantRadio.checked = true;
+                    tenantRadio.dataset.modeAForced = "1";
+                }
             }
-            const tenantRadio = document.querySelector(
-                'input[name="analysis-perspective"][value="tenant"]'
-            );
-            if (tenantRadio) {
-                tenantRadio.checked = true;
-                tenantRadio.dataset.modeAForced = "1";
-            }
-            persWrap.classList.add("hidden");
             if (persCard) persCard.classList.remove("required-indicator");
         }
     }
@@ -2410,7 +2395,7 @@ function initProcessingView(jobData) {
         // Step 196: start stable whole-job progress tracking from the initial estimate
         const _provIds = (jobData && jobData.input_config && jobData.input_config.provisions) || [];
         const _customProvisions = (jobData && jobData.input_config && jobData.input_config.custom_provisions) || [];
-        const _provCount = (_provIds.length + _customProvisions.length) || document.querySelectorAll("#provision-list input[type=checkbox]:checked").length || 18;
+        const _provCount = (_provIds.length + _customProvisions.length) || LP_PROGRESS_ITEMS.length;
         const { secsPerLease, mins } = calcEstimate(_provCount, identityChecks, names.length, [..._provIds, ..._customProvisions.map((p) => p.id || p.provision_id || "CUSTOM")]);
         currentSecsPerLease = secsPerLease;
         const estimateMinutesFromJob = Number(jobData && jobData.estimated_minutes);
@@ -2461,6 +2446,17 @@ const LP_PROGRESS_ITEMS = [
     { id: "LP-19", name: "Utilities" },
     { id: "LP-20", name: "Exclusivity" },
     { id: "LP-21", name: "Guaranty of Lease" },
+    { id: "LP-22", name: "SNDA" },
+    { id: "LP-23", name: "Percentage Rent" },
+    { id: "LP-24", name: "Damage & Destruction" },
+    { id: "LP-25", name: "Condemnation" },
+    { id: "LP-26", name: "Quiet Enjoyment" },
+    { id: "LP-27", name: "Landlord Default" },
+    { id: "LP-28", name: "Compliance with Laws" },
+    { id: "LP-29", name: "Right of Entry" },
+    { id: "LP-30", name: "Estoppel Certificate" },
+    { id: "LP-31", name: "Co-Tenancy" },
+    { id: "LP-32", name: "Hazardous Materials" },
 ];
 
 function _lpStateDisplay(state) {
@@ -2491,6 +2487,16 @@ function initLpProgressPanel(jobData) {
             name: cp.name || cp.provision_name || "Custom Review Area",
         })),
     ];
+
+    // Update subtitle to reflect actual count (standard + custom)
+    const subtitle = panel.querySelector(".processing-side-subtitle");
+    if (subtitle) {
+        const customCount = customPs.length;
+        const standardCount = LP_PROGRESS_ITEMS.length;
+        subtitle.textContent = customCount > 0
+            ? `CAM is checking all ${standardCount} standard issue areas plus ${customCount} custom area${customCount !== 1 ? "s" : ""}.`
+            : `CAM is checking all ${standardCount} standard issue areas.`;
+    }
 
     list.innerHTML = allItems.map(item =>
         `<div class="lp-progress-row state-pending" id="lp-row-${esc(item.id)}">` +
@@ -7113,11 +7119,17 @@ function jumpToProvisionOnActivePage(pid, tenantIdx) {
 
 async function jumpToProvisionFromSidebar(pid, tenantIdx) {
     const activeTenantIdx = typeof tenantIdx === "number" ? tenantIdx : currentTenantIndex;
-    const needsTenantSwitch = !contractDetailOpen || currentTenantIndex !== activeTenantIdx;
-    if (needsTenantSwitch) {
-        await scrollToTenant(activeTenantIdx);
+    if (activeResultsTab === 'audittrail' && contractDetailOpen && currentTenantIndex === activeTenantIdx) {
+        jumpToAuditProvision(activeTenantIdx, pid);
+        return;
     }
-    jumpToProvisionOnActivePage(pid, activeTenantIdx);
+    await openContractDetail(activeTenantIdx);
+    switchResultsTab('findings');
+    await waitForResultsTarget(() =>
+        document.getElementById('dev-' + pid) ||
+        document.querySelector('[data-pid="' + CSS.escape(pid) + '"]')
+    );
+    jumpToFinding(pid);
 }
 
 // Show a "no contract selected" placeholder in the detail area
@@ -10853,7 +10865,8 @@ function renderAuditTrail(allTenants) {
         return;
     }
 
-    let provisions = getTenantWorkflowProvisions(currentTenantIndex);
+    let provisions = getTenantWorkflowProvisions(currentTenantIndex)
+        .filter(p => !p.absent_from_both);
     const modelsUsed = r.models_used || {};
 
     // Run metadata block
@@ -12918,6 +12931,50 @@ function renderRunSnapshot() {
                 });
                 chipRow += '</div>';
 
+                // Coverage gap chips (missing / covered_unfavorable from coverage_assessment)
+                var covCa = (c.t.results && c.t.results.coverage_assessment) || [];
+                var gapItems = covCa.filter(function(a) {
+                    return a.coverage_state === 'missing' || a.coverage_state === 'covered_unfavorable';
+                }).slice(0, 4);
+                var gapChipRow = '';
+                if (gapItems.length > 0) {
+                    gapChipRow = '<div class="overview-chip-row overview-gap-chip-row">';
+                    gapItems.forEach(function(a) {
+                        var gpid = a.issue_area_id || '';
+                        var gshort = (a.issue_area_name || gpid).replace(/^LP-\d{2}\s*/, '');
+                        var glabel = gpid + (gshort ? ' ' + gshort : '');
+                        var gtitle = (a.exposure_statement || 'Coverage gap: ' + gpid).replace(/"/g, '&quot;');
+                        gapChipRow += '<span class="overview-chip overview-chip-gap chip-jumpable-modec" data-tenant="' + i + '" data-pid="' + esc(gpid) + '" title="' + esc(gtitle) + '">' + esc(glabel) + '</span>';
+                    });
+                    var gapRemainder = covCa.filter(function(a) {
+                        return a.coverage_state === 'missing' || a.coverage_state === 'covered_unfavorable';
+                    }).length - gapItems.length;
+                    if (gapRemainder > 0) {
+                        gapChipRow += '<span class="overview-chip overview-chip-gap-overflow">+' + gapRemainder + ' more gaps</span>';
+                    }
+                    gapChipRow += '</div>';
+                }
+
+                // Conforming provisions \u2014 collapsed count row
+                var conformingProvs = c.provisions.filter(function(p) {
+                    return p.final_verdict === 'CONFORMS' && p.provision_id !== 'LP-00' && !p.absent_from_both;
+                });
+                var conformingHtml = '';
+                if (conformingProvs.length > 0) {
+                    var conformChips = conformingProvs.map(function(p) {
+                        return '<span class="overview-chip overview-chip-conforming chip-jumpable"'
+                            + ' data-tenant="' + i + '" data-pid="' + esc(p.provision_id) + '"'
+                            + ' title="' + esc(p.provision_name || p.provision_id) + '">'
+                            + esc(p.provision_id) + '</span>';
+                    }).join('');
+                    conformingHtml = '<div class="conforming-chip-row" data-tenant="' + i + '">'
+                        + '<button class="conforming-count-badge" onclick="window.CAM._toggleConformingChips(this, event)">'
+                        + '\u2713 ' + conformingProvs.length + ' conforming'
+                        + '</button>'
+                        + '<div class="conforming-chips hidden">' + conformChips + '</div>'
+                        + '</div>';
+                }
+
                 html += '<div class="snapshot-card snapshot-card-findings' + activeClass + '" data-tenant="' + i + '">'
                     + '<div class="snapshot-card-header">'
                     + '<span class="snapshot-card-name">' + nameEsc + '</span>'
@@ -12929,6 +12986,8 @@ function renderRunSnapshot() {
                     + sMetaLine
                     + blurbLine
                     + chipRow
+                    + gapChipRow
+                    + conformingHtml
                     + '<div class="snapshot-card-footer">'
                     + '<button class="snapshot-open-btn" data-tenant="' + i + '">Open Contract \u2192</button>'
                     + '</div>'
@@ -13058,7 +13117,25 @@ function renderRunSnapshot() {
             var idx = parseInt(chip.dataset.tenant, 10);
             var pid = chip.dataset.pid;
             await openContractDetail(idx);
+            switchResultsTab('findings');
+            await waitForResultsTarget(() =>
+                document.getElementById('dev-' + pid) ||
+                document.querySelector('[data-pid="' + CSS.escape(pid) + '"]')
+            );
             jumpToFinding(pid);
+        });
+    });
+
+    // Wire coverage gap chips → open Contract Detail + jump to Coverage & Gaps tab
+    container.querySelectorAll('.chip-jumpable-modec[data-pid]').forEach(function(chip) {
+        chip.addEventListener('click', async function(e) {
+            e.stopPropagation();
+            var idx = parseInt(chip.dataset.tenant, 10);
+            var pid = chip.dataset.pid;
+            await openContractDetail(idx);
+            if (typeof jumpToCoverageProvision === 'function') {
+                jumpToCoverageProvision(pid);
+            }
         });
     });
 }
@@ -15004,6 +15081,18 @@ function jumpToCoverageProvision(pid) {
         }, 150);
     });
 }
+window.CAM._toggleConformingChips = function(btn, e) {
+    if (e) e.stopPropagation();
+    var row = btn.closest('.conforming-chip-row');
+    if (!row) return;
+    var chips = row.querySelector('.conforming-chips');
+    if (!chips) return;
+    chips.classList.toggle('hidden');
+    var count = row.querySelectorAll('.chip-jumpable').length;
+    btn.textContent = chips.classList.contains('hidden')
+        ? '✓ ' + count + ' conforming'
+        : '∨ Hide conforming';
+};
 window.CAM.switchResultsTab = switchResultsTab;
 window.CAM.jumpToCoverageProvision = jumpToCoverageProvision;
 window.CAM._toggleCovNotes = _toggleCovNotes;
@@ -15317,7 +15406,7 @@ function renderNavSidebar() {
     // tenant-index sync logic above is unchanged — only the per-mode
     // navigation target moved.
     container.querySelectorAll(".nav-item-enriched").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
             const pid = btn.dataset.pid;
             const tIdx = parseInt(btn.dataset.tenantIdx, 10);
             const mode = btn.dataset.mode;
@@ -15327,23 +15416,28 @@ function renderNavSidebar() {
                 if (ts) ts.value = String(tIdx);
                 const dts = document.getElementById("docview-tenant-select");
                 if (dts) dts.value = String(tIdx);
-                if (typeof renderTenantResults === "function") {
-                    try { renderTenantResults(); } catch (e) { /* silent */ }
-                }
                 if (typeof syncChatScopeToCurrentTenant === "function") {
                     try { syncChatScopeToCurrentTenant(true); } catch (e) { /* silent */ }
                 }
             }
             if (mode === "c") {
+                // Coverage gap → Coverage & Gaps tab
                 if (window.CAM && typeof window.CAM.jumpToCoverageProvision === "function") {
                     window.CAM.jumpToCoverageProvision(pid);
                 }
             } else {
-                // Mode A deviation → Lease Summary (Findings tab) + scroll.
-                // jumpToFinding switches the tab when needed (no-op when
-                // already on findings), then scrolls + flashes the card.
-                if (typeof jumpToFinding === "function") {
-                    jumpToFinding(pid);
+                // Mode A deviation → open contract detail if needed, then jump to finding
+                if (activeResultsTab === "audittrail" && contractDetailOpen && currentTenantIndex === tIdx) {
+                    // Already on audit trail for this contract — scroll within it
+                    if (typeof jumpToAuditProvision === "function") jumpToAuditProvision(tIdx, pid);
+                } else {
+                    await openContractDetail(tIdx);
+                    switchResultsTab("findings");
+                    await waitForResultsTarget(() =>
+                        document.getElementById(`dev-${pid}`) ||
+                        document.querySelector(`[data-pid="${CSS.escape(pid)}"]`)
+                    );
+                    if (typeof jumpToFinding === "function") jumpToFinding(pid);
                 }
             }
             updateNavActive(currentTenantIndex, pid);

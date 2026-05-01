@@ -1,7 +1,7 @@
 """
 CAM Lease Review — Provision Taxonomy
 
-Defines the 18 default lease provisions for analysis.
+Defines the default lease provisions for analysis.
 Supports custom provisions added by users.
 """
 
@@ -173,6 +173,83 @@ PROVISIONS = [
         "search_hints": ["guaranty", "guarantor", "personal guarantee", "corporate guarantee", "good guy guaranty", "burndown guaranty"],
         "default_enabled": True,
     },
+    {
+        "id": "LP-22",
+        "name": "SNDA (Subordination, Non-Disturbance & Attornment)",
+        "description": "Subordination of lease to senior mortgage, non-disturbance covenant from lender, attornment obligation on foreclosure, SNDA form approval right, lender execution deadline",
+        "search_hints": ["SNDA", "subordination", "non-disturbance", "attornment", "lender", "mortgagee", "deed of trust"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-23",
+        "name": "Percentage Rent",
+        "description": "Gross sales definition, percentage rate and breakpoint, reporting period and frequency, landlord audit rights, exclusions from gross sales",
+        "search_hints": ["percentage rent", "gross sales", "natural breakpoint", "breakpoint", "overage rent", "percentage of gross"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-24",
+        "name": "Damage & Destruction",
+        "description": "Landlord repair obligation after casualty, rent abatement during repair, repair deadline, tenant termination right on prolonged repair, total loss threshold",
+        "search_hints": ["casualty", "damage", "destruction", "restore", "rebuild", "fire", "repair obligation"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-25",
+        "name": "Condemnation / Eminent Domain",
+        "description": "Total vs. material partial taking definition, termination right, rent abatement on partial taking, condemnation award allocation, tenant's separate award for fixtures and improvements",
+        "search_hints": ["condemnation", "eminent domain", "taking", "condemning authority", "governmental acquisition"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-26",
+        "name": "Quiet Enjoyment",
+        "description": "Express landlord covenant of quiet enjoyment, conditioned on tenant's performance, binding on successors and lenders",
+        "search_hints": ["quiet enjoyment", "quiet possession", "peaceable enjoyment", "undisturbed possession"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-27",
+        "name": "Landlord Default & Tenant Remedies",
+        "description": "Landlord default definition, notice and cure period, tenant self-help right, rent offset, tenant termination right, lender cure period, landlord liability limitation",
+        "search_hints": ["landlord default", "landlord's default", "landlord fails", "tenant's remedies", "self-help", "landlord's failure"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-28",
+        "name": "Compliance with Laws",
+        "description": "Tenant compliance obligation for tenant's use, landlord delivery in compliance, structural vs. use-specific cost allocation, ADA responsibility, future law changes, grandfathering",
+        "search_hints": ["comply", "compliance", "applicable laws", "codes", "regulations", "ADA", "Americans with Disabilities"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-29",
+        "name": "Right of Entry / Landlord Access",
+        "description": "Notice period before entry, permitted purposes, emergency entry without notice, tenant representative right, entry frequency or timing restrictions, non-interference obligation",
+        "search_hints": ["right of entry", "landlord access", "right to enter", "inspection right", "landlord may enter"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-30",
+        "name": "Estoppel Certificate",
+        "description": "Tenant obligation to provide estoppel certificate on request, response deadline, certificate form and content scope, deemed-approval consequence, frequency limitation",
+        "search_hints": ["estoppel", "estoppel certificate", "tenant estoppel", "certify", "certificate of lease status"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-31",
+        "name": "Co-Tenancy",
+        "description": "Opening and ongoing co-tenancy conditions, anchor tenant definition, remedy during co-tenancy failure, cure period, termination right, occupancy threshold",
+        "search_hints": ["co-tenancy", "anchor tenant", "co-anchor", "occupancy threshold", "go dark", "major tenant"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-32",
+        "name": "Hazardous Materials",
+        "description": "Definition of prohibited substances, carve-out for ordinary business materials, remediation obligation, pre-existing contamination representations, tenant notification obligations",
+        "search_hints": ["hazardous", "hazmat", "environmental", "toxic", "contaminant", "remediation", "CERCLA", "RCRA"],
+        "default_enabled": True,
+    },
 ]
 
 # Quick lookup by ID
@@ -233,7 +310,7 @@ def make_custom_provision(name: str, index: int, section_ref: str = "") -> dict:
         "id": pid,
         "name": name,
         "description": f"Unique provision discovered in template: {name}. "
-                       f"Not part of the standard 18-provision taxonomy.",
+                       f"Not part of the standard provision taxonomy.",
         "search_hints": [name.lower(), section_ref] if section_ref else [name.lower()],
         "default_enabled": True,
         "discovered": True,

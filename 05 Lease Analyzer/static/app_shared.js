@@ -1,13 +1,24 @@
 (function () {
 "use strict";
 
+// Provision flag rates for time estimation.
+// Rates from empirical corpus data; new provisions use the corpus average (0.30).
+// This map is ONLY for time estimates — it does not affect analysis behavior.
 const PROVISION_FLAG_RATES = {
     "LP-01": 0.26, "LP-02": 0.11, "LP-03": 0.33, "LP-04": 0.09,
     "LP-05": 0.41, "LP-06": 0.27, "LP-07": 0.31, "LP-08": 0.30,
     "LP-09": 0.62, "LP-10": 0.38, "LP-11": 0.60, "LP-12": 0.46,
     "LP-13": 0.60, "LP-14": 0.26, "LP-15": 0.14, "LP-16": 0.32,
     "LP-17": 0.05, "LP-18": 0.22,
+    // v1.3.0 additions — no corpus data yet; using corpus average (0.30)
+    "LP-19": 0.30, "LP-20": 0.30, "LP-21": 0.30, "LP-22": 0.30,
+    "LP-23": 0.30, "LP-24": 0.30, "LP-25": 0.30, "LP-26": 0.30,
+    "LP-27": 0.30, "LP-28": 0.30, "LP-29": 0.30, "LP-30": 0.30,
+    "LP-31": 0.30, "LP-32": 0.30,
 };
+
+// Fallback for any future provisions not yet in the map
+const DEFAULT_FLAG_RATE = 0.30;
 
 const VARIABLE_COST_PER_FLAGGED = 40;
 const EXTRACTION_BASE_SECS = 180;
@@ -31,7 +42,7 @@ function calcEstimate(provCount, idChecks, numLeases, selectedIds) {
         selectedIds.forEach((pid) => {
             const rate = PROVISION_FLAG_RATES[pid] !== undefined
                 ? PROVISION_FLAG_RATES[pid]
-                : 0.85;
+                : DEFAULT_FLAG_RATE;
             variableSecs += rate * VARIABLE_COST_PER_FLAGGED;
         });
     } else {
@@ -225,6 +236,7 @@ function waitForResultsTarget(findFn, options) {
 
 window.CAMShared = {
     PROVISION_FLAG_RATES,
+    DEFAULT_FLAG_RATE,
     VARIABLE_COST_PER_FLAGGED,
     EXTRACTION_BASE_SECS,
     PROCESSING_STAGE_WEIGHTS,

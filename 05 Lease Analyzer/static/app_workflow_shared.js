@@ -58,6 +58,7 @@
         const base = [];
         (provisions || []).forEach((provision) => {
             if (!provision || provision.provision_id === "LP-00") return;
+            if (provision.absent_from_both) return;
             if (provision.final_verdict === "DEVIATES" || provision.final_verdict === "UNCLEAR") {
                 base.push(provision);
                 return;

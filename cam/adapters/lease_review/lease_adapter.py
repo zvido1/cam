@@ -73,6 +73,43 @@ DEFAULT_CONFIG = {
 }
 
 
+# ── Provision keyword sets for gap repair relevance check ──────────────────
+# Before backfilling an extra_subsection gap to a conditional provision,
+# the gap repair checks if the section content contains any of these keywords.
+# This prevents LP-22 (SNDA) from claiming "21.1 Notices" just because Article 21
+# contains a subordination clause in 21.9.
+# Only needed for conditional provisions with distinctive vocabulary.
+_PROVISION_REPAIR_KEYWORDS = {
+    "LP-22": {"subordination", "snda", "non-disturbance", "non disturbance", "attornment", "mortgagee", "deed of trust"},
+    "LP-23": {"percentage rent", "gross sales", "breakpoint", "overage rent"},
+    "LP-31": {"co-tenancy", "co tenancy", "anchor tenant", "occupancy threshold"},
+    "LP-32": {"hazardous", "environmental", "toxic", "contaminant", "remediation", "cercla"},
+}
+
+
+def _section_relevant_to_provision(pid: str, section_ref: str, doc_text: str) -> bool:
+    """Return True if the section content plausibly belongs to the claiming provision.
+
+    Only runs a keyword check for provisions in _PROVISION_REPAIR_KEYWORDS.
+    All other provisions pass through unconditionally (existing behavior).
+    """
+    keywords = _PROVISION_REPAIR_KEYWORDS.get(pid)
+    if not keywords:
+        return True  # no filter defined — allow repair as before
+
+    # Extract a 400-char preview of the section from the document
+    import re as _re_local
+    pattern = _re_local.compile(
+        r"\bsection\s+" + _re_local.escape(section_ref) + r"\b",
+        _re_local.IGNORECASE,
+    )
+    m = pattern.search(doc_text)
+    if not m:
+        return True  # can't find the section — allow and let targeted_reextract decide
+    preview = doc_text[m.start():m.start() + 400].lower()
+    return any(kw in preview for kw in keywords)
+
+
 class PipelineCancelledError(Exception):
     """Raised when a pipeline run is cancelled by the user."""
     pass
@@ -387,6 +424,15 @@ def run_lease_analysis(
             if not prov:
                 continue
 
+            # Relevance check: skip repair if section content is off-topic for
+            # this provision. Prevents LP-22 (SNDA) from claiming "21.1 Notices"
+            # just because Article 21 contains a subordination clause in 21.9.
+            if not _section_relevant_to_provision(pid, section_ref, tenant_text):
+                print(f"[lease_adapter] Skipping off-topic gap repair: "
+                      f"{section_ref} → {pid} (content not relevant)", flush=True)
+                repaired_sections.add(section_ref)  # mark handled so it doesn't become CUSTOM
+                continue
+
             print(f"[lease_adapter] Repairing gap: {gap['section_ref']} "
                   f"in {pid}...", flush=True)
             recovered = targeted_reextract_section(
@@ -690,7 +736,7 @@ def run_lease_analysis(
         challenge_result = challenge_provisions(flagged, ext_map, eval_agg_map, cfg)
         if not challenge_result["meta"].get("skipped"):
             total_api_calls += challenge_result["meta"].get("api_calls", 0)
-            models_used["challenger"] = challenge_result["meta"].get("model", "gpt-5.2")
+            models_used["challenger"] = challenge_result["meta"].get("model") or cfg.get("challenge_model", "")
             print(f"[lease_adapter] Stage 3 complete in {challenge_result['meta']['elapsed_sec']}s", flush=True)
     else:
         print("[lease_adapter] Stage 3: Skipped (nothing flagged)", flush=True)

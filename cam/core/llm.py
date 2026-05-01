@@ -5,6 +5,9 @@ Used by the follow-up Q&A chat endpoint. Unlike the pipeline stages (which use
 ProviderRouter.call_json for structured JSON output), this module returns raw text
 responses for conversational use.
 
+Model defaults are imported from model_config.py — change models there,
+not here. This file should never contain hardcoded model strings.
+
 Usage:
     from cam.core.llm import call_llm
 
@@ -27,18 +30,11 @@ from cam.core.provider_router import (
     GoogleGenAIAdapter,
     XAIAdapter,
 )
+from cam.adapters.lease_review.model_config import CHAT_DEFAULTS
 
 logger = logging.getLogger(__name__)
 
-# Default models per provider (chat-optimized choices)
-_DEFAULT_MODELS = {
-    "claude":    ("anthropic", "claude-sonnet-4-20250514"),
-    "openai":    ("openai",    "gpt-5.2"),
-    "xai":       ("xai",       "grok-3"),
-    "google":    ("google",    "gemini-2.5-pro"),
-}
-
-# Alias mappings
+# Alias mappings — canonical keys match CHAT_DEFAULTS
 _PROVIDER_ALIASES = {
     "anthropic": "claude",
     "gpt":       "openai",
@@ -80,11 +76,11 @@ def call_llm(
     """
     # Resolve aliases
     canonical = _PROVIDER_ALIASES.get(provider, provider)
-    if canonical not in _DEFAULT_MODELS:
+    if canonical not in CHAT_DEFAULTS:
         raise ValueError(f"Unknown provider: {provider}. "
-                         f"Valid: {list(_DEFAULT_MODELS.keys())}")
+                         f"Valid: {list(CHAT_DEFAULTS.keys())}")
 
-    provider_key, model_name = _DEFAULT_MODELS[canonical]
+    provider_key, model_name = CHAT_DEFAULTS[canonical]
 
     # Build target
     target = ModelTarget(

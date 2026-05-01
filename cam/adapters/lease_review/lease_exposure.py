@@ -275,7 +275,13 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
 
     if state == "covered_unfavorable":
         elements_used = found[:3]
-        elements_str = f"Provision present but unfavorable: {', '.join(elements_used)}"
+        if perspective == "landlord":
+            # For landlord perspective, "covered_unfavorable" means tenant-unfavorable,
+            # which may be FAVORABLE to the landlord. Flag this explicitly so the
+            # model knows which direction to frame the exposure.
+            elements_str = f"Provision present and tenant-unfavorable (assess whether this is landlord-favorable or landlord-risky): {', '.join(elements_used)}"
+        else:
+            elements_str = f"Provision present but unfavorable: {', '.join(elements_used)}"
     else:
         elements_used = missing[:4]
         elements_str = ", ".join(elements_used) if elements_used else "see evidence note"
@@ -294,11 +300,10 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
             name="openai:gpt-5.5",
             provider="openai",
             model="gpt-5.5",
-            # Step 278: bumped from 150 to 220 to make room for the JSON
-            # envelope ({"headline": "...", "full": "..."}) without
-            # truncating the prose body. The body itself is still capped
-            # by the 1-2-sentence rule in the system prompt.
-            max_output_tokens=220,
+            # 350 tokens: enough for JSON envelope + 60-char headline + 2 sentences
+            # without truncation. 220 was too tight and caused JSON parse failures
+            # that triggered the short-response fallback.
+            max_output_tokens=350,
         )
         router = ProviderRouter([target], RouterConfig())
         adapter = router._get_adapter("openai")

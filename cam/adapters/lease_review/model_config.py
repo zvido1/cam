@@ -1,28 +1,19 @@
 """
 CAM Lease Review — Central Model Configuration
 
-Single source of truth for all model strings used in the pipeline.
-To upgrade a model, change it here — all stages pick it up automatically.
+Single source of truth for ALL model strings and display names used across
+the pipeline, chat endpoints, and frontend UI.
 
-Last updated: 2026-05-01 (Step 290)
-  - gemini-3-pro-preview was SHUT DOWN March 9, 2026. Now using
-    gemini-3.1-pro-preview (current active 3.1 generation preview model).
-  - gemini-2.5-pro retained as fallback (schema compliance issues seen
-    in Step 289 are prompt-level, not model availability issues)
-  - gpt-5.5 released April 24, 2026 — now primary in extraction chain,
-    Evaluator B, and single-stage chain
-  - Evaluator A: claude-sonnet-4-20250514 → claude-sonnet-4-6
-  - Evaluator A fallback: claude-sonnet-4-6 → claude-haiku-4-5-20251001
-  - Evaluator B: gpt-5.2 → gpt-5.5; fallback gpt-4o → gpt-5.4
-  - Single-stage chain: gpt-5.2 primary → gpt-5.5 primary
-  - grok-4/grok-3: unchanged
+To upgrade a model: change it here. All stages, the chat advisor, and
+the frontend display labels pick it up automatically via /api/models.
+
+Last updated: 2026-05-01 (Step 293d)
+  - Added CHAT_DEFAULTS, DISPLAY_NAMES, get_display_name()
+  - llm.py and main.py now import from here instead of hardcoding
+  - /api/models endpoint serves DISPLAY_NAMES to app.js at startup
 """
 
-# ── Extractor (Stage 1) ────────────────────────────────────────────────────────
-# Gemini is the preferred extractor (1M context, strong document comprehension).
-# gemini-3-pro-preview was SHUT DOWN March 9, 2026 — now using gemini-3.1-pro-preview.
-# gemini-2.5-pro retained as first fallback (stable, 1M context).
-# Pipeline falls through to GPT if all Gemini models fail.
+# ── Extractor (Stage 1) ───────────────────────────────────────────────────────
 EXTRACTOR_PRIMARY   = ("google",      "gemini-3.1-pro-preview")
 EXTRACTOR_FALLBACK  = ("google",      "gemini-2.5-pro")
 
@@ -33,11 +24,10 @@ EXTRACTION_CHAIN = [
     ("openai",     "gpt-5.4"),
     ("openai",     "gpt-5.2"),
     ("anthropic",  "claude-sonnet-4-6"),
-    ("mistral",    "mistral-large-latest"),   # last resort — provider diversity
+    ("mistral",    "mistral-large-latest"),
 ]
 
-# ── Evaluators (Stage 2) ───────────────────────────────────────────────────────
-# Three independent models, one per provider. Blind to each other.
+# ── Evaluators (Stage 2) ──────────────────────────────────────────────────────
 EVALUATOR_A_PRIMARY  = ("anthropic",  "claude-sonnet-4-6")
 EVALUATOR_A_FALLBACK = ("anthropic",  "claude-haiku-4-5-20251001")
 
@@ -47,10 +37,7 @@ EVALUATOR_B_FALLBACK = ("openai",     "gpt-5.4")
 EVALUATOR_C_PRIMARY  = ("xai",        "grok-4")
 EVALUATOR_C_FALLBACK = ("xai",        "grok-3")
 
-# ── Single-stage fallback chain (Challenge / Cascade / Severity) ───────────────
-# GPT-5.5 is primary for adversarial stages (reasoning_effort=high).
-# GPT-5.4 and GPT-5.2 retained as fallbacks — proven performance.
-# Note: mistral omitted — ProviderRouter does not support the 'mistral' provider.
+# ── Single-stage fallback chain (Challenge / Cascade / Severity) ──────────────
 SINGLE_STAGE_CHAIN = [
     ("openai",     "gpt-5.5"),
     ("openai",     "gpt-5.4"),
@@ -60,3 +47,47 @@ SINGLE_STAGE_CHAIN = [
     ("google",     "gemini-2.5-pro"),
     ("xai",        "grok-4"),
 ]
+
+# ── Chat / Advisory defaults ──────────────────────────────────────────────────
+# Used by cam/core/llm.py and the /api/chat/* endpoints.
+# These are the defaults when a provider key is specified without a model.
+CHAT_DEFAULTS = {
+    "claude":  ("anthropic", "claude-sonnet-4-6"),
+    "openai":  ("openai",    "gpt-5.5"),
+    "xai":     ("xai",       "grok-4"),
+    "google":  ("google",    "gemini-3.1-pro-preview"),
+}
+
+# ── Display names ─────────────────────────────────────────────────────────────
+# Single source of truth for model display names used in the UI.
+# Served via /api/models endpoint; app.js fetches these at startup.
+# When adding a new model to any chain above, add its display name here.
+DISPLAY_NAMES = {
+    # Anthropic
+    "claude-sonnet-4-6":           "Claude Sonnet 4",
+    "claude-sonnet-4-20250514":    "Claude Sonnet 4",
+    "claude-opus-4-5-20250514":    "Claude Opus 4.5",
+    "claude-haiku-4-5-20251001":   "Claude Haiku 4.5",
+    "claude-haiku-4-5":            "Claude Haiku 4.5",
+    # OpenAI
+    "gpt-5.5":                     "GPT-5.5",
+    "gpt-5.4":                     "GPT-5.4",
+    "gpt-5.2":                     "GPT-5.2",
+    "gpt-4o":                      "GPT-4o",
+    # xAI
+    "grok-4":                      "Grok 4",
+    "grok-3":                      "Grok 3",
+    "grok-2":                      "Grok 2",
+    # Google
+    "gemini-3.1-pro-preview":      "Gemini 3.1 Pro",
+    "gemini-2.5-pro":              "Gemini 2.5 Pro",
+    "gemini-2.0-flash":            "Gemini 2.0 Flash",
+    # Mistral
+    "mistral-large-latest":        "Mistral Large",
+    "mistral-medium-latest":       "Mistral Medium",
+}
+
+
+def get_display_name(model_string: str, fallback: str = None) -> str:
+    """Return the display name for a model string, or fallback if not found."""
+    return DISPLAY_NAMES.get(model_string, fallback or model_string)

@@ -469,20 +469,27 @@ def _esc_xml(text: str) -> str:
 
 
 # ── Model display names ──
-
-_MODEL_DISPLAY_NAMES = {
-    "gemini-3.1-pro-preview": "Gemini 3.1 Pro (Google)",
-    "gemini-2.5-pro": "Gemini 2.5 Pro (Google)",
-    "gemini-2.5-flash": "Gemini 2.5 Flash (Google)",
-    "gemini-2.0-flash": "Gemini 2.0 Flash (Google)",
-    "claude-sonnet-4-20250514": "Claude Sonnet 4 (Anthropic)",
-    "gpt-5.2": "GPT-5.2 (OpenAI)",
-    "grok-3": "Grok 3 (xAI)",
-}
+# Imported from model_config — change models there, not here.
+from cam.adapters.lease_review.model_config import get_display_name as _get_display_name
 
 
 def _model_name(model_id: str) -> str:
-    return _MODEL_DISPLAY_NAMES.get(model_id, model_id or "Unknown")
+    """Return a human-readable model label for the synopsis PDF."""
+    name = _get_display_name(model_id)
+    # Append provider in parentheses for the technical appendix
+    provider_map = {
+        "claude": "Anthropic", "sonnet": "Anthropic", "haiku": "Anthropic", "opus": "Anthropic",
+        "gpt": "OpenAI",
+        "grok": "xAI",
+        "gemini": "Google",
+        "mistral": "Mistral",
+    }
+    provider = ""
+    for key, label in provider_map.items():
+        if key in (model_id or "").lower():
+            provider = label
+            break
+    return f"{name} ({provider})" if provider and provider not in name else name
 
 
 def _format_tenant_name(filename: str) -> str:

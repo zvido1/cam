@@ -1861,19 +1861,10 @@ async def chat_with_analysis(job_id: str, body: dict):
     }
     model_labels = {"claude": "Claude", "openai": "GPT-5.2", "xai": "Grok", "google": "Gemini"}
 
-    _FRIENDLY_MODEL_NAMES = {
-        "claude-sonnet-4-20250514": "Claude Sonnet 4",
-        "claude-opus-4-5-20250514": "Claude Opus 4.5",
-        "gpt-5.2": "GPT-5.2",
-        "grok-3": "Grok 3",
-        "gemini-2.5-pro": "Gemini 2.5 Pro",
-        "gemini-3.1-pro-preview": "Gemini 3.1 Pro",
-        "mistral-large-latest": "Mistral Large",
-    }
+    from cam.adapters.lease_review.model_config import get_display_name as _get_display_name
 
     def _friendly_model_label(model_str: str, fallback_key: str) -> str:
-        """Return friendly display name for a model string."""
-        return _FRIENDLY_MODEL_NAMES.get(model_str, model_labels.get(fallback_key, fallback_key))
+        return _get_display_name(model_str, model_labels.get(fallback_key, fallback_key))
 
     try:
         from cam.core.llm import call_llm
@@ -1989,6 +1980,12 @@ async def chat_general(request: Request):
     history = body.get("history", [])
     screen = ui_context.get("screen") or "upload"
 
+    # Derive provision range dynamically from taxonomy (never hardcode)
+    from cam.adapters.lease_review.lease_provision_taxonomy import PROVISIONS
+    _std_ids = [p["id"] for p in PROVISIONS if p["id"] != "LP-00" and p.get("default_enabled", True)]
+    _prov_range = f"{_std_ids[0]} through {_std_ids[-1]}" if _std_ids else "LP-01 through LP-32"
+    _prov_count = len(_std_ids)
+
     ui_context_lines = []
     if ui_context:
         screen = ui_context.get("screen")
@@ -2072,7 +2069,7 @@ async def chat_general(request: Request):
         "  - Compare to reference: upload at least one tenant lease after the reference lease is ready.\n"
         "  - Analyze single document: upload at least one lease to analyze.\n\n"
         "Review Areas panel:\n"
-        "  LP-01 through LP-18 are checked by default as standard review areas. "
+        f"  {_prov_range} are checked by default as standard review areas ({_prov_count} total). "
         "The user can uncheck review areas they don't want analyzed, or add custom review areas.\n"
         "  CAM will also automatically surface additional substantive clauses or issue areas it notices during analysis.\n\n"
         "Final step - Click 'Review Leases'.\n\n"
@@ -2087,7 +2084,7 @@ async def chat_general(request: Request):
 
         "WHAT YOU CAN AND CANNOT SEE:\n"
         "You CAN see (when provided in context):\n"
-        "- The list of standard review areas (LP-01 to LP-18) the user has selected.\n"
+        f"- The list of standard review areas ({_prov_range}) the user has selected.\n"
         "- The filenames of uploaded documents.\n"
         "- Any custom review areas the user has added.\n\n"
         "You CANNOT see:\n"
@@ -2104,7 +2101,7 @@ async def chat_general(request: Request):
         "certain exist. Do not invent 'View Source', 'See Context', 'Expand', or any "
         "other UI element to direct the user to.\n"
         "- The real UI elements you can reference:\n"
-        "  - LP-01 through LP-18 checkboxes in the Standard Review Areas list\n"
+        f"  - {_prov_range} checkboxes in the Standard Review Areas list\n"
         "  - The 'Review Leases' button\n"
         "  - The 'Add custom review area' field at the bottom of the Review Areas panel\n"
         "  - The chat panel (where the user is currently talking to you)\n"
@@ -2222,9 +2219,21 @@ async def delete_job(job_id: str):
     return {"status": "deleted", "job_id": job_id}
 
 
+@app.get("/api/models")
+def get_models():
+    """Return model display names for the frontend — single source of truth."""
+    from cam.adapters.lease_review.model_config import DISPLAY_NAMES, CHAT_DEFAULTS
+    return {
+        "display_names": DISPLAY_NAMES,
+        "chat_defaults": {
+            k: v[1] for k, v in CHAT_DEFAULTS.items()
+        },
+    }
+
+
 @app.get("/api/provisions")
 def get_provisions():
-    """Return the 18 default provisions for the frontend checklist."""
+    """Return all default provisions for the frontend checklist."""
     from cam.adapters.lease_review.lease_provision_taxonomy import PROVISIONS
     return [
         {

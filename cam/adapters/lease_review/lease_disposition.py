@@ -222,6 +222,61 @@ def compute_disposition(
     """
     pname = extraction.get("provision_name", provision_id)
 
+    # ── Absent-from-both suppression ─────────────────────────────────────────
+    # If a provision is absent from BOTH the template and the tenant lease,
+    # there is nothing to compare — it cannot be a deviation. These provisions
+    # belong exclusively in Coverage & Gaps (the coverage layer marks them
+    # as 'missing'). Surfacing them in the deviation pipeline produces a
+    # confusing duplicate: the same gap appears in both "Deviations" and
+    # "Coverage & Gaps" with no useful comparison text.
+    #
+    # Conditions: extraction status is AMBIGUOUS AND both texts are empty.
+    # TEMPLATE_ONLY (present in template, absent in tenant) is intentionally
+    # excluded — that IS a real deviation and should remain in the pipeline.
+    status = extraction.get("status", "")
+    template_text = (extraction.get("template_text") or "").strip()
+    tenant_text = (extraction.get("tenant_text") or "").strip()
+    if status == "AMBIGUOUS" and not template_text and not tenant_text:
+        return {
+            "provision_id": provision_id,
+            "provision_name": pname,
+            "final_verdict": "CONFORMS",
+            "severity": "CONFORMS",
+            "severity_floor_applied": False,
+            "severity_modifier_applied": False,
+            "severity_modifier_reason": "",
+            "discovered": extraction.get("discovered", False),
+            "agreement_pattern": "absent_from_both",
+            "evaluator_verdicts": {},
+            "evaluator_reasoning": {},
+            "evaluator_confidences": {},
+            "challenge_finding": None,
+            "challenge_details": "",
+            "risk_headline": "",
+            "hidden_dependencies": [],
+            "cascade_verdict": None,
+            "cascade_mechanism": "",
+            "cascade_impact": "",
+            "cascade_source": None,
+            "fragility": {"fragile": False, "score": 0.0, "signals": []},
+            "severity_reasoning": "",
+            "financial_impact": "",
+            "recommended_action": "No action required — this provision is absent from both the reference and tenant lease. It is surfaced in Coverage & Gaps only.",
+            "template_text": "",
+            "tenant_text": "",
+            "template_section_ref": extraction.get("template_section_ref", ""),
+            "tenant_section_ref": extraction.get("tenant_section_ref", ""),
+            "definition_changes": "",
+            "absent_from_both": True,
+            "cam_metadata": {
+                "stages_run": [1],
+                "rules_fired": [],
+                "triage_result": triage_result,
+                "cascade_verdict": None,
+                "suppressed_reason": "absent_from_both",
+            },
+        }
+
     # Determine final verdict
     # CASCADE_MATERIAL override: if cascade confirms material impact, force DEVIATES
     # even if evaluators say CONFORMS (they see identical text)
@@ -382,9 +437,9 @@ def _compute_recommended_action(
 ) -> str:
     """Determine the recommended action based on verdict and severity."""
     if verdict == "CONFORMS":
-        return "no_action"
+        return "No action required — this provision conforms to the reference lease."
     if verdict == "UNCLEAR":
-        return "attorney_review_recommended"
+        return "Attorney review recommended — evaluators did not reach agreement on whether this provision deviates from the reference. A qualified attorney should review the clause language and assess whether the differences are substantive."
 
     # Use severity assessor's recommendation if available
     if severity_result and severity_result.get("recommended_action"):
@@ -396,12 +451,12 @@ def _compute_recommended_action(
 
     # Fallback based on severity
     severity_actions = {
-        "CRITICAL": "attorney_review_required",
-        "HIGH": "attorney_review_recommended",
-        "MEDIUM": "note_for_awareness",
-        "LOW": "note_for_awareness",
+        "CRITICAL": "Immediate attorney review required — this deviation may materially alter the risk allocation or financial terms of the lease.",
+        "HIGH": "Attorney review recommended — this deviation affects a material term and should be evaluated for its practical impact before execution.",
+        "MEDIUM": "Note for awareness — this deviation is worth reviewing but may not require negotiation depending on the overall deal context.",
+        "LOW": "Note for awareness — this is a minor deviation that is unlikely to have significant practical impact.",
     }
-    return severity_actions.get(severity, "note_for_awareness")
+    return severity_actions.get(severity, "Review this provision to assess whether the deviation requires attention.")
 
 
 def compute_all_dispositions(
