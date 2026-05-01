@@ -85,7 +85,7 @@ def _validate_severity(obj: dict) -> Tuple[bool, Optional[str]]:
 
 
 # Maximum provisions per severity call — above this we chunk
-SEVERITY_CHUNK_SIZE = 8
+SEVERITY_CHUNK_SIZE = 5
 
 
 def assess_severity(
@@ -157,7 +157,7 @@ def assess_severity(
             user_prompt=user_prompt,
             validate_fn=_validate_severity,
             max_output_tokens=config.get("severity_max_tokens", 4000),
-            reasoning_effort="high",
+            reasoning_effort="medium",
         )
         chunk_elapsed = time.time() - chunk_start
         total_elapsed += chunk_elapsed
