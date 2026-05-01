@@ -13,7 +13,7 @@ This module is a TRANSLATOR, not a reasoner.
 
 Architecture:
   - Schema text by default (zero API cost)
-  - Model call (GPT-5.2) only for high-materiality cases
+  - Model call (GPT-5.5) only for high-materiality cases
   - Materiality gate prevents over-writing low-risk gaps
 
 Output fields per assessment:
@@ -252,7 +252,7 @@ Return only the JSON object, no surrounding markdown or commentary."""
 
 
 def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict:
-    """Build exposure output using GPT-5.2 via ProviderRouter. One API call per assessment."""
+    """Build exposure output using GPT-5.5 via ProviderRouter. One API call per assessment."""
     from cam.core.provider_router import ModelTarget, ProviderRouter, RouterConfig
 
     pid = assessment.get("issue_area_id", "")
@@ -291,9 +291,9 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
 
     try:
         target = ModelTarget(
-            name="openai:gpt-5.2",
+            name="openai:gpt-5.5",
             provider="openai",
-            model="gpt-5.2",
+            model="gpt-5.5",
             # Step 278: bumped from 150 to 220 to make room for the JSON
             # envelope ({"headline": "...", "full": "..."}) without
             # truncating the prose body. The body itself is still capped

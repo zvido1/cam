@@ -14,16 +14,16 @@ For each issue area listed above:
 1. Locate the clause(s) in the LEASE DOCUMENT that address this issue area. Use the issue area's name and description to guide your search.
 2. Extract the COMPLETE clause text, including all subsections and sub-paragraphs. Do not summarize — copy the full language verbatim.
 3. Record the section reference (e.g., "Article XI, Sections 11.1-11.4").
-4. Determine the status:
-   - FOUND: The issue area is addressed somewhere in the document.
-   - NOT_FOUND: The issue area is absent from the document.
-   - AMBIGUOUS: Language potentially addresses this issue area but scope or applicability is uncertain.
+4. Determine the status using ONLY these two values:
+   - "TENANT_ONLY": The issue area IS present and addressed in the document.
+   - "AMBIGUOUS": The issue area is absent, uncertain, or only partially addressed.
+   IMPORTANT: "NOT_FOUND" is NOT a valid status value. If a clause is absent, use "AMBIGUOUS" and leave tenant_text as an empty string "". Do not use "FOUND_BOTH" or "TEMPLATE_ONLY" — those are reserved for two-document comparison mode.
 
 CRITICAL — COMPLETE EXTRACTION:
 Extract the COMPLETE clause text for each issue area, including ALL subsections. Do not summarize, paraphrase, or truncate. Downstream coverage and exposure analysis requires the actual contractual language.
 
 CRITICAL — OMISSION DETECTION:
-If a section appears with language like "[Intentionally Omitted]", "Reserved", or similar, still extract that clause text and record status FOUND. Downstream negative-space detection will interpret the omission signal.
+If a section appears with language like "[Intentionally Omitted]", "Reserved", or similar, still extract that clause text and record status "TENANT_ONLY". Downstream negative-space detection will interpret the omission signal.
 
 CRITICAL — ADDITIONAL SUBSECTIONS:
 Extract ALL subsections found under the same article heading. A subsection that addresses the issue area must be included in the tenant_text field.
@@ -56,6 +56,13 @@ Required deal_overview fields:
 
 If any field cannot be determined, use an empty string (or empty array for key_terms_summary).
 
+IMPORTANT TYPE CONSTRAINTS for deal_overview:
+- ALL fields must be JSON strings, not numbers.
+- "lease_term_years" is the only numeric field.
+- "base_rent_monthly" must be a formatted string like "$19,600.00", not a number like 19600.
+- "key_terms_summary" must be a JSON array of strings.
+- Use empty string "" for any field that cannot be determined. Do not use null.
+
 OUTPUT FORMAT:
 
 Respond with a JSON object containing three top-level keys:
@@ -67,10 +74,22 @@ Each provision extraction object must have these exact fields:
 - "provision_id": The issue area ID (e.g., "LP-01")
 - "provision_name": The issue area name
 - "template_text": Empty string "" (no template in this mode)
-- "tenant_text": Full extracted clause text from the lease (empty string if NOT_FOUND)
+- "tenant_text": Full extracted clause text from the lease (empty string if status is "AMBIGUOUS")
 - "template_section_ref": Empty string "" (no template in this mode)
 - "tenant_section_ref": Section reference in the lease (empty string if not found)
-- "status": One of "FOUND_BOTH", "TEMPLATE_ONLY", "TENANT_ONLY", "AMBIGUOUS". In single-document mode, use "TENANT_ONLY" when the clause is present (FOUND), "AMBIGUOUS" when uncertain. The "status" values match the existing schema for downstream compatibility.
+- "status": MUST be exactly one of these four string values — no other values are valid:
+    "FOUND_BOTH"    — do not use (reserved for two-document comparison mode)
+    "TEMPLATE_ONLY" — do not use (reserved for two-document comparison mode)
+    "TENANT_ONLY"   — use this when the clause IS present in the document
+    "AMBIGUOUS"     — use this when the clause is absent or uncertain
+  IMPORTANT: "NOT_FOUND" is NOT a valid status value. If a clause is absent, use "AMBIGUOUS" and leave tenant_text as an empty string "".
+  The "status" field must be a JSON string, not null and not any other value.
+IMPORTANT: When a clause is absent from the document, set:
+  - "status": "AMBIGUOUS"
+  - "tenant_text": ""  (empty string, not null)
+  - "tenant_section_ref": ""  (empty string)
+Do NOT invent new status values. Do NOT use null for any string field.
+All string fields must contain either a string value or an empty string "".
 - "alignment_notes": Brief observations about the extracted text (e.g., "Clause addresses expected rent escalation via CPI without cap.")
 - "definition_changes": Empty string (no template to compare against)
 

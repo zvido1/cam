@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.1.5",
+  "schema_version": "1.2.0",
   "created": "2026-03-27",
-  "updated": "2026-04-29",
+  "updated": "2026-04-30",
   "contract_type": "retail_lease",
   "display_name": "Retail / Commercial Lease",
   "description": "Issue-area knowledge schema for retail and commercial lease analysis. Defines expected coverage, applicability gating, exposure statements, caution signals, and negative-space clues.",
-  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants.",
+  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants. v1.2.0: Added LP-19 Utilities (required), LP-20 Exclusivity (conditional, extracted from LP-05), LP-21 Guaranty of Lease (conditional, promoted from discovered_provision_patterns). LP-05 expected_elements updated: removed 'exclusive use right scope' (now LP-20's responsibility); related_issue_areas updated to include LP-20. discovered_provision_patterns updated: removed 'Guaranty' pattern (now LP-21).",
 
   "coverage_states": {
     "covered":                  "Provision present and consistent with standard form",
@@ -199,20 +199,19 @@
       "activation_clues": [],
       "exclusion_clues": [],
       "default_when_unclear": "review_needed",
-      "related_issue_areas": ["LP-14"],
+      "related_issue_areas": ["LP-14", "LP-20"],
       "notes": "Cascade risk: force majeure definition changes can alter continuous operation obligations.",
       "expected_elements": [
         "specific permitted use description",
-        "exclusive use right scope (if any)",
         "continuous operation obligation",
         "prohibited use restrictions",
         "co-tenancy or anchor dependency language"
       ],
       "coverage_state_rules": {
         "missing":             "No permitted use provision",
-        "partial":             "Use defined but exclusive rights, continuous operation, or restrictions absent",
+        "partial":             "Use defined but continuous operation, prohibited use restrictions, or co-tenancy language absent",
         "ambiguous":           "Use defined broadly without specific business description",
-        "broken_xref":         "Exclusive use cross-references definition not present in document",
+        "broken_xref":         "Permitted use cross-references definition not present in document",
         "covered_unfavorable": "Continuous operation obligation present with no force majeure carve-out"
       },
       "risk_if_missing": "No restriction on how tenant uses space; may conflict with other tenant exclusives in the center",
@@ -740,6 +739,182 @@
         "Consequential damages excluded",
         "Month-to-month characterization confirmed (prevents automatic term renewal)"
       ]
+    },
+    {
+      "id": "LP-19",
+      "name": "Utilities",
+      "applicability": "required",
+      "activation_clues": [],
+      "exclusion_clues": [],
+      "default_when_unclear": "review_needed",
+      "related_issue_areas": ["LP-06", "LP-07", "LP-14"],
+      "notes": "Required in every commercial lease. Allocation may be tenant-direct (separately metered), pass-through via CAM (LP-07), or landlord-included in gross rent. All three structures are valid; absence of any utility provision is the gap.",
+      "expected_elements": [
+        "identification of covered utilities (electric, gas, water, sewer, telecommunications, trash)",
+        "cost allocation method (tenant direct, separately metered, pass-through, or landlord-included)",
+        "submetering or check meter rights",
+        "responsibility for installation and connection costs",
+        "rent abatement or remedies for prolonged service interruption",
+        "responsibility for utility upgrade costs"
+      ],
+      "coverage_state_rules": {
+        "missing":             "No utility provision found",
+        "partial":             "Cost allocation present but interruption remedies, upgrade cost responsibility, or submetering rights absent",
+        "ambiguous":           "Utilities allocated to 'appropriate party' or 'as customary' without specification",
+        "covered_unfavorable": "No rent abatement for prolonged utility interruption; OR tenant bears all utility upgrade costs without cap; OR tenant required to pay for shared utility cost without submetering",
+        "broken_xref":         "Utility allocation cross-references exhibit, schedule, or definition not present in document"
+      },
+      "risk_if_missing": "Utility cost allocation and service interruption rights undefined; tenant may face unexpected utility expenses or lose abatement rights during outages, particularly material for tenants with high utility dependency (food service, healthcare, refrigeration-dependent retail)",
+      "exposure_statement": {
+        "tenant":   "Utility cost allocation and service interruption rights undefined; tenant may face unexpected utility expenses or lose rent abatement during prolonged outages, particularly material for operations dependent on continuous service",
+        "landlord": "Utility cost allocation and interruption remedies undefined; landlord may bear costs intended for tenant or face disputes over abatement obligations during third-party utility failures",
+        "neutral":  "Utility cost allocation and service interruption rights are undefined; both parties face uncertainty over expense responsibility and abatement during outages"
+      },
+      "caution_signals": ["common_dispute_area"],
+      "negative_space_clues": [
+        "Utilities listed in lease summary but no allocation provision in body",
+        "'Tenant shall pay for all utilities' without submetering or check meter rights",
+        "Utility room or service entry referenced but tenant access rights not granted",
+        "Service interruption section header present but body blank or marked Reserved",
+        "Utility upgrade cost provision references exhibit not attached"
+      ],
+      "common_tenant_modifications": [
+        "Added rent abatement after 5 or 7 days of utility interruption",
+        "Submetering or check meter rights added",
+        "Utility upgrade costs allocated to landlord or capped",
+        "Cap on tenant's share of shared utility costs"
+      ]
+    },
+    {
+      "id": "LP-20",
+      "name": "Exclusivity",
+      "applicability": "conditional",
+      "activation_clues": [
+        "exclusive use",
+        "exclusivity",
+        "exclusive right",
+        "competing use",
+        "no competing",
+        "competing tenant",
+        "radius restriction",
+        "exclusive operating right"
+      ],
+      "exclusion_clues": [
+        "no exclusive rights",
+        "non-exclusive lease",
+        "tenant has no exclusive use right",
+        "landlord retains right to lease to competitors"
+      ],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": ["LP-05"],
+      "notes": "Extracted from LP-05 in schema v1.2.0. Most retail leases include exclusivity for the tenant's primary business; absence is meaningful for retail tenants but normal for office or industrial tenants. Carve-outs swallow exclusivity if too broad — material question for any retail tenant whose competitive moat depends on this clause.",
+      "expected_elements": [
+        "specific exclusive use scope (protected business activities defined precisely)",
+        "carve-outs for existing tenants at center",
+        "carve-outs for ancillary or incidental use by other tenants",
+        "radius restriction or geographic scope",
+        "definition of 'competing use'",
+        "remedies for landlord violation (rent abatement, damages, termination)",
+        "duration of exclusivity (full term or limited period)"
+      ],
+      "coverage_state_rules": {
+        "missing":             "Exclusive use referenced elsewhere in lease (e.g., recitals or LP-05) but no standalone exclusivity provision",
+        "partial":             "Exclusive scope defined but remedies, carve-outs, or competing-use definition absent",
+        "ambiguous":           "Exclusive use language without specific business definition, or 'reasonable' exclusivity without scope",
+        "covered_unfavorable": "Carve-outs effectively swallow the exclusivity (e.g., grocery pharmacy carve-out for a pharmacy tenant); OR no remedies for landlord violation; OR landlord retains unilateral right to modify exclusivity",
+        "broken_xref":         "Exclusive area or carve-out list cross-references exhibit not attached",
+        "not_applicable":      "Document explicitly states no exclusivity, OR tenant type does not warrant exclusivity (office, industrial)"
+      },
+      "risk_if_missing": "Tenant has no protection from competing tenants at the center; landlord may lease adjacent space to direct competitors, eroding tenant's revenue base. Particularly material for retail tenants whose location-based competitive moat is the rationale for the lease",
+      "exposure_statement": {
+        "tenant":   "Exclusivity protection absent or undefined; tenant has no contractual protection from competing tenants and no enforcement mechanism if landlord violates",
+        "landlord": "Exclusivity scope and carve-outs undefined; landlord faces potential disputes over what constitutes 'competing use' and may have leasing flexibility unintentionally constrained",
+        "neutral":  "Exclusivity scope, carve-outs, and remedies are undefined; both parties face uncertainty over what competition is permitted at the center and what enforcement looks like if exclusivity is violated"
+      },
+      "caution_signals": ["common_dispute_area", "tenant_leverage_point"],
+      "negative_space_clues": [
+        "Exclusive use clause header present but body blank or marked Reserved",
+        "Carve-outs section present but list blank",
+        "Reference to 'Exhibit C — Exclusive Use Area' or similar with no exhibit attached",
+        "Definition of 'competing use' absent from Definitions article",
+        "Remedies section blank or limited to 'landlord shall use commercially reasonable efforts'",
+        "Radius restriction percentage or distance blank"
+      ],
+      "common_tenant_modifications": [
+        "Added remedies for violation (rent abatement, termination right after notice and cure)",
+        "Tightened definition of 'competing use' to specific SIC/NAICS codes",
+        "Limited carve-outs (no general grocery exception for pharmacy tenant)",
+        "Added radius restriction (e.g., no competing use within 1 mile)",
+        "Extended exclusivity for full lease term including renewal options"
+      ]
+    },
+    {
+      "id": "LP-21",
+      "name": "Guaranty of Lease",
+      "applicability": "conditional",
+      "activation_clues": [
+        "guaranty",
+        "guarantor",
+        "personal guarantee",
+        "personal guaranty",
+        "corporate guarantee",
+        "corporate guaranty",
+        "guarantee of lease",
+        "guaranteed by",
+        "good guy guaranty",
+        "burndown guaranty"
+      ],
+      "exclusion_clues": [
+        "no guaranty required",
+        "no guarantor",
+        "tenant alone is responsible",
+        "no personal guarantee shall be required"
+      ],
+      "default_when_unclear": "not_applicable",
+      "related_issue_areas": ["LP-04", "LP-11"],
+      "notes": "Promoted from discovered_provision_patterns in schema v1.2.0. Common for newer tenants, smaller tenants, single-purpose entity tenants, or where landlord requires additional credit support beyond the security deposit. Absence is normal for established/creditworthy tenants and not a flag.",
+      "expected_elements": [
+        "identification of guarantor (individual or entity, with address)",
+        "scope of guaranteed obligations (rent only, all lease obligations, or specified subset)",
+        "guaranty type (full, limited, good guy, burndown)",
+        "recourse mechanism (direct action against guarantor, or after exhausting tenant remedies)",
+        "duration of guaranty (full lease term, defined period, or until release conditions met)",
+        "release conditions (sale of business, hitting financial milestones, vacate and pay obligations met)",
+        "survival of guaranty after lease assignment or modification"
+      ],
+      "coverage_state_rules": {
+        "missing":                   "Guaranty referenced in recitals, signature block, or other lease provisions but no guaranty article or attached guaranty agreement found",
+        "partial":                   "Guarantor identified but scope, duration, type, or release conditions absent",
+        "ambiguous":                 "Guaranty type unclear (full vs limited not specified); OR 'good guy guaranty' invoked without definition",
+        "covered_unfavorable":       "Guaranty extends beyond lease term with no termination mechanism; OR guarantor remains liable after release of tenant; OR no release conditions defined; OR 'all obligations forever' language without limitation",
+        "broken_xref":               "Lease references separate Guaranty Agreement attached as exhibit but exhibit not present in document",
+        "potentially_unenforceable": "Guaranty not signed by guarantor; OR notarization required by jurisdiction not present; OR guaranty waives statutory protections that may not be waivable",
+        "not_applicable":            "No guaranty references anywhere in document; tenant alone is responsible"
+      },
+      "risk_if_missing": "If a guaranty was negotiated, landlord has no enforceable third-party recourse if tenant defaults; landlord's credit position is limited to tenant entity assets and the security deposit",
+      "exposure_statement": {
+        "tenant":   "Guaranty terms incompletely defined; guarantor's scope, duration, and release conditions undefined, creating uncertainty about personal exposure and inability to plan exit from guaranty obligation",
+        "landlord": "Guaranty terms incompletely defined; landlord lacks clear enforcement mechanism against guarantor, faces uncertainty over guaranty survival across lease modifications, and may have weakened credit support if guaranty is unenforceable",
+        "neutral":  "Guaranty terms, scope, recourse, duration, and release conditions are undefined; both parties face uncertainty over the third-party backstop's enforceability and how it interacts with lease modifications or assignment"
+      },
+      "caution_signals": ["governing_law_sensitive", "potentially_unenforceable"],
+      "negative_space_clues": [
+        "Signature block lists guarantor but no guaranty article in lease body",
+        "Recitals or lease summary references guaranty but provision absent",
+        "'Good guy guaranty' invoked without definition",
+        "Burndown schedule referenced but timing and triggers blank",
+        "Release conditions section header present but body blank or marked Reserved",
+        "Reference to separate Guaranty Agreement exhibit not attached",
+        "Guarantor signature line present but unsigned"
+      ],
+      "common_tenant_modifications": [
+        "Good guy guaranty (personal liability ends when tenant vacates and pays through vacate date)",
+        "Burndown schedule (guaranty amount reduces over time as tenant performs)",
+        "Release on financial milestones (revenue, net worth, or operating history thresholds)",
+        "Cap on guaranty amount (e.g., 12 months rent maximum exposure)",
+        "Release on assignment of lease to qualified assignee",
+        "Limited guaranty scope (rent only, not all lease obligations)"
+      ]
     }
   ],
 
@@ -759,13 +934,6 @@
         "activation_clues": ["percentage rent", "gross sales", "natural breakpoint", "percentage of gross"],
         "coverage_concern": "Revenue-based rent above natural breakpoint; calculation methodology and reporting obligations critical",
         "caution_signals": ["common_dispute_area"]
-      },
-      {
-        "name": "Guaranty",
-        "applicability": "conditional",
-        "activation_clues": ["guaranty", "guarantor", "personal guarantee", "corporate guarantee", "guarantee of lease"],
-        "coverage_concern": "Personal or corporate guarantee of tenant obligations; scope and duration of guarantor liability requires review",
-        "caution_signals": ["governing_law_sensitive", "potentially_unenforceable"]
       },
       {
         "name": "SNDA",

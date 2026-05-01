@@ -152,6 +152,27 @@ PROVISIONS = [
         "search_hints": ["holdover", "month-to-month", "post-expiration", "holdover rent"],
         "default_enabled": True,
     },
+    {
+        "id": "LP-19",
+        "name": "Utilities",
+        "description": "Allocation of utility costs (electric, gas, water, sewer, telecom, trash), submetering rights, service interruption remedies, responsibility for installation and upgrade costs",
+        "search_hints": ["utility", "utilities", "electric", "gas", "water", "sewer", "submetering", "service interruption"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-20",
+        "name": "Exclusivity",
+        "description": "Tenant's exclusive use right scope, carve-outs for existing or ancillary tenants, radius restriction, definition of competing use, remedies for landlord violation",
+        "search_hints": ["exclusive use", "exclusivity", "exclusive right", "competing use", "no competing", "radius restriction"],
+        "default_enabled": True,
+    },
+    {
+        "id": "LP-21",
+        "name": "Guaranty of Lease",
+        "description": "Guarantor identification, scope and type of guaranty (full, limited, good guy, burndown), recourse mechanism, duration, release conditions, survival after assignment",
+        "search_hints": ["guaranty", "guarantor", "personal guarantee", "corporate guarantee", "good guy guaranty", "burndown guaranty"],
+        "default_enabled": True,
+    },
 ]
 
 # Quick lookup by ID
@@ -180,14 +201,7 @@ def get_active_provisions(
     """
     # Always include always_on provisions (LP-00) first
     always_on = [p for p in PROVISIONS if p.get("always_on", False)]
-
-    if selected_ids is None:
-        active = [p for p in PROVISIONS if p.get("default_enabled", True) and not p.get("always_on", False)]
-    else:
-        id_set = set(selected_ids)
-        active = [p for p in PROVISIONS if p["id"] in id_set and not p.get("always_on", False)]
-
-    # LP-00 always first, then selected provisions, then custom
+    active = [p for p in PROVISIONS if p.get("default_enabled", True) and not p.get("always_on", False)]
     active = always_on + active
 
     if custom_provisions:

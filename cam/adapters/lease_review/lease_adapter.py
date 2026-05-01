@@ -54,19 +54,19 @@ DEFAULT_CONFIG = {
     "extraction_max_tokens": 65536,
     # Stage 2: Evaluators (configured in lease_evaluate.py)
     # Stage 3: Challenge
-    "challenge_model": "gpt-5.2",
+    "challenge_model": "gpt-5.5",
     "challenge_timeout": 180.0,
     "challenge_max_tokens": 6000,
     # Cascade micro-stage (definition cascades)
-    "cascade_model": "gpt-5.2",
+    "cascade_model": "gpt-5.5",
     "cascade_timeout": 120.0,
     "cascade_max_tokens": 3000,
     # Stage 5: Severity
-    "severity_model": "gpt-5.2",
+    "severity_model": "gpt-5.5",
     "severity_timeout": 120.0,
     "severity_max_tokens": 4000,
     # Interpretation notes (ASSERT_REVIEW_SIGNAL provisions only)
-    "interpretation_model": "gpt-5.2",
+    "interpretation_model": "gpt-5.5",
     "interpretation_timeout": 60.0,
     # Output
     "output_dir": str(CAM_ROOT / "05 Lease Analyzer" / "results"),

@@ -2458,6 +2458,9 @@ const LP_PROGRESS_ITEMS = [
     { id: "LP-16", name: "Parking" },
     { id: "LP-17", name: "Dispute Resolution" },
     { id: "LP-18", name: "Holdover Provisions" },
+    { id: "LP-19", name: "Utilities" },
+    { id: "LP-20", name: "Exclusivity" },
+    { id: "LP-21", name: "Guaranty of Lease" },
 ];
 
 function _lpStateDisplay(state) {

@@ -32,6 +32,7 @@ PROVISION_FLAG_RATES = {
     "LP-09": 0.62, "LP-10": 0.38, "LP-11": 0.60, "LP-12": 0.46,
     "LP-13": 0.60, "LP-14": 0.26, "LP-15": 0.14, "LP-16": 0.32,
     "LP-17": 0.05, "LP-18": 0.22,
+    "LP-19": 0.45, "LP-20": 0.35, "LP-21": 0.15,
 }
 VARIABLE_COST_PER_FLAGGED = 40
 EXTRACTION_BASE_SECS = 180
