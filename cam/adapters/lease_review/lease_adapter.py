@@ -572,37 +572,7 @@ def run_lease_analysis(
 
         print(f"[lease_adapter] LP-00 configured: mode={identity_check}, template_type={template_type}", flush=True)
 
-    # ── Provision Scope Filter (Step 239) ──
-    # The extraction cache returns all 18 provisions regardless of the user's
-    # selection. Apply a filter here — after all Stage 1 work is complete —
-    # to drop LP-XX provisions that were not in the selected set.
-    #
-    # Always-keep rules:
-    #   - LP-00 (always_on — metadata + identity check)
-    #   - Any CUSTOM-XX (discovered non-standard articles + user custom provisions)
-    #
-    # The `provisions` parameter contains the dicts that get_active_provisions()
-    # built from selected_ids, so extract the IDs from it as the authoritative set.
-    _selected_ids = {p.get("id") or p.get("provision_id") for p in (provisions or [])}
-    if _selected_ids:
-        _before = len(extraction["provisions"])
-        extraction["provisions"] = [
-            p for p in extraction["provisions"]
-            if (
-                p.get("provision_id", "").startswith("CUSTOM")  # discovered / injected
-                or p.get("provision_id") == "LP-00"             # always-on
-                or p.get("provision_id") in _selected_ids       # explicitly selected
-            )
-        ]
-        _after = len(extraction["provisions"])
-        if _after < _before:
-            print(
-                f"[lease_adapter] Scope filter: {_before} → {_after} provisions "
-                f"(dropped {_before - _after} unselected LP-XX entries)",
-                flush=True,
-            )
-        else:
-            print(f"[lease_adapter] Scope filter: all {_after} provisions in scope (no filtering needed)", flush=True)
+    print(f"[lease_adapter] Provisions: all {len(extraction['provisions'])} in scope (no filtering)", flush=True)
 
     # ── Stage 4: Fragility Detection (pure Python, 0 API calls) ──
     # Run BEFORE evaluators — costs nothing and gives triage more info
@@ -821,8 +791,17 @@ def run_lease_analysis(
             assess_coverage, summarize_coverage,
         )
         negative_space_by_provision = detect_negative_space(dispositions, tenant_text)
+        _job_id = cfg.get("_job_id")
+        def _lp_progress_cb(lp_id, lp_name, state):
+            if _job_id:
+                try:
+                    from app.job_manager import update_lp_progress
+                    update_lp_progress(_job_id, lp_id, lp_name, state)
+                except Exception:
+                    pass
         coverage_assessment = assess_coverage(
-            dispositions, tenant_text, negative_space_by_provision
+            dispositions, tenant_text, negative_space_by_provision,
+            lp_progress_callback=_lp_progress_cb,
         )
         coverage_summary = summarize_coverage(coverage_assessment)
         ns_summary = summarize_negative_space(negative_space_by_provision)
@@ -1095,8 +1074,17 @@ def run_lease_coverage_only(
         negative_space_by_provision = detect_negative_space(
             extraction["provisions"], tenant_text,
         )
+        _job_id_c = cfg.get("_job_id")
+        def _lp_progress_cb_c(lp_id, lp_name, state):
+            if _job_id_c:
+                try:
+                    from app.job_manager import update_lp_progress
+                    update_lp_progress(_job_id_c, lp_id, lp_name, state)
+                except Exception:
+                    pass
         coverage_assessment = assess_coverage(
             extraction["provisions"], tenant_text, negative_space_by_provision,
+            lp_progress_callback=_lp_progress_cb_c,
         )
         coverage_summary = summarize_coverage(coverage_assessment)
         ns_summary = summarize_negative_space(negative_space_by_provision)

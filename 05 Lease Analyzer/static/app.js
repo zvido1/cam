@@ -753,8 +753,6 @@ function setupEventListeners() {
     });
 
     // Provisions
-    $("#check-all-provisions").addEventListener("click", () => toggleAllProvisions(true));
-    $("#uncheck-all-provisions").addEventListener("click", () => toggleAllProvisions(false));
     $("#add-custom-provision").addEventListener("click", addCustomProvision);
     $("#custom-provision-input").addEventListener("keydown", e => {
         if (e.key === "Enter") addCustomProvision();
@@ -1880,10 +1878,7 @@ function updateUploadModeLabels(mode = getSelectedMode()) {
         sidebarTitle.textContent = "Review Areas";
     }
 
-    const sidebarSubtitle = document.querySelector(".provisions-subtitle");
-    if (sidebarSubtitle) {
-        sidebarSubtitle.textContent = "Select review areas, then click Review Leases. CAM also discovers additional review areas automatically.";
-    }
+
 }
 
 function handleModeChange() {
@@ -1943,6 +1938,7 @@ function handleModeChange() {
             if (persCard) persCard.classList.remove("required-indicator");
         }
     }
+
     // Step 285: keep visible upload steps gap-free in both modes and keep the
     // sidebar label mode-neutral.
     updateUploadModeLabels(mode);
@@ -2019,21 +2015,17 @@ function updateSubmitState() {
         if (mismatchEl) mismatchEl.classList.add("hidden");
     }
 
-    const checkedCount = document.querySelectorAll("#provision-list input[type=checkbox]:checked").length;
-    const provisionsReady = checkedCount > 0;
-    // Step 261: perspective is required — no default. Gate submit on it.
-    const perspectiveSelected = getSelectedPerspective() !== null;
-    const ready = filesReady && emailOk && provisionsReady && perspectiveSelected;
+    // Step 261: perspective is required for Mode C only.
+    // Mode A always has perspective forced to "tenant" — don't gate on it.
+    const perspectiveSelected = analysisMode === "analyze"
+        ? getSelectedPerspective() !== null
+        : true;
+    const ready = filesReady && emailOk && perspectiveSelected;
     btn.disabled = !ready;
 
     btn.textContent = "Review Leases";
 
     if (analysisMode === "analyze" && !perspectiveSelected) {
-        est.textContent = "Choose a perspective above to continue";
-    } else if (filesReady && !provisionsReady) {
-        est.textContent = "Select at least one provision to analyze";
-    } else if (filesReady && provisionsReady && !perspectiveSelected) {
-        // Step 261: nudge the user to pick a perspective once everything else is ready.
         est.textContent = "Choose a perspective above to continue";
     } else if (filesReady) {
         est.textContent = "";
@@ -2125,24 +2117,17 @@ async function loadProvisions() {
 function renderProvisions() {
     const list = $("#provision-list");
     list.innerHTML = "";
-    const defaultChecked = addMoreMode === "addmore" ? "" : "checked";
     provisions.forEach(p => {
-        // Skip LP-00 (always_on) — it runs automatically, not shown as checkbox
+        // Skip LP-00 (always_on) — it runs automatically, not shown in list
         if (p.id === "LP-00" || p.always_on) return;
         const li = document.createElement("li");
-        li.innerHTML = `<label title="${esc(p.description)}">
-            <input type="checkbox" value="${esc(p.id)}" ${defaultChecked}>
-            <span>${esc(p.id)} ${esc(p.name)}</span>
-        </label>`;
+        li.innerHTML = `<span title="${esc(p.description)}">${esc(p.id)} ${esc(p.name)}</span>`;
         list.appendChild(li);
     });
     customProvisions.forEach((cp, i) => {
         const li = document.createElement("li");
-        li.innerHTML = `<label>
-            <input type="checkbox" value="${esc(cp.id)}" ${defaultChecked}>
-            <span>${esc(cp.name)}</span>
-            <button class="remove-file" data-custom="${i}" title="Remove">&times;</button>
-        </label>`;
+        li.innerHTML = `<span>${esc(cp.name)}</span>
+            <button class="remove-file" data-custom="${i}" title="Remove">&times;</button>`;
         li.querySelector(".remove-file").addEventListener("click", e => {
             e.stopPropagation();
             customProvisions.splice(i, 1);
@@ -2150,11 +2135,6 @@ function renderProvisions() {
             updateSubmitState();
         });
         list.appendChild(li);
-    });
-
-    // Hook checkbox changes to update estimate
-    list.querySelectorAll("input[type=checkbox]").forEach(cb => {
-        cb.addEventListener("change", updateSubmitState);
     });
 
     // If in add-more mode, lock already-analyzed provisions immediately after render
@@ -2309,17 +2289,8 @@ async function handleSubmit() {
             formData.append("tenant_files", f);
         });
 
-        const selectedIds = getSelectedProvisionIds();
-        const standardIds = selectedIds.filter(id => id.startsWith("LP-"));
-        const customIds = selectedIds.filter(id => id.startsWith("CUSTOM-"));
-
-        if (standardIds.length > 0 && standardIds.length < provisions.length) {
-            formData.append("provisions", JSON.stringify(standardIds));
-        }
-
-        if (customIds.length > 0) {
-            const customList = customProvisions.filter(cp => customIds.includes(cp.id));
-            formData.append("custom_provisions", JSON.stringify(customList));
+        if (customProvisions.length > 0) {
+            formData.append("custom_provisions", JSON.stringify(customProvisions));
         }
 
         formData.append("strictness", "standard");
@@ -2461,8 +2432,95 @@ function initProcessingView(jobData) {
 
     // If this view is initialized mid-run (for example after a frontend reload),
     // replace placeholder queued rows with the live job state immediately.
+    initLpProgressPanel(jobData);
     renderProgress(jobData);
     renderProcessingChecklist(jobData);
+}
+
+// ── LP Progress Panel (Step 288) ──────────────────────────────
+
+const LP_PROGRESS_ITEMS = [
+    { id: "LP-01", name: "Rent & Payment Terms" },
+    { id: "LP-02", name: "Rent Escalation" },
+    { id: "LP-03", name: "Lease Term & Renewal" },
+    { id: "LP-04", name: "Security Deposit" },
+    { id: "LP-05", name: "Permitted Use" },
+    { id: "LP-06", name: "Maintenance & Repairs" },
+    { id: "LP-07", name: "CAM Charges" },
+    { id: "LP-08", name: "Insurance Requirements" },
+    { id: "LP-09", name: "Subletting & Assignment" },
+    { id: "LP-10", name: "Alterations & Improvements" },
+    { id: "LP-11", name: "Default & Remedies" },
+    { id: "LP-12", name: "Early Termination" },
+    { id: "LP-13", name: "Indemnification & Liability" },
+    { id: "LP-14", name: "Force Majeure" },
+    { id: "LP-15", name: "Signage Rights" },
+    { id: "LP-16", name: "Parking" },
+    { id: "LP-17", name: "Dispute Resolution" },
+    { id: "LP-18", name: "Holdover Provisions" },
+];
+
+function _lpStateDisplay(state) {
+    switch (state) {
+        case "processing":          return { icon: "◌", cls: "state-processing" };
+        case "covered":             return { icon: "✓", cls: "state-covered" };
+        case "covered_unfavorable": return { icon: "⚠", cls: "state-covered_unfavorable" };
+        case "partial":             return { icon: "◑", cls: "state-partial" };
+        case "ambiguous":
+        case "review_needed":       return { icon: "?", cls: "state-review_needed" };
+        case "missing":             return { icon: "✗", cls: "state-missing" };
+        case "broken_xref":         return { icon: "⚡", cls: "state-broken_xref" };
+        case "not_applicable":      return { icon: "—", cls: "state-not_applicable" };
+        default:                    return { icon: "·", cls: "state-pending" };
+    }
+}
+
+function initLpProgressPanel(jobData) {
+    const panel = $("#lp-progress-panel");
+    const list = $("#lp-progress-list");
+    if (!panel || !list) return;
+
+    const customPs = (jobData && jobData.input_config && jobData.input_config.custom_provisions) || [];
+    const allItems = [
+        ...LP_PROGRESS_ITEMS,
+        ...customPs.map(cp => ({
+            id: cp.id || cp.provision_id || "CUSTOM",
+            name: cp.name || cp.provision_name || "Custom Review Area",
+        })),
+    ];
+
+    list.innerHTML = allItems.map(item =>
+        `<div class="lp-progress-row state-pending" id="lp-row-${esc(item.id)}">` +
+        `<span class="lp-progress-icon">·</span>` +
+        `<span class="lp-progress-name" title="${esc(item.name)}">${esc(item.name)}</span>` +
+        `</div>`
+    ).join("");
+
+    panel.classList.remove("hidden");
+}
+
+function updateLpProgressPanel(lpProgress, jobStatus) {
+    const list = $("#lp-progress-list");
+    if (!list) return;
+
+    if (lpProgress) {
+        Object.values(lpProgress).forEach(entry => {
+            const row = document.getElementById(`lp-row-${entry.lp_id}`);
+            if (!row) return;
+            const { icon, cls } = _lpStateDisplay(entry.state);
+            row.className = `lp-progress-row ${cls}`;
+            const iconEl = row.querySelector(".lp-progress-icon");
+            if (iconEl) iconEl.textContent = icon;
+        });
+    }
+
+    if (jobStatus === "completed") {
+        list.querySelectorAll(".lp-progress-row.state-pending").forEach(row => {
+            row.className = "lp-progress-row state-covered";
+            const iconEl = row.querySelector(".lp-progress-icon");
+            if (iconEl) iconEl.textContent = "✓";
+        });
+    }
 }
 
 function mountProcessingCarousel() {
@@ -2549,6 +2607,7 @@ function renderProgress(job) {
 
     const tenants = (job.input_config || {}).tenants || [];
     const jobStatus = job.status || "";
+    updateLpProgressPanel(job.lp_progress || {}, jobStatus);
     let overallFraction = 0;
     tenants.forEach(t => {
         overallFraction += getTenantProgressFraction(t, jobStatus);

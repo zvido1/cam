@@ -383,6 +383,7 @@ def create_job(domain: str, email: str, input_config: dict, job_id: str = None) 
         "input_config": input_config,
         "feedback": [],
         "error": None,
+        "lp_progress": {},
     }
 
     with _jobs_lock:
@@ -427,6 +428,29 @@ def get_job_snapshot(job_id: str) -> Optional[dict]:
             statuses = [(t.get("filename", "?"), t.get("status"), t.get("current_stage"), t.get("stage_detail", "")[:40]) for t in tenants]
             logger.debug(f"Snapshot {job_id}: {statuses}")
         return copy.deepcopy(job)
+
+
+def update_lp_progress(job_id: str, lp_id: str, lp_name: str, state: str) -> None:
+    """Update coverage progress for a single LP during analysis.
+
+    Called once per LP as coverage assessment completes each one.
+    Non-fatal: silently returns if job not found.
+    """
+    try:
+        with _jobs_lock:
+            job = _jobs.get(job_id)
+            if not job:
+                return
+            if "lp_progress" not in job:
+                job["lp_progress"] = {}
+            job["lp_progress"][lp_id] = {
+                "lp_id": lp_id,
+                "lp_name": lp_name,
+                "state": state,
+                "completed_at": _utc_now_iso(),
+            }
+    except Exception as e:
+        logger.warning(f"update_lp_progress failed (non-fatal): {e}")
 
 
 def list_jobs(email: str = None) -> list:

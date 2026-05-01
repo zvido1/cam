@@ -34,6 +34,7 @@ def assess_coverage(
     provisions: list,
     full_tenant_text: str,
     negative_space_signals: Optional[dict] = None,
+    lp_progress_callback=None,
 ) -> list:
     """Assess coverage state for all issue areas.
 
@@ -72,8 +73,27 @@ def assess_coverage(
 
     assessments = []
 
+    def _emit(assessment):
+        if lp_progress_callback:
+            try:
+                lp_progress_callback(
+                    lp_id=assessment["issue_area_id"],
+                    lp_name=assessment["issue_area_name"],
+                    state=assessment.get("coverage_state", "unknown"),
+                )
+            except Exception:
+                pass
+
     for area in get_all_issue_areas():
         pid = area.get("id", "")
+        lp_name = area.get("name", pid)
+
+        # Signal LP as currently being assessed before any work runs
+        if lp_progress_callback:
+            try:
+                lp_progress_callback(lp_id=pid, lp_name=lp_name, state="processing")
+            except Exception:
+                pass
 
         # ── Step 1: Applicability ─────────────────────────────────────────────
         applicability_result = is_applicable(pid, full_tenant_text)
@@ -84,23 +104,27 @@ def assess_coverage(
                 if applicability_result == "excluded"
                 else "No activation clues found; issue area absent by design"
             )
-            assessments.append(_build_assessment(
+            _a = _build_assessment(
                 pid=pid, area=area, coverage_state="not_applicable",
                 applicability=applicability_result, evidence_summary=reason,
                 supporting_provisions=[], negative_space=[],
                 elements_found=[], elements_missing=[], tenant_text="",
-            ))
+            )
+            assessments.append(_a)
+            _emit(_a)
             continue
 
         if applicability_result == "unclear":
             default_state = get_default_when_unclear(pid)
-            assessments.append(_build_assessment(
+            _a = _build_assessment(
                 pid=pid, area=area, coverage_state=default_state,
                 applicability=applicability_result,
                 evidence_summary=f"Cannot determine whether this issue area applies; defaulting to '{default_state}'",
                 supporting_provisions=[], negative_space=ns_signals.get(pid, []),
                 elements_found=[], elements_missing=[], tenant_text="",
-            ))
+            )
+            assessments.append(_a)
+            _emit(_a)
             continue
 
         # applicability_result is "required" or "applicable"
@@ -113,14 +137,16 @@ def assess_coverage(
         # ── Step 3: High-priority negative space: reserved/omitted ───────────
         reserved_signals = [s for s in ns if s["signal_type"] == "reserved_or_omitted"]
         if reserved_signals:
-            assessments.append(_build_assessment(
+            _a = _build_assessment(
                 pid=pid, area=area, coverage_state="broken_xref",
                 applicability=applicability_result,
                 evidence_summary="Section or subsection explicitly marked as omitted or reserved",
                 supporting_provisions=[pid] if prov else [], negative_space=ns,
                 elements_found=[], elements_missing=get_expected_elements(pid),
                 tenant_text=tenant_text,
-            ))
+            )
+            assessments.append(_a)
+            _emit(_a)
             continue
 
         # ── Step 4: No tenant text → missing or broken_xref ──────────────────
@@ -132,13 +158,15 @@ def assess_coverage(
                 if xref_signals else
                 "No provision text found in extracted document"
             )
-            assessments.append(_build_assessment(
+            _a = _build_assessment(
                 pid=pid, area=area, coverage_state=state,
                 applicability=applicability_result, evidence_summary=evidence,
                 supporting_provisions=[], negative_space=ns,
                 elements_found=[], elements_missing=get_expected_elements(pid),
                 tenant_text="",
-            ))
+            )
+            assessments.append(_a)
+            _emit(_a)
             continue
 
         # ── Step 5: Provision text exists — assess elements ───────────────────
@@ -153,13 +181,15 @@ def assess_coverage(
             ns_signals=ns, coverage_state_rules=get_coverage_state_rules(pid), area=area,
         )
 
-        assessments.append(_build_assessment(
+        _a = _build_assessment(
             pid=pid, area=area, coverage_state=coverage_state,
             applicability=applicability_result, evidence_summary=evidence_summary,
             supporting_provisions=[pid] if prov else [], negative_space=ns,
             elements_found=elements_found, elements_missing=elements_missing,
             tenant_text=tenant_text,
-        ))
+        )
+        assessments.append(_a)
+        _emit(_a)
 
     logger.info(f"[lease_coverage] Coverage assessment complete: {len(assessments)} issue areas assessed")
     _log_coverage_summary(assessments)

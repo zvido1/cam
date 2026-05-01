@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAM&#8482; Intelligence by Vered.ai</title>
-    <link rel="stylesheet" href="/static/style.css?v=333">
+    <link rel="stylesheet" href="/static/style.css?v=338">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -140,7 +140,6 @@
                                     <span id="upload-step-label">Step 2: Upload your reference lease</span>
                                 </div>
                                 <p class="upload-card-subtitle" id="upload-subtitle">Upload your reference lease (standard template or prior executed lease).</p>
-                                <div id="submit-error" class="alert alert-error hidden mt-2"></div>
                                 <div id="template-gate-error" class="alert alert-error hidden mt-2"></div>
                                 <div id="template-loading" class="hidden mt-2" style="text-align:center;color:var(--text-muted);font-size:0.875rem;padding:1rem 0;">
                                     <span class="spinner"></span> Reading reference lease...
@@ -272,6 +271,8 @@
                             </div>
                         </div>
                     </div>
+
+
                 </div><!-- /upload-columns-wrapper -->
 
                 <!-- Provisions Sidebar (078 redesign) -->
@@ -282,20 +283,14 @@
                                 <div class="provisions-panel-title-row">
                                     <span class="provisions-panel-title">Review Areas</span>
                                     <div class="provisions-title-actions">
-                                        <button class="btn btn-ghost btn-sm" id="reset-btn" onclick="window.CAM.resetApp(); return false;">
-                                            ↺ Reset All
-                                        </button>
                                         <button class="btn btn-primary btn-sm" id="analyze-btn" disabled>
                                             Review Leases
                                         </button>
                                     </div>
                                 </div>
-                                <div class="provisions-subtitle">Select review areas, then click Review Leases. CAM also discovers additional review areas automatically.</div>
-                                <div class="provisions-panel-controls">
-                                    <a href="#" id="check-all-provisions" onclick="window.CAM.checkAllProvisions(); return false;">Check All</a>
-                                    <a href="#" id="uncheck-all-provisions" onclick="window.CAM.uncheckAllProvisions(); return false;">Uncheck All</a>
-                                </div>
+                                <div class="provisions-panel-subtitle">Add a custom area below if needed — or just click <strong>Review Leases</strong> to begin.</div>
                             </div>
+                            <div id="submit-error" class="alert alert-error hidden mt-2" style="margin: 0.5rem 0 0;"></div>
                             <div class="estimate-text" id="estimate-text"></div>
                             <!-- Provisions list -->
                             <div class="provisions-col-standard">
@@ -404,6 +399,14 @@
                         <div class="processing-side-title">Leases ready to review</div>
                         <div class="processing-side-subtitle">Open completed contracts immediately while CAM continues processing the rest.</div>
                         <div id="processing-ready-list" class="processing-ready-list"></div>
+                    </div>
+
+                    <!-- LP Progress Panel (Step 288) -->
+                    <div id="lp-progress-panel" class="lp-progress-card hidden">
+                        <div class="processing-side-kicker">Coverage check</div>
+                        <div class="processing-side-title">Review Areas</div>
+                        <div class="processing-side-subtitle">CAM is checking all 18 standard issue areas.</div>
+                        <div id="lp-progress-list" class="lp-progress-list"></div>
                     </div>
 
                     <div class="processing-detail-card">
@@ -1106,6 +1109,6 @@
     <script src="/static/app_docview_render_shared.js?v=3"></script>
     <script src="/static/app_summary_shared.js?v=10"></script>
     <script src="/static/app_notes_shared.js?v=1"></script>
-    <script src="/static/app.js?v=342"></script>
+    <script src="/static/app.js?v=348"></script>
 </body>
 </html>
