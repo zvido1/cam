@@ -197,6 +197,40 @@ def annotate_pdf(
     annotations_added = 0
     text_not_found = 0
 
+    # Step 297c: Conflict sticky notes at top of page 1
+    conflicts = results.get("conflicts", []) or []
+    if conflicts and len(doc) > 0:
+        page = doc[0]
+        page_rect = page.rect
+        conflict_sev_colors = {
+            "high":   (0.725, 0.106, 0.106),   # red
+            "medium": (0.851, 0.467, 0.024),   # amber
+            "low":    (0.420, 0.447, 0.502),   # grey
+        }
+        for i, c in enumerate(conflicts):
+            cid = c.get("id", "")
+            cname = c.get("name", "")
+            sev = c.get("severity", "medium")
+            lps = ", ".join(c.get("lps_implicated", []) or [])
+            desc = c.get("description", "")
+            sev_label = sev.upper()
+            lines = [f"[CONFLICT — {sev_label}] {cid}: {cname}"]
+            if lps:
+                lines.append(f"Implicates {lps}.")
+            if desc:
+                lines.append(desc)
+            note_text = "\n".join(lines)
+            note_point = fitz.Point(
+                page_rect.width - 30,
+                20 + i * 20,
+            )
+            annot = page.add_text_annot(note_point, note_text)
+            annot.set_info(title="CAM — Provision Conflict")
+            clr = conflict_sev_colors.get(sev, conflict_sev_colors["low"])
+            annot.set_colors(stroke=clr)
+            annot.update()
+        print(f"[pdf_annotator] Added {len(conflicts)} conflict note(s) to page 1", flush=True)
+
     for provision in results.get("provisions", []):
         if provision.get("final_verdict") not in ("DEVIATES", "UNCLEAR"):
             continue

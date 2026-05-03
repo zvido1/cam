@@ -1318,6 +1318,28 @@ def _generate_combined_synopsis_inner(
     # COVERAGE & GAPS SECTION
     # ════════════════════════════════════════════════
 
+    # Step 297c: read conflicts + jurisdiction from first tenant result
+    _first_tr = tenant_results[0] if tenant_results else {}
+    _conflicts = _first_tr.get("conflicts", []) or []
+    _jurisdiction = _first_tr.get("jurisdiction", {}) or {}
+    _governing_law = _jurisdiction.get("governing_law")
+    _escalations = _jurisdiction.get("escalations", []) or []
+
+    # Governing law line (above coverage sections, when detected)
+    if _governing_law:
+        _state_full_names = {
+            "NY": "New York", "CA": "California", "TX": "Texas",
+            "FL": "Florida", "IL": "Illinois",
+        }
+        _gov_display = _state_full_names.get(_governing_law, _governing_law)
+        if _escalations:
+            _lps_esc = ", ".join(e.get("lp_id", "") for e in _escalations)
+            _gov_line = f"Governing law: {_gov_display}. {len(_escalations)} jurisdiction-based escalation(s) applied ({_lps_esc})."
+        else:
+            _gov_line = f"Governing law: {_gov_display}."
+        elements.append(Paragraph(_esc_xml(_gov_line), styles["FindingBody"]))
+        elements.append(Spacer(1, 4))
+
     # Step 275: section-level grouping flows through
     # `lease_display.resolve_sections`. For Tenant runs the result is a
     # single "Coverage & Gaps" section (byte-identical to post-Step-273).
@@ -1416,6 +1438,39 @@ def _generate_combined_synopsis_inner(
 
                 elements.append(Spacer(1, 4))
 
+        elements.append(Spacer(1, 6))
+
+    # Step 297c: Provision Conflicts section
+    if _conflicts:
+        _conflict_icons = {"high": "!", "medium": "~", "low": "-"}
+        _conflict_colors = {"high": "#b91c1c", "medium": "#d97706", "low": "#6b7280"}
+        elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
+                                   spaceBefore=12, spaceAfter=8))
+        elements.append(Paragraph("PROVISION CONFLICTS", styles["SynopsisHeading"]))
+        elements.append(Spacer(1, 4))
+        elements.append(Paragraph(
+            "The following pairs of provisions create internal conflicts within the lease. "
+            "Each implicates multiple issue areas at once.",
+            styles["FindingBody"],
+        ))
+        elements.append(Spacer(1, 6))
+        for _c in _conflicts:
+            _cid = _c.get("id", "")
+            _cname = _c.get("name", "")
+            _csev = _c.get("severity", "medium")
+            _clps = ", ".join(_c.get("lps_implicated", []) or [])
+            _cdesc = _sanitize_for_pdf(_c.get("description", ""))
+            _icon = _conflict_icons.get(_csev, "~")
+            _ccolor = _conflict_colors.get(_csev, "#6b7280")
+            _heading = (
+                f'[{_icon}] <font color="{_ccolor}"><b>{_esc_xml(_cid)} — {_esc_xml(_cname)}</b></font>'
+            )
+            elements.append(Paragraph(_heading, styles["FindingBody"]))
+            if _clps:
+                elements.append(Paragraph(f"Implicates {_esc_xml(_clps)}.", styles["ClauseText"]))
+            if _cdesc:
+                elements.append(Paragraph(_esc_xml(_cdesc), styles["ClauseText"]))
+            elements.append(Spacer(1, 4))
         elements.append(Spacer(1, 6))
 
     if is_mode_c:

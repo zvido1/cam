@@ -364,6 +364,35 @@ def _insert_summary_section(doc, results):
                 _add_para(f"Recommended Action: {action_text}", size=9, color="1A365D")
             _add_para("", size=4, space_after=6)
 
+    # Step 297c: Provision Conflicts section
+    conflicts = results.get("conflicts", []) or []
+    if conflicts:
+        _add_para("Provision Conflicts", size=12, bold=True, color="92400E", space_after=4)
+        _add_para(
+            "The following pairs of provisions create internal conflicts within the lease.",
+            size=9, color="78350F", space_after=4,
+        )
+        conflict_sev_colors = {"high": "B91C1C", "medium": "D97706", "low": "6B7280"}
+        conflict_shading   = {"high": "FEF2F2", "medium": "FFF7ED", "low": "F8FAFC"}
+        for c in conflicts:
+            cid = c.get("id", "")
+            cname = c.get("name", "")
+            sev = c.get("severity", "medium")
+            lps = ", ".join(c.get("lps_implicated", []) or [])
+            desc = c.get("description", "")
+            sev_label = sev.upper()
+            clr = conflict_sev_colors.get(sev, "6B7280")
+            shd = conflict_shading.get(sev, "F8FAFC")
+            _add_para(
+                f"[CONFLICT — {sev_label}] {cid}: {cname}",
+                size=10, bold=True, color=clr, shading=shd, border_color=clr, space_after=1,
+            )
+            if lps:
+                _add_para(f"Implicates {lps}.", size=9, indent=180)
+            if desc:
+                _add_para(desc, size=9, indent=180)
+            _add_para("", size=4, space_after=4)
+
     # Disclaimer + divider. Step 277: Mode A uses the multi-evaluator
     # adjudication pipeline; Mode C uses a single-model coverage layer.
     # Pick the phrasing that matches what actually generated this run.

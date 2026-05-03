@@ -134,6 +134,23 @@ def assess_coverage(
         tenant_text = (prov.get("tenant_text", "") or "") if prov else ""
         ns = ns_signals.get(pid, [])
 
+        # ── Step 2b: Misrouted-extraction guard (Step 298b) ───────────────────
+        # For LPs in _GLOBAL_SCAN_LPS, verify the routed text is actually about
+        # this LP by checking for at least one anchor keyword. If none are found,
+        # the extractor likely routed irrelevant content here (e.g. Gemini sending
+        # renewal-option text to LP-29). Reset tenant_text to empty so Step 4's
+        # global-scan path handles it instead of element-matching noisy text.
+        if pid in _GLOBAL_SCAN_LPS and tenant_text.strip():
+            anchor_kws = _LP_GLOBAL_SCAN_KEYWORDS.get(pid, [])
+            if anchor_kws:
+                text_lower_check = tenant_text.lower()
+                if not any(kw in text_lower_check for kw in anchor_kws):
+                    logger.info(
+                        f"[lease_coverage] {pid}: tenant_text contains no anchor "
+                        f"keywords for this LP; treating as misrouted, will attempt global scan"
+                    )
+                    tenant_text = ""
+
         # ── Step 3: High-priority negative space: reserved/omitted ───────────
         reserved_signals = [s for s in ns if s["signal_type"] == "reserved_or_omitted"]
         if reserved_signals:
@@ -149,21 +166,54 @@ def assess_coverage(
             _emit(_a)
             continue
 
-        # ── Step 4: No tenant text → missing or broken_xref ──────────────────
+        # ── Step 4: No tenant text → try global scan, then missing/broken_xref ───
         if not tenant_text.strip():
-            xref_signals = [s for s in ns if s["signal_type"] in ("broken_xref", "missing_exhibit")]
-            state = "broken_xref" if xref_signals else "missing"
-            evidence = (
-                "Provision not extracted; cross-reference or exhibit signals suggest incomplete clause"
-                if xref_signals else
-                "No provision text found in extracted document"
+            # Step 298a: For LPs in _GLOBAL_SCAN_LPS, scan full document before
+            # declaring missing. Handles entry rights embedded in maintenance
+            # articles (LP-29). Uses min_kw_len=9 to suppress false positives
+            # from common words like "tenant" and "landlord" in the excerpt.
+            global_excerpt = _global_scan_for_lp(
+                pid, full_tenant_text, get_expected_elements(pid)
+            ) if full_tenant_text else ""
+
+            if global_excerpt:
+                tenant_text = global_excerpt
+                # Fall through to element assessment with min_kw_len=9
+                elements_found, elements_missing = _assess_elements(
+                    pid, tenant_text, get_expected_elements(pid),
+                    full_text=full_tenant_text, min_kw_len=9,
+                )
+            else:
+                xref_signals = [s for s in ns if s["signal_type"] in ("broken_xref", "missing_exhibit")]
+                state = "broken_xref" if xref_signals else "missing"
+                evidence = (
+                    "Provision not extracted; cross-reference or exhibit signals suggest incomplete clause"
+                    if xref_signals else
+                    "No provision text found in extracted document"
+                )
+                _a = _build_assessment(
+                    pid=pid, area=area, coverage_state=state,
+                    applicability=applicability_result, evidence_summary=evidence,
+                    supporting_provisions=[], negative_space=ns,
+                    elements_found=[], elements_missing=get_expected_elements(pid),
+                    tenant_text="",
+                )
+                assessments.append(_a)
+                _emit(_a)
+                continue
+
+            # Coverage state determination continues below for global-scan path
+            coverage_state, evidence_summary = _determine_coverage_state(
+                pid=pid, tenant_text=tenant_text,
+                elements_found=elements_found, elements_missing=elements_missing,
+                ns_signals=ns, coverage_state_rules=get_coverage_state_rules(pid), area=area,
             )
             _a = _build_assessment(
-                pid=pid, area=area, coverage_state=state,
-                applicability=applicability_result, evidence_summary=evidence,
-                supporting_provisions=[], negative_space=ns,
-                elements_found=[], elements_missing=get_expected_elements(pid),
-                tenant_text="",
+                pid=pid, area=area, coverage_state=coverage_state,
+                applicability=applicability_result, evidence_summary=evidence_summary,
+                supporting_provisions=[pid], negative_space=ns,
+                elements_found=elements_found, elements_missing=elements_missing,
+                tenant_text=tenant_text,
             )
             assessments.append(_a)
             _emit(_a)
@@ -171,7 +221,7 @@ def assess_coverage(
 
         # ── Step 5: Provision text exists — assess elements ───────────────────
         elements_found, elements_missing = _assess_elements(
-            pid, tenant_text, get_expected_elements(pid)
+            pid, tenant_text, get_expected_elements(pid), full_text=full_tenant_text
         )
 
         # ── Step 6: Determine coverage state ─────────────────────────────────
@@ -300,17 +350,115 @@ _ELEMENT_KEYWORDS = {
     "notice required to terminate holdover":    ["notice", "written notice", "terminate holdover"],
     "landlord's right to collect consequential": ["consequential", "damages", "losses", "costs"],
     "conversion to new lease conditions":       ["new lease", "same terms", "renewed", "converted"],
+    # Step 298a: LP-30 estoppel — element matchers too narrow for actual lease phrasing
+    "tenant's obligation to provide estoppel":  ["tenant shall execute", "tenant shall deliver",
+                                                  "execute and deliver", "deliver an estoppel",
+                                                  "deliver to landlord an estoppel"],
+    "response deadline":                        ["days after landlord", "days after request",
+                                                  "days of request", "days from request",
+                                                  "business days from", "within ten", "within 10"],
+    # Fix false-positive: "request" alone matched "landlord's written request"
+    "limitation on request frequency":          ["per year", "times per year", "frequency limit",
+                                                  "not more than once", "more than twice", "per calendar"],
 }
 
 
-def _assess_elements(pid: str, tenant_text: str, expected_elements: list) -> tuple:
+# LPs where certain elements are commonly cross-sectioned (in a different article
+# from the main provision). Full-document text is searched as fallback ONLY for
+# these LPs to avoid introducing false positives in all other 31 LPs. Step 298a.
+_FULL_TEXT_FALLBACK_LPS = {"LP-08"}
+
+# LPs where the extractor may miss the provision entirely (e.g. entry rights
+# embedded inside a maintenance article rather than a standalone Right of Entry
+# article). Global scan is attempted before declaring missing. Step 298a.
+_GLOBAL_SCAN_LPS = {"LP-29"}
+
+# LP-specific anchor keywords used ONLY for locating the relevant document
+# excerpt in _global_scan_for_lp. Separate from _ELEMENT_KEYWORDS so they do
+# not affect element matching for any other LP. Must be ≥8 chars and distinctive
+# enough to avoid matching common boilerplate sections. Step 298a.
+_LP_GLOBAL_SCAN_KEYWORDS = {
+    "LP-29": ["landlord may enter", "right to enter", "right of entry", "enter the premises"],
+}
+
+
+def _global_scan_for_lp(pid: str, full_text: str, expected_elements: list) -> str:
+    """Search the full document for LP-relevant content when the extractor missed it.
+
+    Only runs for LPs in _GLOBAL_SCAN_LPS. Uses _LP_GLOBAL_SCAN_KEYWORDS when
+    available (LP-specific, avoids generic keywords that appear in boilerplate
+    before the relevant section). Returns a ~600-char excerpt, empty if not found.
+    """
+    if pid not in _GLOBAL_SCAN_LPS:
+        return ""
+    full_lower = full_text.lower()
+    scan_kws = _LP_GLOBAL_SCAN_KEYWORDS.get(pid)
+    if scan_kws:
+        for kw in scan_kws:
+            idx = full_lower.find(kw)
+            if idx >= 0:
+                start = max(0, idx - 150)
+                end = min(len(full_text), idx + 450)
+                return full_text[start:end].strip()
+    else:
+        # Fallback: use element keywords with ≥8-char filter
+        for element in expected_elements:
+            keywords = _get_element_keywords(element)
+            long_kws = [kw for kw in keywords if len(kw) >= 8]
+            for kw in long_kws:
+                idx = full_lower.find(kw)
+                if idx >= 0:
+                    start = max(0, idx - 150)
+                    end = min(len(full_text), idx + 450)
+                    return full_text[start:end].strip()
+    return ""
+
+
+def _assess_elements(pid: str, tenant_text: str, expected_elements: list,
+                     full_text: str = None, min_kw_len: int = 1) -> tuple:
+    """Match expected elements against tenant text.
+
+    Args:
+        pid: Issue area ID.
+        tenant_text: Extracted provision text for this LP.
+        expected_elements: List of expected element descriptions from schema.
+        full_text: Optional full document text used as fallback ONLY for LPs in
+                   _FULL_TEXT_FALLBACK_LPS. Handles cross-article elements such as
+                   LP-08 waiver of subrogation located in the Indemnification article.
+                   Only keywords ≥8 chars are used for the fallback. Step 298a.
+        min_kw_len: Minimum keyword length for primary tenant_text matching.
+                    Default 1 (all keywords, existing behavior). Pass 9 when
+                    matching against a global-scan excerpt to suppress false
+                    positives from common words ("tenant", "landlord", etc.).
+                    Step 298a.
+    """
     found = []
     missing = []
     text_lower = tenant_text.lower()
+    full_text_lower = full_text.lower() if (full_text and pid in _FULL_TEXT_FALLBACK_LPS) else None
+
     for element in expected_elements:
         keywords = _get_element_keywords(element)
-        if any(kw in text_lower for kw in keywords):
+
+        # Apply min_kw_len filter (for global-scan excerpts with common words)
+        if min_kw_len > 1:
+            effective_kws = [kw for kw in keywords if len(kw) >= min_kw_len]
+            if not effective_kws:
+                # No keywords meet the minimum length threshold; skip this element
+                missing.append(element)
+                continue
+        else:
+            effective_kws = keywords
+
+        if any(kw in text_lower for kw in effective_kws):
             found.append(element)
+        elif full_text_lower:
+            # Full-text fallback: only for _FULL_TEXT_FALLBACK_LPS, long keywords only
+            long_kws = [kw for kw in keywords if len(kw) >= 8]
+            if long_kws and any(kw in full_text_lower for kw in long_kws):
+                found.append(element)
+            else:
+                missing.append(element)
         else:
             missing.append(element)
     return found, missing

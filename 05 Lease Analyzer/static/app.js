@@ -4217,6 +4217,14 @@ async function renderAISummaryBar() {
         statsEl.textContent = stats;
     }
 
+    // Step 297c.8: Mode A conflict pill
+    const _modeA_conflicts = (tenants[0] && tenants[0].results && tenants[0].results.conflicts) || [];
+    if (_modeA_conflicts.length > 0) {
+        bar.insertAdjacentHTML("beforeend",
+            `<span class="ai-summary-pill ai-summary-pill--conflict">${_modeA_conflicts.length} provision conflict${_modeA_conflicts.length === 1 ? "" : "s"}</span>`
+        );
+    }
+
     // ── AI paragraph ──
     const paraEl = $("#ai-summary-paragraph");
     if (!paraEl) return;
@@ -4532,18 +4540,38 @@ function renderModeCAISummaryBar(bar) {
         ? `${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed`
         : `${docCount} documents — ${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed`;
 
+    // Step 297c.2: collect conflicts + jurisdiction across all tenants
+    const _mc_STATE_FULL_NAMES = {"NY": "New York", "CA": "California", "TX": "Texas", "FL": "Florida", "IL": "Illinois"};
+    let _mcConflicts = [];
+    let _mcGovLaw = null;
+    tenants.forEach(function(t) {
+        const res = t && t.results;
+        if (!res) return;
+        if (res.conflicts && res.conflicts.length) _mcConflicts = _mcConflicts.concat(res.conflicts);
+        if (!_mcGovLaw && res.jurisdiction && res.jurisdiction.governing_law) _mcGovLaw = res.jurisdiction.governing_law;
+    });
+    const _mcGovLawDisplay = _mcGovLaw ? (_mc_STATE_FULL_NAMES[_mcGovLaw] || _mcGovLaw) : null;
+    const _mcConflictPill = _mcConflicts.length > 0
+        ? `<span class="ai-summary-pill ai-summary-pill--conflict">${_mcConflicts.length} provision conflict${_mcConflicts.length === 1 ? "" : "s"}</span>`
+        : "";
+    const _mcGovBadge = _mcGovLawDisplay
+        ? `<span class="ai-summary-modec-meta" style="margin-left:0.5rem;">Governed by ${esc(_mcGovLawDisplay)}</span>`
+        : "";
+
     bar.innerHTML = `
         <div class="ai-summary-modec">
             <div class="ai-summary-modec-headline">
                 <strong>Coverage Snapshot</strong>
                 <span class="ai-summary-modec-meta">${esc(meta)}</span>
                 ${getPerspectiveIndicatorHtml()}
+                ${_mcGovBadge}
             </div>
             <div class="ai-summary-modec-stats">
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--ok"><strong>${covered}</strong> <span>covered</span></span>
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--attention"><strong>${needAttention}</strong> <span>need attention</span></span>
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--review"><strong>${worthReview}</strong> <span>worth reviewing</span></span>
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${notApplicable}</strong> <span>not applicable</span></span>
+                ${_mcConflictPill}
             </div>
             <div class="ai-summary-modec-cta">Open <strong>Coverage &amp; Gaps</strong> on any contract for the full breakdown.</div>
         </div>
@@ -10844,8 +10872,26 @@ function renderAuditTrail(allTenants) {
 
     // Step 254: Mode C skips the evaluator/challenger/severity stages entirely.
     // Replace the em-dash "missing data" appearance with an explanatory paragraph
-    // that frames the absence as intentional.
+    // that frames the absence as intentional. Step 297c: also show Stage 5b when present.
     if (r.mode === "analyze") {
+        const _at_SFN = {"NY": "New York", "CA": "California", "TX": "Texas", "FL": "Florida", "IL": "Illinois"};
+        const _at_jur = r.jurisdiction || {};
+        const _at_govLaw = _at_jur.governing_law;
+        const _at_govLabel = _at_govLaw ? (_at_SFN[_at_govLaw] || _at_govLaw) : "Not detected";
+        const _at_escs = _at_jur.escalations || [];
+        let _at_stage5b = "";
+        if (_at_govLaw || _at_escs.length > 0) {
+            const _at_escHtml = _at_escs.length === 0
+                ? `<div class="audit-stage-body"><div style="color:#64748b;font-size:0.875rem;">No state-specific escalations applied.</div></div>`
+                : `<div class="audit-stage-body"><div style="color:#64748b;font-size:0.875rem;">${_at_escs.length} escalation(s) applied:</div><ul style="margin:0.4rem 0 0 1rem;padding:0;font-size:0.875rem;">${
+                    _at_escs.map(e => `<li><strong>${esc(e.lp_id)}</strong>: ${esc(e.from)} &rarr; ${esc(e.to)}<div style="color:#64748b;font-size:0.8rem;">${esc(e.rationale || "")}</div></li>`).join("")
+                }</ul></div>`;
+            _at_stage5b = `<div class="audit-stage-block" style="margin-top:1rem;padding:0.75rem 1rem;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;">
+                <div class="audit-stage-title"><span class="audit-stage-num">Stage 5b</span><span class="audit-stage-name">Jurisdiction Rules</span><span class="audit-stage-model">Automated · 0 API calls</span></div>
+                <div class="audit-stage-body"><div><strong>Governing law:</strong> ${esc(_at_govLabel)}</div></div>
+                ${_at_escHtml}
+            </div>`;
+        }
         tab.innerHTML = `
             <div class="audit-mode-c-message">
                 <div class="audit-mode-c-heading">Analyze-mode audit</div>
@@ -10860,6 +10906,7 @@ function renderAuditTrail(allTenants) {
                     <a href="#" onclick="window.CAM.switchResultsTab &amp;&amp; window.CAM.switchResultsTab('coverage'); return false;">
                     Coverage &amp; Gaps</a> tab.
                 </p>
+                ${_at_stage5b}
             </div>
         `;
         return;
@@ -11085,6 +11132,32 @@ function renderAuditTrail(allTenants) {
         </div>`;
     });
     html += `</div>`;
+
+    // Step 297c.7: Stage 5b — Jurisdiction Rules (job-level, shown after provision rows)
+    const _at2_SFN = {"NY": "New York", "CA": "California", "TX": "Texas", "FL": "Florida", "IL": "Illinois"};
+    const _at2_jur = r.jurisdiction || {};
+    if (_at2_jur.governing_law || (_at2_jur.escalations && _at2_jur.escalations.length > 0)) {
+        const _at2_govLabel = _at2_SFN[_at2_jur.governing_law] || _at2_jur.governing_law || "Not detected";
+        const _at2_escs = _at2_jur.escalations || [];
+        const _at2_escDetail = _at2_escs.length === 0
+            ? `<div class="audit-detail-label">No state-specific escalations applied.</div>`
+            : `<div class="audit-detail-label">${_at2_escs.length} escalation(s) applied:</div>
+               <ul style="margin:0.4rem 0 0 1rem;padding:0;font-size:0.875rem;">${
+                _at2_escs.map(e => `<li><strong>${esc(e.lp_id)}</strong>: ${esc(e.from)} &rarr; ${esc(e.to)}<div style="color:#64748b;font-size:0.8rem;">${esc(e.rationale || "")}</div></li>`).join("")
+               }</ul>`;
+        html += `<div class="audit-stage-block" style="margin-top:1.5rem;padding:0.75rem 1rem;background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;">
+            <div class="audit-stage-title">
+                <span class="audit-stage-num">Stage 5b</span>
+                <span class="audit-stage-name">Jurisdiction Rules</span>
+                <span class="audit-stage-model">Automated &middot; 0 API calls</span>
+            </div>
+            <div class="audit-stage-body">
+                <div><strong>Governing law:</strong> ${esc(_at2_govLabel)}</div>
+                ${_at2_escDetail}
+            </div>
+        </div>`;
+    }
+
     tab.innerHTML = html;
     syncAuditExpandToggle();
 }
@@ -13324,7 +13397,7 @@ function renderHelpChatWelcome() {
     const starters = [
         "What does CAM do with these leases?",
         "What do I need before I click Review Leases?",
-        "Which review areas should I keep selected?",
+        "What's the difference between comparison and analysis mode?",
         "Ask any lease-related question...",
     ];
 
@@ -13350,7 +13423,7 @@ function refreshHelpChatStarters() {
     const starters = [
         "What does CAM do with these leases?",
         "What do I need before I click Review Leases?",
-        "Which review areas should I keep selected?",
+        "What's the difference between comparison and analysis mode?",
     ];
 
     starters.push("Ask any lease-related question...");
@@ -14767,6 +14840,11 @@ function renderCoveragePanel() {
         return;
     }
 
+    // Step 297c: conflicts + jurisdiction data
+    const STATE_FULL_NAMES = {"NY": "New York", "CA": "California", "TX": "Texas", "FL": "Florida", "IL": "Illinois"};
+    const _prConflicts = (pr && pr.conflicts) || [];
+    const _prJurisdiction = (pr && pr.jurisdiction) || {};
+
     // Build set of provision IDs in the pipeline (for nav links)
     const _pipelineProvIds = new Set((pr && pr.provisions || []).map(p => p.provision_id).filter(Boolean));
 
@@ -14838,6 +14916,14 @@ function renderCoveragePanel() {
             ? ` <span class="cv-item-headline-sep">—</span> <span class="cv-item-headline">${esc(headline)}</span>`
             : "";
 
+        // Step 297c.3: jurisdiction escalation indicator
+        const escalation = a.jurisdiction_escalation;
+        let escalationHtml = "";
+        if (escalation) {
+            const stateLabel = STATE_FULL_NAMES[escalation.state] || escalation.state;
+            escalationHtml = `<div class="cv-item-escalation" title="${esc(escalation.rationale || "")}"><span class="cv-escalation-badge">${esc(stateLabel)} rule</span><span class="cv-escalation-text">Escalated from ${esc(escalation.from)} to ${esc(escalation.to)}</span></div>`;
+        }
+
         return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
             <div class="cv-item-header">
                 <span class="cv-item-id">${esc(pid)}</span>
@@ -14845,6 +14931,7 @@ function renderCoveragePanel() {
                 <span class="cv-badge ${stateInfo.cls}">${stateInfo.label}</span>
                 ${pclsBadge}
             </div>
+            ${escalationHtml}
             ${leaseTextHtml}
             ${stmt ? `<div class="cv-item-stmt">${esc(stmt)} ${srcNote}</div>` : ""}
             ${state === 'missing' ? '<div class="cv-missing-provision-note">⚠ This provision is absent from the lease. Use <strong>Draft Missing Clause</strong> to request language from the landlord.</div>' : ''}
@@ -14874,6 +14961,32 @@ function renderCoveragePanel() {
         <button class="btn btn-outline cv-status-filter-btn" data-status="accepted" onclick="window.CAM._applyCoverageStatusFilter('accepted')">Accepted Risk</button>
         <button class="btn btn-outline cv-status-filter-btn" data-status="reviewed" onclick="window.CAM._applyCoverageStatusFilter('reviewed')">Reviewed</button>
     </div>`;
+
+    // Step 297c.1: Provision Conflicts section above issue area list
+    if (_prConflicts.length > 0) {
+        html += `<section class="cv-conflicts-section">
+            <div class="cv-conflicts-header-row">
+                <h3 class="cv-conflicts-header">Provision Conflicts (${_prConflicts.length})</h3>
+                <p class="cv-conflicts-intro">The following pairs of provisions create internal conflicts within the lease. Each implicates multiple issue areas at once.</p>
+            </div>
+            ${_prConflicts.map(c => {
+                const severityClass = `cv-conflict-${c.severity || "medium"}`;
+                const severityLabel = (c.severity || "medium").toUpperCase();
+                const lpLinks = (c.lps_implicated || []).map(lp =>
+                    `<a class="cv-conflict-lp-link" href="javascript:void(0)" onclick="window.CAM.jumpToCoverageProvision && window.CAM.jumpToCoverageProvision('${esc(lp)}'); return false;">${esc(lp)}</a>`
+                ).join(", ");
+                return `<div class="cv-conflict-card ${severityClass}">
+                    <div class="cv-conflict-header">
+                        <span class="cv-conflict-id">${esc(c.id || "")}</span>
+                        <span class="cv-conflict-name">${esc(c.name || "")}</span>
+                        <span class="cv-conflict-severity-badge">${severityLabel}</span>
+                    </div>
+                    <div class="cv-conflict-lps">Implicates: ${lpLinks}</div>
+                    <div class="cv-conflict-description">${esc(c.description || "")}</div>
+                </div>`;
+            }).join("")}
+        </section>`;
+    }
 
     if (totalAttention === 0) {
         html += '<div class="coverage-all-clear">\u2705 No high-priority gaps detected across all material issue areas.</div>';

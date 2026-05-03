@@ -869,6 +869,50 @@ def run_lease_analysis(
         coverage_summary = {}
         negative_space_by_provision = {}
 
+    # ── Stage 5b: Jurisdiction-aware escalation (Step 297a) ──
+    governing_law = None
+    escalation_log = []
+    conflicts = []
+    try:
+        from cam.adapters.lease_review import lease_jurisdiction
+        governing_law = lease_jurisdiction.extract_governing_law(
+            coverage_assessment,
+            provisions=extraction.get("provisions"),
+            contract_metadata=extraction.get("contract_metadata")
+        )
+        if governing_law:
+            print(f"[lease_adapter] Detected governing law: {governing_law}", flush=True)
+            coverage_assessment, escalation_log = lease_jurisdiction.apply_jurisdiction_rules(
+                coverage_assessment,
+                governing_law=governing_law,
+                provisions=extraction.get("provisions"),
+                contract_metadata=extraction.get("contract_metadata")
+            )
+            if escalation_log:
+                print(f"[lease_adapter] Applied {len(escalation_log)} jurisdiction escalation(s)", flush=True)
+                for entry in escalation_log:
+                    print(f"[lease_adapter]   {entry['lp_id']}: {entry['from']} -> {entry['to']}", flush=True)
+            else:
+                print(f"[lease_adapter] No escalations triggered for {governing_law}", flush=True)
+        else:
+            print("[lease_adapter] No governing law detected — skipping jurisdiction rules", flush=True)
+    except Exception as e:
+        print(f"[lease_adapter] Jurisdiction engine failed (non-fatal): {e}", flush=True)
+
+    # ── Stage 5c: Cross-provision conflict detection (Step 297a) ──
+    try:
+        from cam.adapters.lease_review import lease_conflicts
+        conflicts = lease_conflicts.detect_conflicts(
+            coverage_assessment,
+            provisions=extraction.get("provisions"),
+            perspective=cfg.get("perspective", "tenant")
+        )
+        print(f"[lease_conflicts] Detected {len(conflicts)} conflict(s)", flush=True)
+        for c in conflicts:
+            print(f"[lease_conflicts]   {c['id']}: {c['name']} ({c['severity']})", flush=True)
+    except Exception as e:
+        print(f"[lease_adapter] Conflict engine failed (non-fatal): {e}", flush=True)
+
     # ── Exposure Engine (Step 243) ──
     # Enriches coverage assessments with exposure statements.
     # Schema text by default; model only for high-materiality cases.
@@ -956,6 +1000,11 @@ def run_lease_analysis(
         "coverage_assessment": coverage_assessment,
         "coverage_summary": coverage_summary,
         "exposure_summary": exposure_summary,
+        "conflicts": conflicts,
+        "jurisdiction": {
+            "governing_law": governing_law,
+            "escalations": escalation_log
+        },
         # Raw stage data for auditability
         "_stage_data": {
             "extraction_meta": extraction["meta"],
@@ -1149,6 +1198,50 @@ def run_lease_coverage_only(
         coverage_summary = {}
         negative_space_by_provision = {}
 
+    # ── Stage 5b: Jurisdiction-aware escalation (Step 297a) ──
+    governing_law_c = None
+    escalation_log_c = []
+    conflicts_c = []
+    try:
+        from cam.adapters.lease_review import lease_jurisdiction
+        governing_law_c = lease_jurisdiction.extract_governing_law(
+            coverage_assessment,
+            provisions=extraction.get("provisions"),
+            contract_metadata=extraction.get("contract_metadata")
+        )
+        if governing_law_c:
+            print(f"[lease_adapter:analyze] Detected governing law: {governing_law_c}", flush=True)
+            coverage_assessment, escalation_log_c = lease_jurisdiction.apply_jurisdiction_rules(
+                coverage_assessment,
+                governing_law=governing_law_c,
+                provisions=extraction.get("provisions"),
+                contract_metadata=extraction.get("contract_metadata")
+            )
+            if escalation_log_c:
+                print(f"[lease_adapter:analyze] Applied {len(escalation_log_c)} jurisdiction escalation(s)", flush=True)
+                for entry in escalation_log_c:
+                    print(f"[lease_adapter:analyze]   {entry['lp_id']}: {entry['from']} -> {entry['to']}", flush=True)
+            else:
+                print(f"[lease_adapter:analyze] No escalations triggered for {governing_law_c}", flush=True)
+        else:
+            print("[lease_adapter:analyze] No governing law detected — skipping jurisdiction rules", flush=True)
+    except Exception as e:
+        print(f"[lease_adapter:analyze] Jurisdiction engine failed (non-fatal): {e}", flush=True)
+
+    # ── Stage 5c: Cross-provision conflict detection (Step 297a) ──
+    try:
+        from cam.adapters.lease_review import lease_conflicts
+        conflicts_c = lease_conflicts.detect_conflicts(
+            coverage_assessment,
+            provisions=extraction.get("provisions"),
+            perspective=cfg.get("perspective", "tenant")
+        )
+        print(f"[lease_conflicts] Detected {len(conflicts_c)} conflict(s)", flush=True)
+        for c in conflicts_c:
+            print(f"[lease_conflicts]   {c['id']}: {c['name']} ({c['severity']})", flush=True)
+    except Exception as e:
+        print(f"[lease_adapter:analyze] Conflict engine failed (non-fatal): {e}", flush=True)
+
     if coverage_assessment:
         try:
             from cam.adapters.lease_review.lease_exposure import (
@@ -1216,6 +1309,11 @@ def run_lease_coverage_only(
         "coverage_assessment": coverage_assessment,
         "coverage_summary": coverage_summary,
         "exposure_summary": exposure_summary,
+        "conflicts": conflicts_c,
+        "jurisdiction": {
+            "governing_law": governing_law_c,
+            "escalations": escalation_log_c
+        },
         "_stage_data": {
             "extraction_meta": extraction["meta"],
             "negative_space": negative_space_by_provision,

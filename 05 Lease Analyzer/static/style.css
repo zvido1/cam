@@ -12096,3 +12096,106 @@ body.mode-c .card-audit-link {
     color: var(--text-muted, #64748b);
     text-align: center;
 }
+
+/* Step 297c: Provision Conflicts section in Coverage & Gaps tab */
+.cv-conflicts-section {
+    margin: 0 0 1.5rem 0;
+    padding: 1rem 1.25rem;
+    background: #fef9f3;
+    border: 1px solid #f6d29c;
+    border-radius: 8px;
+}
+.cv-conflicts-header-row { margin-bottom: 0.75rem; }
+.cv-conflicts-header {
+    margin: 0 0 0.4rem 0;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #92400e;
+}
+.cv-conflicts-intro {
+    margin: 0;
+    color: #78350f;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+.cv-conflict-card {
+    margin-top: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-left-width: 4px;
+    border-radius: 6px;
+}
+.cv-conflict-high   { border-left-color: #b91c1c; }
+.cv-conflict-medium { border-left-color: #d97706; }
+.cv-conflict-low    { border-left-color: #6b7280; }
+.cv-conflict-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+.cv-conflict-id {
+    font-weight: 700;
+    color: #6b7280;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 0.85rem;
+}
+.cv-conflict-name { font-weight: 600; flex: 1 1 auto; min-width: 0; color: #111827; }
+.cv-conflict-severity-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    background: #f3f4f6;
+    color: #4b5563;
+}
+.cv-conflict-high .cv-conflict-severity-badge   { background: #fee2e2; color: #991b1b; }
+.cv-conflict-medium .cv-conflict-severity-badge { background: #fed7aa; color: #9a3412; }
+.cv-conflict-lps {
+    margin-bottom: 0.4rem;
+    font-size: 0.875rem;
+    color: #4b5563;
+}
+.cv-conflict-lp-link {
+    color: #2563eb;
+    cursor: pointer;
+    text-decoration: underline;
+}
+.cv-conflict-lp-link:hover { color: #1d4ed8; }
+.cv-conflict-description {
+    color: #1f2937;
+    line-height: 1.55;
+    font-size: 0.9rem;
+}
+
+/* Step 297c.2: Conflict pill in summary bar */
+.ai-summary-pill--conflict {
+    background: #fef9f3;
+    border: 1px solid #f6d29c;
+    color: #92400e;
+}
+
+/* Step 297c.3: Jurisdiction escalation indicator on LP cards */
+.cv-item-escalation {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.4rem 0;
+    padding: 0.35rem 0.6rem;
+    background: #f0f9ff;
+    border-left: 3px solid #0284c7;
+    border-radius: 3px;
+    font-size: 0.825rem;
+    cursor: help;
+}
+.cv-escalation-badge {
+    font-weight: 700;
+    color: #075985;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+.cv-escalation-text { color: #0c4a6e; }
