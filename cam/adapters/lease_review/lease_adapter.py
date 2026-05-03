@@ -899,6 +899,27 @@ def run_lease_analysis(
     except Exception as e:
         print(f"[lease_adapter] Jurisdiction engine failed (non-fatal): {e}", flush=True)
 
+    # Step 298c: Rebuild coverage_summary with post-escalation states.
+    # summarize_coverage ran before Stage 5b; escalated LPs were bucketed
+    # with their pre-escalation state. Re-running picks up the new states
+    # (e.g. LP-09 covered_unfavorable → potentially_unenforceable under NY).
+    # Only runs when escalations actually fired to keep non-escalated runs
+    # byte-identical to their pre-298c output.
+    if escalation_log:
+        coverage_summary = summarize_coverage(coverage_assessment)
+        _ATTN_SORT_298C = {
+            "potentially_unenforceable": 0,
+            "covered_unfavorable": 1,
+            "missing": 2,
+            "broken_xref": 3,
+            "partial": 4,
+            "ambiguous": 5,
+            "review_needed": 6,
+        }
+        coverage_summary.get("attention_items", []).sort(
+            key=lambda x: _ATTN_SORT_298C.get(x["state"], 99)
+        )
+
     # ── Stage 5c: Cross-provision conflict detection (Step 297a) ──
     try:
         from cam.adapters.lease_review import lease_conflicts
@@ -1227,6 +1248,22 @@ def run_lease_coverage_only(
             print("[lease_adapter:analyze] No governing law detected — skipping jurisdiction rules", flush=True)
     except Exception as e:
         print(f"[lease_adapter:analyze] Jurisdiction engine failed (non-fatal): {e}", flush=True)
+
+    # Step 298c: Rebuild coverage_summary with post-escalation states.
+    if escalation_log_c:
+        coverage_summary = summarize_coverage(coverage_assessment)
+        _ATTN_SORT_298C = {
+            "potentially_unenforceable": 0,
+            "covered_unfavorable": 1,
+            "missing": 2,
+            "broken_xref": 3,
+            "partial": 4,
+            "ambiguous": 5,
+            "review_needed": 6,
+        }
+        coverage_summary.get("attention_items", []).sort(
+            key=lambda x: _ATTN_SORT_298C.get(x["state"], 99)
+        )
 
     # ── Stage 5c: Cross-provision conflict detection (Step 297a) ──
     try:

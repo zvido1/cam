@@ -2461,16 +2461,17 @@ const LP_PROGRESS_ITEMS = [
 
 function _lpStateDisplay(state) {
     switch (state) {
-        case "processing":          return { icon: "◌", cls: "state-processing" };
-        case "covered":             return { icon: "✓", cls: "state-covered" };
-        case "covered_unfavorable": return { icon: "⚠", cls: "state-covered_unfavorable" };
-        case "partial":             return { icon: "◑", cls: "state-partial" };
+        case "processing":               return { icon: "◌", cls: "state-processing" };
+        case "covered":                  return { icon: "✓", cls: "state-covered" };
+        case "covered_unfavorable":      return { icon: "⚠", cls: "state-covered_unfavorable" };
+        case "potentially_unenforceable":return { icon: "⚠", cls: "state-potentially_unenforceable" };
+        case "partial":                  return { icon: "◑", cls: "state-partial" };
         case "ambiguous":
-        case "review_needed":       return { icon: "?", cls: "state-review_needed" };
-        case "missing":             return { icon: "✗", cls: "state-missing" };
-        case "broken_xref":         return { icon: "⚡", cls: "state-broken_xref" };
-        case "not_applicable":      return { icon: "—", cls: "state-not_applicable" };
-        default:                    return { icon: "·", cls: "state-pending" };
+        case "review_needed":            return { icon: "?", cls: "state-review_needed" };
+        case "missing":                  return { icon: "✗", cls: "state-missing" };
+        case "broken_xref":              return { icon: "⚡", cls: "state-broken_xref" };
+        case "not_applicable":           return { icon: "—", cls: "state-not_applicable" };
+        default:                         return { icon: "·", cls: "state-pending" };
     }
 }
 
@@ -4165,8 +4166,13 @@ function renderDealOverview() {
     const analyzedProvisions = firstResult.provisions || [];
     const provCount = analyzedProvisions.length;
 
+    const tenantFile = firstResult.tenant_file || "";
+    const subtitleHtml = tenantFile
+        ? `<div class="deal-overview-subtitle">${esc(tenantFile)}</div>`
+        : "";
     panel.innerHTML = `<div class="deal-overview-card">
         <div class="deal-overview-header">BASE LEASE TERMS</div>
+        ${subtitleHtml}
         ${partiesHtml}
         ${propertyHtml}
         ${gridHtml}
@@ -15322,7 +15328,9 @@ function _navBuildModeCItem(a, tIdx) {
     // still kept on the title attribute for hover.
     const headline = (a.exposure_headline || _deriveHeadlineFromExposure(stmt)).trim();
     let badgeLabel, badgeCls;
-    if (state === "covered_unfavorable") {
+    if (state === "potentially_unenforceable") {
+        badgeLabel = "ENFORCEABILITY"; badgeCls = "nav-badge-enforceability";
+    } else if (state === "covered_unfavorable") {
         badgeLabel = "Unfavorable"; badgeCls = "nav-badge-unfavorable";
     } else if (state === "missing") {
         badgeLabel = "Missing"; badgeCls = "nav-badge-missing";
@@ -15389,7 +15397,8 @@ function renderNavSidebar() {
             const needsAttention = [];
             const worthReviewing = [];
             ca.forEach(a => {
-                if (a.coverage_state === "covered_unfavorable"
+                if (a.coverage_state === "potentially_unenforceable"
+                    || a.coverage_state === "covered_unfavorable"
                     || a.coverage_state === "missing"
                     || a.partial_class === "partial_material") {
                     needsAttention.push(a);
@@ -15438,7 +15447,8 @@ function renderNavSidebar() {
             const needsAttention = [];
             const worthReviewing = [];
             ca.forEach(a => {
-                if (a.coverage_state === "covered_unfavorable"
+                if (a.coverage_state === "potentially_unenforceable"
+                    || a.coverage_state === "covered_unfavorable"
                     || a.coverage_state === "missing"
                     || a.partial_class === "partial_material") {
                     needsAttention.push(a);

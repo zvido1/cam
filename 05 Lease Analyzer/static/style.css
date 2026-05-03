@@ -12054,6 +12054,10 @@ body.mode-c .card-audit-link {
 }
 
 /* Coverage state badges (Mode C) */
+.nav-sidebar-content .nav-badge-enforceability {
+    background: #dc2626; color: #ffffff; border-color: #b91c1c;
+    font-weight: 700; letter-spacing: 0.03em;
+}
 .nav-sidebar-content .nav-badge-unfavorable {
     background: #fee2e2; color: #991b1b; border-color: #fca5a5;
 }
