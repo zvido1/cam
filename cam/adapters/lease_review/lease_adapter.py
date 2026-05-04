@@ -920,6 +920,52 @@ def run_lease_analysis(
             key=lambda x: _ATTN_SORT_298C.get(x["state"], 99)
         )
 
+    # ── Stage 5d: Use-Aware Coverage Classification (Step 301 / gated 301a) ──
+    use_profile_data = None
+    use_analysis_status = "disabled"
+    use_adjustment_log: list = []
+    from cam.adapters.lease_review.lease_use_aware_coverage import STAGE_5D_ENABLED
+    if not STAGE_5D_ENABLED:
+        print(
+            "[lease_adapter] Stage 5d: gated (single-eval unstable; awaiting Step 302 multi-eval)",
+            flush=True,
+        )
+    else:
+        try:
+            from cam.adapters.lease_review.lease_use_aware_coverage import (
+                should_run_use_analysis, generate_use_profile, assess_use_aware_coverage,
+            )
+            _use_clause = (extraction.get("contract_metadata") or {}).get("permitted_use", "")
+            if should_run_use_analysis(_use_clause):
+                print(f"[lease_adapter] Stage 5d: generating use profile...", flush=True)
+                use_profile_data = generate_use_profile(_use_clause)
+                if use_profile_data:
+                    coverage_assessment, use_adjustment_log = assess_use_aware_coverage(
+                        use_profile_data, coverage_assessment, cfg
+                    )
+                    if use_adjustment_log:
+                        coverage_summary = summarize_coverage(coverage_assessment)
+                        _ATTN_SORT = {"potentially_unenforceable": 0, "covered_unfavorable": 1,
+                                      "missing": 2, "broken_xref": 3, "partial": 4,
+                                      "ambiguous": 5, "review_needed": 6}
+                        coverage_summary.get("attention_items", []).sort(
+                            key=lambda x: _ATTN_SORT.get(x["state"], 99)
+                        )
+                        print(
+                            f"[lease_adapter] Stage 5d: {len(use_adjustment_log)} use-adjustment(s) applied",
+                            flush=True,
+                        )
+                    else:
+                        print("[lease_adapter] Stage 5d: no adjustments applied", flush=True)
+                    use_analysis_status = "applied"
+                else:
+                    use_analysis_status = "skipped_call1_failed"
+            else:
+                print("[lease_adapter] Stage 5d: skipped (use clause absent or generic)", flush=True)
+                use_analysis_status = "not_applicable"
+        except Exception as e:
+            print(f"[lease_adapter] Stage 5d failed (non-fatal): {e}", flush=True)
+
     # ── Stage 5c: Cross-provision conflict detection (Step 297a) ──
     try:
         from cam.adapters.lease_review import lease_conflicts
@@ -1026,6 +1072,8 @@ def run_lease_analysis(
             "governing_law": governing_law,
             "escalations": escalation_log
         },
+        "use_profile": use_profile_data,
+        "use_analysis_status": use_analysis_status,
         # Raw stage data for auditability
         "_stage_data": {
             "extraction_meta": extraction["meta"],
@@ -1265,6 +1313,54 @@ def run_lease_coverage_only(
             key=lambda x: _ATTN_SORT_298C.get(x["state"], 99)
         )
 
+    # ── Stage 5d: Use-Aware Coverage Classification (Step 301 / gated 301a) ──
+    use_profile_data_c = None
+    use_analysis_status_c = "disabled"
+    use_adjustment_log_c: list = []
+    from cam.adapters.lease_review.lease_use_aware_coverage import STAGE_5D_ENABLED
+    if not STAGE_5D_ENABLED:
+        print(
+            "[lease_adapter:analyze] Stage 5d: gated (single-eval unstable; awaiting Step 302 multi-eval)",
+            flush=True,
+        )
+    else:
+        try:
+            from cam.adapters.lease_review.lease_use_aware_coverage import (
+                should_run_use_analysis, generate_use_profile, assess_use_aware_coverage,
+            )
+            _use_clause_c = (extraction.get("contract_metadata") or {}).get("permitted_use", "")
+            if should_run_use_analysis(_use_clause_c):
+                print(f"[lease_adapter:analyze] Stage 5d: generating use profile...", flush=True)
+                use_profile_data_c = generate_use_profile(_use_clause_c)
+                if use_profile_data_c:
+                    coverage_assessment, use_adjustment_log_c = assess_use_aware_coverage(
+                        use_profile_data_c, coverage_assessment, cfg
+                    )
+                    if use_adjustment_log_c:
+                        coverage_summary = summarize_coverage(coverage_assessment)
+                        _ATTN_SORT_C = {"potentially_unenforceable": 0, "covered_unfavorable": 1,
+                                        "missing": 2, "broken_xref": 3, "partial": 4,
+                                        "ambiguous": 5, "review_needed": 6}
+                        coverage_summary.get("attention_items", []).sort(
+                            key=lambda x: _ATTN_SORT_C.get(x["state"], 99)
+                        )
+                        print(
+                            f"[lease_adapter:analyze] Stage 5d: "
+                            f"{len(use_adjustment_log_c)} use-adjustment(s) applied",
+                            flush=True,
+                        )
+                    else:
+                        print("[lease_adapter:analyze] Stage 5d: no adjustments applied", flush=True)
+                    use_analysis_status_c = "applied"
+                else:
+                    use_analysis_status_c = "skipped_call1_failed"
+            else:
+                print("[lease_adapter:analyze] Stage 5d: skipped (use clause absent or generic)",
+                      flush=True)
+                use_analysis_status_c = "not_applicable"
+        except Exception as e:
+            print(f"[lease_adapter:analyze] Stage 5d failed (non-fatal): {e}", flush=True)
+
     # ── Stage 5c: Cross-provision conflict detection (Step 297a) ──
     try:
         from cam.adapters.lease_review import lease_conflicts
@@ -1351,6 +1447,8 @@ def run_lease_coverage_only(
             "governing_law": governing_law_c,
             "escalations": escalation_log_c
         },
+        "use_profile": use_profile_data_c,
+        "use_analysis_status": use_analysis_status_c,
         "_stage_data": {
             "extraction_meta": extraction["meta"],
             "negative_space": negative_space_by_provision,

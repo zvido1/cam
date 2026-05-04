@@ -648,6 +648,12 @@ def _build_assessment(pid, area, coverage_state, applicability, evidence_summary
             area.get("covered_unfavorable_adverse_to")
             if coverage_state == "covered_unfavorable" else None
         ),
+        # Step 301 (Stage 5d): baseline immutable record of what deterministic rules said.
+        # use_adjusted / use_adjustment_reason may be mutated by lease_use_aware_coverage
+        # after assessment but before conflicts; baseline is never modified post-hoc.
+        "coverage_state_baseline": coverage_state,
+        "use_adjusted": False,
+        "use_adjustment_reason": None,
         "tenant_text": tenant_text,
     }
 
