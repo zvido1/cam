@@ -641,6 +641,13 @@ def _build_assessment(pid, area, coverage_state, applicability, evidence_summary
             "missing", "broken_xref", "covered_unfavorable",
             "partial", "potentially_unenforceable"
         ),
+        # Step 297d.J-fix: which party is adversely affected when state is covered_unfavorable.
+        # Read from schema area.covered_unfavorable_adverse_to; null for non-unfavorable states.
+        # Frontend uses this (not exposure_perspective) to determine viewer-favorability.
+        "covered_unfavorable_adverse_to": (
+            area.get("covered_unfavorable_adverse_to")
+            if coverage_state == "covered_unfavorable" else None
+        ),
         "tenant_text": tenant_text,
     }
 

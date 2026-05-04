@@ -3134,6 +3134,12 @@ function renderResults() {
                 currentJobData = job;
                 if (job.expires_at) startExpiryCountdown(job.expires_at);
                 applyModeSpecificUI();  // Step 254: re-apply once mode is known
+                // Re-render perspective-aware surfaces now that job config is known.
+                // renderNavSidebar and renderProvisionHeatmap both call getJobPerspective()
+                // which reads currentJobData.input_config.perspective; they ran before
+                // this fetch completed and got null perspective. Step 297d.J / 299 fix.
+                renderNavSidebar();
+                renderProvisionHeatmap();
             })
             .catch(() => {});
     } else {
@@ -3152,6 +3158,7 @@ function renderResults() {
     renderProvisionsScopeCard();
     renderDealOverview();
     renderAISummaryBar();
+    renderProvisionHeatmap();
     renderContractStatusPanel();
     renderTechDetails();
     renderTenantSelector();
@@ -4582,6 +4589,90 @@ function renderModeCAISummaryBar(bar) {
             <div class="ai-summary-modec-cta">Open <strong>Coverage &amp; Gaps</strong> on any contract for the full breakdown.</div>
         </div>
     `;
+}
+
+// ── Step 299: Provision Health Heatmap ──
+// One horizontal row of 32 colored cells per tenant. Color encodes coverage
+// state relative to the viewer's perspective (same rule as Step 297d.J).
+// Clicking a cell calls jumpToCoverageProvision to navigate to that LP.
+
+const _HEATMAP_LP_IDS = [
+    "LP-01","LP-02","LP-03","LP-04","LP-05","LP-06","LP-07","LP-08",
+    "LP-09","LP-10","LP-11","LP-12","LP-13","LP-14","LP-15","LP-16",
+    "LP-17","LP-18","LP-19","LP-20","LP-21","LP-22","LP-23","LP-24",
+    "LP-25","LP-26","LP-27","LP-28","LP-29","LP-30","LP-31","LP-32",
+];
+
+function _heatmapCellStyle(a, viewerPerspective) {
+    const state = a.coverage_state;
+    const pcls  = a.partial_class;
+    const isFav = state === "covered_unfavorable" &&
+        viewerPerspective && viewerPerspective !== "neutral" &&
+        a.covered_unfavorable_adverse_to &&
+        a.covered_unfavorable_adverse_to !== viewerPerspective;
+
+    const isNeutralViewer = !viewerPerspective || viewerPerspective === "neutral";
+    if (state === "potentially_unenforceable") return { bg: "#dc2626", fg: "#fff", label: "Enforceability" };
+    if (isFav)                                 return { bg: "#16a34a", fg: "#fff", label: "Favorable" };
+    if (state === "covered_unfavorable")       return isNeutralViewer
+        ? { bg: "#f9a8d4", fg: "#9d174d", label: "Asymmetric" }
+        : { bg: "#fca5a5", fg: "#7f1d1d", label: "Unfavorable" };
+    if (state === "missing")                   return { bg: "#f97316", fg: "#fff", label: "Missing" };
+    if (pcls  === "partial_material")          return { bg: "#fbbf24", fg: "#78350f", label: "Partial – Needs Attention" };
+    if (pcls  === "partial_review")            return { bg: "#fef08a", fg: "#713f12", label: "Worth Reviewing" };
+    if (state === "covered" || pcls === "partial_typical") return { bg: "#e5e7eb", fg: "#374151", label: "Covered" };
+    if (state === "not_applicable")            return { bg: "#9ca3af", fg: "#fff", label: "Not Applicable" };
+    return { bg: "#d1d5db", fg: "#6b7280", label: state || "—" };
+}
+
+function renderProvisionHeatmap() {
+    const panel = $("#provision-heatmap-panel");
+    if (!panel) return;
+
+    const tenants = (currentResults && currentResults.tenants) || [];
+    const viewerPerspective = getJobPerspective();
+
+    // Filter to tenants that have a coverage_assessment
+    const rows = tenants.filter(t => t && t.results && (t.results.coverage_assessment || []).length > 0);
+    if (rows.length === 0) {
+        panel.classList.add("hidden");
+        return;
+    }
+
+    let html = '<div class="provision-heatmap-section"><div class="provision-heatmap-section-header">PROVISION HEALTH</div>';
+
+    // Use tenants (not rows) to preserve the original tenant index for navigation.
+    tenants.forEach(function(tenant, tIdx) {
+        if (!tenant || !tenant.results || !(tenant.results.coverage_assessment || []).length) return;
+        const ca = tenant.results.coverage_assessment || [];
+        const filename = tenant.results.tenant_file || tenant.filename || "";
+
+        // Build pid → assessment lookup
+        const map = {};
+        ca.forEach(function(a) { map[a.issue_area_id] = a; });
+
+        const labelHtml = filename
+            ? `<div class="provision-heatmap-label">${esc(filename)}</div>`
+            : "";
+
+        const cellsHtml = _HEATMAP_LP_IDS.map(function(pid) {
+            const a = map[pid];
+            if (!a) {
+                return `<div class="provision-heatmap-cell" style="background:#d1d5db;color:#9ca3af;" title="${esc(pid)}">${pid.replace("LP-","")}</div>`;
+            }
+            const s = _heatmapCellStyle(a, viewerPerspective);
+            const name = a.issue_area_name || pid;
+            const tip  = `${esc(pid)} — ${esc(name)} — ${esc(s.label)}`;
+            const num  = pid.replace("LP-","");
+            return `<div class="provision-heatmap-cell" style="background:${s.bg};color:${s.fg};" title="${tip}" onclick="window.CAM.jumpHeatmapCell(${tIdx},'${esc(pid)}')">${num}</div>`;
+        }).join("");
+
+        html += `<div class="provision-heatmap-contract">${labelHtml}<div class="provision-heatmap-row">${cellsHtml}</div></div>`;
+    });
+
+    html += "</div>";
+    panel.innerHTML = html;
+    panel.classList.remove("hidden");
 }
 
 // ── Step 132: Deal Brief Banner on Analysis Overview ──
@@ -13340,6 +13431,7 @@ function toggleSection(name) {
 
     if (name === 'run-summary') {
         var ids = ['deal-brief-banner', 'deal-overview-panel', 'ai-summary-bar',
+                   'provision-heatmap-panel',
                    'provisions-checklist', 'results-legend', 'filter-bar',
                    'provisions-scope-card', 'contract-status-panel', 'review-completion-banner'];
         ids.forEach(function(id) {
@@ -14840,6 +14932,7 @@ function renderCoveragePanel() {
     const ca = pr && pr.coverage_assessment ? pr.coverage_assessment : null;
 
     _coverageTierFilter = 'all';
+    _cvShowFavorable = false;
 
     if (!ca || ca.length === 0) {
         tab.innerHTML = '<div class="coverage-empty"><p>Coverage analysis not available for this run.</p></div>';
@@ -14854,15 +14947,31 @@ function renderCoveragePanel() {
     // Build set of provision IDs in the pipeline (for nav links)
     const _pipelineProvIds = new Set((pr && pr.provisions || []).map(p => p.provision_id).filter(Boolean));
 
-    const problems = ca.filter(a => a.coverage_state === "covered_unfavorable" || a.partial_class === "partial_material" || a.coverage_state === "missing");
+    // Step 297d.J / fix: perspective-aware favorability uses covered_unfavorable_adverse_to
+    // (written by lease_coverage.py from schema field), not exposure_perspective.
+    // exposure_perspective records whose perspective the exposure text was written from,
+    // which equals the run perspective — not a reliable adversity signal across perspectives.
+    const _viewerPerspective = getJobPerspective();
+    function _isFavorable(a) {
+        return a.coverage_state === "covered_unfavorable" &&
+            _viewerPerspective && _viewerPerspective !== "neutral" &&
+            a.covered_unfavorable_adverse_to &&
+            a.covered_unfavorable_adverse_to !== _viewerPerspective;
+    }
+
+    const problems = ca.filter(a => !_isFavorable(a) && (a.coverage_state === "covered_unfavorable" || a.partial_class === "partial_material" || a.coverage_state === "missing"));
+    const favorable = ca.filter(a => _isFavorable(a));
     const review   = ca.filter(a => a.partial_class === "partial_review");
     const covered  = ca.filter(a => a.coverage_state === "covered");
     const typical  = ca.filter(a => a.partial_class === "partial_typical");
     const other    = ca.filter(a => !problems.includes(a) && !review.includes(a) && !covered.includes(a) && !typical.includes(a));
 
+    const _cvIsNeutral = !_viewerPerspective || _viewerPerspective === "neutral";
     const STATE_LABELS = {
         "covered":             { label: "\u2713 Covered",     cls: "cv-badge-ok" },
-        "covered_unfavorable": { label: "\u26A0 Unfavorable", cls: "cv-badge-unfav" },
+        "covered_unfavorable": _cvIsNeutral
+            ? { label: "\u26A0 Asymmetric",  cls: "cv-badge-asymmetric" }
+            : { label: "\u26A0 Unfavorable", cls: "cv-badge-unfav" },
         "partial":             { label: "\u25D1 Partial",     cls: "cv-badge-partial" },
         "missing":             { label: "\u2717 Missing",     cls: "cv-badge-missing" },
         "not_applicable":      { label: "\u2014 N/A",         cls: "cv-badge-na" },
@@ -14885,7 +14994,9 @@ function renderCoveragePanel() {
         // still render a usable headline.
         const headline = (a.exposure_headline || _deriveHeadlineFromExposure(stmt) || "").trim();
 
-        const stateInfo = STATE_LABELS[state] || { label: state, cls: "cv-badge-na" };
+        const stateInfo = (tier === "favorable")
+            ? { label: "✓ Favorable", cls: "cv-badge-favorable" }
+            : (STATE_LABELS[state] || { label: state, cls: "cv-badge-na" });
         let pclsBadge = "";
         if (pcls === "partial_material") pclsBadge = '<span class="cv-pcls-badge cv-pcls-material">Needs attention</span>';
         else if (pcls === "partial_review") pclsBadge = '<span class="cv-pcls-badge cv-pcls-review">Worth reviewing</span>';
@@ -14959,6 +15070,7 @@ function renderCoveragePanel() {
         <button class="btn btn-outline cv-tier-btn" data-tier="problems" onclick="window.CAM._applyCoverageTierFilter('problems')">${problems.length} Need Attention</button>
         <button class="btn btn-outline cv-tier-btn" data-tier="review" onclick="window.CAM._applyCoverageTierFilter('review')">${review.length} Worth Reviewing</button>
         <button class="btn btn-outline cv-tier-btn" data-tier="covered" onclick="window.CAM._applyCoverageTierFilter('covered')">${allGoodCount} Covered</button>
+        ${favorable.length > 0 ? `<button class="btn btn-outline cv-tier-btn cv-favorable-toggle-btn" onclick="window.CAM._applyCoverageFavorableToggle()">${favorable.length} Favorable &#9660;</button>` : ""}
         <span class="cv-filter-divider">|</span>
         <span class="coverage-summary-label">Status:</span>
         <button class="btn btn-outline cv-status-filter-btn cv-tier-btn-active" data-status="all" onclick="window.CAM._applyCoverageStatusFilter('all')">All</button>
@@ -15003,6 +15115,9 @@ function renderCoveragePanel() {
     }
     if (review.length > 0) {
         html += `<div class="cv-section" id="cv-section-review"><div class="cv-section-header cv-section-review">Worth Reviewing (${review.length})</div>${review.map(a => buildItem(a, "review")).join("")}</div>`;
+    }
+    if (favorable.length > 0) {
+        html += `<div class="cv-section" id="cv-section-favorable" style="display:none"><div class="cv-section-header cv-section-favorable">Favorable to You (${favorable.length})</div>${favorable.map(a => buildItem(a, "favorable")).join("")}</div>`;
     }
 
     const allGood = [...covered, ...typical, ...other];
@@ -15116,6 +15231,7 @@ function _updateCovNoteCount(pid, tenantIdx) {
 
 let _coverageTierFilter = 'all';
 let _coverageStatusFilter = 'all'; // 'all' | 'open' | 'flagged' | 'accepted' | 'reviewed'
+let _cvShowFavorable = false;    // Step 297d.J: toggle for viewer-favorable provisions
 
 function _applyCoverageStatusFilter(status) {
     _coverageStatusFilter = (_coverageStatusFilter === status) ? 'all' : status;
@@ -15155,9 +15271,19 @@ function _applyCoverageTierFilter(tier) {
     });
 }
 
+function _applyCoverageFavorableToggle() {
+    _cvShowFavorable = !_cvShowFavorable;
+    const section = document.getElementById('cv-section-favorable');
+    if (section) section.style.display = _cvShowFavorable ? '' : 'none';
+    document.querySelectorAll('.cv-favorable-toggle-btn').forEach(btn => {
+        btn.classList.toggle('cv-tier-btn-active', _cvShowFavorable);
+    });
+}
+
 window.CAM = window.CAM || {};
 window.CAM.renderCoveragePanel = renderCoveragePanel;
 window.CAM._applyCoverageTierFilter = _applyCoverageTierFilter;
+window.CAM._applyCoverageFavorableToggle = _applyCoverageFavorableToggle;
 function _openCovAdvisor(pid, tenantIdx, provName, stmt, isMissing) {
     let question;
     if (isMissing) {
@@ -15212,8 +15338,17 @@ window.CAM._toggleConformingChips = function(btn, e) {
         ? '✓ ' + count + ' conforming'
         : '∨ Hide conforming';
 };
+// Step 299 fix: navigate heatmap cell to the correct contract then the correct LP.
+// openContractDetail sets currentTenantIndex and re-renders the detail view,
+// then jumpToCoverageProvision switches to the Coverage & Gaps tab and scrolls.
+function jumpHeatmapCell(tIdx, pid) {
+    openContractDetail(tIdx).then(function() {
+        jumpToCoverageProvision(pid);
+    });
+}
 window.CAM.switchResultsTab = switchResultsTab;
 window.CAM.jumpToCoverageProvision = jumpToCoverageProvision;
+window.CAM.jumpHeatmapCell = jumpHeatmapCell;
 window.CAM._toggleCovNotes = _toggleCovNotes;
 window.CAM._saveCovNote = _saveCovNote;
 window.CAM._deleteCovNote = _deleteCovNote;
@@ -15327,11 +15462,20 @@ function _navBuildModeCItem(a, tIdx) {
     // requiring a backend re-run for cached jobs. The full prose is
     // still kept on the title attribute for hover.
     const headline = (a.exposure_headline || _deriveHeadlineFromExposure(stmt)).trim();
+    const _navViewerPerspective = getJobPerspective();
+    const _navIsFavorable = state === "covered_unfavorable" &&
+        _navViewerPerspective && _navViewerPerspective !== "neutral" &&
+        a.covered_unfavorable_adverse_to &&
+        a.covered_unfavorable_adverse_to !== _navViewerPerspective;
     let badgeLabel, badgeCls;
-    if (state === "potentially_unenforceable") {
+    if (_navIsFavorable) {
+        badgeLabel = "FAVORABLE"; badgeCls = "nav-badge-favorable";
+    } else if (state === "potentially_unenforceable") {
         badgeLabel = "ENFORCEABILITY"; badgeCls = "nav-badge-enforceability";
     } else if (state === "covered_unfavorable") {
-        badgeLabel = "Unfavorable"; badgeCls = "nav-badge-unfavorable";
+        const isNeutral = !_navViewerPerspective || _navViewerPerspective === "neutral";
+        badgeLabel = isNeutral ? "ASYMMETRIC" : "Unfavorable";
+        badgeCls   = isNeutral ? "nav-badge-asymmetric" : "nav-badge-unfavorable";
     } else if (state === "missing") {
         badgeLabel = "Missing"; badgeCls = "nav-badge-missing";
     } else if (pcls === "partial_material") {
@@ -15544,8 +15688,12 @@ function renderNavSidebar() {
                 }
             }
             if (mode === "c") {
-                // Coverage gap → Coverage & Gaps tab
-                if (window.CAM && typeof window.CAM.jumpToCoverageProvision === "function") {
+                // Coverage gap → open the right contract then jump to the LP.
+                // jumpHeatmapCell calls openContractDetail(tIdx) first so the
+                // Coverage & Gaps tab renders without requiring a prior selection.
+                if (typeof jumpHeatmapCell === "function") {
+                    jumpHeatmapCell(tIdx, pid);
+                } else if (window.CAM && typeof window.CAM.jumpToCoverageProvision === "function") {
                     window.CAM.jumpToCoverageProvision(pid);
                 }
             } else {

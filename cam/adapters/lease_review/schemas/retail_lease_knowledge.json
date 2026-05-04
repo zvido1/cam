@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.4.3",
+  "schema_version": "1.4.4",
   "created": "2026-03-27",
   "updated": "2026-05-03",
   "contract_type": "retail_lease",
   "display_name": "Retail / Commercial Lease",
   "description": "Issue-area knowledge schema for retail and commercial lease analysis. Defines expected coverage, applicability gating, exposure statements, caution signals, and negative-space clues.",
-  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants. v1.2.0: Added LP-19 Utilities (required), LP-20 Exclusivity (conditional, extracted from LP-05), LP-21 Guaranty of Lease (conditional, promoted from discovered_provision_patterns). LP-05 expected_elements updated: removed 'exclusive use right scope' (now LP-20's responsibility); related_issue_areas updated to include LP-20. discovered_provision_patterns updated: removed 'Guaranty' pattern (now LP-21). v1.3.0: Added LP-22 SNDA, LP-23 Percentage Rent, LP-24 Damage & Destruction, LP-25 Condemnation/Eminent Domain, LP-26 Quiet Enjoyment, LP-27 Landlord Default & Tenant Remedies, LP-28 Compliance with Laws, LP-29 Right of Entry/Landlord Access, LP-30 Estoppel Certificate, LP-31 Co-Tenancy, LP-32 Hazardous Materials. Promoted SNDA, Percentage Rent, Co-Tenancy, and Hazardous Materials from discovered_provision_patterns. Schema now covers 32 issue areas per CAM_Schema_Selection_Methodology.md. v1.4.0: Added `potentially_unenforceable` patterns to LP-09, LP-12, LP-29. Added `conflict_rules` block with 3 initial rules (CR-01 FM-vs-continuous-operation, CR-04 SNDA-without-landlord-default, CR-09 no-exit-strategy). Added `jurisdiction_rules` block with New York rules for LP-09 (sole discretion \u05d2\u2020\u2019 potentially_unenforceable when governing law is NY) and LP-11 (self-help re-entry \u05d2\u2020\u2019 potentially_unenforceable when governing law is NY). Step 297a foundation only \u05d2\u20ac\u201d additional rules deferred to 297b after empirical validation on real corpus. v1.4.1: CR-01 trigger loosened (LP-05 condition now anchors on elements_present_includes alone, dropping coverage_state requirement). CR-04 renamed and trigger refined to detect partial-LP-27 cases where critical tenant remedies are missing. Added elements_missing_includes_any condition type to schema spec. CR-01 LP-14 evidence_contains changed to evidence_contains_any to handle both wholly/totally untenantable and wholly untenantable evidence_summary variants. v1.4.2: Step 298a element-matching calibration. LP-08: waiver of subrogation now found via full-text fallback in lease_coverage._assess_elements (cross-article: Section 15.4 in Indemnification article). LP-29: global scan added for empty tenant_text on required LPs; _ELEMENT_KEYWORDS entries for entry-rights embedded in maintenance articles. LP-30: _ELEMENT_KEYWORDS entries for obligation/deadline patterns; false-positive frequency-limit match fixed (bare \"request\" keyword replaced with multi-word phrases). No cam/core/ changes. No evaluation semantics changes. | v1.4.3: Step 298b. LP-29 misrouted-extraction guard added in lease_coverage.assess_coverage. When extractor routes irrelevant text to a global-scan LP (verified by absence of any LP anchor keyword in tenant_text), the routed text is discarded and global scan is attempted instead. Defensive layer above 298a empty-tenant_text path. No schema content changes.",
+  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants. v1.2.0: Added LP-19 Utilities (required), LP-20 Exclusivity (conditional, extracted from LP-05), LP-21 Guaranty of Lease (conditional, promoted from discovered_provision_patterns). LP-05 expected_elements updated: removed 'exclusive use right scope' (now LP-20's responsibility); related_issue_areas updated to include LP-20. discovered_provision_patterns updated: removed 'Guaranty' pattern (now LP-21). v1.3.0: Added LP-22 SNDA, LP-23 Percentage Rent, LP-24 Damage & Destruction, LP-25 Condemnation/Eminent Domain, LP-26 Quiet Enjoyment, LP-27 Landlord Default & Tenant Remedies, LP-28 Compliance with Laws, LP-29 Right of Entry/Landlord Access, LP-30 Estoppel Certificate, LP-31 Co-Tenancy, LP-32 Hazardous Materials. Promoted SNDA, Percentage Rent, Co-Tenancy, and Hazardous Materials from discovered_provision_patterns. Schema now covers 32 issue areas per CAM_Schema_Selection_Methodology.md. v1.4.0: Added `potentially_unenforceable` patterns to LP-09, LP-12, LP-29. Added `conflict_rules` block with 3 initial rules (CR-01 FM-vs-continuous-operation, CR-04 SNDA-without-landlord-default, CR-09 no-exit-strategy). Added `jurisdiction_rules` block with New York rules for LP-09 (sole discretion \u05d2\u2020\u2019 potentially_unenforceable when governing law is NY) and LP-11 (self-help re-entry \u05d2\u2020\u2019 potentially_unenforceable when governing law is NY). Step 297a foundation only \u05d2\u20ac\u201d additional rules deferred to 297b after empirical validation on real corpus. v1.4.1: CR-01 trigger loosened (LP-05 condition now anchors on elements_present_includes alone, dropping coverage_state requirement). CR-04 renamed and trigger refined to detect partial-LP-27 cases where critical tenant remedies are missing. Added elements_missing_includes_any condition type to schema spec. CR-01 LP-14 evidence_contains changed to evidence_contains_any to handle both wholly/totally untenantable and wholly untenantable evidence_summary variants. v1.4.2: Step 298a element-matching calibration. LP-08: waiver of subrogation now found via full-text fallback in lease_coverage._assess_elements (cross-article: Section 15.4 in Indemnification article). LP-29: global scan added for empty tenant_text on required LPs; _ELEMENT_KEYWORDS entries for entry-rights embedded in maintenance articles. LP-30: _ELEMENT_KEYWORDS entries for obligation/deadline patterns; false-positive frequency-limit match fixed (bare \"request\" keyword replaced with multi-word phrases). No cam/core/ changes. No evaluation semantics changes. | v1.4.3: Step 298b. LP-29 misrouted-extraction guard added in lease_coverage.assess_coverage. When extractor routes irrelevant text to a global-scan LP (verified by absence of any LP anchor keyword in tenant_text), the routed text is discarded and global scan is attempted instead. Defensive layer above 298a empty-tenant_text path. No schema content changes. | v1.4.4: Step 297d.J-fix. Added covered_unfavorable_adverse_to=\"tenant\" to all 32 issue_areas. Used by lease_coverage.py to write covered_unfavorable_adverse_to on CA entries; used by frontend _isFavorable logic instead of exposure_perspective comparison.",
   "coverage_states": {
     "covered": "Provision present and consistent with standard form",
     "covered_unfavorable": "Present but materially one-sided against tenant",
@@ -71,7 +71,8 @@
         "Grace period extensions (5 days \u05d2\u2020\u2019 10 days)",
         "Reduced late fee percentage",
         "Removal of additional rent catch-all definition"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-02",
@@ -119,7 +120,8 @@
         "CPI cap addition (e.g. maximum 3% per year)",
         "Fixed-percentage substituted for uncapped CPI",
         "First escalation deferred one year"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-03",
@@ -164,7 +166,8 @@
         "Extended notice period for renewal (90 days \u05d2\u2020\u2019 12 months)",
         "Added renewal options (1 \u05d2\u2020\u2019 2 or 3)",
         "Capped renewal rent at fixed percentage over expiring rent"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-04",
@@ -214,7 +217,8 @@
         "Reduced deposit amount",
         "Burn-down schedule (deposit reduces over time)",
         "Shortened return deadline"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-05",
@@ -256,7 +260,8 @@
         "Broadened permitted use description",
         "Weakened continuous operation obligation (shall \u05d2\u2020\u2019 may)",
         "Added co-tenancy condition tied to anchor tenant"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-06",
@@ -295,7 +300,8 @@
       "common_tenant_modifications": [
         "Landlord bears HVAC replacement cost above threshold amount",
         "Structural repair obligation shifted to landlord"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-07",
@@ -355,7 +361,8 @@
         "5% annual CAM increase cap added",
         "Capital expenditure exclusion added",
         "Management fee cap (typically 15% of operating expenses)"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-08",
@@ -399,7 +406,8 @@
         "Reduced minimum coverage amounts",
         "Removal of business interruption requirement",
         "Mutual waiver of subrogation (one-way \u05d2\u2020\u2019 two-way)"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-09",
@@ -442,7 +450,8 @@
         "Reasonableness standard added ('not unreasonably withheld, conditioned, or delayed')",
         "Affiliate exception broadened (parent, subsidiary, successor entities)",
         "Sale-of-business exception expanded to include asset sales"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-10",
@@ -484,7 +493,8 @@
         "Approval threshold increased (above $10,000 or $25,000)",
         "Removal obligation limited to trade fixtures only",
         "Landlord required to designate removal items at time of approval"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-11",
@@ -531,7 +541,8 @@
         "Extended cure periods (5 days \u05d2\u2020\u2019 10 days monetary; 30 days \u05d2\u2020\u2019 45 days non-monetary)",
         "Notice required before every default declaration",
         "Added third-party cure right (mortgagee or guarantor may cure)"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-12",
@@ -593,7 +604,8 @@
         "Added termination right after Year 3 or Year 5",
         "Termination fee capped at 6-12 months rent",
         "Co-tenancy clause added (right to terminate if anchor tenant leaves)"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-13",
@@ -637,7 +649,8 @@
         "Added mutual/reciprocal indemnification",
         "Added cap on total liability (typically 12-24 months rent)",
         "Excluded consequential, punitive, and special damages"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-14",
@@ -683,7 +696,8 @@
         "Added rent abatement for force majeure periods exceeding 30 days",
         "Added termination right if force majeure exceeds 180 days",
         "Added partial abatement mechanism for operational impairment short of total untenantability"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-15",
@@ -733,7 +747,8 @@
         "Added pylon sign panel right",
         "Minimum sign dimensions specified",
         "Approval timeline specified (30 days; deemed approved if no response)"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-16",
@@ -782,7 +797,8 @@
       "common_tenant_modifications": [
         "Minimum space count guaranteed regardless of center reconfiguration",
         "Cost of reserved spaces capped or included in base rent"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-17",
@@ -827,7 +843,8 @@
         "Prevailing party fee allocation made mutual (not landlord-only)",
         "Jury trial waiver made mutual",
         "Venue changed to tenant's county"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-18",
@@ -866,7 +883,8 @@
         "Holdover rate reduced (200% \u05d2\u2020\u2019 150%)",
         "Consequential damages excluded",
         "Month-to-month characterization confirmed (prevents automatic term renewal)"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-19",
@@ -917,7 +935,8 @@
         "Submetering or check meter rights added",
         "Utility upgrade costs allocated to landlord or capped",
         "Cap on tenant's share of shared utility costs"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-20",
@@ -985,7 +1004,8 @@
         "Limited carve-outs (no general grocery exception for pharmacy tenant)",
         "Added radius restriction (e.g., no competing use within 1 mile)",
         "Extended exclusivity for full lease term including renewal options"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-21",
@@ -1059,7 +1079,8 @@
         "Cap on guaranty amount (e.g., 12 months rent maximum exposure)",
         "Release on assignment of lease to qualified assignee",
         "Limited guaranty scope (rent only, not all lease obligations)"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-22",
@@ -1130,7 +1151,8 @@
         "Lender required to execute SNDA within 30 days of tenant's written request",
         "SNDA extends to all future mortgages, not just existing encumbrances",
         "Lender bound by all landlord obligations under the lease after foreclosure"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-23",
@@ -1196,7 +1218,8 @@
         "Artificial breakpoint set higher than natural breakpoint",
         "Audit window limited to 2 years; findings deemed final if not contested",
         "Annual gross sales cap after which no further percentage rent is owed"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-24",
@@ -1250,7 +1273,8 @@
         "Full rent abatement during repair period (not just proportionate to unusable portion)",
         "Tenant rebuild allowance for tenant improvements above base building insurance",
         "Tenant right to terminate if damage occurs in last 12-18 months of term"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-25",
@@ -1302,7 +1326,8 @@
         "Rent reduction proportionate to loss of premises area following partial taking",
         "Landlord restoration obligation if lease continues after partial taking",
         "Business interruption damages excluded from landlord's award"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-26",
@@ -1348,7 +1373,8 @@
         "Covenant confirmed to bind lenders and mortgagees (coordinates with SNDA)",
         "Absolute covenant for initial term (no conditioned-on-tenant-performance qualifier)",
         "Explicit statement that landlord's right to re-enter does not breach quiet enjoyment covenant"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-27",
@@ -1402,7 +1428,8 @@
         "Termination right after material uncured default exceeding 90 days",
         "Lender cure period limited to additional 30 days after landlord's cure period expires",
         "Landlord liability not limited to property interest for fraud, willful misconduct, or gross negligence"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-28",
@@ -1454,7 +1481,8 @@
         "Grandfathering: tenant not responsible for pre-existing non-compliant conditions at commencement",
         "Future law compliance costs above defined threshold allocated to landlord",
         "Landlord representation that premises comply with all applicable laws at commencement"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-29",
@@ -1506,7 +1534,8 @@
         "Tenant's representative right during all non-emergency entries",
         "Landlord's minimization of business interference obligation",
         "Showing rights limited to last 12 months of term and with tenant representative present"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-30",
@@ -1567,7 +1596,8 @@
         "Frequency limited to 2 requests per calendar year",
         "Tenant certifies only to actual knowledge (not constructive or imputed knowledge)",
         "Tenant may note exceptions to landlord's form estoppel rather than sign as prepared"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-31",
@@ -1637,7 +1667,8 @@
         "Remedy: fixed reduced rent (e.g., lesser of percentage rent or 50% of base rent) during failure",
         "Termination right after 12 months of continuous co-tenancy failure",
         "Replacement anchor standard tightened (replacement must be national brand or defined credit quality)"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     },
     {
       "id": "LP-32",
@@ -1713,7 +1744,8 @@
         "Tenant remediation obligation limited to contamination caused or exacerbated by tenant",
         "Tenant right to conduct Phase I/II environmental assessment at commencement",
         "Notification right (not obligation) for third-party environmental claims not caused by tenant"
-      ]
+      ],
+      "covered_unfavorable_adverse_to": "tenant"
     }
   ],
   "conflict_rules": {
