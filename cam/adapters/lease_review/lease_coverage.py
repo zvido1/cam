@@ -654,6 +654,10 @@ def _build_assessment(pid, area, coverage_state, applicability, evidence_summary
         "coverage_state_baseline": coverage_state,
         "use_adjusted": False,
         "use_adjustment_reason": None,
+        # Step 303 (Stage 5d multi-eval): governance fields — set by merge function.
+        # Initialized here so every CA entry carries these fields regardless of flag state.
+        "use_aware_consensus": None,   # "3_of_3" | "2_of_3" | "1_of_3" | "2_of_2" | None
+        "use_aware_abstained": False,  # True when merge outcome is abstain
         "tenant_text": tenant_text,
     }
 

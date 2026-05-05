@@ -1,0 +1,228 @@
+{
+  "schema_version": "1.0.0",
+  "created": "2026-05-04",
+  "description": "Retail use archetype library for Stage 5d Call 1a pre-screen. Each archetype defines keyword matchers, a structured use context, and per-LP sensitivity annotations. Severity bands: None | Low | Moderate | High.",
+  "notes": "v1.0.0 (Step 302): Initial three archetypes — pharmacy, coffee_shop_food_service, general_retail. Multi-match union semantics: a permitted_use clause may match multiple archetypes; merge_archetype_results unions lp_sensitivities taking highest severity per LP with attribution preserved.",
+  "archetypes": [
+    {
+      "archetype_id": "pharmacy",
+      "display_name": "Pharmacy / Retail Drug Store",
+      "match_keywords": [
+        "pharmacy",
+        "drug store",
+        "drugstore",
+        "compounding pharmacy",
+        "compounding",
+        "dispensary",
+        "apothecary",
+        "prescription medication",
+        "prescription drugs",
+        "controlled substance"
+      ],
+      "use_context": {
+        "business_type": "retail pharmacy",
+        "regulated_activity": "DEA Schedule II-V controlled substance dispensing requires DEA registration under 21 U.S.C. § 822 and 21 C.F.R. Part 1301; state pharmacy board licensure tied to specific premises address",
+        "refrigeration_perishables": "High",
+        "hazardous_material_sensitivity": "Moderate",
+        "hours_access_sensitivity": "Extended",
+        "operational_dependencies": [
+          "uninterrupted refrigeration for temperature-sensitive medications",
+          "DEA-registered premises (physical address cannot change mid-term without re-registration under 21 C.F.R. § 1301.51)",
+          "secure controlled substance storage meeting DEA physical security standards (21 C.F.R. § 1301.72)",
+          "state pharmacy board license tied to approved premises address and layout"
+        ],
+        "other_use_risk_factors": [
+          "DEA premises re-registration required on relocation or structural change to controlled substance storage area",
+          "pharmaceutical waste (expired medications, controlled substance disposal) regulated under 21 C.F.R. Part 1317"
+        ]
+      },
+      "lp_sensitivities": [
+        {
+          "lp_id": "LP-05",
+          "severity": "High",
+          "rationale": "Pharmacy permitted use clause must expressly authorize prescription dispensing, compounding, and sale of Schedule II-V controlled substances. An overly narrow or silent use clause may be read by DEA or a successor landlord as restricting operations requiring DEA registration.",
+          "source": "DEA Practitioner's Manual (21 C.F.R. Part 1301); 21 U.S.C. § 822"
+        },
+        {
+          "lp_id": "LP-06",
+          "severity": "High",
+          "rationale": "HVAC and refrigeration system maintenance is critical for USP-compliant medication storage temperatures. Failure to maintain cold chain exposes tenant to regulatory enforcement and product loss. Lease must clearly assign HVAC maintenance or require landlord to maintain building systems to pharmaceutical storage standards.",
+          "source": "DEA Practitioner's Manual (21 C.F.R. Part 1301); USP General Chapter <1079> Good Storage and Distribution Practices for Drug Products"
+        },
+        {
+          "lp_id": "LP-10",
+          "severity": "Moderate",
+          "rationale": "Pharmacy buildout requires DEA-compliant controlled substance vault or safe, walk-in refrigerator, and security systems meeting 21 C.F.R. § 1301.72. Without broad tenant alteration rights or pre-approved improvements, tenant may be unable to satisfy DEA physical security requirements.",
+          "source": "DEA 21 C.F.R. § 1301.72 (Physical security controls for practitioners)"
+        },
+        {
+          "lp_id": "LP-19",
+          "severity": "High",
+          "rationale": "Uninterrupted utility service (electric) is critical for medication refrigeration. Service interruption without abatement or self-help remedy creates concurrent exposure: ongoing rent obligation plus regulatory risk from temperature excursion.",
+          "source": "DEA Practitioner's Manual; USP General Chapter <1079> Good Storage and Distribution Practices for Drug Products"
+        },
+        {
+          "lp_id": "LP-24",
+          "severity": "High",
+          "rationale": "Pharmacy can only lawfully operate from its DEA-registered address. Structural damage preventing occupancy without a broad rent abatement provision creates dual exposure: continued rent obligation while pharmacy cannot operate and may face DEA registration suspension.",
+          "source": "DEA 21 C.F.R. Part 1301 (registration tied to registered address)"
+        },
+        {
+          "lp_id": "LP-28",
+          "severity": "High",
+          "rationale": "Multi-jurisdictional compliance (DEA, FDA, state pharmacy board, local health codes) imposes higher compliance burden on pharmacy tenants than standard retail. A tenant-side compliance-with-laws clause without structural cost carve-out can require tenant to fund landlord's building code failures.",
+          "source": "21 U.S.C. § 822; DEA Practitioner's Manual"
+        },
+        {
+          "lp_id": "LP-32",
+          "severity": "Moderate",
+          "rationale": "Pharmaceutical waste (expired medications, returned controlled substances) is regulated separately from general hazardous materials under 21 C.F.R. Part 1317 and EPA hazardous waste rules. A hazardous materials clause without a pharmaceutical operations carve-out may inadvertently prohibit lawful pharmacy waste handling.",
+          "source": "DEA 21 C.F.R. Part 1317 (Disposal of controlled substances); EPA RCRA pharmaceutical waste rules (40 C.F.R. Part 266 Subpart P)"
+        }
+      ]
+    },
+    {
+      "archetype_id": "coffee_shop_food_service",
+      "display_name": "Coffee Shop / Food Service",
+      "match_keywords": [
+        "coffee shop",
+        "coffee house",
+        "coffeehouse",
+        "café",
+        "cafe",
+        "espresso",
+        "food service",
+        "food and beverage",
+        "prepared food",
+        "restaurant",
+        "bakery",
+        "juice bar",
+        "smoothie",
+        "quick service",
+        "fast casual"
+      ],
+      "use_context": {
+        "business_type": "coffee shop / food service",
+        "regulated_activity": "State and local health department food service permit; food handler certification required for all food-contact employees; subject to periodic health inspection",
+        "refrigeration_perishables": "High",
+        "hazardous_material_sensitivity": "Low",
+        "hours_access_sensitivity": "Extended",
+        "operational_dependencies": [
+          "health department food service permit tied to approved premises layout and menu",
+          "commercial kitchen ventilation (Type I hood) and grease trap — may require structural modification",
+          "continuous refrigeration for perishable dairy, food, and beverage inventory",
+          "adequate electrical capacity for commercial espresso, refrigeration, and food prep equipment"
+        ],
+        "other_use_risk_factors": [
+          "health department re-inspection required after structural repairs; tenant cannot reopen until permit reinstated",
+          "grease trap and exhaust system maintenance creates ongoing landlord-tenant cost-allocation disputes"
+        ]
+      },
+      "lp_sensitivities": [
+        {
+          "lp_id": "LP-05",
+          "severity": "High",
+          "rationale": "Food service permitted use clause must expressly authorize food preparation, service, and all beverage categories (including alcohol if applicable). Health department permit scope is tied to the approved use description; a silent or narrow clause may constrain menu offerings or require landlord consent for routine product changes.",
+          "source": "FDA Food Code 2022"
+        },
+        {
+          "lp_id": "LP-06",
+          "severity": "High",
+          "rationale": "Commercial kitchen operations require landlord-maintained structural systems: adequate HVAC for kitchen exhaust, grease trap access, and plumbing capacity. Without explicit maintenance and upgrade obligations on landlord, tenant bears cost of building-system failures that prevent food service operations.",
+          "source": "FDA Food Code 2022 (Physical Facilities chapter)"
+        },
+        {
+          "lp_id": "LP-10",
+          "severity": "High",
+          "rationale": "Coffee shop and food service buildout requires structural modifications: Type I hood, grease trap, floor drains, and upgraded electrical service. Tenant needs broad alteration rights and pre-approval process that does not allow landlord to withhold consent to health department-required improvements.",
+          "source": "FDA Food Code 2022 (Physical Facilities chapter)"
+        },
+        {
+          "lp_id": "LP-19",
+          "severity": "High",
+          "rationale": "Commercial food and beverage equipment (espresso machines, refrigerators, ovens, freezers) has high and sustained electrical demand. Service interruption without abatement or self-help remedy creates perishable inventory loss and customer relationship damage on top of ongoing rent obligation.",
+          "source": "FDA Food Code 2022"
+        },
+        {
+          "lp_id": "LP-24",
+          "severity": "Moderate",
+          "rationale": "Food service operations cannot resume after structural damage without a new health department inspection and re-issuance of the food service permit. A lease without a repair deadline or tenant termination right on prolonged repair imposes ongoing rent obligation while tenant awaits both physical restoration and regulatory re-approval.",
+          "source": "FDA Food Code 2022"
+        },
+        {
+          "lp_id": "LP-28",
+          "severity": "High",
+          "rationale": "Food service operations require multi-agency compliance: local health department, fire marshal, state alcohol board (if applicable), and ADA. A compliance-with-laws clause that does not allocate structural compliance costs to landlord can require tenant to fund building upgrades triggered by the tenant's food service use.",
+          "source": "FDA Food Code 2022; ADA Title III (42 U.S.C. § 12182)"
+        },
+        {
+          "lp_id": "LP-29",
+          "severity": "Low",
+          "rationale": "Health department inspectors may arrive without advance notice during operating hours; lease right-of-entry clause must accommodate mandatory regulatory inspections without triggering landlord default or unreasonable access restrictions.",
+          "source": "FDA Food Code 2022"
+        },
+        {
+          "lp_id": "LP-32",
+          "severity": "Low",
+          "rationale": "Cooking oils, cleaning chemicals, and food waste are subject to local sanitation regulations. A hazardous materials clause without a carve-out for ordinary food service materials (cleaning agents, cooking fuels) may inadvertently prohibit routine restaurant operations.",
+          "source": "FDA Food Code 2022"
+        }
+      ]
+    },
+    {
+      "archetype_id": "general_retail",
+      "display_name": "General / Specialty Retail",
+      "match_keywords": [
+        "retail",
+        "boutique",
+        "merchandise",
+        "showroom",
+        "specialty store",
+        "gift shop",
+        "apparel",
+        "clothing",
+        "accessories",
+        "home goods",
+        "sporting goods",
+        "electronics",
+        "toy store",
+        "bookstore",
+        "pet store",
+        "florist",
+        "jewelry"
+      ],
+      "use_context": {
+        "business_type": "specialty retail",
+        "regulated_activity": null,
+        "refrigeration_perishables": "None",
+        "hazardous_material_sensitivity": "None",
+        "hours_access_sensitivity": "Standard",
+        "operational_dependencies": [
+          "standard retail operating hours consistent with shopping center hours",
+          "storefront signage for customer identification and brand presence"
+        ],
+        "other_use_risk_factors": []
+      },
+      "lp_sensitivities": [
+        {
+          "lp_id": "LP-05",
+          "severity": "Low",
+          "rationale": "Specialty retail use clause should be drafted broadly enough to accommodate product line extensions and ancillary service offerings (alterations, gift wrapping, classes) without requiring landlord consent for routine business evolution.",
+          "source": "ICSC Tenant Classifications (International Council of Shopping Centers)"
+        },
+        {
+          "lp_id": "LP-08",
+          "severity": "Low",
+          "rationale": "General retail insurance requirements are standard market terms; review that required minimum coverage amounts and named insured parties do not exceed ICSC market norms for the tenant's sales volume and space size.",
+          "source": "ICSC Tenant Classifications (International Council of Shopping Centers)"
+        },
+        {
+          "lp_id": "LP-28",
+          "severity": "Low",
+          "rationale": "General retail compliance with ADA and local building codes is standard; lease should confirm that landlord bears cost of structural compliance obligations not triggered by tenant's specific use.",
+          "source": "ADA Title III (42 U.S.C. § 12182)"
+        }
+      ]
+    }
+  ]
+}
