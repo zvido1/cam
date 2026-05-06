@@ -75,6 +75,7 @@ from cam.adapters.lease_review.model_config import (  # noqa: E402
     EVALUATOR_A_PRIMARY, EVALUATOR_A_FALLBACK,
     EVALUATOR_B_PRIMARY, EVALUATOR_B_FALLBACK,
     EVALUATOR_C_PRIMARY, EVALUATOR_C_FALLBACK,
+    SINGLE_STAGE_CHAIN,
 )
 
 EVALUATOR_LINEUP: dict[str, dict] = {
@@ -327,41 +328,69 @@ Fields:
 Return only the JSON object, no markdown, no commentary."""
 
 
-def _call_model_for_profile(permitted_use: str) -> dict | None:
-    """Substep 1 — call gpt-5.5 to produce a text-inferred use profile.
+def _try_model_call(provider: str, model: str, system_prompt: str, user_prompt: str) -> dict:
+    """Attempt one model call for Call 1 profile generation.
 
-    Factored out of generate_use_profile() to allow test mocking.
-    Returns a dict on success, None on model failure (caller treats as skip).
+    Extracted from _call_model_for_profile to allow test mocking of individual
+    chain entries without mocking the entire chain-iteration function.
+
+    Returns parsed profile dict on success. Raises on any failure (empty output,
+    parse failure, network error, auth error) — caller iterates to next chain entry.
     """
     from cam.core.provider_router import ModelTarget, ProviderRouter, RouterConfig
     from cam.core.json_extract import safe_json_extract
 
-    raw = ""
-    try:
-        target = ModelTarget(
-            name="openai:gpt-5.5",
-            provider="openai",
-            model="gpt-5.5",
-            max_output_tokens=600,
-        )
-        router = ProviderRouter([target], RouterConfig())
-        adapter = router._get_adapter("openai")
+    target = ModelTarget(
+        name=f"{provider}:{model}-call1-profile",
+        provider=provider,
+        model=model,
+        max_output_tokens=600,
+        temperature=0.0,
+        timeout_sec=120.0,
+    )
+    router = ProviderRouter([target], RouterConfig())
+    adapter = router._get_adapter(provider)
+    raw = adapter.call(system_prompt, user_prompt, target).strip()
 
-        user_prompt = f"Permitted use clause:\n\n{permitted_use.strip()}"
-        raw = adapter.call(_PROFILE_SYSTEM, user_prompt, target).strip()
+    if not raw:
+        raise ValueError("empty_output")
 
-        profile = safe_json_extract(raw)
-        if not isinstance(profile, dict):
-            raise ValueError("Profile is not a dict")
+    profile = safe_json_extract(raw)
+    if not isinstance(profile, dict):
+        raise ValueError(f"response is not a dict (got {type(profile).__name__})")
+    return profile
 
-        logger.info(f"[lease_use_aware] Model profile: business_type={profile.get('business_type')}")
-        return profile
-    except Exception as e:
-        logger.warning(
-            f"[lease_use_aware] Model profile generation failed: {e} "
-            f"| raw[:200]={repr(raw[:200])}"
-        )
-        return None
+
+def _call_model_for_profile(permitted_use: str) -> dict | None:
+    """Substep 1 — chain-based model inference for Call 1 use profile.
+
+    Step 304a: iterates SINGLE_STAGE_CHAIN (mirrors _call_single_evaluator's pattern).
+    Returns parsed profile dict on first successful model call.
+    Returns None (chain-exhausted sentinel) only when every chain entry fails.
+
+    Individual model failures are transient (empty_output, parse_failure, timeout,
+    auth). The chain exhausts when all 7 models across 4 providers have failed.
+    """
+    user_prompt = f"Permitted use clause:\n\n{permitted_use.strip()}"
+    errors: list[str] = []
+
+    for provider, model in SINGLE_STAGE_CHAIN:
+        try:
+            profile = _try_model_call(provider, model, _PROFILE_SYSTEM, user_prompt)
+            logger.info(
+                f"[lease_use_aware] Call 1 succeeded via {model}: "
+                f"business_type={profile.get('business_type')}"
+            )
+            return profile
+        except Exception as e:
+            errors.append(f"{model}: {e}")
+            logger.warning(f"[lease_use_aware] Call 1 {model} ({provider}) failed: {e}")
+
+    logger.warning(
+        f"[lease_use_aware] Call 1 chain exhausted ({len(SINGLE_STAGE_CHAIN)} models tried): "
+        + "; ".join(errors)
+    )
+    return None  # chain-exhausted sentinel
 
 
 # ── Substep 4: Profile-archetype composition ──────────────────────────────────
@@ -576,42 +605,80 @@ def compose_profile_with_archetypes(
 def generate_use_profile(permitted_use: str) -> dict | None:
     """Generate a composed use profile from the permitted use clause.
 
-    Orchestration (Step 302a — post-call merge, text-wins-on-conflict):
-      Substep 1 — Model inference: always runs; produces text-inferred profile.
-                  Returns None (caller skips) if the model call fails.
-      Substep 2 — Archetype match: always runs; may return [].
-      Substep 3 — Multi-archetype merge: runs only if ≥1 archetype matched.
-      Substep 4 — Composition: text-wins-on-conflict; archetype fills gaps.
+    Orchestration (Step 304a — fallback chain + unconditional archetype match):
+      Substep 0 — Archetype match: runs first, independent of model pipeline.
+                  Archetype matching is a structural property of the input string;
+                  it is not contingent on model availability.
+      Substep 1 — Model inference: chain-based via SINGLE_STAGE_CHAIN.
+                  Returns None (chain-exhausted) if all models fail.
+      Substep 2 — Archetype merge: if ≥1 archetype matched, produce archetype context.
+      Substep 3 — Composition: text-wins-on-conflict; archetype fills gaps.
 
-    The model is never bypassed by an archetype match. Both signals always run
-    and are composed, consistent with CAM's compositional governance pattern.
+    Three outcomes:
+      applied           — Call 1 succeeded (any chain entry). text_inference_status="success".
+      applied_archetype_only — Call 1 chain exhausted AND archetype matched.
+                               compose_profile_with_archetypes called with {} as text_profile;
+                               302a composition logic fills all fields from archetype.
+                               text_inference_status="chain_exhausted".
+      None (skipped_no_evidence) — Call 1 chain exhausted AND no archetype matched.
+                               No Call 2 input available; Stage 5d aborts gracefully.
 
     Returns:
-        Composed profile dict on success, None if Substep 1 model call fails.
+        dict: profile with text_inference_status in _archetype_metadata.
+        None: hard abort when chain exhausted and no archetype matched.
     """
-    # Substep 1: Model inference (always runs)
-    text_inferred_profile = _call_model_for_profile(permitted_use)
-    if text_inferred_profile is None:
-        return None  # model failed; caller treats as skip
-
-    # Substep 2: Archetype match (always runs; may return [])
+    # Substep 0: Archetype match (unconditional — runs before any model call)
     try:
         matched = match_archetypes(permitted_use)
     except Exception as e:
         logger.warning(f"[lease_use_aware] Archetype match failed (non-fatal): {e}")
         matched = []
 
-    # Substep 3: Multi-archetype merge (only if ≥1 matched)
+    logger.info(
+        f"[lease_use_aware] Substep 0 — archetype match: "
+        f"{[a.get('archetype_id') for a in matched] or 'none'}"
+    )
+
+    # Substep 1: Model inference (chain-based; may return None on exhaustion)
+    text_profile = _call_model_for_profile(permitted_use)
+    text_inference_status = "success" if text_profile is not None else "chain_exhausted"
+
+    # Chain-exhausted + no archetype → nothing to work with; abort Stage 5d
+    if text_profile is None and not matched:
+        logger.warning(
+            f"[lease_use_aware] Call 1 chain exhausted AND no archetype matched "
+            f"for {permitted_use[:80]!r} — Stage 5d aborting (skipped_no_evidence)"
+        )
+        return None
+
+    # For the archetype-only degrade path, compose with an empty text profile.
+    # 302a composition logic already handles this: all fields empty → archetype fills all.
+    effective_text_profile = text_profile if text_profile is not None else {}
+
+    if text_profile is None:
+        logger.info(
+            f"[lease_use_aware] Call 1 chain exhausted — degrading to archetype-only path "
+            f"(matched: {[a.get('archetype_id') for a in matched]})"
+        )
+
+    # Substep 2: Multi-archetype merge (only if ≥1 matched)
     if matched:
         archetype_context, archetype_log = merge_archetype_results(matched)
     else:
         archetype_context = {}
         archetype_log = []
 
-    # Substep 4: Profile-archetype composition (text-wins-on-conflict)
-    return compose_profile_with_archetypes(
-        text_inferred_profile, archetype_context, archetype_log, matched, permitted_use
+    # Substep 3: Profile-archetype composition (text-wins-on-conflict)
+    profile = compose_profile_with_archetypes(
+        effective_text_profile, archetype_context, archetype_log, matched, permitted_use
     )
+
+    # Embed text_inference_status into _archetype_metadata for caller status mapping
+    if "_archetype_metadata" not in profile:
+        profile["_archetype_metadata"] = {}
+    profile["_archetype_metadata"]["text_inference_status"] = text_inference_status
+
+    return profile
 
 
 # ── Call 2: Three-Evaluator Use-Aware Classification (Step 303) ───────────────
@@ -1525,10 +1592,118 @@ if __name__ == "__main__":
         else:
             _fail("T10f: profile_source", f"expected 'composed', got {prof10.get('profile_source')!r}")
 
+    # ════════════════════════════════════════════════════════════════════════════
+    # T11–T13: Step 304a — generate_use_profile() fallback chain + degrade path
+    # _try_model_call is monkey-patched at module scope for each test.
+    # These tests exercise generate_use_profile() without any real API calls.
+    # ════════════════════════════════════════════════════════════════════════════
+
+    _saved_try_model_call = _try_model_call  # noqa: F821
+
+    # ── T11: Q1 single-failure — first chain entry fails, fallback succeeds ───
+    # Simulates: gpt-5.5 returns empty_output; fallback model succeeds.
+    # Expected: generate_use_profile returns applied profile, text_inference_status="success"
+    _t11_calls = [0]
+    _T11_MOCK_PROFILE = {
+        "business_type": "retail pharmacy (fallback model)",
+        "operational_dependencies": ["pharmacist on premises"],
+        "refrigeration_perishables": None,
+        "regulated_activity": "DEA registration",
+        "hazardous_material_sensitivity": "Low",
+        "hours_access_sensitivity": "Standard",
+        "other_use_risk_factors": [],
+    }
+
+    def _mock_try_t11(provider, model, system_prompt, user_prompt):
+        _t11_calls[0] += 1
+        if _t11_calls[0] == 1:
+            raise ValueError("empty_output")  # first chain entry fails
+        return dict(_T11_MOCK_PROFILE)  # fallback succeeds
+
+    globals()["_try_model_call"] = _mock_try_t11
+    use_t11 = "licensed pharmacy dispensing prescription medications and compounding sterile injectables"
+    prof11 = generate_use_profile(use_t11)
+    globals()["_try_model_call"] = _saved_try_model_call
+
+    if prof11 is None:
+        _fail("T11: Q1 single-failure", "generate_use_profile returned None; fallback did not engage")
+    elif prof11.get("_archetype_metadata", {}).get("text_inference_status") != "success":
+        _fail("T11a: text_inference_status", f"expected 'success', got {prof11.get('_archetype_metadata', {}).get('text_inference_status')!r}")
+    elif prof11.get("business_type") != "retail pharmacy (fallback model)":
+        _fail("T11b: text wins (fallback model output)", f"got {prof11.get('business_type')!r}")
+    elif _t11_calls[0] < 2:
+        _fail("T11c: chain iterated", f"_try_model_call called {_t11_calls[0]}× (expected ≥2)")
+    else:
+        _pass("T11: Q1 single-failure — first chain entry failed, fallback engaged, profile='applied'")
+
+    # ── T12: Q2 chain-exhaustion with archetype match — degrade-to-archetype-only ──
+    # Simulates: all chain entries fail; pharmacy archetype matches.
+    # Expected: applied_archetype_only path; all fields from_archetype; lp_sensitivities populated.
+    def _mock_try_t12_always_fail(provider, model, system_prompt, user_prompt):
+        raise ValueError("empty_output")
+
+    globals()["_try_model_call"] = _mock_try_t12_always_fail
+    use_t12 = "retail pharmacy with food service café and espresso bar"  # matches pharmacy + food service + general_retail
+    prof12 = generate_use_profile(use_t12)
+    globals()["_try_model_call"] = _saved_try_model_call
+
+    if prof12 is None:
+        _fail("T12: Q2 chain-exhaustion+archetype", "returned None; expected archetype-only profile")
+    else:
+        meta12 = prof12.get("_archetype_metadata", {})
+        prov12 = meta12.get("field_provenance", {})
+
+        if meta12.get("text_inference_status") != "chain_exhausted":
+            _fail("T12a: text_inference_status", f"expected 'chain_exhausted', got {meta12.get('text_inference_status')!r}")
+        else:
+            _pass("T12a: text_inference_status == 'chain_exhausted'")
+
+        # All non-lp fields should be from_archetype (no from_text since text was empty)
+        text_fields12 = [f for f, p in prov12.items() if p == "from_text"]
+        if text_fields12:
+            _fail("T12b: no from_text provenance", f"unexpected from_text fields: {text_fields12}")
+        else:
+            _pass("T12b: no from_text fields (all archetype-filled)")
+
+        if meta12.get("fields_overridden_by_text"):
+            _fail("T12c: fields_overridden_by_text empty", f"got {meta12.get('fields_overridden_by_text')}")
+        else:
+            _pass("T12c: fields_overridden_by_text is empty")
+
+        lp_sens12 = prof12.get("lp_sensitivities", [])
+        if len(lp_sens12) > 0:
+            _pass(f"T12d: lp_sensitivities populated ({len(lp_sens12)} entries from archetype(s))")
+        else:
+            _fail("T12d: lp_sensitivities empty", "expected archetype-sourced LP sensitivities")
+
+        matched12 = meta12.get("matched_archetypes", [])
+        if any(a.get("archetype_id") == "pharmacy" for a in matched12):
+            _pass("T12e: pharmacy archetype recorded in matched_archetypes")
+        else:
+            _fail("T12e: pharmacy in matched_archetypes", f"got {[a.get('archetype_id') for a in matched12]}")
+
+    # ── T13: skip-no-evidence — chain exhausted, no archetype matches ─────────
+    # Simulates: all chain entries fail; use clause matches no archetype.
+    # Expected: None returned (Stage 5d aborts, caller sets skipped_no_evidence).
+    def _mock_try_t13_always_fail(provider, model, system_prompt, user_prompt):
+        raise ValueError("empty_output")
+
+    globals()["_try_model_call"] = _mock_try_t13_always_fail
+    # Tattoo studio — passes should_run_use_analysis (≥8 words, not generic)
+    # but matches no archetype keywords (not pharmacy, not food service, not retail/boutique/etc.)
+    use_t13 = "tattoo studio and body piercing services with custom artwork design consultation"
+    prof13 = generate_use_profile(use_t13)
+    globals()["_try_model_call"] = _saved_try_model_call
+
+    if prof13 is not None:
+        _fail("T13: skip-no-evidence", f"expected None, got profile with source={prof13.get('profile_source')!r}")
+    else:
+        _pass("T13: skip-no-evidence — chain exhausted + no archetype match => None (Stage 5d aborts)")
+
     # ── Summary ───────────────────────────────────────────────────────────────
     print()
     if failures:
         print(f"FAILED — {len(failures)} test(s) failed")
         sys.exit(1)
     else:
-        print("All Step 302 / 302a validation tests PASSED")
+        print("All Step 302 / 302a / 304a validation tests PASSED")

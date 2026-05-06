@@ -939,8 +939,10 @@ def run_lease_analysis(
             else:
                 print("[lease_adapter] Stage 5d: generating use profile...", flush=True)
                 use_profile_data = generate_use_profile(_use_clause)
-                if not use_profile_data:
-                    use_analysis_status = "skipped_call1_failed"
+                if use_profile_data is None:
+                    # Chain exhausted AND no archetype matched — nothing for Call 2
+                    use_analysis_status = "skipped_no_evidence"
+                    print("[lease_adapter] Stage 5d: skipped_no_evidence (chain exhausted, no archetype match)", flush=True)
                 else:
                     coverage_assessment, use_aware_governance = assess_use_aware_coverage(
                         use_profile_data, coverage_assessment, cfg
@@ -962,7 +964,13 @@ def run_lease_analysis(
                               f"abstained={gov_summary.get('abstained', 0)})", flush=True)
                     else:
                         print("[lease_adapter] Stage 5d: no adjustments applied", flush=True)
-                    use_analysis_status = "applied"
+                    # Determine applied vs applied_archetype_only from text_inference_status
+                    _infer_st = (use_profile_data.get("_archetype_metadata") or {}).get(
+                        "text_inference_status", "success"
+                    )
+                    use_analysis_status = (
+                        "applied_archetype_only" if _infer_st == "chain_exhausted" else "applied"
+                    )
         except Exception as e:
             print(f"[lease_adapter] Stage 5d failed (non-fatal): {e}", flush=True)
 
@@ -1334,8 +1342,10 @@ def run_lease_coverage_only(
             else:
                 print("[lease_adapter:analyze] Stage 5d: generating use profile...", flush=True)
                 use_profile_data_c = generate_use_profile(_use_clause_c)
-                if not use_profile_data_c:
-                    use_analysis_status_c = "skipped_call1_failed"
+                if use_profile_data_c is None:
+                    # Chain exhausted AND no archetype matched — nothing for Call 2
+                    use_analysis_status_c = "skipped_no_evidence"
+                    print("[lease_adapter:analyze] Stage 5d: skipped_no_evidence (chain exhausted, no archetype match)", flush=True)
                 else:
                     coverage_assessment, use_aware_governance_c = assess_use_aware_coverage(
                         use_profile_data_c, coverage_assessment, cfg
@@ -1357,7 +1367,13 @@ def run_lease_coverage_only(
                               f"abstained={gov_summary_c.get('abstained', 0)})", flush=True)
                     else:
                         print("[lease_adapter:analyze] Stage 5d: no adjustments applied", flush=True)
-                    use_analysis_status_c = "applied"
+                    # Determine applied vs applied_archetype_only from text_inference_status
+                    _infer_st_c = (use_profile_data_c.get("_archetype_metadata") or {}).get(
+                        "text_inference_status", "success"
+                    )
+                    use_analysis_status_c = (
+                        "applied_archetype_only" if _infer_st_c == "chain_exhausted" else "applied"
+                    )
         except Exception as e:
             print(f"[lease_adapter:analyze] Stage 5d failed (non-fatal): {e}", flush=True)
 
