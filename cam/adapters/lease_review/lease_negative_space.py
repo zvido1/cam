@@ -14,7 +14,6 @@ Signal types:
     undefined_term        — defined term referenced but not defined anywhere
     missing_exhibit       — Exhibit/Schedule/Rider referenced but not found
     truncated_list        — list ends mid-sentence suggesting deleted content
-    schema_clue_match     — negative space clue from knowledge schema matched
 
 Usage:
     from cam.adapters.lease_review.lease_negative_space import detect_negative_space
@@ -166,14 +165,12 @@ def _make_signal(signal_type: str, description: str, evidence: str,
 def detect_negative_space(
     provisions: list,
     full_tenant_text: str,
-    run_schema_clue_check: bool = True,
 ) -> dict:
     """Detect negative space signals in extracted lease provisions.
 
     Args:
         provisions: list of provision dicts from extraction stage
         full_tenant_text: full raw text of the tenant lease document
-        run_schema_clue_check: if True, also check schema-defined clues per provision
 
     Returns:
         dict keyed by provision_id → list of signal dicts.
@@ -274,11 +271,6 @@ def detect_negative_space(
                     severity="medium",
                 ))
 
-        # ── 7. Schema negative-space clue matching ────────────────────────────
-        if run_schema_clue_check:
-            schema_signals = _check_schema_clues(pid, tenant_text, template_text)
-            signals.extend(schema_signals)
-
         # Deduplicate signals with identical type+evidence
         signals = _deduplicate_signals(signals)
 
@@ -310,50 +302,6 @@ def _is_meaningful_ref(ref: str) -> bool:
     except ValueError:
         pass
     return True
-
-
-def _check_schema_clues(pid: str, tenant_text: str, template_text: str) -> list:
-    """Check schema-defined negative space clues for a provision."""
-    try:
-        from cam.adapters.lease_review.lease_knowledge import get_negative_space_clues
-    except ImportError:
-        return []
-
-    signals = []
-    clues = get_negative_space_clues(pid)
-    text_lower = tenant_text.lower()
-
-    for clue in clues:
-        clue_lower = clue.lower()
-        # Check if any key phrase from the clue appears in the text
-        # We use a simplified keyword match: extract key noun phrases from clue
-        keywords = _extract_clue_keywords(clue_lower)
-        if any(kw in text_lower for kw in keywords):
-            signals.append(_make_signal(
-                "schema_clue_match",
-                f"Schema clue matched: {clue}",
-                clue,
-                severity="medium",
-            ))
-
-    return signals
-
-
-def _extract_clue_keywords(clue: str) -> list:
-    """Extract meaningful keywords from a schema clue string for text matching."""
-    # Remove common stop phrases and extract meaningful terms
-    stop_words = {
-        "section", "marked", "present", "but", "with", "no", "not",
-        "the", "a", "an", "or", "and", "in", "of", "to", "for",
-        "is", "are", "has", "have", "been", "by", "at", "as",
-    }
-    # Split on spaces and punctuation, filter stop words, keep 4+ char words
-    words = re.split(r"[\s\-–—/,;:()]+", clue)
-    keywords = [
-        w for w in words
-        if len(w) >= 4 and w not in stop_words
-    ]
-    return keywords[:3]  # return top 3 keywords to avoid over-matching
 
 
 def _deduplicate_signals(signals: list) -> list:

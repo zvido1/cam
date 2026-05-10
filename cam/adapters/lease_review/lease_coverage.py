@@ -58,7 +58,6 @@ def assess_coverage(
         get_caution_signals,
         get_exposure_statement,
         get_risk_if_missing,
-        get_negative_space_clues,
         get_related_issue_areas,
     )
 

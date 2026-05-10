@@ -214,16 +214,6 @@ def get_related_issue_areas(provision_id: str) -> list:
     return area.get("related_issue_areas", [])
 
 
-# ── Negative Space Helpers ─────────────────────────────────────────────────────
-
-def get_negative_space_clues(provision_id: str) -> list:
-    """Return negative space clue strings for an issue area."""
-    area = get_issue_area(provision_id)
-    if not area:
-        return []
-    return area.get("negative_space_clues", [])
-
-
 def get_expected_elements(provision_id: str) -> list:
     """Return the list of expected sub-elements for an issue area."""
     area = get_issue_area(provision_id)
