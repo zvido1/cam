@@ -43,9 +43,15 @@ _SECTION_REF_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
-# Exhibit / Schedule / Rider / Appendix references
+# Exhibit / Rider / Appendix references in provision body text.
+# "schedule" is intentionally excluded: it appears in common prose phrases
+# ("rent schedule", "amortization schedule") where the following word is a
+# preposition or noun, not a label — causing false-positive missing_exhibit
+# signals. "schedule" labels are still found in _extract_exhibit_labels via
+# its line-start-anchored pattern, so "SCHEDULE A" document headers continue
+# to be matched against "Exhibit A" / "Rider A" body references.
 _EXHIBIT_REF_PATTERN = re.compile(
-    r"\b(?:exhibit|schedule|rider|addendum|appendix|attachment)\s+([A-Z0-9]+(?:-\d+)?)",
+    r"\b(?:exhibit|rider|addendum|appendix|attachment)\s+([A-Z0-9]+(?:-\d+)?)",
     re.IGNORECASE,
 )
 
