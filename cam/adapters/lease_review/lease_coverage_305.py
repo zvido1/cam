@@ -252,11 +252,15 @@ def _call_single_evaluator_305(
             raise RuntimeError(f"provider {provider} already claimed by another evaluator")
         print(f"[lease_coverage_305] Eval-{role} ({pid}): calling {model} ({provider})...", flush=True)
         try:
+            # Scale token budget with element count: ~300 tokens per verdict + 500 overhead.
+            # LP-11 has 17 elements; 3000 tokens was too small and caused truncation.
+            _tokens = max(evaluator_cfg.get("max_output_tokens", 3000),
+                         len(elements_305) * 300 + 500)
             target = ModelTarget(
                 name=f"{provider}:{model}-305-{role}-{pid}",
                 provider=provider,
                 model=model,
-                max_output_tokens=evaluator_cfg.get("max_output_tokens", 3000),
+                max_output_tokens=_tokens,
                 temperature=evaluator_cfg.get("temperature", 0.0),
                 timeout_sec=evaluator_cfg.get("timeout_sec", 300.0),
             )
