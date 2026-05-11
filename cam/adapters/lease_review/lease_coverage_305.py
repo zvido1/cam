@@ -27,6 +27,7 @@ import json
 import logging
 import threading
 import time
+import re
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
@@ -266,20 +267,31 @@ def _call_single_evaluator_305(
                 raw = re.sub(r"^```(?:json)?\s*", "", raw)
                 raw = re.sub(r"\s*```\s*$", "", raw)
             parsed = safe_json_extract(raw)
-            # All major model families wrap the array in an outer object
-            # e.g. {"element_verdicts": [...]} or {"verdicts": [...]}
-            # Extract the first list-of-dicts value when that happens.
+            # All major model families wrap the verdict array in an outer object.
+            # Handle two observed patterns:
+            #   Pattern 1: {"verdicts": [...], "element_verdicts": [...]}
+            #              — dict with a list value; extract that list.
+            #   Pattern 2: {"LP-09.elem1": {verdict_dict}, "LP-09.elem2": {...}}
+            #              — dict-of-dicts where every value is a verdict object;
+            #                convert to list of values.
             if isinstance(parsed, dict):
                 _unwrapped = None
+                # Pattern 1a: find the first value that is a non-empty list of dicts
                 for _val in parsed.values():
                     if isinstance(_val, list) and _val and isinstance(_val[0], dict):
                         _unwrapped = _val
                         break
+                # Pattern 1b: any list value (even empty)
                 if _unwrapped is None:
                     for _val in parsed.values():
                         if isinstance(_val, list):
                             _unwrapped = _val
                             break
+                # Pattern 2: dict-of-dicts — every value is a verdict object
+                if _unwrapped is None:
+                    _dict_vals = list(parsed.values())
+                    if _dict_vals and all(isinstance(v, dict) for v in _dict_vals):
+                        _unwrapped = _dict_vals
                 if _unwrapped is not None:
                     parsed = _unwrapped
             if not isinstance(parsed, list):
