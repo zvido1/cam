@@ -141,7 +141,7 @@ Hard rules:
 3. If default_law_covers is false: covered_by_default_law is not valid.
 4. If cross_LP_coverage is null: covered_in_other_LP is not valid.
 5. Any presence verdict (explicitly_present, implicitly_present, covered_by_default_law, covered_in_other_LP) requires section_ref in the citation. If section_ref is null, use unclear instead.
-6. Return ONLY a valid JSON array with one object per element, in the same order as the elements list. No preamble, no text outside the JSON array."""
+6. Your response MUST start with `[` and end with `]`. Do not wrap in an outer object like {{"verdicts": [...]}}. Do not use markdown code fences. No preamble, no text outside the JSON array. Start immediately with `[`."""
 
 
 def _build_user_prompt(
@@ -260,7 +260,28 @@ def _call_single_evaluator_305(
             router = ProviderRouter([target], RouterConfig())
             adapter = router._get_adapter(provider)
             raw = adapter.call(_SYSTEM_PROMPT, user_prompt, target).strip()
+            # Strip markdown code fences before JSON extraction (Gemini and some
+            # models wrap their response in ```json ... ```)
+            if raw.startswith("```"):
+                raw = re.sub(r"^```(?:json)?\s*", "", raw)
+                raw = re.sub(r"\s*```\s*$", "", raw)
             parsed = safe_json_extract(raw)
+            # All major model families wrap the array in an outer object
+            # e.g. {"element_verdicts": [...]} or {"verdicts": [...]}
+            # Extract the first list-of-dicts value when that happens.
+            if isinstance(parsed, dict):
+                _unwrapped = None
+                for _val in parsed.values():
+                    if isinstance(_val, list) and _val and isinstance(_val[0], dict):
+                        _unwrapped = _val
+                        break
+                if _unwrapped is None:
+                    for _val in parsed.values():
+                        if isinstance(_val, list):
+                            _unwrapped = _val
+                            break
+                if _unwrapped is not None:
+                    parsed = _unwrapped
             if not isinstance(parsed, list):
                 raise ValueError(f"Response is not a list (got {type(parsed).__name__})")
             return parsed
