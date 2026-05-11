@@ -68,7 +68,9 @@ def assess_coverage(
     # pilot LPs actually route through 305. LP-09 and LP-22 stay on legacy path
     # pending element-definition fixes (see build_log/305d_code_status.md).
     from cam.adapters.lease_review.lease_coverage_305 import STEP_305_ENABLED
-    _ENABLED_305_LPS = {"LP-11", "LP-26", "LP-27"}
+    # LP-22 remains on legacy path: non_disturbance_source_is_binding still
+    # shows missing/unclear variance across runs (see build_log/305e_code_status.md).
+    _ENABLED_305_LPS = {"LP-09", "LP-11", "LP-26", "LP-27"}
 
     # Build a lookup map from the extracted provisions
     provision_map = {}
