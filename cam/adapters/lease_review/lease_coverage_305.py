@@ -261,12 +261,18 @@ def _call_single_evaluator_305(
             router = ProviderRouter([target], RouterConfig())
             adapter = router._get_adapter(provider)
             raw = adapter.call(_SYSTEM_PROMPT, user_prompt, target).strip()
-            # Strip markdown code fences before JSON extraction (Gemini and some
-            # models wrap their response in ```json ... ```)
+            # Strip markdown code fences (Gemini and some models wrap in ```json ... ```)
             if raw.startswith("```"):
                 raw = re.sub(r"^```(?:json)?\s*", "", raw)
                 raw = re.sub(r"\s*```\s*$", "", raw)
-            parsed = safe_json_extract(raw)
+            # Try json.loads first: safe_json_extract extracts the last JSON object
+            # it finds, which mangles a bare array by returning only the final element.
+            # json.loads correctly parses arrays; fall back to safe_json_extract only
+            # for responses that need object-hunting (malformed/prefixed responses).
+            try:
+                parsed = json.loads(raw)
+            except (json.JSONDecodeError, ValueError):
+                parsed = safe_json_extract(raw)
             # All major model families wrap the verdict array in an outer object.
             # Handle two observed patterns:
             #   Pattern 1: {"verdicts": [...], "element_verdicts": [...]}
