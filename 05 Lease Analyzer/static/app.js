@@ -15022,6 +15022,53 @@ function renderCoveragePanel() {
 
         const toolbarHtml = buildCovToolbar(a, tenantIdx);
 
+        // Step 306a: per-element progressive disclosure for pilot LPs
+        const elementVerdicts = a.element_verdicts || [];
+        let elementDetailHtml = "";
+        if (elementVerdicts.length > 0) {
+            const _POSITIVE_VERDICTS = new Set(['explicitly_present', 'implicitly_present', 'covered_by_default_law', 'covered_in_other_LP']);
+            const coveredCount = elementVerdicts.filter(e => _POSITIVE_VERDICTS.has(e.verdict)).length;
+            const totalCount = elementVerdicts.length;
+            const summaryText = coveredCount === totalCount
+                ? `All ${totalCount} elements covered`
+                : `${coveredCount} of ${totalCount} elements covered`;
+            const elemTableId = "cv-elem-body-" + pid;
+            const VERDICT_CFG = {
+                'explicitly_present':     { cls: 'cv-ev-present',  label: 'Present' },
+                'implicitly_present':     { cls: 'cv-ev-implicit', label: 'Implicit' },
+                'covered_by_default_law': { cls: 'cv-ev-default',  label: 'Default Law' },
+                'covered_in_other_LP':    { cls: 'cv-ev-crosslp',  label: 'Cross-LP' },
+                'missing':                { cls: 'cv-ev-missing',  label: 'Missing' },
+                'unclear':                { cls: 'cv-ev-unclear',  label: 'Unclear' },
+            };
+            const rowsHtml = elementVerdicts.map(function(ev) {
+                const vc = VERDICT_CFG[ev.verdict] || { cls: 'cv-ev-unclear', label: ev.verdict || '?' };
+                const citRef = (ev.citation && ev.citation.section_ref) ? esc(ev.citation.section_ref) : '—';
+                let disagHtml = '';
+                if (ev.disagreements && Array.isArray(ev.disagreements) && ev.disagreements.length > 0) {
+                    const evalLines = ev.disagreements.map(function(d) { return esc(d.evaluator_id || '') + ': ' + esc(d.verdict || ''); }).join(' | ');
+                    disagHtml = '<span class="cv-ev-disag-btn" onclick="(function(btn){var b=btn.nextElementSibling;b.style.display=b.style.display===\'none\'?\'block\':\'none\';})(this)" title="Evaluator disagreement">⚠</span>'
+                        + '<div class="cv-ev-disag-body" style="display:none">' + evalLines + ' → merged: ' + esc(ev.verdict) + '</div>';
+                }
+                return '<tr class="cv-ev-row">'
+                    + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
+                    + '<td class="cv-ev-status"><span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + disagHtml + '</td>'
+                    + '<td class="cv-ev-citation">' + citRef + '</td>'
+                    + '</tr>';
+            }).join('');
+            elementDetailHtml = '<div class="cv-elem-summary-row" onclick="(function(row){var body=document.getElementById(\'' + elemTableId + '\');var opening=body.style.display===\'none\';body.style.display=opening?\'block\':\'none\';row.querySelector(\'.cv-elem-chevron\').textContent=opening?\'▾\':\'▸\';})(this)">'
+                + '<span class="cv-elem-chevron">▸</span>'
+                + '<span class="cv-elem-summary-text">' + summaryText + '</span>'
+                + '</div>'
+                + '<div id="' + elemTableId + '" class="cv-elem-table-body" style="display:none">'
+                + '<table class="cv-ev-table"><thead><tr>'
+                + '<th class="cv-ev-th cv-ev-th-label">Element</th>'
+                + '<th class="cv-ev-th cv-ev-th-status">Status</th>'
+                + '<th class="cv-ev-th cv-ev-th-citation">Citation</th>'
+                + '</tr></thead><tbody>' + rowsHtml + '</tbody></table>'
+                + '</div>';
+        }
+
         // Step 280: combined-line header — `LP-id  Name — Headline  [badge]`.
         // Mirrors the Step 279 single-line treatment in the four
         // PDF/DOCX renderers so the dashboard, sidebar, Synopsis, and
@@ -15050,6 +15097,7 @@ function renderCoveragePanel() {
             </div>
             ${escalationHtml}
             ${leaseTextHtml}
+            ${elementDetailHtml}
             ${stmt ? `<div class="cv-item-stmt">${esc(stmt)} ${srcNote}</div>` : ""}
             ${state === 'missing' ? '<div class="cv-missing-provision-note">⚠ This provision is absent from the lease. Use <strong>Draft Missing Clause</strong> to request language from the landlord.</div>' : ''}
             ${missingHtml}
