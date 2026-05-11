@@ -589,13 +589,17 @@
             "assignee shall assume all obligations under this Lease",
             "subtenant shall comply with all terms of this Lease",
             "transferee assumes Tenant's obligations",
-            "assignment agreement must include assumption of obligations"
+            "assignment agreement must include assumption of obligations",
+            "such Affiliate assumes all obligations of Tenant under this Lease",
+            "assignee or subtenant assumes all obligations",
+            "assumes Tenant's obligations under this Lease",
+            "subject to all terms and conditions of the Lease, including assumption"
           ],
           "implicit_coverage_acceptable": false,
           "cross_LP_coverage": null,
           "absence_severity": "medium",
           "absence_adverse_to": "landlord",
-          "review_notes": "Pattern A: explicit text required. Separate from original-tenant-continuing-liability. Both can be true, one can be missing, or both can be absent."
+          "review_notes": "Pattern A: explicit text required. Separate from original-tenant-continuing-liability. Both can be true, one can be missing, or both can be absent absence_severity lowered to medium (2026-05-11 305d): assumption of obligations is often supplied by contract law; absence is a drafting preference issue rather than a high-severity gap. In leases where assumption language appears only in the Affiliate-transfer exception (not the general consent case), the element is partially satisfied; evaluators should return explicitly_present for the subset covered or implicitly_present if the general principle is inferable, rather than missing or unclear."
         },
         {
           "element_id": "LP-09.landlord_recapture_right",
@@ -1875,13 +1879,17 @@
           "synonyms": [
             "Landlord shall obtain a non-disturbance agreement from any future lender as a condition of subordination",
             "subordination to any future mortgage shall be conditioned upon receipt of a non-disturbance agreement",
-            "Tenant's subordination to future mortgages is conditioned upon delivery of an SNDA"
+            "Tenant's subordination to future mortgages is conditioned upon delivery of an SNDA",
+            "subordinate to any mortgage now or hereafter placed, provided that the holder agrees not to disturb Tenant's possession",
+            "subordination to future mortgages conditioned on non-disturbance by holder",
+            "hereafter placed upon the premises, provided that holder agrees not to disturb",
+            "subordination conditioned upon non-disturbance"
           ],
           "implicit_coverage_acceptable": false,
           "cross_LP_coverage": null,
           "absence_severity": "medium",
           "absence_adverse_to": "tenant",
-          "review_notes": "Pattern A: explicit text required. Separates the future-mortgage protection from the existing-mortgage protection. A common gap: lease has SNDA from current lender but no commitment to obtain one from future lenders. Refinancing event then leaves tenant unprotected."
+          "review_notes": "Pattern A: explicit text required. Separates the future-mortgage protection from the existing-mortgage protection. A common gap: lease has SNDA from current lender but no commitment to obtain one from future lenders. Refinancing event then leaves tenant unprotected Also satisfied by a conditional-subordination clause: 'subordinate to any mortgage now or hereafter placed, provided that the holder agrees not to disturb Tenant's possession.' This pattern is explicit coverage of future lenders even without a separate Landlord-obtains-SNDA obligation. Evaluators must recognize the 'hereafter placed... provided that holder agrees' construct as satisfying this element via explicitly_present."
         },
         {
           "element_id": "LP-22.tenant_attornment_to_successor",

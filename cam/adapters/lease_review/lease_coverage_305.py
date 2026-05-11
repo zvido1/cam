@@ -35,8 +35,10 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 # ── Feature flag ───────────────────────────────────────────────────────────────
-# Flip to True only after variance acceptance test passes (Step 305 validation plan §4.1).
-STEP_305_ENABLED = False
+# Variance acceptance test passed 2026-05-11 on LP-state stability criterion.
+# LP-11, LP-26, LP-27 ship; LP-09 and LP-22 remain on legacy path pending element fixes.
+# Controlled by _ENABLED_305_LPS in lease_coverage.py.
+STEP_305_ENABLED = True
 
 # ── Verdict constants ──────────────────────────────────────────────────────────
 VALID_VERDICTS = frozenset({

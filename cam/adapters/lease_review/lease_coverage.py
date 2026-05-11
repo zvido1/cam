@@ -63,10 +63,12 @@ def assess_coverage(
 
     ns_signals = negative_space_signals or {}
 
-    # Step 305: load pilot LP set once for routing decisions
+    # Step 305: routing config.
+    # STEP_305_ENABLED is the global kill switch. _ENABLED_305_LPS controls which
+    # pilot LPs actually route through 305. LP-09 and LP-22 stay on legacy path
+    # pending element-definition fixes (see build_log/305d_code_status.md).
     from cam.adapters.lease_review.lease_coverage_305 import STEP_305_ENABLED
-    from cam.adapters.lease_review.lease_knowledge import get_schema as _get_schema_305
-    _pilot_lp_ids = set((_get_schema_305() or {}).get("step_305_pilot_lps", []))
+    _ENABLED_305_LPS = {"LP-11", "LP-26", "LP-27"}
 
     # Build a lookup map from the extracted provisions
     provision_map = {}
@@ -229,7 +231,7 @@ def assess_coverage(
         # STEP_305_ENABLED=False until variance acceptance test passes.
         # Note: the Step 4 global-scan path has its own continue; this gate only
         # fires when tenant_text arrived via the normal extractor path.
-        if STEP_305_ENABLED and pid in _pilot_lp_ids and area.get("expected_elements_305"):
+        if STEP_305_ENABLED and pid in _ENABLED_305_LPS and area.get("expected_elements_305"):
             try:
                 from cam.adapters.lease_review.lease_coverage_305 import assess_coverage_305
                 _ns_candidates = ns_signals.get(pid, [])
