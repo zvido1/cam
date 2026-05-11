@@ -1,11 +1,11 @@
 {
-  "schema_version": "1.4.6",
+  "schema_version": "2.0.0",
   "created": "2026-03-27",
-  "updated": "2026-05-04",
+  "updated": "2026-05-11",
   "contract_type": "retail_lease",
   "display_name": "Retail / Commercial Lease",
   "description": "Issue-area knowledge schema for retail and commercial lease analysis. Defines expected coverage, applicability gating, exposure statements, caution signals, and negative-space clues.",
-  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants. v1.2.0: Added LP-19 Utilities (required), LP-20 Exclusivity (conditional, extracted from LP-05), LP-21 Guaranty of Lease (conditional, promoted from discovered_provision_patterns). LP-05 expected_elements updated: removed 'exclusive use right scope' (now LP-20's responsibility); related_issue_areas updated to include LP-20. discovered_provision_patterns updated: removed 'Guaranty' pattern (now LP-21). v1.3.0: Added LP-22 SNDA, LP-23 Percentage Rent, LP-24 Damage & Destruction, LP-25 Condemnation/Eminent Domain, LP-26 Quiet Enjoyment, LP-27 Landlord Default & Tenant Remedies, LP-28 Compliance with Laws, LP-29 Right of Entry/Landlord Access, LP-30 Estoppel Certificate, LP-31 Co-Tenancy, LP-32 Hazardous Materials. Promoted SNDA, Percentage Rent, Co-Tenancy, and Hazardous Materials from discovered_provision_patterns. Schema now covers 32 issue areas per CAM_Schema_Selection_Methodology.md. v1.4.0: Added `potentially_unenforceable` patterns to LP-09, LP-12, LP-29. Added `conflict_rules` block with 3 initial rules (CR-01 FM-vs-continuous-operation, CR-04 SNDA-without-landlord-default, CR-09 no-exit-strategy). Added `jurisdiction_rules` block with New York rules for LP-09 (sole discretion \u05d2\u2020\u2019 potentially_unenforceable when governing law is NY) and LP-11 (self-help re-entry \u05d2\u2020\u2019 potentially_unenforceable when governing law is NY). Step 297a foundation only \u05d2\u20ac\u201d additional rules deferred to 297b after empirical validation on real corpus. v1.4.1: CR-01 trigger loosened (LP-05 condition now anchors on elements_present_includes alone, dropping coverage_state requirement). CR-04 renamed and trigger refined to detect partial-LP-27 cases where critical tenant remedies are missing. Added elements_missing_includes_any condition type to schema spec. CR-01 LP-14 evidence_contains changed to evidence_contains_any to handle both wholly/totally untenantable and wholly untenantable evidence_summary variants. v1.4.2: Step 298a element-matching calibration. LP-08: waiver of subrogation now found via full-text fallback in lease_coverage._assess_elements (cross-article: Section 15.4 in Indemnification article). LP-29: global scan added for empty tenant_text on required LPs; _ELEMENT_KEYWORDS entries for entry-rights embedded in maintenance articles. LP-30: _ELEMENT_KEYWORDS entries for obligation/deadline patterns; false-positive frequency-limit match fixed (bare \"request\" keyword replaced with multi-word phrases). No cam/core/ changes. No evaluation semantics changes. | v1.4.3: Step 298b. LP-29 misrouted-extraction guard added in lease_coverage.assess_coverage. When extractor routes irrelevant text to a global-scan LP (verified by absence of any LP anchor keyword in tenant_text), the routed text is discarded and global scan is attempted instead. Defensive layer above 298a empty-tenant_text path. No schema content changes. | v1.4.4: Step 297d.J-fix. Added covered_unfavorable_adverse_to=\"tenant\" to all 32 issue_areas. Used by lease_coverage.py to write covered_unfavorable_adverse_to on CA entries; used by frontend _isFavorable logic instead of exposure_perspective comparison. | v1.4.5: Step 301. Stage 5d (use-aware coverage classification) added to pipeline. No issue_area, conflict_rule, or jurisdiction_rule content changes. | v1.4.6: Step 303. Stage 5d Call 2 upgraded to three-evaluator parallel execution (claude-sonnet-4-6 / gpt-5.5 / grok-4) with deterministic merge function and structured abstention pathway. use_aware_consensus and use_aware_abstained fields added to every CA entry. use_aware_governance audit trail block added to pipeline_results. STAGE_5D_ENABLED flipped to True after variance acceptance test. No issue_area, conflict_rule, or jurisdiction_rule content changes.",
+  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants. v1.2.0: Added LP-19 Utilities (required), LP-20 Exclusivity (conditional, extracted from LP-05), LP-21 Guaranty of Lease (conditional, promoted from discovered_provision_patterns). LP-05 expected_elements updated: removed 'exclusive use right scope' (now LP-20's responsibility); related_issue_areas updated to include LP-20. discovered_provision_patterns updated: removed 'Guaranty' pattern (now LP-21). v1.3.0: Added LP-22 SNDA, LP-23 Percentage Rent, LP-24 Damage & Destruction, LP-25 Condemnation/Eminent Domain, LP-26 Quiet Enjoyment, LP-27 Landlord Default & Tenant Remedies, LP-28 Compliance with Laws, LP-29 Right of Entry/Landlord Access, LP-30 Estoppel Certificate, LP-31 Co-Tenancy, LP-32 Hazardous Materials. Promoted SNDA, Percentage Rent, Co-Tenancy, and Hazardous Materials from discovered_provision_patterns. Schema now covers 32 issue areas per CAM_Schema_Selection_Methodology.md. v1.4.0: Added `potentially_unenforceable` patterns to LP-09, LP-12, LP-29. Added `conflict_rules` block with 3 initial rules (CR-01 FM-vs-continuous-operation, CR-04 SNDA-without-landlord-default, CR-09 no-exit-strategy). Added `jurisdiction_rules` block with New York rules for LP-09 (sole discretion ג†’ potentially_unenforceable when governing law is NY) and LP-11 (self-help re-entry ג†’ potentially_unenforceable when governing law is NY). Step 297a foundation only ג€” additional rules deferred to 297b after empirical validation on real corpus. v1.4.1: CR-01 trigger loosened (LP-05 condition now anchors on elements_present_includes alone, dropping coverage_state requirement). CR-04 renamed and trigger refined to detect partial-LP-27 cases where critical tenant remedies are missing. Added elements_missing_includes_any condition type to schema spec. CR-01 LP-14 evidence_contains changed to evidence_contains_any to handle both wholly/totally untenantable and wholly untenantable evidence_summary variants. v1.4.2: Step 298a element-matching calibration. LP-08: waiver of subrogation now found via full-text fallback in lease_coverage._assess_elements (cross-article: Section 15.4 in Indemnification article). LP-29: global scan added for empty tenant_text on required LPs; _ELEMENT_KEYWORDS entries for entry-rights embedded in maintenance articles. LP-30: _ELEMENT_KEYWORDS entries for obligation/deadline patterns; false-positive frequency-limit match fixed (bare \"request\" keyword replaced with multi-word phrases). No cam/core/ changes. No evaluation semantics changes. | v1.4.3: Step 298b. LP-29 misrouted-extraction guard added in lease_coverage.assess_coverage. When extractor routes irrelevant text to a global-scan LP (verified by absence of any LP anchor keyword in tenant_text), the routed text is discarded and global scan is attempted instead. Defensive layer above 298a empty-tenant_text path. No schema content changes. | v1.4.4: Step 297d.J-fix. Added covered_unfavorable_adverse_to=\"tenant\" to all 32 issue_areas. Used by lease_coverage.py to write covered_unfavorable_adverse_to on CA entries; used by frontend _isFavorable logic instead of exposure_perspective comparison. | v1.4.5: Step 301. Stage 5d (use-aware coverage classification) added to pipeline. No issue_area, conflict_rule, or jurisdiction_rule content changes. | v1.4.6: Step 303. Stage 5d Call 2 upgraded to three-evaluator parallel execution (claude-sonnet-4-6 / gpt-5.5 / grok-4) with deterministic merge function and structured abstention pathway. use_aware_consensus and use_aware_abstained fields added to every CA entry. use_aware_governance audit trail block added to pipeline_results. STAGE_5D_ENABLED flipped to True after variance acceptance test. No issue_area, conflict_rule, or jurisdiction_rule content changes.",
   "coverage_states": {
     "covered": "Provision present and consistent with standard form",
     "covered_unfavorable": "Present but materially one-sided against tenant",
@@ -64,11 +64,11 @@
       ],
       "negative_space_clues": [
         "Section marked 'Reserved' or 'Intentionally Omitted'",
-        "Reference to 'Exhibit A \u05d2\u20ac\u201d Rent Schedule' with no Exhibit A attached",
+        "Reference to 'Exhibit A ג€” Rent Schedule' with no Exhibit A attached",
         "Blank dollar amount placeholder not filled in"
       ],
       "common_tenant_modifications": [
-        "Grace period extensions (5 days \u05d2\u2020\u2019 10 days)",
+        "Grace period extensions (5 days ג†’ 10 days)",
         "Reduced late fee percentage",
         "Removal of additional rent catch-all definition"
       ],
@@ -163,8 +163,8 @@
         "Reference to 'Option to Renew' in Table of Contents but section absent from body"
       ],
       "common_tenant_modifications": [
-        "Extended notice period for renewal (90 days \u05d2\u2020\u2019 12 months)",
-        "Added renewal options (1 \u05d2\u2020\u2019 2 or 3)",
+        "Extended notice period for renewal (90 days ג†’ 12 months)",
+        "Added renewal options (1 ג†’ 2 or 3)",
         "Capped renewal rent at fixed percentage over expiring rent"
       ],
       "covered_unfavorable_adverse_to": "tenant"
@@ -190,7 +190,7 @@
       "related_issue_areas": [
         "LP-11"
       ],
-      "notes": "Bare 'security' removed from activation_clues v1.1.1 \u05d2\u20ac\u201d too broad.",
+      "notes": "Bare 'security' removed from activation_clues v1.1.1 ג€” too broad.",
       "expected_elements": [
         "deposit amount",
         "return deadline after lease expiration",
@@ -254,11 +254,11 @@
       ],
       "negative_space_clues": [
         "Exclusive use clause header present but body blank",
-        "Reference to 'Exhibit B \u05d2\u20ac\u201d Exclusive Use Area' with no exhibit attached"
+        "Reference to 'Exhibit B ג€” Exclusive Use Area' with no exhibit attached"
       ],
       "common_tenant_modifications": [
         "Broadened permitted use description",
-        "Weakened continuous operation obligation (shall \u05d2\u2020\u2019 may)",
+        "Weakened continuous operation obligation (shall ג†’ may)",
         "Added co-tenancy condition tied to anchor tenant"
       ],
       "covered_unfavorable_adverse_to": "tenant"
@@ -405,7 +405,7 @@
       "common_tenant_modifications": [
         "Reduced minimum coverage amounts",
         "Removal of business interruption requirement",
-        "Mutual waiver of subrogation (one-way \u05d2\u2020\u2019 two-way)"
+        "Mutual waiver of subrogation (one-way ג†’ two-way)"
       ],
       "covered_unfavorable_adverse_to": "tenant"
     },
@@ -432,7 +432,7 @@
         "missing": "No assignment provision",
         "partial": "Consent requirement present but affiliate exception, recapture, or profit sharing absent",
         "covered_unfavorable": "Landlord consent in sole and absolute discretion; no affiliate exception",
-        "potentially_unenforceable": "Landlord consent in 'sole and absolute discretion' WITHOUT reasonableness standard \u05d2\u20ac\u201d unenforceable in jurisdictions implying good faith and reasonableness in commercial leases (escalation governed by jurisdiction_rules; see governing_law_sensitive caution signal)",
+        "potentially_unenforceable": "Landlord consent in 'sole and absolute discretion' WITHOUT reasonableness standard ג€” unenforceable in jurisdictions implying good faith and reasonableness in commercial leases (escalation governed by jurisdiction_rules; see governing_law_sensitive caution signal)",
         "broken_xref": "Affiliate defined by cross-reference to definition section not present in document"
       },
       "risk_if_missing": "Assignment rights undefined; tenant unable to sell business or transfer lease in routine transactions",
@@ -451,7 +451,259 @@
         "Affiliate exception broadened (parent, subsidiary, successor entities)",
         "Sale-of-business exception expanded to include asset sales"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-09.assignment_requires_landlord_consent",
+          "element_label": "Assignment requires landlord consent",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall not assign this Lease without Landlord's prior written consent",
+            "No assignment shall be made without Landlord consent",
+            "Assignment subject to Landlord's prior approval",
+            "Tenant may not transfer its interest in this Lease without Landlord approval"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. A lease silent on assignment consent may materially weaken landlord control over tenant identity and creditworthiness; no alternate coverage path is acceptable."
+        },
+        {
+          "element_id": "LP-09.subletting_requires_landlord_consent",
+          "element_label": "Subletting requires landlord consent",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall not sublet all or any portion of the Premises without Landlord's prior written consent",
+            "No sublease shall be entered into without Landlord consent",
+            "Subletting subject to Landlord's prior approval",
+            "Tenant may not sublease the Premises without Landlord approval"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Assignment and subletting must be separate elements because one can be restricted while the other is omitted or treated differently."
+        },
+        {
+          "element_id": "LP-09.consent_standard_supplied",
+          "element_label": "Consent standard is supplied by lease text or applicable default law",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": [
+            "TBD_BY_ATTORNEY_REVIEW"
+          ],
+          "synonyms": [
+            "Landlord may withhold consent in its sole and absolute discretion",
+            "Landlord's consent shall not be unreasonably withheld, conditioned, or delayed",
+            "Landlord may grant or deny consent in its reasonable discretion",
+            "Consent may be withheld for any reason or no reason"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": null,
+          "review_notes": "Pattern B: lease text strongly preferred but jurisdiction may supply a default. Renamed from consent_standard_defined (v0.1) because default law does not 'define' the lease term — it supplies a fallback standard. The renamed element captures both paths cleanly. Polarity is contextual: sole-discretion language is landlord-favorable; reasonable-not-to-be-withheld is tenant-favorable. If absent and jurisdiction supplies a default, exposure layer should note 'consent standard supplied by [jurisdiction default rule]; explicit drafting recommended.' Attorney review needed before populating state list."
+        },
+        {
+          "element_id": "LP-09.affiliate_transfer_exception_defined",
+          "element_label": "Affiliate or related-party transfer exception is defined or excluded",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "assignment to an Affiliate",
+            "transfer to a parent, subsidiary, or commonly controlled entity",
+            "permitted transfer",
+            "Permitted Transferee",
+            "corporate reorganization",
+            "merger, consolidation, or sale of substantially all assets"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: implicit coverage acceptable (broad consent-with-exceptions language can satisfy). Absence means tenant cannot freely transfer to affiliates. From landlord perspective, broad presence of affiliate exceptions may be unfavorable; this element's absence vs presence is perspective-sensitive at the exposure layer, but absence_adverse_to is tenant because absence removes a tenant-side flexibility."
+        },
+        {
+          "element_id": "LP-09.change_of_control_addressed",
+          "element_label": "Change of control is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "change in control shall be deemed an assignment",
+            "transfer of a controlling interest",
+            "sale of membership interests",
+            "sale of stock",
+            "change in ownership",
+            "direct or indirect transfer of control"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "No alternate coverage paths open; explicit_drafting_preferred is moot. Especially relevant for entity tenants. If absent, tenant may transfer practical control without triggering the assignment clause."
+        },
+        {
+          "element_id": "LP-09.tenant_remains_liable_after_transfer",
+          "element_label": "Original tenant remains liable after assignment or sublease",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": [
+            "TBD_BY_ATTORNEY_REVIEW"
+          ],
+          "synonyms": [
+            "Tenant shall remain liable",
+            "No assignment or subletting shall release Tenant",
+            "Tenant remains primarily liable",
+            "Tenant shall not be relieved of its obligations",
+            "Tenant remains responsible for all covenants and obligations"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": [
+            "LP-11"
+          ],
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern B (v0.2 correction): originally must_be_explicit=true with cross_LP_coverage=[LP-11] — internally contradictory. Resolved by making must_be_explicit=false plus explicit_drafting_preferred=true. The 'explicit preferred' intent is now expressed by the soft signal plus high absence_severity. Cross-LP coverage to LP-11 (continuing liability via breach-of-covenant theory) is allowed if Step 305 cites the actual LP-11 provision; chanting 'cross-LP' is not coverage."
+        },
+        {
+          "element_id": "LP-09.assignee_or_subtenant_assumes_obligations",
+          "element_label": "Assignee or subtenant must assume lease obligations",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "assignee shall assume all obligations under this Lease",
+            "subtenant shall comply with all terms of this Lease",
+            "transferee assumes Tenant's obligations",
+            "assignment agreement must include assumption of obligations"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Separate from original-tenant-continuing-liability. Both can be true, one can be missing, or both can be absent."
+        },
+        {
+          "element_id": "LP-09.landlord_recapture_right",
+          "element_label": "Landlord recapture or termination right upon proposed transfer",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord may recapture the Premises",
+            "Landlord may terminate this Lease as to the proposed transfer space",
+            "Landlord may elect to terminate",
+            "recapture right",
+            "take back the space"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "No alternate coverage paths. Optional landlord-favorable control right. Absence is not necessarily a defect; presence may be unfavorable from tenant perspective at the exposure layer."
+        },
+        {
+          "element_id": "LP-09.transfer_profit_sharing",
+          "element_label": "Transfer profits or excess rent are allocated",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "excess rent",
+            "transfer premium",
+            "assignment profit",
+            "sublease profit",
+            "net consideration received from transfer",
+            "Tenant shall pay Landlord fifty percent of excess consideration"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "No alternate coverage paths. Absence is landlord-unfavorable but not core coverage failure. If present, the percentage and calculation method matter for the exposure layer."
+        },
+        {
+          "element_id": "LP-09.unauthorized_transfer_consequences",
+          "element_label": "Unauthorized transfers are void, default-triggering, or otherwise remedied",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": [
+            "TBD_BY_ATTORNEY_REVIEW"
+          ],
+          "synonyms": [
+            "Any assignment or subletting without consent shall be void",
+            "Unauthorized transfer shall constitute an Event of Default",
+            "Any prohibited transfer shall be null and void",
+            "Violation of this section is a default"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": [
+            "LP-11"
+          ],
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern B (v0.2 correction): originally must_be_explicit=true with implicit_coverage_acceptable=true and cross_LP_coverage=[LP-11] — internally contradictory. Resolved by making must_be_explicit=false plus explicit_drafting_preferred=true. Can be covered directly in LP-09 explicitly, implicitly via broad-consequences language, or by cross-LP to LP-11 if breach of any lease covenant is an event of default. Step 305 must cite the actual default provision if relying on cross-LP coverage."
+        },
+        {
+          "element_id": "LP-09.required_transfer_documentation",
+          "element_label": "Transfer request documentation and notice requirements are specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall provide financial statements",
+            "Tenant shall provide proposed assignment documents",
+            "Tenant shall give prior written notice",
+            "Tenant shall submit information regarding proposed transferee",
+            "business terms of proposed sublease",
+            "copy of proposed transfer agreement"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "No alternate coverage paths. Procedural protection but not core. Missing documentation requirements may make consent review harder but should not drive high-severity absence by itself."
+        },
+        {
+          "element_id": "LP-09.use_restrictions_bind_transferee",
+          "element_label": "Permitted use and operating restrictions bind assignee or subtenant",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "subject to all terms and conditions of this Lease",
+            "transferee shall comply with permitted use restrictions",
+            "subtenant shall use the Premises only for the Permitted Use",
+            "assignment subject to all restrictions in this Lease"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": [
+            "LP-05"
+          ],
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern B: explicit preferred but alternates acceptable. Can be implicit if assignee/subtenant assumption language is broad enough. If relying on LP-05, the evaluator must cite both the transfer provision and the permitted-use clause."
+        }
+      ]
     },
     {
       "id": "LP-10",
@@ -538,11 +790,356 @@
         "Notice requirement section marked Reserved"
       ],
       "common_tenant_modifications": [
-        "Extended cure periods (5 days \u05d2\u2020\u2019 10 days monetary; 30 days \u05d2\u2020\u2019 45 days non-monetary)",
+        "Extended cure periods (5 days ג†’ 10 days monetary; 30 days ג†’ 45 days non-monetary)",
         "Notice required before every default declaration",
         "Added third-party cure right (mortgagee or guarantor may cure)"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-11.default_definition_monetary",
+          "element_label": "Monetary default is defined (what triggers default for non-payment)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "failure to pay rent when due",
+            "Tenant shall be in default if Tenant fails to pay any Rent or other sum",
+            "non-payment of Rent",
+            "an Event of Default shall mean failure to pay any Rent",
+            "if Tenant fails to make any payment when due"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Without a defined monetary default trigger, landlord has no contractual basis to act on missed rent. Default law doesn't supply a remedy structure absent the lease defining what counts as default."
+        },
+        {
+          "element_id": "LP-11.default_definition_non_monetary",
+          "element_label": "Non-monetary default is defined (breach of covenants other than payment)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "failure to perform any covenant or obligation other than the payment of Rent",
+            "default in the performance of any other term, covenant, or condition",
+            "any other breach of this Lease",
+            "Tenant fails to comply with any other provision"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Separate from monetary because cure periods and remedies typically differ. Real leases sometimes omit a general non-monetary default category and only enumerate specific covenants, which is structurally incomplete."
+        },
+        {
+          "element_id": "LP-11.default_definition_tenant_insolvency",
+          "element_label": "Tenant bankruptcy or insolvency is a default event",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant files a petition in bankruptcy",
+            "Tenant becomes insolvent",
+            "assignment for the benefit of creditors",
+            "appointment of a receiver",
+            "Tenant's bankruptcy or insolvency shall constitute an Event of Default"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Optional element; no alternate coverage paths. Common but not universal. Bankruptcy code may limit landlord's practical ability to enforce ipso facto clauses, but having the clause is still landlord-favorable for cure period defaulting and pre-petition leverage."
+        },
+        {
+          "element_id": "LP-11.cure_period_monetary",
+          "element_label": "Cure period for monetary default is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall have five (5) days after written notice to cure",
+            "ten (10) day cure period",
+            "if Tenant fails to pay within three (3) days after notice",
+            "grace period of fifteen (15) days",
+            "cure period of seven (7) days"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern A: explicit text required. Beitel anchor element 1 of 3. The presence of a monetary cure period is tenant-favorable; absence means landlord can act on default immediately. Day count is quality-of-presence not severity-of-absence: a 3-day period is materially weaker tenant protection than a 10-day period, but both are 'present.' Quality nuance captured here in notes rather than as a new schema field."
+        },
+        {
+          "element_id": "LP-11.cure_period_non_monetary",
+          "element_label": "Cure period for non-monetary default is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "thirty (30) days after written notice to cure",
+            "Tenant shall have thirty (30) days to cure any non-monetary default",
+            "such longer period as may be reasonably necessary to cure",
+            "cure period for non-monetary breach"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern A: explicit text required. Typically longer than monetary cure (often 30 days). 'Such longer period as may be reasonably necessary' language is tenant-favorable extension for non-curable-in-30-days breaches. Absence of an extension clause without compensating language is weaker tenant protection."
+        },
+        {
+          "element_id": "LP-11.notice_required_to_trigger_cure_period",
+          "element_label": "Landlord must give notice of default to trigger cure period",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "after written notice from Landlord",
+            "upon notice of such default",
+            "Landlord shall give Tenant written notice specifying the default",
+            "notice of default delivered in accordance with Section [Notices]"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern A: explicit text required. Critical procedural protection. Without explicit notice requirement, cure period may begin running from the default event itself (or not exist), giving tenant no actual opportunity to cure. The notice-trigger requirement is what makes cure periods practically meaningful."
+        },
+        {
+          "element_id": "LP-11.landlord_right_to_terminate_lease",
+          "element_label": "Landlord has right to terminate the lease upon uncured default",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord may terminate this Lease",
+            "Landlord shall have the right to terminate Tenant's right of possession",
+            "Landlord may declare this Lease terminated",
+            "right to terminate by written notice to Tenant",
+            "Landlord may at its option terminate this Lease"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Termination of the lease (extinguishing future obligations) is distinct from re-entry (taking back possession). Some jurisdictions and some leases treat these as one remedy; others as two. Pilot treats them as separate elements because the legal effects differ on accrued rent."
+        },
+        {
+          "element_id": "LP-11.landlord_right_to_reenter_premises",
+          "element_label": "Landlord has right to re-enter and repossess the premises",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord may re-enter and take possession",
+            "right of re-entry",
+            "Landlord may enter upon the Premises and expel Tenant",
+            "with or without process of law",
+            "Landlord may take possession of the Premises"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. The Beitel summary's claim that this was absent was demonstrably wrong — Article 15 contained explicit re-entry language. Per-element schema with mandatory citation prevents this kind of confident-wrong assertion: the LP-11.landlord_right_to_reenter_premises element must be cited or marked missing, and the citation requirement is what catches the error."
+        },
+        {
+          "element_id": "LP-11.rent_acceleration_remedy",
+          "element_label": "Landlord may accelerate remaining rent obligations upon default",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "all Rent for the remainder of the Term shall become immediately due and payable",
+            "Landlord may accelerate all Rent",
+            "the present value of the remaining Rent shall be due and payable",
+            "accelerated Rent equal to the difference between Rent and fair market rental value",
+            "Tenant shall pay to Landlord the entire amount of Rent for the unexpired portion of the Term"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Beitel anchor element 2 of 3. Rent acceleration is not a default remedy in any US jurisdiction — it must be explicitly granted by lease language. The Beitel summary inverted this element by asserting absence; per-element schema with mandatory citation makes the inversion impossible: an evaluator must produce a verdict tied to specific lease text. Acceleration formulas (face value vs present-value-discounted) are quality-of-presence captured in notes, not a separate element."
+        },
+        {
+          "element_id": "LP-11.damages_calculation_and_mitigation",
+          "element_label": "Damages framework on termination is specified (calculation method, mitigation duty)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": [
+            "TBD_BY_ATTORNEY_REVIEW"
+          ],
+          "synonyms": [
+            "Tenant shall be liable for all damages Landlord may suffer",
+            "Landlord's damages shall include the difference between the Rent reserved and the rent received",
+            "Landlord shall use commercially reasonable efforts to relet",
+            "duty to mitigate damages",
+            "Tenant's liability shall be reduced by amounts actually received from reletting"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern B: implicit and default-law coverage acceptable. Mitigation duty varies by jurisdiction. Most US states impose a duty to mitigate by default in commercial leases; some do not. Jurisdiction list is attorney-blocked. Damages calculation method is conventionally implied (difference between reserved rent and mitigated re-letting income) but lease language clarifying this is preferred."
+        },
+        {
+          "element_id": "LP-11.reletting_rights_and_obligations",
+          "element_label": "Landlord's reletting rights and obligations are specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": [
+            "TBD_BY_ATTORNEY_REVIEW"
+          ],
+          "synonyms": [
+            "Landlord may relet the Premises for the account of Tenant",
+            "Landlord shall have the right but not the obligation to relet",
+            "any reletting shall not constitute a waiver of Tenant's liability",
+            "Tenant shall be credited with any rentals actually received"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": null,
+          "review_notes": "Pattern B: implicit and default-law coverage acceptable. Polarity is contextual. Mitigation-duty language is tenant-favorable; right-but-not-obligation language is landlord-favorable. Both can be present (mitigation duty AND right to relet on tenant's account) which is the typical balanced position. Default law often supplies mitigation duty by background rule."
+        },
+        {
+          "element_id": "LP-11.self_help_landlord_cure",
+          "element_label": "Landlord has self-help right to cure tenant's default and bill tenant",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord may but shall not be obligated to cure any default",
+            "amounts expended by Landlord shall be Additional Rent",
+            "Landlord may perform Tenant's obligations and Tenant shall reimburse",
+            "self-help remedy"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Useful procedural remedy for non-monetary defaults where landlord needs the cure done. Common but not universal. Absence is not a serious LP coverage failure."
+        },
+        {
+          "element_id": "LP-11.common_law_remedies_preserved",
+          "element_label": "Common law and equitable remedies are preserved as additional remedies",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": [
+            "TBD_BY_ATTORNEY_REVIEW"
+          ],
+          "synonyms": [
+            "at law or in equity",
+            "all remedies available at law or in equity",
+            "in addition to all remedies available at law or in equity",
+            "any other remedy now or hereafter available at law or in equity",
+            "Landlord shall have all remedies provided by law"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern B: implicit coverage acceptable via the 'at law or in equity' legal idiom. Beitel anchor element 3 of 3 and the canonical implicit-coverage test case from the architecture spec. An evaluator must recognize 'at law or in equity' phrasing as implicit coverage. In most US jurisdictions, common-law remedies are preserved by default unless explicitly waived, so default_law_covers is jurisdiction-dependent and implicit_coverage_acceptable is true. The Beitel summary's inversion of this element ('limited to common law') was the most egregious inversion in the failure case — the actual lease used the standard preservation idiom."
+        },
+        {
+          "element_id": "LP-11.remedies_cumulative_not_exclusive",
+          "element_label": "Remedies are cumulative and not exclusive (landlord may pursue multiple)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": [
+            "TBD_BY_ATTORNEY_REVIEW"
+          ],
+          "synonyms": [
+            "all remedies shall be cumulative",
+            "no remedy is intended to be exclusive",
+            "Landlord may pursue any one or more remedies",
+            "remedies are cumulative and may be exercised concurrently or successively",
+            "the exercise of any remedy shall not preclude the exercise of any other"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern B: implicit coverage acceptable if multiple remedies are listed without 'exclusive' language. If absent, election-of-remedies doctrine may force landlord to pick one remedy and waive others. Most leases include this language explicitly. Default law in many jurisdictions treats remedies as cumulative unless lease makes one exclusive."
+        },
+        {
+          "element_id": "LP-11.abandonment_default",
+          "element_label": "Abandonment or vacating as event of default",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "abandonment of the Premises",
+            "vacating the Premises without commercially reasonable security",
+            "Tenant abandons or vacates",
+            "if Tenant ceases to occupy the Premises"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Explicitly named in AIR CRE Section 13.1. Absence means landlord has no specific contractual trigger for abandonment scenarios. Lower severity than monetary/non-monetary default definitions because abandonment can often be captured under the general non-monetary default category."
+        },
+        {
+          "element_id": "LP-11.diligent_pursuit_extension",
+          "element_label": "Extension of non-monetary cure period when cure is being diligently pursued",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "such longer period as may be reasonably necessary provided Tenant has commenced cure",
+            "if cure cannot be completed within thirty days, Tenant shall have additional time",
+            "diligently pursuing cure to completion",
+            "commenced and is diligently pursuing"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "AIR CRE Section 13.1(e) explicitly. Confirmed by California Lawyers Association and Baker Burton Lundy practitioner analyses. Without this, tenant can be defaulted for good-faith cure that takes longer than 30 days. Separate from cure_period_non_monetary because they receive different verdicts: cure period present + extension absent is a materially different state than both present."
+        },
+        {
+          "element_id": "LP-11.mortgagee_guarantor_cure_right",
+          "element_label": "Third-party (mortgagee or guarantor) cure right on tenant default",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "mortgagee may cure on behalf of Tenant",
+            "guarantor may cure",
+            "third party cure right",
+            "Tenant's lender shall have the right to cure",
+            "Landlord shall give simultaneous notice to Tenant's mortgagee"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": [
+            "LP-22"
+          ],
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Common in institutional leases with SNDA. Cross-LP coverage to LP-22 is legitimate when the SNDA itself grants mortgagee cure rights. Lower severity because it is not present in all leases and its absence does not fundamentally weaken the default framework."
+        }
+      ]
     },
     {
       "id": "LP-12",
@@ -582,7 +1179,7 @@
         "missing": "Termination right referenced elsewhere in lease but no termination provision found",
         "partial": "Termination right exists but penalty formula, notice period, or survival obligations absent",
         "covered_unfavorable": "Termination fee includes unamortized brokerage commissions",
-        "potentially_unenforceable": "Termination fee structured as penalty (e.g., 'all rent due for remainder of term plus damages and costs') rather than a reasonable estimate of liquidated damages \u05d2\u20ac\u201d voidable as penalty clause in most jurisdictions",
+        "potentially_unenforceable": "Termination fee structured as penalty (e.g., 'all rent due for remainder of term plus damages and costs') rather than a reasonable estimate of liquidated damages ג€” voidable as penalty clause in most jurisdictions",
         "broken_xref": "Termination fee formula cross-references amortization schedule exhibit not attached",
         "not_applicable": "No termination right language anywhere in document; absence is by design"
       },
@@ -628,7 +1225,7 @@
       ],
       "coverage_state_rules": {
         "missing": "No indemnification provision",
-        "partial": "One-way indemnification present (tenant \u05d2\u2020\u2019 landlord only) without reciprocal protection",
+        "partial": "One-way indemnification present (tenant ג†’ landlord only) without reciprocal protection",
         "covered_unfavorable": "No liability cap; consequential damages not excluded; OR mutual indemnification structurally present but materially asymmetric (e.g. tenant indemnifies for broad scope including ordinary negligence while landlord indemnification is limited to gross negligence or willful misconduct)",
         "potentially_unenforceable": "Indemnification for indemnitee's own gross negligence"
       },
@@ -880,7 +1477,7 @@
         "Consequential damages section marked Reserved"
       ],
       "common_tenant_modifications": [
-        "Holdover rate reduced (200% \u05d2\u2020\u2019 150%)",
+        "Holdover rate reduced (200% ג†’ 150%)",
         "Consequential damages excluded",
         "Month-to-month characterization confirmed (prevents automatic term renewal)"
       ],
@@ -962,7 +1559,7 @@
       "related_issue_areas": [
         "LP-05"
       ],
-      "notes": "Extracted from LP-05 in schema v1.2.0. Most retail leases include exclusivity for the tenant's primary business; absence is meaningful for retail tenants but normal for office or industrial tenants. Carve-outs swallow exclusivity if too broad \u05d2\u20ac\u201d material question for any retail tenant whose competitive moat depends on this clause.",
+      "notes": "Extracted from LP-05 in schema v1.2.0. Most retail leases include exclusivity for the tenant's primary business; absence is meaningful for retail tenants but normal for office or industrial tenants. Carve-outs swallow exclusivity if too broad ג€” material question for any retail tenant whose competitive moat depends on this clause.",
       "expected_elements": [
         "specific exclusive use scope (protected business activities defined precisely)",
         "carve-outs for existing tenants at center",
@@ -993,7 +1590,7 @@
       "negative_space_clues": [
         "Exclusive use clause header present but body blank or marked Reserved",
         "Carve-outs section present but list blank",
-        "Reference to 'Exhibit C \u05d2\u20ac\u201d Exclusive Use Area' or similar with no exhibit attached",
+        "Reference to 'Exhibit C ג€” Exclusive Use Area' or similar with no exhibit attached",
         "Definition of 'competing use' absent from Definitions article",
         "Remedies section blank or limited to 'landlord shall use commercially reasonable efforts'",
         "Radius restriction percentage or distance blank"
@@ -1146,13 +1743,225 @@
         "Estoppel certificate obligation references SNDA but no SNDA found"
       ],
       "common_tenant_modifications": [
-        "Non-disturbance covenant added (key negotiating point \u05d2\u20ac\u201d landlord often resists)",
+        "Non-disturbance covenant added (key negotiating point ג€” landlord often resists)",
         "Lender SNDA form subject to tenant's reasonable approval",
         "Lender required to execute SNDA within 30 days of tenant's written request",
         "SNDA extends to all future mortgages, not just existing encumbrances",
         "Lender bound by all landlord obligations under the lease after foreclosure"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-22.lease_subordinate_to_mortgages",
+          "element_label": "Lease is subordinate to landlord's mortgages or deeds of trust",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "This Lease shall be subject and subordinate to all mortgages",
+            "Tenant agrees that this Lease is subordinate to any deed of trust",
+            "This Lease is subordinate to any ground lease or mortgage now existing",
+            "subordinate to the lien of any mortgage"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Subordination is the core landlord/lender-favorable obligation. Without it, lenders typically will not fund. Default rule in most jurisdictions is that earlier-recorded lease has priority over later mortgage absent subordination."
+        },
+        {
+          "element_id": "LP-22.subordination_scope_includes_future_mortgages",
+          "element_label": "Subordination covers future mortgages and refinancings, not only existing",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "mortgages now existing or hereafter placed",
+            "any mortgage or deed of trust now or hereafter affecting the Premises",
+            "any ground lease, mortgage, or deed of trust hereafter executed",
+            "all future mortgages and renewals, modifications, replacements, or extensions thereof"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Separate from the base subordination obligation. A lease that subordinates only to existing mortgages restricts landlord's ability to refinance or take on new debt. The 'hereafter' or 'now or hereafter' language is the textual marker."
+        },
+        {
+          "element_id": "LP-22.subordination_mechanism_self_executing",
+          "element_label": "Subordination is automatic or self-executing without requiring tenant signature",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "This subordination shall be self-operative",
+            "no further instrument of subordination shall be required",
+            "automatically subordinate",
+            "without the necessity of executing any further documents"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. If subordination requires tenant execution of documents (next element), self-executing language is typically absent or paired with the execution obligation. Both can coexist (self-executing AND tenant agrees to execute confirmation) which is the strongest landlord position."
+        },
+        {
+          "element_id": "LP-22.tenant_executes_subordination_documents_on_request",
+          "element_label": "Tenant must execute subordination documents on landlord or lender request",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall execute and deliver any documents reasonably required to confirm subordination",
+            "Tenant agrees to execute SNDA or subordination agreements within ten (10) days of request",
+            "Tenant shall execute any instrument requested by Landlord to evidence subordination",
+            "execute and acknowledge any reasonable confirmation instruments"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Practical mechanism for lender requirements. Often paired with a time limit (10-15 days) and a default consequence (treating non-execution as a breach). The execution deadline and default consequence are not split into separate elements at the pilot stage but may need to be if LP-11 reveals that default consequences should always be separate elements."
+        },
+        {
+          "element_id": "LP-22.non_disturbance_protection_for_tenant",
+          "element_label": "Lender will not disturb tenant's possession if landlord defaults under mortgage",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Lender agrees that Tenant's possession of the Premises shall not be disturbed",
+            "non-disturbance of Tenant's quiet enjoyment under this Lease",
+            "Tenant's right to occupy shall not be terminated upon foreclosure",
+            "this Lease shall continue in full force and effect notwithstanding foreclosure"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern A: explicit text required. This is the §21.9 anchor case. Non-disturbance is tenant-favorable and structurally distinct from subordination. A lease may contain subordination without non-disturbance — the most common LP-22 coverage gap. Cross-LP coverage from LP-26 (Quiet Enjoyment) is explicitly NOT allowed: quiet enjoyment governs landlord conduct toward tenant during normal lease operation; non-disturbance governs lender or successor conduct toward tenant after foreclosure. The two are topically related but not coverage-substitutable. An evaluator that cites LP-26 to satisfy this element should be flagged as making an unsupported cross-LP claim."
+        },
+        {
+          "element_id": "LP-22.non_disturbance_source_is_binding",
+          "element_label": "Non-disturbance source is a binding agreement, not merely a future obligation",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord has obtained an SNDA from existing lender attached as Exhibit",
+            "Landlord shall obtain a non-disturbance agreement from any future lender",
+            "non-disturbance agreement in form and substance reasonably acceptable to Tenant",
+            "executed SNDA"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern A: explicit text required. A clause that says 'Landlord shall use commercially reasonable efforts to obtain a non-disturbance agreement' is materially weaker than 'Landlord has obtained' or 'Landlord shall obtain.' The pilot draft treats binding-source vs effort-based as a coverage distinction. Step 305 evaluators should cite the specific language that establishes the binding nature."
+        },
+        {
+          "element_id": "LP-22.non_disturbance_obligation_for_future_lenders",
+          "element_label": "Landlord obligated to obtain non-disturbance from future lenders, not only existing",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord shall obtain a non-disturbance agreement from any future lender as a condition of subordination",
+            "subordination to any future mortgage shall be conditioned upon receipt of a non-disturbance agreement",
+            "Tenant's subordination to future mortgages is conditioned upon delivery of an SNDA"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern A: explicit text required. Separates the future-mortgage protection from the existing-mortgage protection. A common gap: lease has SNDA from current lender but no commitment to obtain one from future lenders. Refinancing event then leaves tenant unprotected."
+        },
+        {
+          "element_id": "LP-22.tenant_attornment_to_successor",
+          "element_label": "Tenant agrees to attorn to (recognize) successor landlord after foreclosure",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall attorn to any successor in interest to Landlord",
+            "Tenant agrees to recognize the purchaser at any foreclosure sale as Landlord",
+            "Tenant shall attorn to and recognize such successor as Landlord under this Lease",
+            "Tenant agrees to attorn to any transferee"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Attornment is the lender/successor-favorable counterpart to non-disturbance. Without it, the successor has weak ability to enforce the lease as a continuing obligation. Conventionally bundled with subordination and non-disturbance but structurally distinct."
+        },
+        {
+          "element_id": "LP-22.attornment_mechanism_self_executing",
+          "element_label": "Attornment is automatic or self-executing without requiring tenant signature",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "such attornment shall be self-operative",
+            "no further instrument shall be required",
+            "Tenant agrees that this attornment shall be effective without further documentation",
+            "automatic attornment"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern B: implicit coverage acceptable. If attornment is present but mechanism is not specified, the successor can typically still rely on Tenant's recognition as a matter of contract construction. Procedural detail."
+        },
+        {
+          "element_id": "LP-22.snda_execution_timing_and_default_consequence",
+          "element_label": "SNDA execution timing and consequence of tenant non-execution are specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "within ten (10) days of Landlord's request",
+            "within fifteen (15) business days",
+            "Tenant's failure to execute shall constitute an Event of Default",
+            "shall be deemed an irrevocable appointment of Landlord as attorney-in-fact"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": [
+            "LP-11"
+          ],
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern B (v0.2.1 correction): implicit_coverage_acceptable flipped from true to false because the legitimate alternate path is cross-LP-via-LP-11, not implicit-within-LP-22. The element bundles two sub-concepts (execution timing and consequence of non-execution), neither of which has a meaningful implicit-within-LP-22 path: an implicit deadline or implicit named consequence is structurally weak. If the execution-deadline clause is silent on consequences, default consequences may flow through LP-11 (breach of any covenant). The cross-LP reference is legitimate only if the LP-11 default provision actually captures execution failures, which the evaluator must cite. Same semantic confusion pattern as the LP-27.lender_notice_and_cure_right correction in v0.2."
+        },
+        {
+          "element_id": "LP-22.landlord_obligation_obtain_snda_existing_lenders",
+          "element_label": "Landlord obligated to obtain SNDA from existing lenders before lease commencement",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord shall deliver an SNDA from each existing mortgagee prior to the Commencement Date",
+            "Landlord represents and warrants that an SNDA has been obtained",
+            "executed SNDA attached as Exhibit",
+            "Landlord has obtained a non-disturbance agreement from the holder of any existing mortgage"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "No alternate coverage paths open; explicit_drafting_preferred is moot. If lease contains non-disturbance language but no obligation on landlord to actually obtain the SNDA from existing lenders, tenant has nominal protection without practical enforcement. The §21.9 anchor case typically involves this gap pattern: subordination is present and enforceable, non-disturbance is named but never actually delivered."
+        }
+      ]
     },
     {
       "id": "LP-23",
@@ -1179,7 +1988,7 @@
         "LP-01",
         "LP-02"
       ],
-      "notes": "Promoted from discovered_provision_patterns in schema v1.3.0. Common in retail leases, particularly for food service, soft goods, and high-traffic retail. The calculation methodology and gross sales definition are the primary dispute vectors \u05d2\u20ac\u201d broad gross sales definitions favor landlord; broad exclusions favor tenant.",
+      "notes": "Promoted from discovered_provision_patterns in schema v1.3.0. Common in retail leases, particularly for food service, soft goods, and high-traffic retail. The calculation methodology and gross sales definition are the primary dispute vectors ג€” broad gross sales definitions favor landlord; broad exclusions favor tenant.",
       "expected_elements": [
         "gross sales definition (what is included and excluded)",
         "percentage rate applied to gross sales above breakpoint",
@@ -1233,7 +2042,7 @@
         "LP-14",
         "LP-12"
       ],
-      "notes": "Required in every commercial lease. The landlord repair deadline and tenant's termination right are the key negotiating points \u05d2\u20ac\u201d landlord wants maximum time and minimum termination exposure; tenant wants a hard deadline with a clean termination right. The 'total loss' threshold determines which party can exit.",
+      "notes": "Required in every commercial lease. The landlord repair deadline and tenant's termination right are the key negotiating points ג€” landlord wants maximum time and minimum termination exposure; tenant wants a hard deadline with a clean termination right. The 'total loss' threshold determines which party can exit.",
       "expected_elements": [
         "landlord's obligation to repair or rebuild following insured casualty",
         "rent abatement during period of repair (full vs. partial based on usability)",
@@ -1287,7 +2096,7 @@
         "LP-12",
         "LP-03"
       ],
-      "notes": "Required in every commercial lease. Often treated as a companion to the damage and destruction provision. The allocation of condemnation awards \u05d2\u20ac\u201d particularly tenant's right to a separate award for trade fixtures, leasehold improvements, and business losses \u05d2\u20ac\u201d is the primary negotiating point.",
+      "notes": "Required in every commercial lease. Often treated as a companion to the damage and destruction provision. The allocation of condemnation awards ג€” particularly tenant's right to a separate award for trade fixtures, leasehold improvements, and business losses ג€” is the primary negotiating point.",
       "expected_elements": [
         "definition of total taking vs. material partial taking",
         "lease termination right on total taking or material partial taking",
@@ -1304,7 +2113,7 @@
         "covered_unfavorable": "Landlord entitled to entire condemnation award including value of leasehold; OR tenant has no termination right on partial taking that destroys utility of premises; OR no restoration obligation after partial taking",
         "broken_xref": "Condemnation award allocation or restoration procedure cross-references exhibit not attached"
       },
-      "risk_if_missing": "On condemnation, tenant has no guaranteed right to share in the award, no termination right if partial taking renders premises unusable, and no rent reduction right \u05d2\u20ac\u201d all defaults to state law which may be unfavorable",
+      "risk_if_missing": "On condemnation, tenant has no guaranteed right to share in the award, no termination right if partial taking renders premises unusable, and no rent reduction right ג€” all defaults to state law which may be unfavorable",
       "exposure_statement": {
         "tenant": "Condemnation rights are undefined; tenant may receive no portion of the condemnation award, have no termination right on material partial taking, and face full rent obligation on diminished premises",
         "landlord": "Condemnation provisions are undefined; landlord faces uncertain obligations to restore, reduce rent, or allow termination after a partial taking, with increased dispute exposure",
@@ -1341,7 +2150,7 @@
         "LP-11",
         "LP-27"
       ],
-      "notes": "Required in every commercial lease. A fundamental landlord covenant \u05d2\u20ac\u201d its absence may be supplied by state law in many jurisdictions, but an express covenant is preferred to avoid jurisdictional ambiguity. The covenant should survive against lenders and successors for SNDA compatibility.",
+      "notes": "Required in every commercial lease. A fundamental landlord covenant ג€” its absence may be supplied by state law in many jurisdictions, but an express covenant is preferred to avoid jurisdictional ambiguity. The covenant should survive against lenders and successors for SNDA compatibility.",
       "expected_elements": [
         "express quiet enjoyment covenant by landlord",
         "covenant conditioned on tenant's performance of lease obligations (not absolute)",
@@ -1353,7 +2162,7 @@
         "partial": "Quiet enjoyment clause present but not conditioned on tenant performance OR does not bind successors and lenders",
         "ambiguous": "Quiet enjoyment referenced without definition of scope or conditions",
         "covered_unfavorable": "Covenant is conditioned on landlord's receipt of rent from tenant rather than tenant's compliance with all lease obligations; OR covenant explicitly does not bind lenders or successors in interest",
-        "potentially_unenforceable": "Quiet enjoyment covenant purports to be absolute (not conditioned on tenant's performance) \u05d2\u20ac\u201d may conflict with landlord's right to re-enter on tenant default"
+        "potentially_unenforceable": "Quiet enjoyment covenant purports to be absolute (not conditioned on tenant's performance) ג€” may conflict with landlord's right to re-enter on tenant default"
       },
       "risk_if_missing": "Tenant's right to undisturbed possession depends on state law implied covenant, which varies by jurisdiction and may be narrower than an express covenant; particularly material if property is mortgaged and SNDA does not independently protect tenant",
       "exposure_statement": {
@@ -1374,7 +2183,206 @@
         "Absolute covenant for initial term (no conditioned-on-tenant-performance qualifier)",
         "Explicit statement that landlord's right to re-enter does not breach quiet enjoyment covenant"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-26.quiet_enjoyment_covenant_present",
+          "element_label": "Express covenant of quiet enjoyment is present in the lease",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "Landlord covenants that Tenant shall peaceably and quietly hold and enjoy the Premises",
+            "Tenant shall have quiet possession of the Premises during the Term",
+            "covenant of quiet enjoyment",
+            "Landlord covenants Tenant's quiet enjoyment"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: default-law and implicit coverage acceptable. In most US jurisdictions, the covenant of quiet enjoyment is implied by default in commercial leases. Absence of explicit covenant typically does NOT mean absence of coverage — default law covers. The schema should recognize 'silent on this element' as a covered-by-default outcome rather than missing. This is the canonical implicit-coverage test case from the architecture spec."
+        },
+        {
+          "element_id": "LP-26.scope_peaceful_possession",
+          "element_label": "Scope of quiet enjoyment includes peaceful and undisturbed possession",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "peaceably and quietly hold and enjoy",
+            "peaceful possession of the Premises",
+            "undisturbed possession",
+            "free from any disturbance"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: scope is typically subsumed in the covenant of quiet enjoyment itself. Separate element exists for cases where the covenant is present but scope is narrowed by explicit language."
+        },
+        {
+          "element_id": "LP-26.free_from_landlord_disturbance",
+          "element_label": "Tenant is protected from disturbance by landlord directly",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "free from any disturbance by Landlord",
+            "Landlord shall not interfere with Tenant's possession",
+            "Landlord covenants not to disturb Tenant",
+            "without interference by Landlord"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: core element of quiet enjoyment. Implied by the covenant itself in most jurisdictions. Separate from third-party-claims element because the legal sources of disturbance differ."
+        },
+        {
+          "element_id": "LP-26.free_from_third_party_claims_through_landlord",
+          "element_label": "Tenant is protected from claims by parties claiming through landlord (other tenants, lender, etc.)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "free from disturbance by anyone claiming through Landlord",
+            "free from claims by anyone claiming by, through, or under Landlord",
+            "free from any person claiming under Landlord",
+            "free from interference by other tenants of Landlord"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: distinct from non-disturbance (LP-22) which addresses lender-foreclosure-successor scenarios. This element addresses ordinary third-party claims during the lease term (e.g., another tenant's encroachment authorized by landlord). The LP-22 → LP-26 cross-coverage block applies in the opposite direction: this element does NOT cover non-disturbance and non-disturbance does NOT cover this."
+        },
+        {
+          "element_id": "LP-26.conditioning_on_tenant_performance",
+          "element_label": "Quiet enjoyment is conditioned on tenant's performance of lease obligations",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "so long as Tenant performs all of its obligations under this Lease",
+            "subject to Tenant's compliance with the terms hereof",
+            "provided Tenant is not in default",
+            "subject to the provisions of this Lease"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. This is the one landlord-favorable element in an otherwise tenant-favorable LP. Conditioning language must be explicit to be enforceable; default law typically does not condition the implied covenant on tenant performance to the same extent. Presence is landlord-protective; absence is landlord-adverse (covenant remains in force even if tenant in breach)."
+        },
+        {
+          "element_id": "LP-26.remedies_for_breach_of_quiet_enjoyment",
+          "element_label": "Remedies for breach of quiet enjoyment are specified or cross-covered",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "Tenant's remedies for breach of this covenant",
+            "remedies available at law or in equity",
+            "Tenant may seek injunctive relief",
+            "in addition to all remedies provided in this Lease"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": [
+            "LP-27"
+          ],
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: legitimate cross-LP coverage to LP-27 (Landlord Default & Tenant Remedies). Breach of quiet enjoyment is a landlord default; LP-27 is where landlord-default remedies live. The cross-LP relationship is structurally legitimate. Note the directional asymmetry: LP-26 → LP-27 works (LP-27 houses landlord-default remedies generally); LP-26 → LP-22 does not work (quiet enjoyment is not non-disturbance). Step 305 evaluators must verify the LP-27 citation actually addresses landlord-default remedies and not merely the parallel structure."
+        },
+        {
+          "element_id": "LP-26.constructive_eviction_addressed",
+          "element_label": "Constructive eviction is acknowledged or addressed in the lease",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "constructive eviction",
+            "Tenant's right to vacate in case of substantial impairment",
+            "termination right upon substantial interference",
+            "if Landlord's breach renders the Premises untenantable"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": [
+            "LP-27"
+          ],
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: constructive eviction is a common-law doctrine available in most US jurisdictions even when not addressed in the lease. Explicit acknowledgment is procedurally cleaner but not legally necessary. Low absence severity because default-law coverage is reliable."
+        }
+      ]
     },
     {
       "id": "LP-27",
@@ -1388,7 +2396,7 @@
         "LP-26",
         "LP-22"
       ],
-      "notes": "The counterpart to LP-11 (tenant default). Often conspicuously weaker or absent in landlord-form leases \u05d2\u20ac\u201d landlords frequently attempt to limit tenant remedies to specific performance only, eliminating offset rights, self-help rights, and termination rights. The tenant's ability to offset rent against uncured landlord obligations is a major negotiating point.",
+      "notes": "The counterpart to LP-11 (tenant default). Often conspicuously weaker or absent in landlord-form leases ג€” landlords frequently attempt to limit tenant remedies to specific performance only, eliminating offset rights, self-help rights, and termination rights. The tenant's ability to offset rent against uncured landlord obligations is a major negotiating point.",
       "expected_elements": [
         "definition of landlord default events (failure to perform material obligations after notice and cure)",
         "notice and cure period before tenant may exercise remedies (typically 30 days written + additional reasonable time for complex repairs)",
@@ -1405,7 +2413,7 @@
         "covered_unfavorable": "Tenant remedy limited to specific performance only (no termination, no offset, no self-help); OR notice and cure period so long as to render remedies impractical; OR landlord default provision explicitly excludes rent offset right",
         "broken_xref": "Landlord default cure procedure cross-references notice article or lender SNDA not present in document"
       },
-      "risk_if_missing": "On landlord's failure to perform (e.g., failure to maintain HVAC, roof, or common areas), tenant has no clear self-help right, no rent offset, and may be unable to terminate \u05d2\u20ac\u201d all remedies default to litigation, which is slow and expensive",
+      "risk_if_missing": "On landlord's failure to perform (e.g., failure to maintain HVAC, roof, or common areas), tenant has no clear self-help right, no rent offset, and may be unable to terminate ג€” all remedies default to litigation, which is slow and expensive",
       "exposure_statement": {
         "tenant": "Landlord default remedies undefined; tenant has no self-help right, no rent offset, and may be unable to terminate if landlord fails to maintain the premises or perform material obligations",
         "landlord": "Landlord default terms undefined; landlord faces uncertainty over cure period and exposure to tenant self-help costs or termination claims without a defined notice-and-cure framework",
@@ -1429,7 +2437,251 @@
         "Lender cure period limited to additional 30 days after landlord's cure period expires",
         "Landlord liability not limited to property interest for fraud, willful misconduct, or gross negligence"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-27.landlord_default_definition",
+          "element_label": "Landlord default is defined (what triggers landlord default)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord shall be in default if Landlord fails to perform any of its obligations under this Lease",
+            "default by Landlord shall occur upon Landlord's failure to perform",
+            "any breach by Landlord of any covenant",
+            "Landlord default"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern A: explicit text required. Without a defined landlord default trigger, tenant has no contractual basis for remedies. Default law generally provides breach-of-contract remedies but the lease-specific framework is what gives tenant practical leverage."
+        },
+        {
+          "element_id": "LP-27.notice_required_to_landlord",
+          "element_label": "Tenant must give landlord written notice of default",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall give Landlord written notice specifying the default",
+            "Tenant shall provide Landlord with notice of the alleged default",
+            "upon written notice from Tenant",
+            "Tenant must deliver written notice describing the breach in reasonable detail"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Procedural protection for landlord. Absent notice requirement, tenant could declare default and exercise remedies without giving landlord opportunity to recognize and respond. Mirror of LP-11.notice_required_to_trigger_cure_period but polarity is reversed (this is landlord-favorable; LP-11 notice is tenant-favorable)."
+        },
+        {
+          "element_id": "LP-27.cure_period_for_landlord",
+          "element_label": "Cure period for landlord default is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord shall have thirty (30) days after written notice to cure",
+            "cure period of thirty (30) days, or such longer period as may be reasonably necessary",
+            "Landlord shall commence cure within thirty (30) days and diligently prosecute to completion",
+            "reasonable cure period"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern A: explicit text required. Cure period is typically longer than tenant's (often 30 days plus 'longer as reasonably necessary' extension). Mirror of LP-11.cure_period_non_monetary but applied to landlord. Polarity is reversed: presence of cure period is landlord-favorable here; in LP-11 presence was tenant-favorable. This is the cleanest single example of why severity-polarity split is required."
+        },
+        {
+          "element_id": "LP-27.tenant_self_help_and_offset",
+          "element_label": "Tenant may perform landlord's obligation and offset against rent",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant may perform such obligation and offset the cost against Rent",
+            "Tenant shall have the right to cure such default and deduct from Rent",
+            "self-help and offset rights",
+            "amounts expended by Tenant shall be reimbursed by Landlord or, at Tenant's option, offset against Rent next due"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern A: explicit text required. Powerful tenant remedy. Mirror of LP-11.self_help_landlord_cure but with the critical addition of rent offset. Landlord-side self-help bills tenant; tenant-side self-help reduces rent immediately. Without explicit grant, tenant typically has only damages remedy (no offset), which is much weaker."
+        },
+        {
+          "element_id": "LP-27.tenant_right_to_terminate",
+          "element_label": "Tenant has right to terminate the lease upon uncured landlord default",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "Tenant may terminate this Lease",
+            "Tenant shall have the right to terminate by written notice",
+            "Tenant may at its option terminate this Lease",
+            "Tenant may treat the Lease as terminated"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B (v0.2 correction): originally must_be_explicit=true with default_law=jurisdiction-dependent and implicit_coverage_acceptable=true — internally contradictory. Resolved by making must_be_explicit=false plus explicit_drafting_preferred=true. Default law in most jurisdictions allows tenant to terminate for material breach (constructive eviction or doctrine of material breach). Implicit coverage acceptable through these doctrines. Explicit grant is cleaner. Mirror of LP-11.landlord_right_to_terminate_lease but with stronger default-law backing because material-breach doctrine is broadly available. Note: cross_LP_coverage intentionally left null. Termination on landlord default is structurally distinct from termination on casualty (LP-13), condemnation (LP-14), or tenant default (LP-11) — those are separate scenarios with their own elements, not alternate sources of 'tenant right to terminate for landlord breach.'"
+        },
+        {
+          "element_id": "LP-27.tenant_right_to_damages",
+          "element_label": "Tenant has right to monetary damages for landlord default",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "Tenant shall be entitled to recover all damages incurred",
+            "Tenant may seek damages at law",
+            "Landlord shall be liable for all damages resulting from such default",
+            "damages including consequential, incidental, and direct"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: default-law and implicit coverage acceptable. Default-law breach-of-contract damages available in all jurisdictions. Lease may limit recoverable damages (excluding consequential or punitive); such limits are landlord-favorable. Implicit coverage acceptable through breach-of-contract theory."
+        },
+        {
+          "element_id": "LP-27.tenant_right_to_specific_performance",
+          "element_label": "Tenant has right to specific performance or injunctive relief",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "Tenant may seek specific performance",
+            "Tenant may obtain injunctive relief",
+            "in addition to all other remedies, Tenant may seek equitable relief",
+            "Tenant's right to compel performance"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: default-law and implicit coverage acceptable. Equitable remedies available by default in most jurisdictions for breach of unique-performance obligations (e.g., landlord's failure to deliver specific premises, build-out, or exclusive-use protections). Implicit coverage strong."
+        },
+        {
+          "element_id": "LP-27.lender_notice_and_cure_right",
+          "element_label": "Tenant must notify lender and afford lender cure period before exercising remedies",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall give simultaneous notice to any mortgagee",
+            "no remedy against Landlord may be exercised until any mortgagee has been notified",
+            "any mortgagee shall have an additional thirty (30) days to cure",
+            "lender cure rights"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": [
+            "LP-22"
+          ],
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Pattern B (v0.2 correction, flagged for legal review): originally must_be_explicit=true with implicit_coverage_acceptable=true and cross_LP_coverage=[LP-22] — internally contradictory. Resolved by making must_be_explicit=false plus explicit_drafting_preferred=true, and flipping implicit_coverage_acceptable to false because the legitimate alternate path is cross-LP-via-SNDA (explicit-in-another-LP), not implicit-within-LP-27. Genuine cross-LP relationship to LP-22 SNDA: lender notice/cure rights are often defined in the SNDA rather than in LP-27 directly. Step 305 evaluators must cite the specific SNDA provision rather than gesturing at LP-22 generally. ATTORNEY REVIEW FLAG: Pattern A (must_be_explicit: true, cross_LP_coverage: null) may be the correct answer if legal review concludes that lender notice/cure rights cannot legitimately be satisfied via SNDA cross-coverage in the relevant jurisdiction. Polarity note: this element is landlord/lender-favorable; absence is landlord-adverse because lender can lose practical ability to step in and cure."
+        },
+        {
+          "element_id": "LP-27.common_law_remedies_preserved",
+          "element_label": "Common law and equitable remedies are preserved as additional tenant remedies",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "at law or in equity",
+            "all remedies available at law or in equity",
+            "in addition to all remedies available at law or in equity",
+            "any other remedy now or hereafter available"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: implicit coverage acceptable via the 'at law or in equity' legal idiom. Parallel to LP-11.common_law_remedies_preserved but for tenant remedies. Same default-law jurisdiction-dependence. This parallel structure between LP-11 and LP-27 is the most striking evidence that the LPs are mirror images: identical element exists on both sides with reversed polarity."
+        },
+        {
+          "element_id": "LP-27.remedies_cumulative_not_exclusive",
+          "element_label": "Tenant's remedies are cumulative and not exclusive",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": "jurisdiction-dependent",
+          "default_law_jurisdiction_dependent": {
+            "applies_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "modified_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ],
+            "requires_explicit_grant_in": [
+              "TBD_BY_ATTORNEY_REVIEW"
+            ]
+          },
+          "synonyms": [
+            "all remedies shall be cumulative",
+            "Tenant may pursue any one or more remedies",
+            "no remedy is intended to be exclusive",
+            "the exercise of any remedy shall not preclude the exercise of any other"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pattern B: implicit coverage acceptable if multiple remedies are listed without 'exclusive' language. Parallel to LP-11.remedies_cumulative_not_exclusive but for tenant remedies. Same default-law jurisdiction-dependence."
+        }
+      ]
     },
     {
       "id": "LP-28",
@@ -1509,10 +2761,10 @@
         "partial": "Entry right defined but notice period, permitted purposes, or emergency entry limitation absent",
         "ambiguous": "Entry permitted 'at reasonable times' without defined notice period or purpose limitation",
         "covered_unfavorable": "No notice required for any entry (not just emergencies); OR unlimited entry purposes including showing to competitors; OR no obligation to minimize interference with tenant's business; OR tenant's representative right absent",
-        "potentially_unenforceable": "Landlord may enter at any time without notice for any purpose \u05d2\u20ac\u201d conflicts with implied covenant of quiet enjoyment; may be voidable as substantive breach of leasehold rights",
+        "potentially_unenforceable": "Landlord may enter at any time without notice for any purpose ג€” conflicts with implied covenant of quiet enjoyment; may be voidable as substantive breach of leasehold rights",
         "broken_xref": "Entry notice procedure cross-references notice article not found in document"
       },
-      "risk_if_missing": "Landlord may enter premises without notice, at any time, for any purpose \u05d2\u20ac\u201d disrupting tenant's business operations, exposing confidential business information, and interfering with customers",
+      "risk_if_missing": "Landlord may enter premises without notice, at any time, for any purpose ג€” disrupting tenant's business operations, exposing confidential business information, and interfering with customers",
       "exposure_statement": {
         "tenant": "Landlord access terms undefined; landlord may enter without notice at any time, disrupting business operations, exposing confidential information, and interfering with customers",
         "landlord": "Landlord access terms undefined; landlord faces uncertain rights to inspect, maintain, and show the property without a defined notice and entry framework",
@@ -1721,7 +2973,7 @@
         "broken_xref": "Hazardous materials exhibit, environmental baseline report, or permitted substances schedule referenced but not attached",
         "potentially_unenforceable": "Tenant required to waive CERCLA or RCRA statutory rights in a manner that may not be permitted by applicable law"
       },
-      "risk_if_missing": "Tenant faces unlimited environmental liability without a defined scope of prohibited substances, carve-out for ordinary business materials, or protection against pre-existing contamination \u05d2\u20ac\u201d particularly material for food service, medical, and chemical-dependent tenants",
+      "risk_if_missing": "Tenant faces unlimited environmental liability without a defined scope of prohibited substances, carve-out for ordinary business materials, or protection against pre-existing contamination ג€” particularly material for food service, medical, and chemical-dependent tenants",
       "exposure_statement": {
         "tenant": "Hazardous materials obligations are undefined; tenant may face liability for pre-existing contamination, have no carve-out for ordinary business materials, and face uncapped remediation costs for conditions not caused by tenant",
         "landlord": "Hazardous materials obligations are undefined; landlord has no clear framework for monitoring tenant environmental compliance, allocating pre-existing contamination costs, or enforcing notification obligations",
@@ -1749,7 +3001,7 @@
     }
   ],
   "conflict_rules": {
-    "description": "Cross-provision logical conflicts. Each rule declares a pattern across two or more LPs that constitutes a conflict \u05d2\u20ac\u201d internal contradictions, missing prerequisites, or structural incoherence. Detected by lease_conflicts.py after coverage assessment completes.",
+    "description": "Cross-provision logical conflicts. Each rule declares a pattern across two or more LPs that constitutes a conflict ג€” internal contradictions, missing prerequisites, or structural incoherence. Detected by lease_conflicts.py after coverage assessment completes.",
     "rules": [
       {
         "id": "CR-01",
@@ -1800,7 +3052,7 @@
             ]
           }
         },
-        "description": "SNDA grants the lender a cure right for landlord defaults, but the lease's landlord default framework lacks meaningful tenant remedies \u05d2\u20ac\u201d tenant has no rent offset or termination right if the lender does not cure. The lender's cure right exists in form, but the tenant has limited recourse if remediation fails.",
+        "description": "SNDA grants the lender a cure right for landlord defaults, but the lease's landlord default framework lacks meaningful tenant remedies ג€” tenant has no rent offset or termination right if the lender does not cure. The lender's cure right exists in form, but the tenant has limited recourse if remediation fails.",
         "severity": "medium",
         "implicated_perspective": "neutral"
       },
@@ -1825,7 +3077,7 @@
             ]
           }
         },
-        "description": "Assignment requires landlord consent (often with recapture right) and no early termination right exists. Tenant has no exit strategy if business fails \u05d2\u20ac\u201d must remain liable for full term with no transfer or termination mechanism.",
+        "description": "Assignment requires landlord consent (often with recapture right) and no early termination right exists. Tenant has no exit strategy if business fails ג€” must remain liable for full term with no transfer or termination mechanism.",
         "severity": "high",
         "implicated_perspective": "tenant"
       }
@@ -1851,7 +3103,7 @@
               "reasonableness standard shall apply"
             ],
             "escalate_to": "potentially_unenforceable",
-            "rationale": "NY courts imply reasonableness in commercial lease consent provisions absent explicit contrary language. Real Property Law \u05b2\u00a7226-c and case law suggest sole discretion may be unenforceable."
+            "rationale": "NY courts imply reasonableness in commercial lease consent provisions absent explicit contrary language. Real Property Law ֲ§226-c and case law suggest sole discretion may be unenforceable."
           },
           {
             "lp": "LP-11",
@@ -1861,7 +3113,7 @@
               "without judicial process"
             ],
             "escalate_to": "potentially_unenforceable",
-            "rationale": "NY strongly disfavors self-help eviction. RPAPL \u05b2\u00a7853 provides treble damages for forcible entry. Yellowstone injunction available to tenants facing aggressive default actions."
+            "rationale": "NY strongly disfavors self-help eviction. RPAPL ֲ§853 provides treble damages for forcible entry. Yellowstone injunction available to tenants facing aggressive default actions."
           }
         ]
       }
@@ -1931,5 +3183,12 @@
       "no duplicate issue_area ids",
       "every discovered_provision_pattern has applicability and activation_clues"
     ]
-  }
+  },
+  "step_305_pilot_lps": [
+    "LP-09",
+    "LP-11",
+    "LP-22",
+    "LP-26",
+    "LP-27"
+  ]
 }

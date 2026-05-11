@@ -63,6 +63,11 @@ def assess_coverage(
 
     ns_signals = negative_space_signals or {}
 
+    # Step 305: load pilot LP set once for routing decisions
+    from cam.adapters.lease_review.lease_coverage_305 import STEP_305_ENABLED
+    from cam.adapters.lease_review.lease_knowledge import get_schema as _get_schema_305
+    _pilot_lp_ids = set((_get_schema_305() or {}).get("step_305_pilot_lps", []))
+
     # Build a lookup map from the extracted provisions
     provision_map = {}
     for p in provisions:
@@ -219,6 +224,55 @@ def assess_coverage(
             continue
 
         # ── Step 5: Provision text exists — assess elements ───────────────────
+
+        # Step 305 routing: pilot LPs use per-element multi-evaluator assessment.
+        # STEP_305_ENABLED=False until variance acceptance test passes.
+        # Note: the Step 4 global-scan path has its own continue; this gate only
+        # fires when tenant_text arrived via the normal extractor path.
+        if STEP_305_ENABLED and pid in _pilot_lp_ids and area.get("expected_elements_305"):
+            try:
+                from cam.adapters.lease_review.lease_coverage_305 import assess_coverage_305
+                _ns_candidates = ns_signals.get(pid, [])
+                _result_305 = assess_coverage_305(
+                    pid=pid,
+                    area=area,
+                    tenant_text=tenant_text,
+                    elements_305=area["expected_elements_305"],
+                    negative_space_candidates=_ns_candidates,
+                )
+                # Apply covered_unfavorable / potentially_unenforceable pattern checks on top
+                _state_305 = _result_305["coverage_state_baseline"]
+                _text_lower_305 = tenant_text.lower()
+                _unfav_305 = _check_unfavorable_patterns(pid, _text_lower_305)
+                if _unfav_305:
+                    _state_305 = "covered_unfavorable"
+                else:
+                    _unenforceable_305 = _check_unenforceable_patterns(pid, _text_lower_305)
+                    if _unenforceable_305:
+                        _state_305 = "potentially_unenforceable"
+                _a = _build_assessment(
+                    pid=pid, area=area, coverage_state=_state_305,
+                    applicability=applicability_result,
+                    evidence_summary=_result_305.get("evidence_summary", "Step 305 per-element assessment"),
+                    supporting_provisions=[pid] if prov else [],
+                    negative_space=ns,
+                    elements_found=_result_305.get("elements_present", []),
+                    elements_missing=_result_305.get("elements_missing", []),
+                    tenant_text=tenant_text,
+                )
+                _a["coverage_method"] = _result_305.get("coverage_method", "step_305_per_element")
+                _a["element_verdicts"] = _result_305.get("element_verdicts", [])
+                _a["coverage_state_baseline"] = _result_305["coverage_state_baseline"]
+                assessments.append(_a)
+                _emit(_a)
+                continue
+            except Exception as _e_305:
+                logger.warning(
+                    f"[lease_coverage] Step 305 assessment failed for {pid}: {_e_305}; "
+                    f"falling through to legacy path"
+                )
+                # Fall through to existing element assessment below
+
         elements_found, elements_missing = _assess_elements(
             pid, tenant_text, get_expected_elements(pid), full_text=full_tenant_text
         )
