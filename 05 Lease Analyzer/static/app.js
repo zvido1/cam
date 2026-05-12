@@ -3111,8 +3111,11 @@ function applyModeSpecificUI() {
     // was hidden in Step 254 (no template = nothing to compare).
     const findingsBtn = document.getElementById("contract-tab-findings");
     const docviewBtn = document.getElementById("contract-tab-docview");
+    const evidenceBtn = document.getElementById("contract-tab-evidence");
     if (findingsBtn) findingsBtn.classList.toggle("hidden", isC);
     if (docviewBtn) docviewBtn.classList.toggle("hidden", isC);
+    // Step 306b: Evidence View is Mode C-only (no template to compare against in Mode A)
+    if (evidenceBtn) evidenceBtn.classList.toggle("hidden", !isC);
     // Step 257: if persisted activeResultsTab points at a now-hidden tab, coerce
     // to coverage. This catches users who switched mode mid-session, or whose
     // sessionStorage retained "findings"/"docview" from a prior Mode A run.
@@ -7348,13 +7351,128 @@ var TAB_SUBHEADER_LABELS = {
     findings:   'Contract Summary',
     docview:    'Document Comparison',
     audittrail: 'Audit Trail',
-    coverage:   'Coverage & Gaps'
+    coverage:   'Coverage & Gaps',
+    evidence:   'Evidence View'
 };
 
 function setDocviewStickyControlsVisible(isVisible) {
     var controls = document.getElementById('docview-sticky-controls');
     if (!controls) return;
     controls.classList.toggle('hidden', !isVisible);
+}
+
+// Step 306b: Evidence View state
+var _evidenceScrollTop = 0;
+var _evidenceRenderedTenantIndex = -1;  // tracks which tenant index was last rendered
+
+// Step 306b/306c: Convert a section_ref string to a stable anchor ID used in Evidence View.
+// "Section 15.1(a)" → "ev-sec-15-1-a"
+// "§21.9"           → "ev-sec-21-9"
+// "Article 3"       → "ev-sec-article-3"
+function sectionRefToAnchorId(sectionRef) {
+    if (!sectionRef) return null;
+    var normalized = sectionRef
+        .replace(/^(section|article|§)\s*/i, '')
+        .replace(/[^a-zA-Z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase();
+    return normalized ? 'ev-sec-' + normalized : null;
+}
+
+// Step 306b: Render the Evidence View tab with full lease text and section anchors.
+// Called once on first show; subsequent calls are no-ops (preserves scroll).
+function renderEvidencePanel() {
+    var tab = document.getElementById('evidence-tab');
+    if (!tab) return;
+    if (_evidenceRenderedTenantIndex === currentTenantIndex) return;
+    _evidenceRenderedTenantIndex = currentTenantIndex;
+    _evidenceScrollTop = 0;  // reset scroll when switching tenants
+
+    var tenant = currentResults && currentResults.tenants && currentResults.tenants[currentTenantIndex];
+    var fullText = tenant && tenant.results ? (tenant.results.full_tenant_text || '') : '';
+
+    if (!fullText) {
+        tab.innerHTML = '<div class="ev-empty">Lease text not available for this analysis. Evidence View requires a Mode C analysis run with full document extraction.</div>';
+        return;
+    }
+
+    // Detect section headings line-by-line and insert anchor IDs.
+    var HEADING_LINE = /^\s*((?:ARTICLE|Article|Section|SECTION)\s+[\dIVXivx]+[\d.]*(?:\s*\([^)]+\))?|(?:\d+\.[\d.]+)\s)/;
+    var lines = fullText.split('\n');
+    var html = '<div class="ev-doc-wrap"><pre class="ev-pre">';
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        var m = HEADING_LINE.exec(line);
+        if (m) {
+            var anchorId = sectionRefToAnchorId(m[1].trim());
+            if (anchorId) {
+                html += '<span class="ev-heading" id="' + anchorId + '">' + esc(line) + '</span>\n';
+            } else {
+                html += '<span class="ev-heading">' + esc(line) + '</span>\n';
+            }
+        } else {
+            html += esc(line) + '\n';
+        }
+    }
+    html += '</pre></div>';
+    tab.innerHTML = html;
+}
+
+// Step 306c: Remove any existing quote highlights from the Evidence View.
+function _clearEvidenceQuoteHighlights() {
+    document.querySelectorAll('.ev-quote-highlight').forEach(function(m) {
+        var parent = m.parentNode;
+        if (parent) {
+            parent.replaceChild(document.createTextNode(m.textContent), m);
+            parent.normalize();
+        }
+    });
+}
+
+// Step 306c: Try to highlight a quoted string in the text nodes following the anchor span.
+function highlightQuoteInSection(anchor, quote) {
+    if (!quote || quote.length < 10) return;
+    _clearEvidenceQuoteHighlights();
+    var node = anchor.nextSibling;
+    while (node) {
+        if (node.nodeType === 1 && node.classList && node.classList.contains('ev-heading')) break;
+        if (node.nodeType === 3 && node.textContent.indexOf(quote) >= 0) {
+            var idx = node.textContent.indexOf(quote);
+            var before = document.createTextNode(node.textContent.slice(0, idx));
+            var mark = document.createElement('mark');
+            mark.className = 'ev-quote-highlight';
+            mark.textContent = quote;
+            var after = document.createTextNode(node.textContent.slice(idx + quote.length));
+            var parent = node.parentNode;
+            parent.insertBefore(before, node);
+            parent.insertBefore(mark, node);
+            parent.insertBefore(after, node);
+            parent.removeChild(node);
+            setTimeout(function() { if (mark.parentNode) mark.classList.add('ev-quote-fade'); }, 5000);
+            return;
+        }
+        node = node.nextSibling;
+    }
+}
+
+// Step 306c: Switch to Evidence View and scroll/highlight the target section.
+function jumpToEvidence(sectionRef, quote) {
+    if (!sectionRef) return;
+    switchResultsTab('evidence');
+    var anchorId = sectionRefToAnchorId(sectionRef);
+    if (!anchorId) return;
+    // Delay to let Evidence View render on first open
+    setTimeout(function() {
+        var anchor = document.getElementById(anchorId);
+        if (!anchor) return;
+        anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        anchor.classList.add('ev-heading-flash');
+        setTimeout(function() { anchor.classList.remove('ev-heading-flash'); }, 2200);
+        if (quote && quote.length >= 10) {
+            setTimeout(function() { highlightQuoteInSection(anchor, quote); }, 100);
+        }
+    }, 60);
 }
 
 function switchResultsTab(tab) {
@@ -7407,8 +7525,14 @@ function switchResultsTab(tab) {
         return;
     }
 
+    // Step 306b: save Evidence View scroll position when leaving it
+    if (activeResultsTab === "evidence") {
+        var _evDetailLeave = document.getElementById('contract-detail-view');
+        if (_evDetailLeave) _evidenceScrollTop = _evDetailLeave.scrollTop;
+    }
+
     activeResultsTab = tab;
-    if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage") {
+    if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage" || tab === "evidence") {
         activeTopTab = tab;
     }
     // Step 281: Coverage & Gaps tab in Mode C carries a right-aligned
@@ -7418,7 +7542,7 @@ function switchResultsTab(tab) {
     setSubheader(TAB_SUBHEADER_LABELS[tab] || tab, _subRight);
 
     // Update tab bar active state (Step 129 fix: $ → $ for querySelectorAll)
-    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage").forEach(t => {
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-evidence").forEach(t => {
         t.classList.toggle("active", t.dataset.tab === tab);
     });
 
@@ -7427,6 +7551,7 @@ function switchResultsTab(tab) {
     const docviewTab = $("#docview-tab");
     const auditTab = $("#audittrail-tab");
     const coverageTab = $("#coverage-tab");
+    const evidenceTab = $("#evidence-tab");
 
     if (tab === "findings") {
         findingsTab.classList.remove("hidden");
@@ -7446,22 +7571,36 @@ function switchResultsTab(tab) {
         docviewTab.classList.add("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.remove("hidden");
+        if (evidenceTab) evidenceTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
         renderCoveragePanel();
+    } else if (tab === "evidence") {
+        findingsTab.classList.add("hidden");
+        docviewTab.classList.add("hidden");
+        auditTab.classList.add("hidden");
+        if (coverageTab) coverageTab.classList.add("hidden");
+        if (evidenceTab) evidenceTab.classList.remove("hidden");
+        setDocviewStickyControlsVisible(false);
+        renderEvidencePanel();
     } else {
         findingsTab.classList.add("hidden");
         docviewTab.classList.remove("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
+        if (evidenceTab) evidenceTab.classList.add("hidden");
         setDocviewStickyControlsVisible(true);
         renderDocumentView();
     }
 
-    // Scroll the actual results pane to the top so sticky controls stay aligned.
+    // Scroll to top on tab switch — but restore Evidence View's saved scroll position.
     var detail = document.getElementById('contract-detail-view');
-    if (detail) detail.scrollTo({ top: 0, behavior: 'instant' });
-    var resultsPane = document.getElementById('results-content') || document.querySelector('.results-content');
-    if (resultsPane) resultsPane.scrollTo({ top: 0, behavior: 'instant' });
+    if (tab === "evidence") {
+        if (detail) detail.scrollTop = _evidenceScrollTop;
+    } else {
+        if (detail) detail.scrollTo({ top: 0, behavior: 'instant' });
+        var resultsPane = document.getElementById('results-content') || document.querySelector('.results-content');
+        if (resultsPane) resultsPane.scrollTo({ top: 0, behavior: 'instant' });
+    }
     persistResultsViewState();
 }
 
@@ -10938,6 +11077,131 @@ function legacyRenderAuditTechnicalGroup(title, innerHtml) {
     </div>`;
 }
 
+// Step 306d helpers — Mode C coverage evaluation in audit trail
+
+var _COV_AUDIT_VERDICT_SHORT = {
+    'explicitly_present':     'Present',
+    'implicitly_present':     'Implicit',
+    'covered_by_default_law': 'Default Law',
+    'covered_in_other_LP':    'Cross-LP',
+    'missing':                'Missing',
+    'unclear':                'Unclear',
+    'review_needed':          'Review',
+};
+var _COV_AUDIT_VERDICT_CLS = {
+    'explicitly_present':     'cv-ev-present',
+    'implicitly_present':     'cv-ev-implicit',
+    'covered_by_default_law': 'cv-ev-default',
+    'covered_in_other_LP':    'cv-ev-crosslp',
+    'missing':                'cv-ev-missing',
+    'unclear':                'cv-ev-unclear',
+    'review_needed':          'cv-ev-unclear',
+};
+
+function _buildCovAuditTable(evs, roleList) {
+    var html = '<div class="audit-cov-table-wrap"><table class="audit-cov-table"><thead><tr><th class="audit-cov-th">Element</th>';
+    roleList.forEach(function(role) { html += '<th class="audit-cov-th">Eval ' + esc(role) + '</th>'; });
+    html += '<th class="audit-cov-th">Merged</th></tr></thead><tbody>';
+    evs.forEach(function(ev) {
+        var hasDisag = ev.disagreements && ev.disagreements.length > 0;
+        html += '<tr class="audit-cov-row' + (hasDisag ? ' audit-cov-row-disag' : '') + '">';
+        html += '<td class="audit-cov-td-label">' + esc(ev.element_label || ev.element_id) + '</td>';
+        var evByRole = {};
+        (ev.evaluator_verdicts || []).forEach(function(evr) { evByRole[evr.role || '?'] = evr; });
+        roleList.forEach(function(role) {
+            var evr = evByRole[role];
+            if (!evr) { html += '<td class="audit-cov-td">—</td>'; return; }
+            var vcls = _COV_AUDIT_VERDICT_CLS[evr.verdict] || 'cv-ev-unclear';
+            var vlabel = _COV_AUDIT_VERDICT_SHORT[evr.verdict] || evr.verdict;
+            var citRef = (evr.citation && evr.citation.section_ref) ? ' <span class="audit-cov-cit">' + esc(evr.citation.section_ref) + '</span>' : '';
+            html += '<td class="audit-cov-td"><span class="cv-ev-pill ' + vcls + '">' + vlabel + '</span>' + citRef + '</td>';
+        });
+        var mvcls = _COV_AUDIT_VERDICT_CLS[ev.verdict] || 'cv-ev-unclear';
+        var mvlabel = _COV_AUDIT_VERDICT_SHORT[ev.verdict] || ev.verdict;
+        var conf = ev.confidence ? ' (' + ev.confidence + ')' : '';
+        var reasonNote = ev.reason ? ' <span class="audit-cov-reason">' + esc(ev.reason.replace(/_/g, ' ')) + '</span>' : '';
+        html += '<td class="audit-cov-td"><span class="cv-ev-pill ' + mvcls + '">' + mvlabel + '</span>' + conf + reasonNote + '</td>';
+        html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+}
+
+function _buildMergeTraceHtml(disagElems) {
+    var html = '<div class="audit-cov-trace-list">';
+    disagElems.forEach(function(ev) {
+        var dissents = ev.disagreements || [];
+        html += '<div class="audit-cov-trace-item">'
+            + '<span class="audit-cov-trace-elem">' + esc(ev.element_label || ev.element_id) + '</span>'
+            + ' <span class="audit-cov-trace-arrow">→</span>'
+            + ' <span class="audit-cov-trace-merged">merged: <strong>' + esc(_COV_AUDIT_VERDICT_SHORT[ev.verdict] || ev.verdict) + '</strong>';
+        if (ev.reason) html += ' <span class="audit-cov-reason">' + esc(ev.reason.replace(/_/g, ' ')) + '</span>';
+        html += '</span>';
+        if (dissents.length > 0) {
+            html += '<div class="audit-cov-trace-dissents">';
+            dissents.forEach(function(d) {
+                html += '<span class="audit-cov-trace-dissent">Eval ' + esc(d.role || d.evaluator_id || '?') + ': ' + esc(_COV_AUDIT_VERDICT_SHORT[d.verdict] || d.verdict) + '</span>';
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+    });
+    html += '</div>';
+    return html;
+}
+
+function buildCoverageAuditSection(items) {
+    var _POSITIVE = new Set(['explicitly_present', 'implicitly_present', 'covered_by_default_law', 'covered_in_other_LP']);
+    var html = '<div class="audit-cov-section"><div class="audit-cov-section-heading">Coverage Evaluation — ' + items.length + ' pilot LP' + (items.length > 1 ? 's' : '') + ' (Step 305)</div>';
+    items.forEach(function(a, idx) {
+        var pid = a.issue_area_id || '';
+        var name = a.issue_area_name || pid;
+        var baseline = a.coverage_state_baseline || a.coverage_state || '';
+        var method = a.coverage_method || 'step_305_per_element';
+        var evs = a.element_verdicts || [];
+        var totalCount = evs.length;
+        var nPresent = evs.filter(function(e) { return _POSITIVE.has(e.verdict); }).length;
+        var nMissing = evs.filter(function(e) { return e.verdict === 'missing'; }).length;
+        var nUnclear = evs.filter(function(e) { return e.verdict === 'unclear'; }).length;
+        var disagElems = evs.filter(function(e) { return e.disagreements && e.disagreements.length > 0; });
+        var stateVcls = _COV_AUDIT_VERDICT_CLS[baseline] || 'cv-ev-unclear';
+        var stateLabel = _COV_AUDIT_VERDICT_SHORT[baseline] || baseline;
+        var lpBodyId = 'audit-cov-lp-body-' + idx;
+        var elemListId = 'audit-cov-elems-' + idx;
+        var tableId = 'audit-cov-table-' + idx;
+        var traceId = 'audit-cov-trace-' + idx;
+        // Determine evaluator roles
+        var roleSet = {};
+        evs.forEach(function(ev) {
+            (ev.evaluator_verdicts || []).forEach(function(evr) { roleSet[evr.role || '?'] = true; });
+        });
+        var roleList = Object.keys(roleSet).sort();
+        var tableHtml = roleList.length > 0 ? _buildCovAuditTable(evs, roleList) : '';
+        var mergeHtml = disagElems.length > 0 ? _buildMergeTraceHtml(disagElems) : '';
+        var elemListHtml = '<ul class="audit-cov-elem-list">' + evs.map(function(e) { return '<li>' + esc(e.element_label || e.element_id) + '</li>'; }).join('') + '</ul>';
+        var derivNote = 'LP state: <strong>' + esc(baseline) + '</strong> — ' + nPresent + ' present, ' + nMissing + ' missing, ' + nUnclear + ' unclear of ' + totalCount + ' elements'
+            + (disagElems.length > 0 ? ' (' + disagElems.length + ' element' + (disagElems.length > 1 ? 's' : '') + ' with evaluator disagreement)' : '');
+        html += '<div class="audit-cov-lp">'
+            + '<div class="audit-cov-lp-header" onclick="(function(h){var b=document.getElementById(\'' + lpBodyId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';h.querySelector(\'.audit-cov-chevron\').textContent=o?\'▾\':\'▸\';})(this)">'
+            + '<span class="audit-cov-lp-id">' + esc(pid) + '</span>'
+            + '<span class="audit-cov-lp-name">' + esc(name) + '</span>'
+            + '<span class="cv-ev-pill ' + stateVcls + '">' + stateLabel + '</span>'
+            + '<span class="audit-cov-method-badge">' + esc(method) + '</span>'
+            + '<span class="audit-cov-chevron">▸</span>'
+            + '</div>'
+            + '<div id="' + lpBodyId + '" class="audit-cov-lp-body" style="display:none">'
+            + '<div class="audit-cov-deriv-note">' + derivNote + '</div>'
+            + '<div class="audit-cov-sub-toggle" onclick="(function(t){var b=document.getElementById(\'' + elemListId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';t.querySelector(\'.audit-sub-chev\').textContent=o?\'▾\':\'▸\';})(this)"><span class="audit-sub-chev">▸</span> ' + totalCount + ' expected elements</div>'
+            + '<div id="' + elemListId + '" style="display:none">' + elemListHtml + '</div>'
+            + (tableHtml ? '<div class="audit-cov-sub-toggle" onclick="(function(t){var b=document.getElementById(\'' + tableId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';t.querySelector(\'.audit-sub-chev\').textContent=o?\'▾\':\'▸\';})(this)"><span class="audit-sub-chev">▸</span> Per-evaluator verdicts</div><div id="' + tableId + '" style="display:none">' + tableHtml + '</div>' : '')
+            + (mergeHtml ? '<div class="audit-cov-sub-toggle" onclick="(function(t){var b=document.getElementById(\'' + traceId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';t.querySelector(\'.audit-sub-chev\').textContent=o?\'▾\':\'▸\';})(this)"><span class="audit-sub-chev">▸</span> Merge trace (' + disagElems.length + ' disagreement' + (disagElems.length > 1 ? 's' : '') + ')</div><div id="' + traceId + '" style="display:none">' + mergeHtml + '</div>' : '')
+            + '</div>'
+            + '</div>';
+    });
+    html += '</div>';
+    return html;
+}
+
 function renderAuditTrail(allTenants) {
     const tab = $("#audittrail-tab");
     if (!tab || !currentResults) return;
@@ -10989,6 +11253,12 @@ function renderAuditTrail(allTenants) {
                 ${_at_escHtml}
             </div>`;
         }
+        // Step 306d: build Coverage Evaluation section for pilot LPs
+        var _at_ca = (r.coverage_assessment || []).filter(function(a) {
+            return (a.element_verdicts || []).length > 0;
+        });
+        var _at_covEval = _at_ca.length > 0 ? buildCoverageAuditSection(_at_ca) : '';
+
         tab.innerHTML = `
             <div class="audit-mode-c-message">
                 <div class="audit-mode-c-heading">Analyze-mode audit</div>
@@ -11005,6 +11275,7 @@ function renderAuditTrail(allTenants) {
                 </p>
                 ${_at_stage5b}
             </div>
+            ${_at_covEval}
         `;
         return;
     }
@@ -15022,6 +15293,66 @@ function renderCoveragePanel() {
 
         const toolbarHtml = buildCovToolbar(a, tenantIdx);
 
+        // Step 306a: per-element progressive disclosure for pilot LPs
+        const elementVerdicts = a.element_verdicts || [];
+        let elementDetailHtml = "";
+        if (elementVerdicts.length > 0) {
+            const _POSITIVE_VERDICTS = new Set(['explicitly_present', 'implicitly_present', 'covered_by_default_law', 'covered_in_other_LP']);
+            const coveredCount = elementVerdicts.filter(e => _POSITIVE_VERDICTS.has(e.verdict)).length;
+            const totalCount = elementVerdicts.length;
+            const summaryText = coveredCount === totalCount
+                ? `All ${totalCount} elements covered`
+                : `${coveredCount} of ${totalCount} elements covered`;
+            const elemTableId = "cv-elem-body-" + pid;
+            const VERDICT_CFG = {
+                'explicitly_present':     { cls: 'cv-ev-present',  label: 'Present' },
+                'implicitly_present':     { cls: 'cv-ev-implicit', label: 'Implicit' },
+                'covered_by_default_law': { cls: 'cv-ev-default',  label: 'Default Law' },
+                'covered_in_other_LP':    { cls: 'cv-ev-crosslp',  label: 'Cross-LP' },
+                'missing':                { cls: 'cv-ev-missing',  label: 'Missing' },
+                'unclear':                { cls: 'cv-ev-unclear',  label: 'Unclear' },
+            };
+            // Step 306c: derive LP-level jump link from best positive citation
+            const _bestCit = elementVerdicts.find(function(e) {
+                return _POSITIVE_VERDICTS.has(e.verdict) && e.citation && e.citation.section_ref;
+            });
+            const lpJumpHtml = _bestCit
+                ? ' <span class="cv-section-link cv-elem-lp-jump" data-ref="' + esc(_bestCit.citation.section_ref) + '" data-quote="' + esc(_bestCit.citation.quote || '') + '" onclick="event.stopPropagation();jumpToEvidence(this.dataset.ref,this.dataset.quote)" title="Jump to evidence">&#8594; ' + esc(_bestCit.citation.section_ref) + '</span>'
+                : '';
+
+            const rowsHtml = elementVerdicts.map(function(ev) {
+                const vc = VERDICT_CFG[ev.verdict] || { cls: 'cv-ev-unclear', label: ev.verdict || '?' };
+                // Step 306c: make citation clickable when section_ref is available
+                const hasCit = ev.citation && ev.citation.section_ref;
+                const citHtml = hasCit
+                    ? '<span class="cv-section-link" data-ref="' + esc(ev.citation.section_ref) + '" data-quote="' + esc(ev.citation.quote || '') + '" onclick="jumpToEvidence(this.dataset.ref,this.dataset.quote)">' + esc(ev.citation.section_ref) + '</span>'
+                    : '—';
+                let disagHtml = '';
+                if (ev.disagreements && Array.isArray(ev.disagreements) && ev.disagreements.length > 0) {
+                    const evalLines = ev.disagreements.map(function(d) { return esc(d.evaluator_id || '') + ': ' + esc(d.verdict || ''); }).join(' | ');
+                    disagHtml = '<span class="cv-ev-disag-btn" onclick="(function(btn){var b=btn.nextElementSibling;b.style.display=b.style.display===\'none\'?\'block\':\'none\';})(this)" title="Evaluator disagreement">⚠</span>'
+                        + '<div class="cv-ev-disag-body" style="display:none">' + evalLines + ' → merged: ' + esc(ev.verdict) + '</div>';
+                }
+                return '<tr class="cv-ev-row">'
+                    + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
+                    + '<td class="cv-ev-status"><span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + disagHtml + '</td>'
+                    + '<td class="cv-ev-citation">' + citHtml + '</td>'
+                    + '</tr>';
+            }).join('');
+            elementDetailHtml = '<div class="cv-elem-summary-row" onclick="(function(row){var body=document.getElementById(\'' + elemTableId + '\');var opening=body.style.display===\'none\';body.style.display=opening?\'block\':\'none\';row.querySelector(\'.cv-elem-chevron\').textContent=opening?\'▾\':\'▸\';})(this)">'
+                + '<span class="cv-elem-chevron">▸</span>'
+                + '<span class="cv-elem-summary-text">' + summaryText + '</span>'
+                + lpJumpHtml
+                + '</div>'
+                + '<div id="' + elemTableId + '" class="cv-elem-table-body" style="display:none">'
+                + '<table class="cv-ev-table"><thead><tr>'
+                + '<th class="cv-ev-th cv-ev-th-label">Element</th>'
+                + '<th class="cv-ev-th cv-ev-th-status">Status</th>'
+                + '<th class="cv-ev-th cv-ev-th-citation">Citation</th>'
+                + '</tr></thead><tbody>' + rowsHtml + '</tbody></table>'
+                + '</div>';
+        }
+
         // Step 280: combined-line header — `LP-id  Name — Headline  [badge]`.
         // Mirrors the Step 279 single-line treatment in the four
         // PDF/DOCX renderers so the dashboard, sidebar, Synopsis, and
@@ -15050,6 +15381,7 @@ function renderCoveragePanel() {
             </div>
             ${escalationHtml}
             ${leaseTextHtml}
+            ${elementDetailHtml}
             ${stmt ? `<div class="cv-item-stmt">${esc(stmt)} ${srcNote}</div>` : ""}
             ${state === 'missing' ? '<div class="cv-missing-provision-note">⚠ This provision is absent from the lease. Use <strong>Draft Missing Clause</strong> to request language from the landlord.</div>' : ''}
             ${missingHtml}
