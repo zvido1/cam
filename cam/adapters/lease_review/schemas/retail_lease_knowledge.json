@@ -1,7 +1,7 @@
 {
-  "schema_version": "2.0.0",
+  "schema_version": "2.1.0",
   "created": "2026-03-27",
-  "updated": "2026-05-11",
+  "updated": "2026-05-12",
   "contract_type": "retail_lease",
   "display_name": "Retail / Commercial Lease",
   "description": "Issue-area knowledge schema for retail and commercial lease analysis. Defines expected coverage, applicability gating, exposure statements, caution signals, and negative-space clues.",
@@ -72,7 +72,126 @@
         "Reduced late fee percentage",
         "Removal of additional rent catch-all definition"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-01.base_rent_amount",
+          "element_label": "Base rent amount or formula is stated",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Base Rent shall be",
+            "monthly rent of",
+            "Tenant shall pay Landlord",
+            "annual base rent",
+            "fixed minimum rent"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Fundamental lease term. Absence renders the lease potentially unenforceable."
+        },
+        {
+          "element_id": "LP-01.payment_due_date",
+          "element_label": "Payment due date is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "payable on the first day of each",
+            "due on the first of each month",
+            "rent is due on",
+            "payable in advance on"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Without a due date, landlord cannot establish late payment default."
+        },
+        {
+          "element_id": "LP-01.late_payment_fee",
+          "element_label": "Late payment fee or penalty mechanism is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "late charge equal to",
+            "late fee of",
+            "penalty for late payment",
+            "interest at the rate of",
+            "Default Rate"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Enforceability of late fees varies by jurisdiction. Some states cap at a percentage."
+        },
+        {
+          "element_id": "LP-01.grace_period",
+          "element_label": "Grace period for late payment is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "within five days after",
+            "if not received within",
+            "grace period of",
+            "days after the date when due"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a grace period, tenant is in default immediately on the due date."
+        },
+        {
+          "element_id": "LP-01.accepted_payment_methods",
+          "element_label": "Accepted payment methods are specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "by check, wire transfer, or ACH",
+            "payment shall be made by",
+            "to such account as Landlord may designate"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": null,
+          "review_notes": "Low materiality. Most leases specify; absence is not a gap."
+        },
+        {
+          "element_id": "LP-01.additional_rent_definition",
+          "element_label": "Additional rent is defined (what constitutes additional rent beyond base)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Additional Rent shall mean",
+            "all sums payable by Tenant other than Base Rent",
+            "the term Rent shall mean Base Rent and Additional Rent",
+            "CAM Charges, insurance, taxes shall constitute Additional Rent"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": [
+            "LP-07"
+          ],
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Defines what landlord can pursue as 'rent' in a default action. Broad definitions increase tenant exposure."
+        }
+      ]
     },
     {
       "id": "LP-02",
@@ -121,7 +240,88 @@
         "Fixed-percentage substituted for uncapped CPI",
         "First escalation deferred one year"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-02.annual_increase_mechanism",
+          "element_label": "Annual rent increase mechanism is defined (fixed percentage, CPI, or formula)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Base Rent shall increase by",
+            "annual escalation of",
+            "CPI adjustment",
+            "fair market value adjustment",
+            "compounded annually"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Without a defined mechanism, escalation disputes are common. Fixed percentage is most predictable."
+        },
+        {
+          "element_id": "LP-02.effective_date_of_first_escalation",
+          "element_label": "Effective date of first escalation is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "commencing on the first anniversary",
+            "beginning on the second Lease Year",
+            "effective as of",
+            "first adjustment date"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "both",
+          "review_notes": "Ambiguity on when escalation starts creates billing disputes."
+        },
+        {
+          "element_id": "LP-02.escalation_cap",
+          "element_label": "Escalation cap or ceiling limits annual increases",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "shall not exceed",
+            "maximum annual increase",
+            "capped at",
+            "escalation ceiling",
+            "not to exceed percent per year"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Absence means uncapped exposure. CPI-based escalation without a cap is particularly risky in inflationary periods."
+        },
+        {
+          "element_id": "LP-02.calculation_methodology",
+          "element_label": "Calculation methodology for escalation is clear and verifiable",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "compounded annually",
+            "simple annual increase",
+            "CPI-U index published by",
+            "base year for CPI calculation",
+            "example calculation"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Ambiguous methodology (compounded vs simple, which CPI index) creates billing disputes."
+        }
+      ]
     },
     {
       "id": "LP-03",
@@ -167,7 +367,125 @@
         "Added renewal options (1 ג†’ 2 or 3)",
         "Capped renewal rent at fixed percentage over expiring rent"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-03.initial_term_duration",
+          "element_label": "Initial term duration is stated",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Lease Term shall be",
+            "for a period of",
+            "initial term of",
+            "term of years"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Fundamental lease term."
+        },
+        {
+          "element_id": "LP-03.commencement_date",
+          "element_label": "Commencement date or conditions for commencement are defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Commencement Date shall be",
+            "Lease Term shall commence on",
+            "upon substantial completion of",
+            "date of delivery of possession"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Conditional commencement (tied to construction completion) creates date uncertainty."
+        },
+        {
+          "element_id": "LP-03.expiration_date",
+          "element_label": "Expiration date or method to determine it is stated",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Expiration Date",
+            "shall expire on",
+            "years after the Commencement Date",
+            "termination date"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Must be determinable even if not a fixed date."
+        },
+        {
+          "element_id": "LP-03.renewal_option",
+          "element_label": "Renewal option count and duration are specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "option to renew for",
+            "additional period of",
+            "Renewal Term",
+            "successive renewal periods",
+            "right to extend"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Absence means tenant has no right to stay beyond initial term."
+        },
+        {
+          "element_id": "LP-03.renewal_notice_deadline",
+          "element_label": "Renewal notice period and deadline are specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "written notice no later than",
+            "months prior to the Expiration Date",
+            "exercise such renewal option by delivering",
+            "renewal notice deadline"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Missed deadline typically means waiver of renewal right. Short deadlines without landlord reminder obligation are tenant-unfavorable."
+        },
+        {
+          "element_id": "LP-03.renewal_rent_formula",
+          "element_label": "Rent at renewal is defined (formula, fair market value, or fixed)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Base Rent during the Renewal Term shall be",
+            "fair market rental value",
+            "adjusted as provided in",
+            "renewal rent",
+            "prevailing market rate"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a defined renewal rent, the renewal option may be unenforceable or subject to landlord's unilateral pricing."
+        }
+      ]
     },
     {
       "id": "LP-04",
@@ -218,7 +536,104 @@
         "Burn-down schedule (deposit reduces over time)",
         "Shortened return deadline"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-04.deposit_amount",
+          "element_label": "Deposit amount is stated",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Security Deposit equal to",
+            "deposit of",
+            "months' Base Rent",
+            "security deposit in the amount of"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Fundamental term."
+        },
+        {
+          "element_id": "LP-04.return_deadline",
+          "element_label": "Return deadline after lease expiration is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "return the Security Deposit within",
+            "days after the Expiration Date",
+            "refund within thirty days",
+            "return within"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Many states have statutory return deadlines (14-60 days). Lease term should match or improve on statutory minimum."
+        },
+        {
+          "element_id": "LP-04.permitted_deductions",
+          "element_label": "Permitted deduction conditions are defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "Landlord may apply",
+            "deduct from the Security Deposit",
+            "cure any default",
+            "unpaid Rent, repairs, cleaning"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Broad deduction language without itemization requirement is tenant-unfavorable."
+        },
+        {
+          "element_id": "LP-04.interest_obligation",
+          "element_label": "Interest obligation on deposit is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "Landlord shall not be required to pay interest",
+            "interest shall accrue on",
+            "deposit held in interest-bearing account",
+            "no interest on Security Deposit"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Some jurisdictions require interest on deposits by statute."
+        },
+        {
+          "element_id": "LP-04.letter_of_credit_alternative",
+          "element_label": "Letter of credit or alternative security form is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "letter of credit in lieu of",
+            "alternative form of security",
+            "irrevocable standby letter of credit",
+            "surety bond"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Relevant for larger deposits where cash tie-up is material. Common in institutional leases."
+        }
+      ]
     },
     {
       "id": "LP-05",
@@ -261,7 +676,88 @@
         "Weakened continuous operation obligation (shall ג†’ may)",
         "Added co-tenancy condition tied to anchor tenant"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-05.specific_permitted_use",
+          "element_label": "Specific permitted use description is stated",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall use the Premises solely for",
+            "Permitted Use shall mean",
+            "for the purpose of operating",
+            "use and occupy the Premises for"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Overly narrow use clauses restrict tenant flexibility. Overly broad clauses weaken landlord's tenant mix control."
+        },
+        {
+          "element_id": "LP-05.continuous_operation_obligation",
+          "element_label": "Continuous operation obligation is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall continuously operate",
+            "continuously and uninterruptedly conduct business",
+            "dark clause",
+            "Tenant may cease operations",
+            "go dark right"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Continuous operation without a go-dark right prevents tenant from closing during renovations or downturns."
+        },
+        {
+          "element_id": "LP-05.prohibited_use_restrictions",
+          "element_label": "Prohibited uses are defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall not use the Premises for any purpose that is unlawful",
+            "creates a nuisance",
+            "prohibited uses include",
+            "no use that disturbs other tenants"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Standard boilerplate. Overly broad prohibited use lists can trap tenants."
+        },
+        {
+          "element_id": "LP-05.co_tenancy_anchor_dependency",
+          "element_label": "Co-tenancy or anchor tenant dependency is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "co-tenancy requirement",
+            "anchor tenant",
+            "if occupancy falls below",
+            "minimum occupancy threshold"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": [
+            "LP-31"
+          ],
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Primarily relevant for retail in shopping centers. Cross-LP with LP-31 Co-Tenancy."
+        }
+      ]
     },
     {
       "id": "LP-06",
@@ -301,7 +797,107 @@
         "Landlord bears HVAC replacement cost above threshold amount",
         "Structural repair obligation shifted to landlord"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-06.tenant_maintenance_obligations",
+          "element_label": "Tenant maintenance obligations are defined (interior, non-structural)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall maintain the interior",
+            "at Tenant's sole cost and expense, maintain",
+            "good order, condition, and repair",
+            "Tenant responsible for interior walls, floors, fixtures"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Without clear allocation, both parties claim the other is responsible."
+        },
+        {
+          "element_id": "LP-06.landlord_maintenance_obligations",
+          "element_label": "Landlord maintenance obligations are defined (structural, roof, exterior)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord shall maintain the structural elements",
+            "roof, foundation, exterior walls",
+            "Landlord responsible for",
+            "structural repairs and replacement"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "In NNN leases, structural maintenance may be passed through as CAM. Tenant should verify."
+        },
+        {
+          "element_id": "LP-06.hvac_responsibility",
+          "element_label": "HVAC responsibility allocation is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "HVAC maintenance shall be",
+            "Tenant responsible for routine HVAC",
+            "Landlord responsible for major HVAC repairs",
+            "heating, ventilation, and air conditioning",
+            "shared HVAC responsibility"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "HVAC is the most disputed maintenance item. Split between routine (tenant) and capital replacement (landlord) is market."
+        },
+        {
+          "element_id": "LP-06.repair_response_time",
+          "element_label": "Repair response time obligations are stated",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord shall commence repairs within",
+            "reasonable time after notice",
+            "emergency repairs within",
+            "days to complete repairs"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a defined timeline, tenant has no leverage for delayed repairs."
+        },
+        {
+          "element_id": "LP-06.damage_destruction_repair_process",
+          "element_label": "Damage and destruction repair process is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "in the event of damage or destruction",
+            "casualty repair obligation",
+            "restoration following fire or casualty",
+            "rebuild or restore"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": [
+            "LP-24"
+          ],
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Often covered in LP-24 Damage & Destruction. Cross-LP coverage acceptable."
+        }
+      ]
     },
     {
       "id": "LP-07",
@@ -362,7 +958,123 @@
         "Capital expenditure exclusion added",
         "Management fee cap (typically 15% of operating expenses)"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-07.proportionate_share_calculation",
+          "element_label": "Tenant's proportionate share calculation method is defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant's Proportionate Share shall mean",
+            "numerator of which is the rentable area",
+            "pro rata share",
+            "percentage of total leasable area"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Denominator definition matters: total center vs occupied space. Occupied-only denominator shifts vacant space costs to existing tenants."
+        },
+        {
+          "element_id": "LP-07.included_expense_categories",
+          "element_label": "Included expense categories are enumerated",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "CAM Charges shall include",
+            "operating expenses including",
+            "landscaping, parking lot maintenance",
+            "management fees, insurance, taxes"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "'Including without limitation' language makes the list illustrative, not exhaustive. Tenant-unfavorable."
+        },
+        {
+          "element_id": "LP-07.excluded_expense_categories",
+          "element_label": "Excluded expense categories are defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "CAM Charges shall not include",
+            "exclusions from operating expenses",
+            "capital improvements shall not be",
+            "landlord's overhead not included"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without exclusions, landlord can pass through capital improvements, legal fees, and overhead. Major tenant risk."
+        },
+        {
+          "element_id": "LP-07.cam_cap",
+          "element_label": "Annual CAM increase cap is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "CAM Charges shall not increase by more than",
+            "annual cap of",
+            "controllable expenses capped at",
+            "non-controllable expenses excluded from cap"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Absence means uncapped CAM exposure. Controllable vs non-controllable split is market standard."
+        },
+        {
+          "element_id": "LP-07.tenant_audit_rights",
+          "element_label": "Tenant audit rights for CAM charges are defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall have the right to audit",
+            "inspect Landlord's books and records",
+            "audit at Tenant's expense",
+            "Tenant shall not have the right to audit"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Explicit denial of audit rights is covered_unfavorable. Absence without explicit denial is a gap."
+        },
+        {
+          "element_id": "LP-07.reconciliation_timeline",
+          "element_label": "Annual reconciliation timeline is specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "within ninety days after the end of each calendar year",
+            "annual reconciliation",
+            "statement of actual CAM Charges",
+            "true-up within"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a reconciliation deadline, landlord can delay true-ups indefinitely."
+        }
+      ]
     },
     {
       "id": "LP-08",
@@ -407,7 +1119,122 @@
         "Removal of business interruption requirement",
         "Mutual waiver of subrogation (one-way ג†’ two-way)"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-08.cgl_minimum",
+          "element_label": "Commercial general liability minimum coverage is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "commercial general liability insurance with limits of not less than",
+            "One Million per occurrence",
+            "Two Million aggregate",
+            "CGL coverage"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Market standard: $1M/$2M. Higher limits for larger spaces or higher-risk uses."
+        },
+        {
+          "element_id": "LP-08.property_insurance",
+          "element_label": "Property insurance obligation is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "property insurance covering Tenant's personal property",
+            "all-risk basis",
+            "full replacement cost",
+            "contents and inventory insurance"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Tenant's property insurance protects tenant's investment. Landlord's property insurance covers the building."
+        },
+        {
+          "element_id": "LP-08.business_interruption",
+          "element_label": "Business interruption insurance coverage is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "business interruption insurance",
+            "loss of income coverage",
+            "sufficient to cover twelve months",
+            "rental income insurance"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Protects tenant's ability to pay rent during interruption. Connects to LP-14 Force Majeure and LP-24 Damage."
+        },
+        {
+          "element_id": "LP-08.landlord_additional_insured",
+          "element_label": "Landlord is named as additional insured on tenant's policies",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "name Landlord as additional insured",
+            "Landlord, Landlord's managing agent, and Landlord's lender",
+            "additional insured endorsement"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Standard requirement. Lender as additional insured is also common."
+        },
+        {
+          "element_id": "LP-08.certificate_delivery",
+          "element_label": "Certificate of insurance delivery obligation is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "deliver certificates of insurance",
+            "prior to the Commencement Date",
+            "days prior to expiration of each policy",
+            "evidence of required coverages"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Procedural requirement."
+        },
+        {
+          "element_id": "LP-08.waiver_of_subrogation",
+          "element_label": "Mutual waiver of subrogation is included",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "waives any right of recovery against the other party",
+            "waiver of subrogation endorsement",
+            "each party releases the other",
+            "to the extent covered by insurance"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "both",
+          "review_notes": "Without mutual waiver, insurer can pursue the other party after paying a claim. One-way waiver is unfavorable to the waiving party."
+        }
+      ]
     },
     {
       "id": "LP-09",
@@ -750,7 +1577,105 @@
         "Removal obligation limited to trade fixtures only",
         "Landlord required to designate removal items at time of approval"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-10.approval_threshold",
+          "element_label": "Threshold for required landlord approval is defined (dollar amount or scope)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "without prior written consent of Landlord",
+            "consent shall not be unreasonably withheld for non-structural alterations costing less than",
+            "alterations exceeding",
+            "cosmetic changes without consent"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a dollar threshold, all alterations require consent regardless of materiality."
+        },
+        {
+          "element_id": "LP-10.ownership_of_improvements",
+          "element_label": "Ownership of improvements at lease end is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "shall become the property of Landlord upon installation",
+            "improvements shall remain upon the Premises",
+            "Tenant may remove trade fixtures",
+            "all alterations shall be surrendered"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Automatic ownership transfer to landlord means tenant forfeits improvement investment."
+        },
+        {
+          "element_id": "LP-10.removal_obligation",
+          "element_label": "Removal obligation at lease expiration is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord requests their removal",
+            "restore the Premises to their original condition",
+            "remove such improvements at Tenant's sole cost",
+            "surrender in condition required"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Landlord option to require removal at tenant's cost is standard but creates end-of-term uncertainty."
+        },
+        {
+          "element_id": "LP-10.lien_discharge",
+          "element_label": "Lien discharge or bond requirement is stated",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall not permit any mechanic's lien",
+            "cause it to be discharged within",
+            "by payment, bond, or otherwise",
+            "lien-free completion"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Protects landlord's property from tenant's contractor liens."
+        },
+        {
+          "element_id": "LP-10.landlord_contribution",
+          "element_label": "Landlord contribution to tenant improvements is addressed (if any)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "tenant improvement allowance",
+            "TI allowance of",
+            "Landlord shall contribute",
+            "construction allowance",
+            "buildout contribution"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Not all leases include a TI allowance. Absence is common but can be a negotiation point."
+        }
+      ]
     },
     {
       "id": "LP-11",
@@ -1206,7 +2131,106 @@
         "Termination fee capped at 6-12 months rent",
         "Co-tenancy clause added (right to terminate if anchor tenant leaves)"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-12.triggering_conditions",
+          "element_label": "Triggering conditions for early termination right are defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall have the right to terminate",
+            "upon the occurrence of",
+            "termination right exercisable after",
+            "earliest date of termination"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without an early termination right, tenant is bound for the full term."
+        },
+        {
+          "element_id": "LP-12.notice_period",
+          "element_label": "Notice period required for early termination is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "not less than one hundred eighty days' prior written notice",
+            "months' notice of intent to terminate",
+            "termination notice period"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Long notice periods (180+ days) protect landlord's reletting timeline."
+        },
+        {
+          "element_id": "LP-12.termination_fee",
+          "element_label": "Termination fee or penalty formula is defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "early termination fee equal to",
+            "Termination Fee",
+            "months' Base Rent",
+            "penalty for early termination",
+            "liquidated damages"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Fee compensates landlord for lost rent and reletting costs."
+        },
+        {
+          "element_id": "LP-12.unamortized_ti_recovery",
+          "element_label": "Unamortized tenant improvement cost recovery is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "unamortized portion of tenant improvement allowance",
+            "repay TI allowance",
+            "prorated construction costs",
+            "amortization of landlord's costs"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Relevant when landlord funded tenant improvements. Absence means landlord cannot recover unamortized costs on early termination."
+        },
+        {
+          "element_id": "LP-12.co_tenancy_termination_trigger",
+          "element_label": "Co-tenancy termination trigger is addressed (if applicable)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "if anchor tenant vacates",
+            "co-tenancy termination right",
+            "if occupancy falls below threshold",
+            "right to terminate if major tenant closes"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": [
+            "LP-31"
+          ],
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Primarily relevant for retail in shopping centers. Cross-LP with LP-31 Co-Tenancy."
+        }
+      ]
     },
     {
       "id": "LP-13",
@@ -1251,7 +2275,123 @@
         "Added cap on total liability (typically 12-24 months rent)",
         "Excluded consequential, punitive, and special damages"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-13.tenant_indemnification_scope",
+          "element_label": "Tenant indemnification of landlord scope is defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall indemnify, defend, and hold harmless Landlord",
+            "from and against any and all claims",
+            "arising out of Tenant's use and occupancy",
+            "including reasonable attorneys' fees"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Broad tenant indemnification is market standard. Scope of 'arising out of' vs 'caused by' matters."
+        },
+        {
+          "element_id": "LP-13.landlord_indemnification_scope",
+          "element_label": "Landlord indemnification of tenant scope is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord shall indemnify Tenant",
+            "arising out of Landlord's negligence",
+            "gross negligence or willful misconduct",
+            "Landlord hold harmless"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "One-way indemnification (tenant only) is covered_unfavorable. Landlord indemnification limited to gross negligence is asymmetric."
+        },
+        {
+          "element_id": "LP-13.mutual_vs_one_way",
+          "element_label": "Mutual vs one-way indemnification structure is identifiable",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "each party shall indemnify the other",
+            "mutual indemnification",
+            "Tenant shall indemnify but Landlord shall not",
+            "asymmetric indemnification"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "One-way or asymmetric indemnification is the primary covered_unfavorable trigger for LP-13."
+        },
+        {
+          "element_id": "LP-13.consequential_damages_exclusion",
+          "element_label": "Exclusion of consequential or punitive damages is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "shall not be liable for any consequential, incidental, or punitive damages",
+            "waiver of consequential damages",
+            "indirect damages excluded",
+            "no liability for lost profits"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "One-sided exclusion (landlord excludes but tenant doesn't) is tenant-unfavorable."
+        },
+        {
+          "element_id": "LP-13.negligence_carveouts",
+          "element_label": "Carve-outs for indemnitee's own negligence are addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "except to the extent caused by Landlord's negligence",
+            "excluding indemnitee's own negligence",
+            "comparative negligence",
+            "sole negligence of Landlord"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a negligence carve-out, tenant indemnifies landlord even for landlord's own negligence. Anti-indemnity statutes in some states void this."
+        },
+        {
+          "element_id": "LP-13.liability_cap",
+          "element_label": "Cap on liability is addressed (if any)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord's liability shall not exceed",
+            "limited to Landlord's interest in the property",
+            "aggregate liability capped at",
+            "liability shall in no event extend beyond"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Landlord liability limited to its interest in the property is market standard but limits tenant's recovery."
+        }
+      ]
     },
     {
       "id": "LP-14",
@@ -1298,7 +2438,124 @@
         "Added termination right if force majeure exceeds 180 days",
         "Added partial abatement mechanism for operational impairment short of total untenantability"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-14.qualifying_events_definition",
+          "element_label": "Definition of qualifying force majeure events is stated",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Force Majeure Event shall mean",
+            "acts of God, fire, flood",
+            "war, terrorism, civil unrest",
+            "government actions beyond reasonable control",
+            "pandemic, epidemic"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Post-COVID, pandemic/epidemic should be explicitly listed or excluded. Vague definitions create enforcement uncertainty."
+        },
+        {
+          "element_id": "LP-14.scope_of_excused_obligations",
+          "element_label": "Scope of excused obligations is defined (which parties, which obligations)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "neither party shall be in default for failure to perform",
+            "other than the obligation to pay Rent",
+            "performance obligations excused",
+            "monetary obligations not excused"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Rent exclusion from force majeure is standard in landlord-form leases but tenant-unfavorable."
+        },
+        {
+          "element_id": "LP-14.rent_abatement",
+          "element_label": "Rent abatement during force majeure period is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Rent shall not be excused or abated",
+            "Base Rent shall be abated proportionally",
+            "wholly untenantable",
+            "rent continues during force majeure"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Abatement limited to 'wholly untenantable' is covered_unfavorable. No partial-abatement for operational impairment."
+        },
+        {
+          "element_id": "LP-14.notice_requirement",
+          "element_label": "Notice requirement to invoke force majeure is specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "give prompt notice to the other party",
+            "notice of force majeure event",
+            "within days of the occurrence",
+            "written notice of inability to perform"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": null,
+          "review_notes": "Procedural. Most force majeure clauses include a notice requirement."
+        },
+        {
+          "element_id": "LP-14.termination_right_extended_fm",
+          "element_label": "Termination right if force majeure exceeds threshold period",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "if Force Majeure Event exceeds",
+            "either party may terminate",
+            "one hundred eighty days",
+            "extended force majeure termination"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a termination right, tenant is bound even during prolonged force majeure."
+        },
+        {
+          "element_id": "LP-14.partial_abatement_operational_impairment",
+          "element_label": "Partial rent abatement or adjustment for operational impairment",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "partial abatement proportional to",
+            "reduced to the extent premises are unusable",
+            "operational impairment abatement",
+            "adjustment for restricted access"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Absence means tenant pays full rent even when operations are materially impaired but premises aren't wholly untenantable. This is the primary covered_unfavorable trigger for LP-14."
+        }
+      ]
     },
     {
       "id": "LP-15",
@@ -1349,7 +2606,124 @@
         "Minimum sign dimensions specified",
         "Approval timeline specified (30 days; deemed approved if no response)"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-15.exterior_signage_right",
+          "element_label": "Exterior signage right on storefront or facade is granted",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "right to install and maintain sign on the exterior",
+            "storefront signage",
+            "facade signage",
+            "exterior sign on the Premises"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Tenant's primary brand visibility. Absence means landlord controls all signage."
+        },
+        {
+          "element_id": "LP-15.directory_listing",
+          "element_label": "Directory listing right is included",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "include Tenant's name in the directory",
+            "Shopping Center directory",
+            "building directory listing",
+            "at no additional charge"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Minor but standard."
+        },
+        {
+          "element_id": "LP-15.approval_process",
+          "element_label": "Approval process and timeline for signage is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "prior written approval of the size, design, materials",
+            "approval shall not be unreasonably withheld",
+            "sign criteria",
+            "landlord approval of signage"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a reasonableness standard, landlord has absolute discretion on signage approval."
+        },
+        {
+          "element_id": "LP-15.landlord_modify_remove",
+          "element_label": "Landlord's right to modify or require removal of signage is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord may require removal",
+            "sign criteria changes",
+            "Tenant shall remove all signage upon expiration",
+            "repair any damage caused by removal"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Standard end-of-term obligation."
+        },
+        {
+          "element_id": "LP-15.code_compliance",
+          "element_label": "Compliance with code and center signage standards is required",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "comply with Landlord's sign criteria",
+            "all applicable laws and regulations",
+            "zoning and signage ordinances",
+            "shopping center design standards"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": null,
+          "review_notes": "Standard compliance requirement."
+        },
+        {
+          "element_id": "LP-15.pylon_monument_sign",
+          "element_label": "Pylon or monument sign right is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "pylon sign",
+            "monument sign",
+            "freestanding sign",
+            "center identification sign",
+            "right to be listed on center pylon"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Important for tenant visibility from roadways. Not all tenants get pylon rights."
+        }
+      ]
     },
     {
       "id": "LP-16",
@@ -1399,7 +2773,124 @@
         "Minimum space count guaranteed regardless of center reconfiguration",
         "Cost of reserved spaces capped or included in base rent"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-16.parking_allocation",
+          "element_label": "Parking space allocation is defined (count or ratio per square foot)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "parking spaces per thousand square feet",
+            "minimum of four spaces per",
+            "allocated parking",
+            "parking ratio"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a defined allocation, tenant has no guaranteed parking."
+        },
+        {
+          "element_id": "LP-16.reserved_vs_unreserved",
+          "element_label": "Reserved vs unreserved parking designation is stated",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "reserved spaces",
+            "unreserved and available on a first-come basis",
+            "designated parking",
+            "non-exclusive right to use"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Reserved spaces have higher value. Most retail is unreserved."
+        },
+        {
+          "element_id": "LP-16.landlord_modification_right",
+          "element_label": "Landlord's right to modify parking area is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "reserves the right to reconfigure",
+            "modify parking areas",
+            "install parking meters or gates",
+            "implement paid parking",
+            "minimum allocation maintained"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Modification without maintaining minimum allocation is tenant-unfavorable."
+        },
+        {
+          "element_id": "LP-16.parking_cost",
+          "element_label": "Parking cost is addressed (included in rent or separately charged)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "parking included in Base Rent",
+            "additional charge for parking",
+            "parking fee of",
+            "no separate charge for parking"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "If landlord can implement paid parking without tenant consent, tenant's operating costs increase."
+        },
+        {
+          "element_id": "LP-16.visitor_customer_parking",
+          "element_label": "Visitor and customer parking access is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "customer parking",
+            "visitor parking",
+            "public parking areas",
+            "customer access to parking"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Important for retail tenants where customer access drives revenue."
+        },
+        {
+          "element_id": "LP-16.exclusive_parking_protection",
+          "element_label": "Exclusive or protected parking for tenant is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "designated employee parking",
+            "exclusive parking area",
+            "Tenant's employees shall park in designated areas",
+            "parking regulations"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Employee parking regulations are common in shopping centers."
+        }
+      ]
     },
     {
       "id": "LP-17",
@@ -1445,7 +2936,124 @@
         "Jury trial waiver made mutual",
         "Venue changed to tenant's county"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-17.dispute_mechanism",
+          "element_label": "Dispute resolution mechanism is defined (mediation, arbitration, or litigation)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "mediation administered by",
+            "binding arbitration",
+            "litigation in the courts",
+            "dispute resolution procedure",
+            "American Arbitration Association"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "both",
+          "review_notes": "Without a defined mechanism, default is litigation. Mandatory arbitration may limit discovery rights."
+        },
+        {
+          "element_id": "LP-17.governing_law",
+          "element_label": "Governing law (state) is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "governed by and construed in accordance with the laws of",
+            "State of",
+            "without regard to conflict of laws",
+            "governing law"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Determines which state's commercial lease law applies. Critical for interpreting every other provision."
+        },
+        {
+          "element_id": "LP-17.venue_jurisdiction",
+          "element_label": "Venue and jurisdiction for disputes is specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "courts located in the county in which the Shopping Center is situated",
+            "exclusive jurisdiction",
+            "venue in",
+            "state or federal courts"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Venue in property county is standard. Remote venue forces tenant to litigate away from home."
+        },
+        {
+          "element_id": "LP-17.attorney_fee_allocation",
+          "element_label": "Attorney fee allocation is defined (one-way or prevailing party)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "prevailing party shall be entitled to recover reasonable attorneys' fees",
+            "landlord entitled to attorneys' fees",
+            "one-way fee shifting",
+            "each party bears own costs"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "One-way fee shifting (landlord only) is tenant-unfavorable. Prevailing party is market standard."
+        },
+        {
+          "element_id": "LP-17.jury_trial_waiver",
+          "element_label": "Jury trial waiver is included",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "irrevocably waives the right to a trial by jury",
+            "WAIVER OF JURY TRIAL",
+            "each party waives jury trial",
+            "bench trial"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": null,
+          "review_notes": "Standard in commercial leases. Benefits landlord in most cases (judges more predictable). Enforceability varies by jurisdiction."
+        },
+        {
+          "element_id": "LP-17.claims_time_limit",
+          "element_label": "Time limit for bringing claims is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "claims must be brought within",
+            "statute of limitations",
+            "contractual limitations period",
+            "time-barred if not brought within"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": null,
+          "review_notes": "Statutory limitations periods apply by default. Contractual shortening may be unenforceable in some states."
+        }
+      ]
     },
     {
       "id": "LP-18",
@@ -1485,7 +3093,104 @@
         "Consequential damages excluded",
         "Month-to-month characterization confirmed (prevents automatic term renewal)"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-18.holdover_rent_rate",
+          "element_label": "Holdover rent rate is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "one hundred fifty percent of the Base Rent",
+            "holdover rent of",
+            "200% of the monthly rent",
+            "holdover rental rate"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "both",
+          "review_notes": "150% is market standard. 200% is landlord-favorable. Some jurisdictions limit holdover penalties."
+        },
+        {
+          "element_id": "LP-18.tenancy_characterization",
+          "element_label": "Month-to-month vs tenancy-at-sufferance characterization is stated",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "holdover tenant on a month-to-month basis",
+            "tenancy at sufferance",
+            "holdover tenancy",
+            "deemed a holdover tenant"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Month-to-month gives tenant more protection than tenancy-at-sufferance."
+        },
+        {
+          "element_id": "LP-18.notice_to_terminate_holdover",
+          "element_label": "Notice required to terminate holdover tenancy is specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "thirty days' prior written notice",
+            "terminate the holdover tenancy upon",
+            "notice to vacate",
+            "days' notice to quit"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Statutory notice periods apply by default."
+        },
+        {
+          "element_id": "LP-18.consequential_damages_holdover",
+          "element_label": "Landlord's right to collect consequential damages from holdover is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall indemnify Landlord against all claims",
+            "loss of prospective tenants",
+            "holdover damages",
+            "damages in excess of holdover Rent"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Consequential damages for holdover can be very large if landlord loses a replacement tenant."
+        },
+        {
+          "element_id": "LP-18.conversion_conditions",
+          "element_label": "Conditions for conversion to new lease are addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "no renewal rights during holdover",
+            "holdover does not create a new lease",
+            "holdover tenancy subject to all terms",
+            "Landlord's consent to holdover"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": null,
+          "review_notes": "Standard clarification that holdover doesn't create new rights."
+        }
+      ]
     },
     {
       "id": "LP-19",
@@ -1537,7 +3242,127 @@
         "Utility upgrade costs allocated to landlord or capped",
         "Cap on tenant's share of shared utility costs"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-19.covered_utilities",
+          "element_label": "Covered utilities are identified (electric, gas, water, sewer, telecom, trash)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "electric, gas, water, sewer, telecommunications, and trash",
+            "utility services",
+            "all utilities serving the Premises",
+            "Tenant shall pay for all utilities"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without identification, disputes arise over which services tenant pays for."
+        },
+        {
+          "element_id": "LP-19.cost_allocation",
+          "element_label": "Cost allocation method is defined (direct, submetered, pass-through, included)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall pay directly to the utility provider",
+            "separately metered",
+            "included in Base Rent",
+            "pass-through as Additional Rent",
+            "Landlord's Proportionate Share"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Pass-through without meter verification is tenant-unfavorable."
+        },
+        {
+          "element_id": "LP-19.submetering_rights",
+          "element_label": "Submetering or check meter rights are addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "submetered",
+            "check meter",
+            "Tenant's actual consumption",
+            "metered separately",
+            "right to install submeter"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without submetering, tenant can't verify charges are based on actual use."
+        },
+        {
+          "element_id": "LP-19.installation_connection_costs",
+          "element_label": "Responsibility for utility installation and connection costs is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "installation costs borne by",
+            "connection charges",
+            "utility hook-up fees",
+            "infrastructure costs"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Usually tenant's cost for specialized utility needs."
+        },
+        {
+          "element_id": "LP-19.service_interruption_remedies",
+          "element_label": "Rent abatement or remedies for prolonged service interruption are addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "rent abatement if utilities interrupted for",
+            "remedies for service interruption",
+            "Landlord not liable for utility failure",
+            "Tenant's sole remedy"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": [
+            "LP-14"
+          ],
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Critical for operations dependent on uninterrupted power (pharmacy, food service, data centers)."
+        },
+        {
+          "element_id": "LP-19.utility_upgrade_costs",
+          "element_label": "Responsibility for utility upgrade costs is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "utility upgrade at Tenant's expense",
+            "increased capacity costs",
+            "electrical panel upgrade",
+            "HVAC capacity increase"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Relevant for tenants with high utility needs."
+        }
+      ]
     },
     {
       "id": "LP-20",
@@ -1606,7 +3431,142 @@
         "Added radius restriction (e.g., no competing use within 1 mile)",
         "Extended exclusivity for full lease term including renewal options"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-20.exclusive_use_scope",
+          "element_label": "Specific exclusive use scope is defined (protected business activities)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "exclusive right to operate",
+            "no other tenant shall",
+            "Landlord shall not lease to",
+            "protected use"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Narrow scope limits protection. Broad scope increases landlord resistance."
+        },
+        {
+          "element_id": "LP-20.existing_tenant_carveouts",
+          "element_label": "Carve-outs for existing tenants at the center are addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "existing tenants excepted",
+            "tenants in occupancy as of",
+            "grandfathered tenants",
+            "does not apply to tenants with existing leases"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without carve-outs, existing competing tenants may already violate the exclusivity."
+        },
+        {
+          "element_id": "LP-20.incidental_use_carveouts",
+          "element_label": "Carve-outs for ancillary or incidental use by other tenants are addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "incidental to the primary business",
+            "ancillary use",
+            "de minimis exception",
+            "less than percent of floor area devoted to"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without incidental use carve-outs, any competing product sale by any tenant triggers a violation."
+        },
+        {
+          "element_id": "LP-20.radius_restriction",
+          "element_label": "Radius restriction or geographic scope is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "within a radius of",
+            "miles from the Shopping Center",
+            "geographic restriction on tenant",
+            "radius clause"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Radius restrictions limit tenant's ability to open nearby competing locations."
+        },
+        {
+          "element_id": "LP-20.competing_use_definition",
+          "element_label": "Definition of 'competing use' is provided",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "competing use shall mean",
+            "substantially similar business",
+            "same type of merchandise",
+            "primary business purpose"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Vague competing use definitions create enforcement uncertainty."
+        },
+        {
+          "element_id": "LP-20.exclusivity_duration",
+          "element_label": "Duration of exclusivity is defined (full term or limited period)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "during the Lease Term",
+            "for the initial term only",
+            "exclusivity expires after",
+            "continuous operation required to maintain"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Exclusivity conditioned on continuous operation means tenant loses protection if it closes temporarily."
+        },
+        {
+          "element_id": "LP-20.remedies_for_violation",
+          "element_label": "Remedies for landlord violation of exclusivity are defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "rent abatement if exclusivity violated",
+            "right to terminate",
+            "damages for breach of exclusivity",
+            "injunctive relief"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without defined remedies, tenant must pursue breach of contract claims with uncertain outcomes."
+        }
+      ]
     },
     {
       "id": "LP-21",
@@ -1681,7 +3641,104 @@
         "Release on assignment of lease to qualified assignee",
         "Limited guaranty scope (rent only, not all lease obligations)"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-21.guarantor_identity",
+          "element_label": "Guarantor identity is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Guarantor shall be",
+            "personally guaranteed by",
+            "parent company guarantee",
+            "individual guaranty of"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Individual vs entity guarantor affects enforcement and collection."
+        },
+        {
+          "element_id": "LP-21.guarantee_scope",
+          "element_label": "Scope of guarantee is defined (full lease or limited)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "unconditionally guarantees the full and faithful performance",
+            "guarantees payment of all rent",
+            "limited to",
+            "good guy guarantee"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Full guarantee vs good-guy (limited to clean surrender). Good-guy is tenant-favorable."
+        },
+        {
+          "element_id": "LP-21.guarantee_duration",
+          "element_label": "Duration of guarantee is stated",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "for the entire Lease Term",
+            "guarantee shall expire after",
+            "burnoff after",
+            "reduced by after years of timely payment"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Burnoff provisions reduce guarantee over time based on payment history. Tenant-favorable."
+        },
+        {
+          "element_id": "LP-21.guarantor_liability_cap",
+          "element_label": "Cap on guarantor liability is addressed (if any)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "guarantor's liability shall not exceed",
+            "maximum exposure of",
+            "limited to months' rent",
+            "aggregate cap on guarantor"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Uncapped personal guarantee creates unlimited exposure for the guarantor."
+        },
+        {
+          "element_id": "LP-21.guarantor_release_conditions",
+          "element_label": "Conditions for guarantor release are defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Guarantor shall be released upon",
+            "guaranty expires when",
+            "upon assignment with landlord consent",
+            "net worth threshold for release"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without release conditions, guarantor is liable for the full term regardless of assignment or subletting."
+        }
+      ]
     },
     {
       "id": "LP-22",
@@ -2036,7 +4093,104 @@
         "Audit window limited to 2 years; findings deemed final if not contested",
         "Annual gross sales cap after which no further percentage rent is owed"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-23.percentage_rate",
+          "element_label": "Percentage rent rate is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "percent of Gross Sales",
+            "percentage rent of",
+            "overage rent equal to",
+            "additional rent based on sales"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Market rates vary by retail category (2-8% typical)."
+        },
+        {
+          "element_id": "LP-23.breakpoint_calculation",
+          "element_label": "Breakpoint calculation method is defined (natural or artificial)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "natural breakpoint",
+            "artificial breakpoint of",
+            "Gross Sales exceed",
+            "annual Base Rent divided by the percentage rate"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Natural breakpoint (base rent / percentage rate) is market standard and tenant-favorable. Artificial breakpoint set below natural is landlord-favorable."
+        },
+        {
+          "element_id": "LP-23.gross_sales_definition",
+          "element_label": "Gross sales definition is provided (inclusions and exclusions)",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Gross Sales shall mean",
+            "excluding sales tax, returns",
+            "including internet sales from premises",
+            "all revenue from business conducted"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Broad definition (including internet sales, gift card redemptions) inflates tenant's percentage rent."
+        },
+        {
+          "element_id": "LP-23.reporting_audit_requirements",
+          "element_label": "Sales reporting and audit requirements are specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "monthly or annual sales reports",
+            "certified statement of Gross Sales",
+            "Landlord's right to audit Tenant's books",
+            "access to sales records"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Landlord needs audit rights to verify sales reporting. Tenant needs confidentiality protections."
+        },
+        {
+          "element_id": "LP-23.natural_vs_artificial_breakpoint",
+          "element_label": "Natural vs artificial breakpoint distinction is clear",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "natural breakpoint equal to Base Rent divided by percentage rate",
+            "artificial breakpoint of dollars",
+            "fixed breakpoint",
+            "sales threshold"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Ambiguity between natural and artificial breakpoint creates billing disputes."
+        }
+      ]
     },
     {
       "id": "LP-24",
@@ -2091,7 +4245,140 @@
         "Tenant rebuild allowance for tenant improvements above base building insurance",
         "Tenant right to terminate if damage occurs in last 12-18 months of term"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-24.landlord_repair_obligation",
+          "element_label": "Landlord's obligation to repair or rebuild following insured casualty is defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord shall repair or rebuild",
+            "restore the Premises",
+            "reconstruction obligation",
+            "repair following fire or other casualty"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without this, landlord has no obligation to rebuild and tenant remains bound."
+        },
+        {
+          "element_id": "LP-24.rent_abatement_during_repair",
+          "element_label": "Rent abatement during period of repair is addressed",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Rent shall abate proportionally",
+            "rent reduced during repair period",
+            "no rent during restoration",
+            "abatement based on usability"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without abatement, tenant pays full rent for unusable space during repairs."
+        },
+        {
+          "element_id": "LP-24.repair_deadline",
+          "element_label": "Landlord repair deadline is specified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "repair within days",
+            "restoration completed within months",
+            "architect certification of repair timeline",
+            "reasonable time to complete repairs"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a deadline, landlord can delay repairs indefinitely while tenant remains bound."
+        },
+        {
+          "element_id": "LP-24.tenant_termination_right",
+          "element_label": "Tenant's right to terminate if repairs not completed within defined period",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant may terminate if repair not completed within",
+            "right to cancel lease if restoration exceeds",
+            "termination right on extended repair"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without termination right, tenant is trapped in a damaged property with no exit."
+        },
+        {
+          "element_id": "LP-24.landlord_termination_right",
+          "element_label": "Landlord's right to terminate if damage occurs near end of term or is uninsurable",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord may terminate if damage occurs within last months of term",
+            "uninsured casualty",
+            "cost of repair exceeds percent of replacement value"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Protects landlord from uneconomic repairs near end of term."
+        },
+        {
+          "element_id": "LP-24.total_loss_threshold",
+          "element_label": "Definition of total loss or destruction threshold is provided",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "total destruction",
+            "damage exceeding percent of replacement cost",
+            "substantially destroyed",
+            "total loss"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "both",
+          "review_notes": "Without a threshold, parties dispute whether damage is 'total' or 'partial'."
+        },
+        {
+          "element_id": "LP-24.insurance_proceeds_disposition",
+          "element_label": "Disposition of insurance proceeds if lease terminates is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "insurance proceeds applied to repair",
+            "excess proceeds retained by Landlord",
+            "Tenant's share of insurance proceeds",
+            "proceeds disbursement"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Tenant should recover its improvement investment from proceeds if lease terminates."
+        }
+      ]
     },
     {
       "id": "LP-25",
@@ -2144,7 +4431,139 @@
         "Landlord restoration obligation if lease continues after partial taking",
         "Business interruption damages excluded from landlord's award"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-25.total_vs_partial_taking",
+          "element_label": "Definition of total taking vs material partial taking is provided",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "total taking",
+            "partial taking",
+            "material taking affecting more than percent",
+            "taking of substantially all of the Premises"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Without clear definitions, parties dispute whether a taking is 'material' enough to trigger termination."
+        },
+        {
+          "element_id": "LP-25.termination_right_on_taking",
+          "element_label": "Lease termination right on total or material partial taking is defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "either party may terminate",
+            "lease shall terminate upon total taking",
+            "right to cancel if taking renders premises unsuitable"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without termination right, tenant remains bound to reduced premises."
+        },
+        {
+          "element_id": "LP-25.rent_reduction_partial_taking",
+          "element_label": "Rent abatement or reduction on partial taking is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Rent shall be reduced proportionately",
+            "abatement for partial taking",
+            "rent adjusted to reflect reduced premises"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without reduction, tenant pays full rent for smaller space."
+        },
+        {
+          "element_id": "LP-25.award_allocation",
+          "element_label": "Allocation of condemnation award between landlord and tenant is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "entire award shall belong to Landlord",
+            "Tenant waives any claim to the award",
+            "Tenant entitled to a separate award",
+            "allocation of condemnation proceeds"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Tenant waiver of all award rights is extremely tenant-unfavorable. Tenant should preserve right to separate award."
+        },
+        {
+          "element_id": "LP-25.tenant_separate_award",
+          "element_label": "Tenant's right to separate award for fixtures, improvements, moving costs is preserved",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "Tenant may seek a separate award",
+            "trade fixtures and leasehold improvements",
+            "moving costs and business losses",
+            "Tenant's claim shall not reduce Landlord's award"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Tenant's separate award should not diminish landlord's award to be enforceable."
+        },
+        {
+          "element_id": "LP-25.restoration_obligation",
+          "element_label": "Restoration obligation if lease continues after partial taking is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord shall restore the remaining Premises",
+            "repair and restoration after partial taking",
+            "restoration from condemnation proceeds"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without restoration obligation, tenant occupies diminished premises with no landlord fix."
+        },
+        {
+          "element_id": "LP-25.material_partial_taking_definition",
+          "element_label": "Definition of 'material' partial taking is provided",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "loss of parking, access, or floor area",
+            "taking of more than percent of the Premises",
+            "renders Premises unsuitable for Tenant's business",
+            "material impairment of access"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Parking and access loss can be as damaging as floor area loss for retail tenants."
+        }
+      ]
     },
     {
       "id": "LP-26",
@@ -2742,7 +5161,124 @@
         "Future law compliance costs above defined threshold allocated to landlord",
         "Landlord representation that premises comply with all applicable laws at commencement"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-28.tenant_compliance_obligation",
+          "element_label": "Tenant's obligation to comply with applicable laws is defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall comply with all applicable laws",
+            "at Tenant's sole cost and expense",
+            "federal, state, and local laws, ordinances, regulations",
+            "in connection with Tenant's use"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Standard provision. Scope matters: 'in connection with Tenant's use' limits to use-specific compliance."
+        },
+        {
+          "element_id": "LP-28.landlord_delivery_compliance",
+          "element_label": "Landlord's obligation to deliver premises in compliance at commencement is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord represents that the Premises comply with",
+            "delivered in compliance with applicable codes",
+            "landlord warrants compliance at commencement",
+            "existing conditions meet current code"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without this, tenant inherits pre-existing non-compliance and may bear remediation costs."
+        },
+        {
+          "element_id": "LP-28.structural_vs_use_specific_allocation",
+          "element_label": "Allocation of structural vs use-specific compliance costs is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "structural compliance costs borne by Landlord",
+            "use-specific compliance at Tenant's expense",
+            "building code compliance allocation",
+            "code upgrades not triggered by Tenant's use"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without this allocation, tenant may fund structural building upgrades required by code changes not related to tenant's use."
+        },
+        {
+          "element_id": "LP-28.future_changes_in_law",
+          "element_label": "Future changes in law during the term are addressed (who bears cost)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "changes in law enacted after commencement",
+            "future code changes",
+            "new regulations during the term",
+            "cost of compliance with future laws"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without this, tenant bears all compliance costs from future code changes regardless of cause."
+        },
+        {
+          "element_id": "LP-28.ada_compliance_allocation",
+          "element_label": "ADA compliance allocation is addressed (structural vs use-specific modifications)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "ADA compliance",
+            "Americans with Disabilities Act",
+            "accessibility modifications",
+            "structural ADA upgrades by Landlord",
+            "tenant-specific ADA modifications"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "ADA compliance for building common areas (ramps, parking, restrooms) should be landlord's obligation."
+        },
+        {
+          "element_id": "LP-28.grandfathering_pre_existing",
+          "element_label": "Grandfathering for pre-existing non-compliant conditions is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "pre-existing conditions",
+            "non-compliant conditions at commencement",
+            "landlord responsible for pre-existing violations",
+            "grandfathered conditions"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without this, tenant inherits landlord's pre-existing code violations."
+        }
+      ]
     },
     {
       "id": "LP-29",
@@ -2795,7 +5331,122 @@
         "Landlord's minimization of business interference obligation",
         "Showing rights limited to last 12 months of term and with tenant representative present"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-29.notice_period",
+          "element_label": "Notice period required before entry is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "twenty-four hours' prior notice",
+            "reasonable advance notice",
+            "days' written notice before entry",
+            "notice before entering"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without notice requirement, landlord can enter without warning."
+        },
+        {
+          "element_id": "LP-29.emergency_entry",
+          "element_label": "Emergency entry without advance notice is permitted and defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "without notice in case of emergency",
+            "emergency entry",
+            "life-safety emergency",
+            "imminent danger"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": null,
+          "review_notes": "Emergency entry is universally accepted. Definition of 'emergency' matters."
+        },
+        {
+          "element_id": "LP-29.minimize_interference",
+          "element_label": "Landlord's obligation to minimize interference with tenant's business is stated",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "minimize interference with Tenant's business",
+            "without unreasonable disruption",
+            "commercially reasonable efforts to avoid interference",
+            "during normal business hours"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without this obligation, landlord's entry can disrupt business with no recourse."
+        },
+        {
+          "element_id": "LP-29.permitted_purposes",
+          "element_label": "Permitted purposes for entry are enumerated",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "for the purpose of inspection, repair",
+            "showing to prospective tenants or buyers",
+            "maintenance and inspection",
+            "to exercise Landlord's rights under this Lease"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without enumerated purposes, landlord has unlimited entry rights."
+        },
+        {
+          "element_id": "LP-29.tenant_representative_present",
+          "element_label": "Tenant's right to have representative present during entry is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant representative may accompany",
+            "in the presence of Tenant's representative",
+            "Tenant may be present during inspection"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Important for tenants with sensitive inventory or confidential operations."
+        },
+        {
+          "element_id": "LP-29.entry_frequency_timing",
+          "element_label": "Restriction on entry frequency or timing is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "during normal business hours",
+            "no more than times per",
+            "not during peak business hours",
+            "limited to reasonable frequency"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without timing restrictions, entry can occur at inconvenient times."
+        }
+      ]
     },
     {
       "id": "LP-30",
@@ -2857,7 +5508,123 @@
         "Tenant certifies only to actual knowledge (not constructive or imputed knowledge)",
         "Tenant may note exceptions to landlord's form estoppel rather than sign as prepared"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-30.tenant_obligation",
+          "element_label": "Tenant's obligation to provide estoppel certificate is defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall execute and deliver an estoppel certificate",
+            "upon Landlord's written request",
+            "furnish an estoppel",
+            "certify the status of this Lease"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Estoppel certificates are essential for landlord's financing and sale transactions."
+        },
+        {
+          "element_id": "LP-30.response_deadline",
+          "element_label": "Response deadline is specified",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "within ten days after",
+            "fifteen business days of request",
+            "within days of Landlord's request"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Short deadlines (5-10 days) are tenant-unfavorable. 15-20 days is reasonable."
+        },
+        {
+          "element_id": "LP-30.certificate_form",
+          "element_label": "Form of certificate is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "in the form reasonably required by Landlord",
+            "form attached as Exhibit",
+            "Landlord's standard form",
+            "tenant right to note exceptions"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Tenant should have right to note exceptions rather than being forced to certify inaccurate statements."
+        },
+        {
+          "element_id": "LP-30.scope_of_certification",
+          "element_label": "Scope of certification is defined (lease status, rent current, no defaults)",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "certifying the status of this Lease",
+            "rent payment current",
+            "no landlord default known",
+            "amendments listed",
+            "such other matters as may be reasonably requested"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Open-ended scope ('such other matters') creates risk of tenant certifying beyond lease status."
+        },
+        {
+          "element_id": "LP-30.failure_consequence",
+          "element_label": "Consequence of failure to respond timely is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "deemed to have certified",
+            "failure to respond shall constitute acceptance",
+            "deemed approval",
+            "Tenant's failure shall be conclusive evidence"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Deemed-approval provisions are a trap for tenants who miss the deadline."
+        },
+        {
+          "element_id": "LP-30.frequency_limitation",
+          "element_label": "Limitation on request frequency is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "no more than times per year",
+            "maximum of requests annually",
+            "reasonable frequency",
+            "not more than twice in any twelve-month period"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a cap, landlord can demand estoppels repeatedly."
+        }
+      ]
     },
     {
       "id": "LP-31",
@@ -2928,7 +5695,105 @@
         "Termination right after 12 months of continuous co-tenancy failure",
         "Replacement anchor standard tightened (replacement must be national brand or defined credit quality)"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-31.opening_co_tenancy",
+          "element_label": "Opening co-tenancy requirement is defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "tenant's obligation to open is conditioned upon",
+            "anchor tenant must be open for business",
+            "minimum occupancy at opening",
+            "co-tenancy condition precedent"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Protects tenant from opening in an empty center."
+        },
+        {
+          "element_id": "LP-31.operating_co_tenancy",
+          "element_label": "Operating co-tenancy requirement is defined",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "if occupancy falls below",
+            "anchor tenant ceases to operate",
+            "minimum percent of GLA occupied and operating",
+            "ongoing co-tenancy requirement"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Protects tenant from operating in a declining center."
+        },
+        {
+          "element_id": "LP-31.co_tenancy_remedies",
+          "element_label": "Remedies for co-tenancy violation are defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "right to pay reduced rent",
+            "percentage rent only",
+            "right to terminate",
+            "go-dark right if co-tenancy fails"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without remedies, co-tenancy requirement has no teeth."
+        },
+        {
+          "element_id": "LP-31.anchor_tenant_definition",
+          "element_label": "Anchor tenant is defined or identified",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "anchor tenant",
+            "major tenant",
+            "tenant occupying more than square feet",
+            "department store",
+            "grocery anchor"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Named anchor is more protective than generic definition."
+        },
+        {
+          "element_id": "LP-31.co_tenancy_cure_period",
+          "element_label": "Cure period before co-tenancy remedies activate is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "if co-tenancy requirement is not satisfied within",
+            "cure period of",
+            "landlord shall have months to restore occupancy",
+            "grace period before co-tenancy remedy"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Gives landlord time to re-tenant before tenant's remedy kicks in."
+        }
+      ]
     },
     {
       "id": "LP-32",
@@ -3005,7 +5870,161 @@
         "Tenant right to conduct Phase I/II environmental assessment at commencement",
         "Notification right (not obligation) for third-party environmental claims not caused by tenant"
       ],
-      "covered_unfavorable_adverse_to": "tenant"
+      "covered_unfavorable_adverse_to": "tenant",
+      "expected_elements_305": [
+        {
+          "element_id": "LP-32.hazmat_definition",
+          "element_label": "Definition of hazardous materials is provided",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Hazardous Materials shall mean",
+            "as defined by CERCLA",
+            "RCRA",
+            "any substance regulated under applicable environmental law",
+            "toxic or hazardous substance"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "both",
+          "review_notes": "Without a definition, scope of prohibited materials is ambiguous."
+        },
+        {
+          "element_id": "LP-32.de_minimis_carveout",
+          "element_label": "Carve-out for de minimis quantities of customary business materials is included",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "customary business materials in reasonable quantities",
+            "cleaning supplies, office materials",
+            "ordinary course of business",
+            "de minimis exception"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without a carve-out, standard cleaning supplies could trigger a violation."
+        },
+        {
+          "element_id": "LP-32.prohibition_on_hazmat",
+          "element_label": "Prohibition on use, storage, or disposal except as permitted is stated",
+          "must_be_explicit": true,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant shall not use, store, or dispose of",
+            "no hazardous materials on the Premises",
+            "prohibited from introducing hazardous substances",
+            "except as permitted under this Lease"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Standard prohibition. Must be paired with de minimis carve-out to be workable."
+        },
+        {
+          "element_id": "LP-32.tenant_remediation_obligation",
+          "element_label": "Tenant's remediation obligation for contamination caused by tenant is defined",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "Tenant shall remediate at Tenant's sole cost",
+            "clean up and restore",
+            "environmental remediation",
+            "remove all contamination caused by Tenant"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Scope should be limited to contamination caused by tenant, not pre-existing conditions."
+        },
+        {
+          "element_id": "LP-32.landlord_pre_existing_representations",
+          "element_label": "Landlord's representations on pre-existing contamination are addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Landlord represents that the Premises are free of",
+            "no known contamination",
+            "environmental condition of the Premises",
+            "Phase I environmental assessment"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "high",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Without this, tenant inherits unknown contamination liability."
+        },
+        {
+          "element_id": "LP-32.tenant_testing_right",
+          "element_label": "Tenant's right to conduct environmental testing is addressed",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": false,
+          "default_law_covers": false,
+          "default_law_jurisdiction_dependent": null,
+          "synonyms": [
+            "Tenant may conduct environmental testing",
+            "Phase I or Phase II assessment",
+            "right to test for contamination",
+            "environmental inspection"
+          ],
+          "implicit_coverage_acceptable": false,
+          "cross_LP_coverage": null,
+          "absence_severity": "low",
+          "absence_adverse_to": "tenant",
+          "review_notes": "Important for due diligence but not always included in the lease."
+        },
+        {
+          "element_id": "LP-32.notification_requirement",
+          "element_label": "Notification requirement on release or discovery of hazardous condition is stated",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "Tenant shall immediately notify Landlord",
+            "notice of release or spill",
+            "report any hazardous condition",
+            "notify governmental authorities as required"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "both",
+          "review_notes": "Statutory reporting requirements apply regardless of lease terms."
+        },
+        {
+          "element_id": "LP-32.survival_after_expiration",
+          "element_label": "Hazardous materials obligations survive lease expiration",
+          "must_be_explicit": false,
+          "explicit_drafting_preferred": true,
+          "default_law_covers": true,
+          "default_law_jurisdiction_dependent": "varies",
+          "synonyms": [
+            "obligations shall survive the expiration or termination",
+            "environmental indemnification survives",
+            "continuing liability for contamination"
+          ],
+          "implicit_coverage_acceptable": true,
+          "cross_LP_coverage": null,
+          "absence_severity": "medium",
+          "absence_adverse_to": "landlord",
+          "review_notes": "Environmental liability is typically not extinguished by lease expiration under CERCLA."
+        }
+      ]
     }
   ],
   "conflict_rules": {
@@ -3193,10 +6212,37 @@
     ]
   },
   "step_305_pilot_lps": [
+    "LP-01",
+    "LP-02",
+    "LP-03",
+    "LP-04",
+    "LP-05",
+    "LP-06",
+    "LP-07",
+    "LP-08",
     "LP-09",
+    "LP-10",
     "LP-11",
+    "LP-12",
+    "LP-13",
+    "LP-14",
+    "LP-15",
+    "LP-16",
+    "LP-17",
+    "LP-18",
+    "LP-19",
+    "LP-20",
+    "LP-21",
     "LP-22",
+    "LP-23",
+    "LP-24",
+    "LP-25",
     "LP-26",
-    "LP-27"
+    "LP-27",
+    "LP-28",
+    "LP-29",
+    "LP-30",
+    "LP-31",
+    "LP-32"
   ]
 }
