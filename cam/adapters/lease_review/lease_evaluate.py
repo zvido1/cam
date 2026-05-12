@@ -54,6 +54,8 @@ from cam.adapters.lease_review.model_config import (  # noqa: E402
     EVALUATOR_B_PRIMARY, EVALUATOR_B_FALLBACK,
     EVALUATOR_C_PRIMARY, EVALUATOR_C_FALLBACK,
     EXTRACTOR_PRIMARY,
+    EVALUATOR_A_LABEL, EVALUATOR_B_LABEL, EVALUATOR_C_LABEL,
+    EVALUATOR_A_FALLBACK_LABEL, EVALUATOR_B_FALLBACK_LABEL, EVALUATOR_C_FALLBACK_LABEL,
 )
 
 EVALUATORS = {
@@ -61,37 +63,37 @@ EVALUATORS = {
         "name": f"{EVALUATOR_A_PRIMARY[0]}:{EVALUATOR_A_PRIMARY[1]}",
         "provider": EVALUATOR_A_PRIMARY[0],
         "model": EVALUATOR_A_PRIMARY[1],
-        "label": "Claude Sonnet 4.6",
+        "label": EVALUATOR_A_LABEL,
         "max_output_tokens": 8000,
         "temperature": 0.0,
         "timeout_sec": EVALUATOR_ATTEMPT_TIMEOUT,
         "own_chain": [
-            (EVALUATOR_A_FALLBACK[0], EVALUATOR_A_FALLBACK[1], "Claude Sonnet 4"),
+            (EVALUATOR_A_FALLBACK[0], EVALUATOR_A_FALLBACK[1], EVALUATOR_A_FALLBACK_LABEL),
         ],
     },
     "B": {
         "name": f"{EVALUATOR_B_PRIMARY[0]}:{EVALUATOR_B_PRIMARY[1]}",
         "provider": EVALUATOR_B_PRIMARY[0],
         "model": EVALUATOR_B_PRIMARY[1],
-        "label": "GPT-5.2",
+        "label": EVALUATOR_B_LABEL,
         "max_output_tokens": 8000,
         "temperature": 0.0,
         "timeout_sec": EVALUATOR_ATTEMPT_TIMEOUT,
         "reasoning_effort": "medium",
         "own_chain": [
-            (EVALUATOR_B_FALLBACK[0], EVALUATOR_B_FALLBACK[1], "GPT-4o"),
+            (EVALUATOR_B_FALLBACK[0], EVALUATOR_B_FALLBACK[1], EVALUATOR_B_FALLBACK_LABEL),
         ],
     },
     "C": {
         "name": f"{EVALUATOR_C_PRIMARY[0]}:{EVALUATOR_C_PRIMARY[1]}",
         "provider": EVALUATOR_C_PRIMARY[0],
         "model": EVALUATOR_C_PRIMARY[1],
-        "label": "Grok 4",
+        "label": EVALUATOR_C_LABEL,
         "max_output_tokens": 8000,
         "temperature": 0.0,
         "timeout_sec": EVALUATOR_ATTEMPT_TIMEOUT,
         "own_chain": [
-            (EVALUATOR_C_FALLBACK[0], EVALUATOR_C_FALLBACK[1], "Grok 3"),
+            (EVALUATOR_C_FALLBACK[0], EVALUATOR_C_FALLBACK[1], EVALUATOR_C_FALLBACK_LABEL),
         ],
     },
 }

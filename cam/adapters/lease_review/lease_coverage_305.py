@@ -61,31 +61,33 @@ from cam.adapters.lease_review.model_config import (  # noqa: E402
     EVALUATOR_A_PRIMARY, EVALUATOR_A_FALLBACK,
     EVALUATOR_B_PRIMARY, EVALUATOR_B_FALLBACK,
     EVALUATOR_C_PRIMARY, EVALUATOR_C_FALLBACK,
+    EVALUATOR_A_LABEL, EVALUATOR_B_LABEL, EVALUATOR_C_LABEL,
+    EVALUATOR_A_FALLBACK_LABEL, EVALUATOR_B_FALLBACK_LABEL, EVALUATOR_C_FALLBACK_LABEL,
 )
 
 EVALUATOR_LINEUP_305: dict[str, dict] = {
     "A": {
         "provider": EVALUATOR_A_PRIMARY[0],
         "model": EVALUATOR_A_PRIMARY[1],
-        "label": "Claude Sonnet 4.6",
+        "label": EVALUATOR_A_LABEL,
         "max_output_tokens": 3000,
         "temperature": 0.0,
         "timeout_sec": 300.0,
-        "own_chain": [(EVALUATOR_A_FALLBACK[0], EVALUATOR_A_FALLBACK[1], "Claude Haiku 4.5")],
+        "own_chain": [(EVALUATOR_A_FALLBACK[0], EVALUATOR_A_FALLBACK[1], EVALUATOR_A_FALLBACK_LABEL)],
     },
     "B": {
         "provider": EVALUATOR_B_PRIMARY[0],
         "model": EVALUATOR_B_PRIMARY[1],
-        "label": "GPT-5.5",
+        "label": EVALUATOR_B_LABEL,
         "max_output_tokens": 3000,
         "temperature": 0.0,
         "timeout_sec": 300.0,
-        "own_chain": [(EVALUATOR_B_FALLBACK[0], EVALUATOR_B_FALLBACK[1], "GPT-5.4")],
+        "own_chain": [(EVALUATOR_B_FALLBACK[0], EVALUATOR_B_FALLBACK[1], EVALUATOR_B_FALLBACK_LABEL)],
     },
     "C": {
         "provider": EVALUATOR_C_PRIMARY[0],
         "model": EVALUATOR_C_PRIMARY[1],
-        "label": "Grok 4.3",
+        "label": EVALUATOR_C_LABEL,
         "max_output_tokens": 3000,
         "temperature": 0.0,
         "timeout_sec": 300.0,
@@ -476,6 +478,7 @@ def _extract_verdicts_for_element(
         if not result.get("completed") or not result.get("element_verdicts"):
             verdicts.append({
                 "role": role,
+                "label": EVALUATOR_LINEUP_305.get(role, {}).get("label", f"Evaluator {role}"),
                 "verdict": "unclear",
                 "citation": None,
                 "reasoning": f"Evaluator {role} did not complete",
@@ -494,6 +497,7 @@ def _extract_verdicts_for_element(
         if match is None:
             verdicts.append({
                 "role": role,
+                "label": EVALUATOR_LINEUP_305.get(role, {}).get("label", f"Evaluator {role}"),
                 "verdict": "unclear",
                 "citation": None,
                 "reasoning": f"Evaluator {role} did not include verdict for this element",
@@ -519,6 +523,7 @@ def _extract_verdicts_for_element(
 
         verdicts.append({
             "role": role,
+            "label": EVALUATOR_LINEUP_305.get(role, {}).get("label", f"Evaluator {role}"),
             "verdict": normalized,
             "citation": citation,
             "reasoning": match.get("reasoning", ""),

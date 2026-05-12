@@ -201,6 +201,9 @@ const EVALUATOR_COLORS = {
     C: "eval-red",
 };
 
+// Step 308: fallback display labels for evaluator roles (used when ev.label not in payload)
+const EVAL_ROLE_LABELS = { A: "Claude", B: "GPT", C: "Grok" };
+
 // ── Fragility Signal Translations (1D) ──
 const FRAGILITY_TRANSLATIONS = {
     "exception_clause": "New exception language found in tenant version",
@@ -15364,27 +15367,67 @@ function renderCoveragePanel() {
 
             const rowsHtml = elementVerdicts.map(function(ev) {
                 const vc = VERDICT_CFG[ev.verdict] || { cls: 'cv-ev-unclear', label: ev.verdict || '?' };
-                // Step 306c: make citation clickable when section_ref is available
+                // Step 306c: clickable citation
                 const hasCit = ev.citation && ev.citation.section_ref;
                 const citHtml = hasCit
                     ? '<span class="cv-section-link" data-ref="' + esc(ev.citation.section_ref) + '" data-quote="' + esc(ev.citation.quote || '') + '" onclick="window.CAM.jumpToEvidence(this.dataset.ref,this.dataset.quote)">' + esc(ev.citation.section_ref) + '</span>'
                     : '—';
-                let disagHtml = '';
-                if (ev.disagreements && Array.isArray(ev.disagreements) && ev.disagreements.length > 0) {
-                    const evalLines = ev.disagreements.map(function(d) { return esc(d.evaluator_id || '') + ': ' + esc(d.verdict || ''); }).join(' | ');
-                    disagHtml = '<span class="cv-ev-disag-btn" onclick="(function(btn){var b=btn.nextElementSibling;b.style.display=b.style.display===\'none\'?\'block\':\'none\';})(this)" title="Evaluator disagreement">⚠</span>'
-                        + '<div class="cv-ev-disag-body" style="display:none">' + evalLines + ' → merged: ' + esc(ev.verdict) + '</div>';
-                }
-                // Step 307b: confidence dot indicator per element
+                // Step 307b: confidence dots
                 const confDots = ev.confidence === 'high'   ? '<span class="ev-conf-dots ev-conf-high" title="3/3 consensus">●●●</span>'
                                : ev.confidence === 'medium' ? '<span class="ev-conf-dots ev-conf-medium" title="2/3 consensus">●●○</span>'
                                : ev.confidence === 'low'    ? '<span class="ev-conf-dots ev-conf-low" title="Split/inconclusive">●○○</span>'
                                : '';
-                return '<tr class="cv-ev-row">'
+                // Step 308: per-evaluator expandable panel
+                const hasDisagreement = ev.disagreements && ev.disagreements.length > 0;
+                const evalVerdicts = ev.evaluator_verdicts;
+                // Sanitize IDs (remove chars that break getElementById)
+                const _safeEid = (ev.element_id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+                const _safePid = pid.replace(/[^a-zA-Z0-9_-]/g, '_');
+                const evalPanelId = 'ev-panel-' + _safePid + '-' + _safeEid;
+                let evalToggle = '';
+                let panelRow = '';
+                if (evalVerdicts && evalVerdicts.length > 0) {
+                    const btnLabel = hasDisagreement
+                        ? '⚠ 2v1 Disagreement'
+                        : (evalVerdicts.length + ' Evaluators');
+                    const btnCls = 'cv-ev-evals-btn' + (hasDisagreement ? ' cv-ev-evals-btn-disag' : '');
+                    evalToggle = '<button class="' + btnCls + '" onclick="(function(btn){var p=document.getElementById(\'' + evalPanelId + '\');if(p){var wasHidden=p.style.display===\'none\';p.style.display=wasHidden?\'\':\'none\';btn.classList.toggle(\'cv-ev-evals-open\',wasHidden);}})(this);event.stopPropagation();" type="button">' + esc(btnLabel) + '</button>';
+                    // Build inner per-evaluator rows for the panel
+                    const evalRowsHtml = evalVerdicts.map(function(evi) {
+                        const evLabel = evi.label || EVAL_ROLE_LABELS[evi.role] || ('Eval-' + (evi.role || '?'));
+                        const evc = VERDICT_CFG[evi.verdict] || { cls: 'cv-ev-unclear', label: evi.verdict || '?' };
+                        const roleCls = EVALUATOR_COLORS[evi.role] ? 'cv-eval-badge eval-badge-' + evi.role + ' ' + EVALUATOR_COLORS[evi.role] : 'cv-eval-badge';
+                        const evCitRef = evi.citation && evi.citation.section_ref ? ' <span class="cv-eval-ref">' + esc(evi.citation.section_ref) + '</span>' : '';
+                        const reasoning = (evi.reasoning || '').trim();
+                        const reasoningShort = reasoning.length > 300 ? reasoning.slice(0, 297) + '…' : reasoning;
+                        const isDissent = evi.verdict !== ev.verdict;
+                        return '<div class="cv-eval-row' + (isDissent ? ' cv-eval-row-dissent' : '') + '">'
+                            + '<span class="' + roleCls + '">' + esc(evi.role || '?') + '</span>'
+                            + '<span class="cv-eval-name">' + esc(evLabel) + '</span>'
+                            + '<span class="cv-ev-pill ' + evc.cls + ' cv-eval-verdict-pill">' + esc(evc.label) + '</span>'
+                            + evCitRef
+                            + (reasoningShort ? '<div class="cv-eval-reasoning">' + esc(reasoningShort) + '</div>' : '')
+                            + '</div>';
+                    }).join('');
+                    panelRow = '<tr class="cv-ev-panel-row" id="' + evalPanelId + '" style="display:none">'
+                        + '<td colspan="3" class="cv-ev-panel-cell">'
+                        + '<div class="cv-eval-panel">' + evalRowsHtml + '</div>'
+                        + '</td>'
+                        + '</tr>';
+                } else if (hasDisagreement) {
+                    // Fallback for pre-308 cached data: show minimal disagreement info (role-correct)
+                    const evalLines = ev.disagreements.map(function(d) {
+                        return esc(d.role || d.evaluator_id || '?') + ': ' + esc(d.verdict || '');
+                    }).join(' | ');
+                    evalToggle = '<span class="cv-ev-disag-btn" onclick="(function(btn){var b=btn.nextElementSibling;b.style.display=b.style.display===\'none\'?\'block\':\'none\';})(this);event.stopPropagation();" title="Evaluator disagreement">⚠ Disagreement</span>'
+                        + '<div class="cv-ev-disag-body" style="display:none">' + evalLines + ' → merged: ' + esc(ev.verdict) + '</div>';
+                }
+                const mainRow = '<tr class="cv-ev-row">'
                     + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
-                    + '<td class="cv-ev-status"><span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + confDots + disagHtml + '</td>'
+                    + '<td class="cv-ev-status"><span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + confDots + evalToggle + '</td>'
                     + '<td class="cv-ev-citation">' + citHtml + '</td>'
                     + '</tr>';
+                return mainRow + panelRow;
             }).join('');
             elementDetailHtml = '<div class="cv-elem-summary-row" onclick="(function(row){var body=document.getElementById(\'' + elemTableId + '\');var opening=body.style.display===\'none\';body.style.display=opening?\'block\':\'none\';row.querySelector(\'.cv-elem-chevron\').textContent=opening?\'▾\':\'▸\';})(this)">'
                 + '<span class="cv-elem-chevron">▸</span>'

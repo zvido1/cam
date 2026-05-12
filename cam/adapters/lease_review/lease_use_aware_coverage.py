@@ -76,6 +76,8 @@ from cam.adapters.lease_review.model_config import (  # noqa: E402
     EVALUATOR_B_PRIMARY, EVALUATOR_B_FALLBACK,
     EVALUATOR_C_PRIMARY, EVALUATOR_C_FALLBACK,
     SINGLE_STAGE_CHAIN,
+    EVALUATOR_A_LABEL, EVALUATOR_B_LABEL, EVALUATOR_C_LABEL,
+    EVALUATOR_A_FALLBACK_LABEL, EVALUATOR_B_FALLBACK_LABEL, EVALUATOR_C_FALLBACK_LABEL,
 )
 
 EVALUATOR_LINEUP: dict[str, dict] = {
@@ -83,31 +85,31 @@ EVALUATOR_LINEUP: dict[str, dict] = {
         "name": f"{EVALUATOR_A_PRIMARY[0]}:{EVALUATOR_A_PRIMARY[1]}",
         "provider": EVALUATOR_A_PRIMARY[0],
         "model": EVALUATOR_A_PRIMARY[1],
-        "label": "Claude Sonnet 4.6",
+        "label": EVALUATOR_A_LABEL,
         "max_output_tokens": 2500,
         "temperature": 0.0,
         "timeout_sec": 300.0,
-        "own_chain": [(EVALUATOR_A_FALLBACK[0], EVALUATOR_A_FALLBACK[1], "Claude Haiku 4.5")],
+        "own_chain": [(EVALUATOR_A_FALLBACK[0], EVALUATOR_A_FALLBACK[1], EVALUATOR_A_FALLBACK_LABEL)],
     },
     "B": {
         "name": f"{EVALUATOR_B_PRIMARY[0]}:{EVALUATOR_B_PRIMARY[1]}",
         "provider": EVALUATOR_B_PRIMARY[0],
         "model": EVALUATOR_B_PRIMARY[1],
-        "label": "GPT-5.5",
+        "label": EVALUATOR_B_LABEL,
         "max_output_tokens": 2500,
         "temperature": 0.0,
         "timeout_sec": 300.0,
-        "own_chain": [(EVALUATOR_B_FALLBACK[0], EVALUATOR_B_FALLBACK[1], "GPT-5.4")],
+        "own_chain": [(EVALUATOR_B_FALLBACK[0], EVALUATOR_B_FALLBACK[1], EVALUATOR_B_FALLBACK_LABEL)],
     },
     "C": {
         "name": f"{EVALUATOR_C_PRIMARY[0]}:{EVALUATOR_C_PRIMARY[1]}",
         "provider": EVALUATOR_C_PRIMARY[0],
         "model": EVALUATOR_C_PRIMARY[1],
-        "label": "Grok 4",
+        "label": EVALUATOR_C_LABEL,
         "max_output_tokens": 2500,
         "temperature": 0.0,
         "timeout_sec": 300.0,
-        "own_chain": [(EVALUATOR_C_FALLBACK[0], EVALUATOR_C_FALLBACK[1], "Grok 3")],
+        "own_chain": [(EVALUATOR_C_FALLBACK[0], EVALUATOR_C_FALLBACK[1], EVALUATOR_C_FALLBACK_LABEL)],
     },
 }
 

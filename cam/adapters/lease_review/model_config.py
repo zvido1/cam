@@ -64,8 +64,8 @@ CHAT_DEFAULTS = {
 # When adding a new model to any chain above, add its display name here.
 DISPLAY_NAMES = {
     # Anthropic
-    "claude-sonnet-4-6":           "Claude Sonnet 4",
-    "claude-sonnet-4-20250514":    "Claude Sonnet 4",
+    "claude-sonnet-4-6":           "Claude Sonnet 4.6",
+    "claude-sonnet-4-20250514":    "Claude Sonnet 4.6",
     "claude-opus-4-5-20250514":    "Claude Opus 4.5",
     "claude-haiku-4-5-20251001":   "Claude Haiku 4.5",
     "claude-haiku-4-5":            "Claude Haiku 4.5",
@@ -92,3 +92,14 @@ DISPLAY_NAMES = {
 def get_display_name(model_string: str, fallback: str = None) -> str:
     """Return the display name for a model string, or fallback if not found."""
     return DISPLAY_NAMES.get(model_string, fallback or model_string)
+
+
+# ── Evaluator display labels ──────────────────────────────────────────────────
+# Derived from DISPLAY_NAMES so model migrations only require editing this file.
+# All EVALUATORS / EVALUATOR_LINEUP / EVALUATOR_LINEUP_305 dicts import these.
+EVALUATOR_A_LABEL          = get_display_name(EVALUATOR_A_PRIMARY[1],  "Claude Sonnet 4.6")
+EVALUATOR_B_LABEL          = get_display_name(EVALUATOR_B_PRIMARY[1],  "GPT-5.5")
+EVALUATOR_C_LABEL          = get_display_name(EVALUATOR_C_PRIMARY[1],  "Grok 4.3")
+EVALUATOR_A_FALLBACK_LABEL = get_display_name(EVALUATOR_A_FALLBACK[1], "Claude Haiku 4.5")
+EVALUATOR_B_FALLBACK_LABEL = get_display_name(EVALUATOR_B_FALLBACK[1], "GPT-5.4")
+EVALUATOR_C_FALLBACK_LABEL = get_display_name(EVALUATOR_C_FALLBACK[1], "Grok 4.3")

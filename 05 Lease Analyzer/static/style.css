@@ -11799,6 +11799,98 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 .cv-section-link { cursor: pointer; text-decoration: underline dotted; color: var(--primary, #0366d6); }
 .cv-section-link:hover { text-decoration: underline solid; }
 .cv-elem-lp-jump { font-size: 0.75rem; color: var(--primary, #0366d6); margin-left: 0.5rem; white-space: nowrap; }
+
+/* Step 308 — per-evaluator expandable panel */
+
+/* Toggle button in element row status cell */
+.cv-ev-evals-btn {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.4rem;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 999px;
+    background: #fff;
+    color: #475569;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: border-color 0.12s, background 0.12s;
+    vertical-align: middle;
+}
+.cv-ev-evals-btn:hover { border-color: #94a3b8; background: #f8fafc; }
+.cv-ev-evals-btn.cv-ev-evals-open { border-color: #6366f1; color: #4338ca; background: #eef2ff; }
+.cv-ev-evals-btn.cv-ev-evals-btn-disag { border-color: #f59e0b; color: #92400e; background: #fffbeb; }
+.cv-ev-evals-btn.cv-ev-evals-btn-disag.cv-ev-evals-open { border-color: #d97706; background: #fef3c7; }
+
+/* Panel row (hidden by default, toggled by button) */
+.cv-ev-panel-row { background: #f8fafc; }
+.cv-ev-panel-cell {
+    padding: 0.5rem 0.75rem 0.75rem;
+    border-top: 1px solid #e2e8f0;
+}
+.cv-eval-panel { display: flex; flex-direction: column; gap: 0.5rem; }
+
+/* Per-evaluator row inside the panel */
+.cv-eval-row {
+    display: grid;
+    grid-template-columns: 1.25rem 5rem auto 1fr;
+    align-items: baseline;
+    gap: 0.375rem;
+    padding: 0.25rem 0;
+}
+.cv-eval-row-dissent { background: #fffbeb; border-radius: 0.25rem; padding: 0.25rem 0.375rem; }
+
+/* Role badge (A/B/C chip) */
+.cv-eval-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.125rem;
+    height: 1.125rem;
+    border-radius: 999px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+/* Reuse EVALUATOR_COLORS: eval-blue / eval-green / eval-red */
+.eval-badge-A.eval-blue  { background: #3b82f6; }
+.eval-badge-B.eval-green { background: #22c55e; }
+.eval-badge-C.eval-red   { background: #ef4444; }
+
+/* Model name label */
+.cv-eval-name {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+}
+
+/* Verdict pill inside the panel (slightly smaller than row-level pill) */
+.cv-eval-verdict-pill {
+    font-size: 0.625rem !important;
+    padding: 0.0625rem 0.375rem !important;
+}
+
+/* Section ref inside the panel */
+.cv-eval-ref {
+    font-size: 0.6875rem;
+    color: #6366f1;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Reasoning text */
+.cv-eval-reasoning {
+    grid-column: 1 / -1;
+    font-size: 0.6875rem;
+    color: #64748b;
+    line-height: 1.4;
+    margin-top: 0.125rem;
+    padding-left: 1.5rem;
+}
 @keyframes ev-heading-flash { 0% { background: rgba(3,102,214,0.25); } 100% { background: rgba(3,102,214,0.04); } }
 .ev-heading-flash { animation: ev-heading-flash 2.2s ease-out; }
 .ev-quote-highlight { background: #fffb8f; border-radius: 2px; transition: background 0.4s ease; }
