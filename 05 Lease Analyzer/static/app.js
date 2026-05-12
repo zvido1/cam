@@ -7419,6 +7419,62 @@ function renderEvidencePanel() {
     tab.innerHTML = html;
 }
 
+// Step 306c: Remove any existing quote highlights from the Evidence View.
+function _clearEvidenceQuoteHighlights() {
+    document.querySelectorAll('.ev-quote-highlight').forEach(function(m) {
+        var parent = m.parentNode;
+        if (parent) {
+            parent.replaceChild(document.createTextNode(m.textContent), m);
+            parent.normalize();
+        }
+    });
+}
+
+// Step 306c: Try to highlight a quoted string in the text nodes following the anchor span.
+function highlightQuoteInSection(anchor, quote) {
+    if (!quote || quote.length < 10) return;
+    _clearEvidenceQuoteHighlights();
+    var node = anchor.nextSibling;
+    while (node) {
+        if (node.nodeType === 1 && node.classList && node.classList.contains('ev-heading')) break;
+        if (node.nodeType === 3 && node.textContent.indexOf(quote) >= 0) {
+            var idx = node.textContent.indexOf(quote);
+            var before = document.createTextNode(node.textContent.slice(0, idx));
+            var mark = document.createElement('mark');
+            mark.className = 'ev-quote-highlight';
+            mark.textContent = quote;
+            var after = document.createTextNode(node.textContent.slice(idx + quote.length));
+            var parent = node.parentNode;
+            parent.insertBefore(before, node);
+            parent.insertBefore(mark, node);
+            parent.insertBefore(after, node);
+            parent.removeChild(node);
+            setTimeout(function() { if (mark.parentNode) mark.classList.add('ev-quote-fade'); }, 5000);
+            return;
+        }
+        node = node.nextSibling;
+    }
+}
+
+// Step 306c: Switch to Evidence View and scroll/highlight the target section.
+function jumpToEvidence(sectionRef, quote) {
+    if (!sectionRef) return;
+    switchResultsTab('evidence');
+    var anchorId = sectionRefToAnchorId(sectionRef);
+    if (!anchorId) return;
+    // Delay to let Evidence View render on first open
+    setTimeout(function() {
+        var anchor = document.getElementById(anchorId);
+        if (!anchor) return;
+        anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        anchor.classList.add('ev-heading-flash');
+        setTimeout(function() { anchor.classList.remove('ev-heading-flash'); }, 2200);
+        if (quote && quote.length >= 10) {
+            setTimeout(function() { highlightQuoteInSection(anchor, quote); }, 100);
+        }
+    }, 60);
+}
+
 function switchResultsTab(tab) {
     // Step 254: Document Comparison is hidden in Mode C; redirect to Coverage & Gaps
     // if restoreResultsViewState or a stale link tries to open it.
@@ -15124,9 +15180,21 @@ function renderCoveragePanel() {
                 'missing':                { cls: 'cv-ev-missing',  label: 'Missing' },
                 'unclear':                { cls: 'cv-ev-unclear',  label: 'Unclear' },
             };
+            // Step 306c: derive LP-level jump link from best positive citation
+            const _bestCit = elementVerdicts.find(function(e) {
+                return _POSITIVE_VERDICTS.has(e.verdict) && e.citation && e.citation.section_ref;
+            });
+            const lpJumpHtml = _bestCit
+                ? ' <span class="cv-section-link cv-elem-lp-jump" data-ref="' + esc(_bestCit.citation.section_ref) + '" data-quote="' + esc(_bestCit.citation.quote || '') + '" onclick="event.stopPropagation();jumpToEvidence(this.dataset.ref,this.dataset.quote)" title="Jump to evidence">&#8594; ' + esc(_bestCit.citation.section_ref) + '</span>'
+                : '';
+
             const rowsHtml = elementVerdicts.map(function(ev) {
                 const vc = VERDICT_CFG[ev.verdict] || { cls: 'cv-ev-unclear', label: ev.verdict || '?' };
-                const citRef = (ev.citation && ev.citation.section_ref) ? esc(ev.citation.section_ref) : '—';
+                // Step 306c: make citation clickable when section_ref is available
+                const hasCit = ev.citation && ev.citation.section_ref;
+                const citHtml = hasCit
+                    ? '<span class="cv-section-link" data-ref="' + esc(ev.citation.section_ref) + '" data-quote="' + esc(ev.citation.quote || '') + '" onclick="jumpToEvidence(this.dataset.ref,this.dataset.quote)">' + esc(ev.citation.section_ref) + '</span>'
+                    : '—';
                 let disagHtml = '';
                 if (ev.disagreements && Array.isArray(ev.disagreements) && ev.disagreements.length > 0) {
                     const evalLines = ev.disagreements.map(function(d) { return esc(d.evaluator_id || '') + ': ' + esc(d.verdict || ''); }).join(' | ');
@@ -15136,12 +15204,13 @@ function renderCoveragePanel() {
                 return '<tr class="cv-ev-row">'
                     + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
                     + '<td class="cv-ev-status"><span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + disagHtml + '</td>'
-                    + '<td class="cv-ev-citation">' + citRef + '</td>'
+                    + '<td class="cv-ev-citation">' + citHtml + '</td>'
                     + '</tr>';
             }).join('');
             elementDetailHtml = '<div class="cv-elem-summary-row" onclick="(function(row){var body=document.getElementById(\'' + elemTableId + '\');var opening=body.style.display===\'none\';body.style.display=opening?\'block\':\'none\';row.querySelector(\'.cv-elem-chevron\').textContent=opening?\'▾\':\'▸\';})(this)">'
                 + '<span class="cv-elem-chevron">▸</span>'
                 + '<span class="cv-elem-summary-text">' + summaryText + '</span>'
+                + lpJumpHtml
                 + '</div>'
                 + '<div id="' + elemTableId + '" class="cv-elem-table-body" style="display:none">'
                 + '<table class="cv-ev-table"><thead><tr>'

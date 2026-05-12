@@ -11732,6 +11732,15 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 .cv-ev-disag-btn { cursor: pointer; font-size: 0.7rem; color: #b86500; margin-left: 0.25rem; user-select: none; }
 .cv-ev-disag-body { font-size: 0.72rem; color: var(--text-muted, #888); padding: 0.2rem 0 0.1rem 0.5rem; font-style: italic; }
 
+/* Step 306c: citation jump links */
+.cv-section-link { cursor: pointer; text-decoration: underline dotted; color: var(--primary, #0366d6); }
+.cv-section-link:hover { text-decoration: underline solid; }
+.cv-elem-lp-jump { font-size: 0.75rem; color: var(--primary, #0366d6); margin-left: 0.5rem; white-space: nowrap; }
+@keyframes ev-heading-flash { 0% { background: rgba(3,102,214,0.25); } 100% { background: rgba(3,102,214,0.04); } }
+.ev-heading-flash { animation: ev-heading-flash 2.2s ease-out; }
+.ev-quote-highlight { background: #fffb8f; border-radius: 2px; transition: background 0.4s ease; }
+.ev-quote-fade { background: transparent !important; }
+
 /* Draft Missing Clause — primary advisor button */
 .cov-advisor-primary { background: var(--primary) !important; color: #fff !important; border: none !important; border-radius: 4px !important; padding: 0.3rem 0.75rem !important; font-weight: 600 !important; cursor: pointer !important; }
 .cov-advisor-primary:hover { opacity: 0.88 !important; }
