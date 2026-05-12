@@ -3111,8 +3111,11 @@ function applyModeSpecificUI() {
     // was hidden in Step 254 (no template = nothing to compare).
     const findingsBtn = document.getElementById("contract-tab-findings");
     const docviewBtn = document.getElementById("contract-tab-docview");
+    const evidenceBtn = document.getElementById("contract-tab-evidence");
     if (findingsBtn) findingsBtn.classList.toggle("hidden", isC);
     if (docviewBtn) docviewBtn.classList.toggle("hidden", isC);
+    // Step 306b: Evidence View is Mode C-only (no template to compare against in Mode A)
+    if (evidenceBtn) evidenceBtn.classList.toggle("hidden", !isC);
     // Step 257: if persisted activeResultsTab points at a now-hidden tab, coerce
     // to coverage. This catches users who switched mode mid-session, or whose
     // sessionStorage retained "findings"/"docview" from a prior Mode A run.
@@ -7348,13 +7351,72 @@ var TAB_SUBHEADER_LABELS = {
     findings:   'Contract Summary',
     docview:    'Document Comparison',
     audittrail: 'Audit Trail',
-    coverage:   'Coverage & Gaps'
+    coverage:   'Coverage & Gaps',
+    evidence:   'Evidence View'
 };
 
 function setDocviewStickyControlsVisible(isVisible) {
     var controls = document.getElementById('docview-sticky-controls');
     if (!controls) return;
     controls.classList.toggle('hidden', !isVisible);
+}
+
+// Step 306b: Evidence View state
+var _evidenceScrollTop = 0;
+var _evidenceRenderedTenantIndex = -1;  // tracks which tenant index was last rendered
+
+// Step 306b/306c: Convert a section_ref string to a stable anchor ID used in Evidence View.
+// "Section 15.1(a)" → "ev-sec-15-1-a"
+// "§21.9"           → "ev-sec-21-9"
+// "Article 3"       → "ev-sec-article-3"
+function sectionRefToAnchorId(sectionRef) {
+    if (!sectionRef) return null;
+    var normalized = sectionRef
+        .replace(/^(section|article|§)\s*/i, '')
+        .replace(/[^a-zA-Z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+        .toLowerCase();
+    return normalized ? 'ev-sec-' + normalized : null;
+}
+
+// Step 306b: Render the Evidence View tab with full lease text and section anchors.
+// Called once on first show; subsequent calls are no-ops (preserves scroll).
+function renderEvidencePanel() {
+    var tab = document.getElementById('evidence-tab');
+    if (!tab) return;
+    if (_evidenceRenderedTenantIndex === currentTenantIndex) return;
+    _evidenceRenderedTenantIndex = currentTenantIndex;
+    _evidenceScrollTop = 0;  // reset scroll when switching tenants
+
+    var tenant = currentResults && currentResults.tenants && currentResults.tenants[currentTenantIndex];
+    var fullText = tenant && tenant.results ? (tenant.results.full_tenant_text || '') : '';
+
+    if (!fullText) {
+        tab.innerHTML = '<div class="ev-empty">Lease text not available for this analysis. Evidence View requires a Mode C analysis run with full document extraction.</div>';
+        return;
+    }
+
+    // Detect section headings line-by-line and insert anchor IDs.
+    var HEADING_LINE = /^\s*((?:ARTICLE|Article|Section|SECTION)\s+[\dIVXivx]+[\d.]*(?:\s*\([^)]+\))?|(?:\d+\.[\d.]+)\s)/;
+    var lines = fullText.split('\n');
+    var html = '<div class="ev-doc-wrap"><pre class="ev-pre">';
+    for (var i = 0; i < lines.length; i++) {
+        var line = lines[i];
+        var m = HEADING_LINE.exec(line);
+        if (m) {
+            var anchorId = sectionRefToAnchorId(m[1].trim());
+            if (anchorId) {
+                html += '<span class="ev-heading" id="' + anchorId + '">' + esc(line) + '</span>\n';
+            } else {
+                html += '<span class="ev-heading">' + esc(line) + '</span>\n';
+            }
+        } else {
+            html += esc(line) + '\n';
+        }
+    }
+    html += '</pre></div>';
+    tab.innerHTML = html;
 }
 
 function switchResultsTab(tab) {
@@ -7407,8 +7469,14 @@ function switchResultsTab(tab) {
         return;
     }
 
+    // Step 306b: save Evidence View scroll position when leaving it
+    if (activeResultsTab === "evidence") {
+        var _evDetailLeave = document.getElementById('contract-detail-view');
+        if (_evDetailLeave) _evidenceScrollTop = _evDetailLeave.scrollTop;
+    }
+
     activeResultsTab = tab;
-    if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage") {
+    if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage" || tab === "evidence") {
         activeTopTab = tab;
     }
     // Step 281: Coverage & Gaps tab in Mode C carries a right-aligned
@@ -7418,7 +7486,7 @@ function switchResultsTab(tab) {
     setSubheader(TAB_SUBHEADER_LABELS[tab] || tab, _subRight);
 
     // Update tab bar active state (Step 129 fix: $ → $ for querySelectorAll)
-    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage").forEach(t => {
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-evidence").forEach(t => {
         t.classList.toggle("active", t.dataset.tab === tab);
     });
 
@@ -7427,6 +7495,7 @@ function switchResultsTab(tab) {
     const docviewTab = $("#docview-tab");
     const auditTab = $("#audittrail-tab");
     const coverageTab = $("#coverage-tab");
+    const evidenceTab = $("#evidence-tab");
 
     if (tab === "findings") {
         findingsTab.classList.remove("hidden");
@@ -7446,22 +7515,36 @@ function switchResultsTab(tab) {
         docviewTab.classList.add("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.remove("hidden");
+        if (evidenceTab) evidenceTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
         renderCoveragePanel();
+    } else if (tab === "evidence") {
+        findingsTab.classList.add("hidden");
+        docviewTab.classList.add("hidden");
+        auditTab.classList.add("hidden");
+        if (coverageTab) coverageTab.classList.add("hidden");
+        if (evidenceTab) evidenceTab.classList.remove("hidden");
+        setDocviewStickyControlsVisible(false);
+        renderEvidencePanel();
     } else {
         findingsTab.classList.add("hidden");
         docviewTab.classList.remove("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
+        if (evidenceTab) evidenceTab.classList.add("hidden");
         setDocviewStickyControlsVisible(true);
         renderDocumentView();
     }
 
-    // Scroll the actual results pane to the top so sticky controls stay aligned.
+    // Scroll to top on tab switch — but restore Evidence View's saved scroll position.
     var detail = document.getElementById('contract-detail-view');
-    if (detail) detail.scrollTo({ top: 0, behavior: 'instant' });
-    var resultsPane = document.getElementById('results-content') || document.querySelector('.results-content');
-    if (resultsPane) resultsPane.scrollTo({ top: 0, behavior: 'instant' });
+    if (tab === "evidence") {
+        if (detail) detail.scrollTop = _evidenceScrollTop;
+    } else {
+        if (detail) detail.scrollTo({ top: 0, behavior: 'instant' });
+        var resultsPane = document.getElementById('results-content') || document.querySelector('.results-content');
+        if (resultsPane) resultsPane.scrollTo({ top: 0, behavior: 'instant' });
+    }
     persistResultsViewState();
 }
 

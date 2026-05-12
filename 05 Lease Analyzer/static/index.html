@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAM&#8482; Intelligence by Vered.ai</title>
-    <link rel="stylesheet" href="/static/style.css?v=346">
+    <link rel="stylesheet" href="/static/style.css?v=347">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -541,6 +541,7 @@
                         <button class="top-tab" data-tab="findings" id="contract-tab-findings">Lease Summary</button>
                         <button class="top-tab" data-tab="docview" id="contract-tab-docview">Document Comparison</button>
                         <button class="top-tab" data-tab="coverage" id="contract-tab-coverage">Coverage &amp; Gaps</button>
+                        <button class="top-tab" data-tab="evidence" id="contract-tab-evidence">Evidence View</button>
                         <button class="top-tab" data-tab="audittrail" id="contract-tab-audittrail">CAM Audit Trail</button>
                     </div>
                     <div class="top-tab-actions" id="top-tab-actions">
@@ -839,6 +840,11 @@
                         <!-- content rendered by renderCoveragePanel() -->
                     </div>
 
+                    <!-- ═══ EVIDENCE VIEW TAB (Step 306b) ═══ -->
+                    <div id="evidence-tab" class="hidden">
+                        <!-- content rendered by renderEvidencePanel() -->
+                    </div>
+
                     </div><!-- /contract-detail-view -->
 
                 </div>
@@ -1112,6 +1118,6 @@
     <script src="/static/app_docview_render_shared.js?v=3"></script>
     <script src="/static/app_summary_shared.js?v=10"></script>
     <script src="/static/app_notes_shared.js?v=1"></script>
-    <script src="/static/app.js?v=367"></script>
+    <script src="/static/app.js?v=368"></script>
 </body>
 </html>
