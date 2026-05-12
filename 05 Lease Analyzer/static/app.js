@@ -11077,6 +11077,131 @@ function legacyRenderAuditTechnicalGroup(title, innerHtml) {
     </div>`;
 }
 
+// Step 306d helpers — Mode C coverage evaluation in audit trail
+
+var _COV_AUDIT_VERDICT_SHORT = {
+    'explicitly_present':     'Present',
+    'implicitly_present':     'Implicit',
+    'covered_by_default_law': 'Default Law',
+    'covered_in_other_LP':    'Cross-LP',
+    'missing':                'Missing',
+    'unclear':                'Unclear',
+    'review_needed':          'Review',
+};
+var _COV_AUDIT_VERDICT_CLS = {
+    'explicitly_present':     'cv-ev-present',
+    'implicitly_present':     'cv-ev-implicit',
+    'covered_by_default_law': 'cv-ev-default',
+    'covered_in_other_LP':    'cv-ev-crosslp',
+    'missing':                'cv-ev-missing',
+    'unclear':                'cv-ev-unclear',
+    'review_needed':          'cv-ev-unclear',
+};
+
+function _buildCovAuditTable(evs, roleList) {
+    var html = '<div class="audit-cov-table-wrap"><table class="audit-cov-table"><thead><tr><th class="audit-cov-th">Element</th>';
+    roleList.forEach(function(role) { html += '<th class="audit-cov-th">Eval ' + esc(role) + '</th>'; });
+    html += '<th class="audit-cov-th">Merged</th></tr></thead><tbody>';
+    evs.forEach(function(ev) {
+        var hasDisag = ev.disagreements && ev.disagreements.length > 0;
+        html += '<tr class="audit-cov-row' + (hasDisag ? ' audit-cov-row-disag' : '') + '">';
+        html += '<td class="audit-cov-td-label">' + esc(ev.element_label || ev.element_id) + '</td>';
+        var evByRole = {};
+        (ev.evaluator_verdicts || []).forEach(function(evr) { evByRole[evr.role || '?'] = evr; });
+        roleList.forEach(function(role) {
+            var evr = evByRole[role];
+            if (!evr) { html += '<td class="audit-cov-td">—</td>'; return; }
+            var vcls = _COV_AUDIT_VERDICT_CLS[evr.verdict] || 'cv-ev-unclear';
+            var vlabel = _COV_AUDIT_VERDICT_SHORT[evr.verdict] || evr.verdict;
+            var citRef = (evr.citation && evr.citation.section_ref) ? ' <span class="audit-cov-cit">' + esc(evr.citation.section_ref) + '</span>' : '';
+            html += '<td class="audit-cov-td"><span class="cv-ev-pill ' + vcls + '">' + vlabel + '</span>' + citRef + '</td>';
+        });
+        var mvcls = _COV_AUDIT_VERDICT_CLS[ev.verdict] || 'cv-ev-unclear';
+        var mvlabel = _COV_AUDIT_VERDICT_SHORT[ev.verdict] || ev.verdict;
+        var conf = ev.confidence ? ' (' + ev.confidence + ')' : '';
+        var reasonNote = ev.reason ? ' <span class="audit-cov-reason">' + esc(ev.reason.replace(/_/g, ' ')) + '</span>' : '';
+        html += '<td class="audit-cov-td"><span class="cv-ev-pill ' + mvcls + '">' + mvlabel + '</span>' + conf + reasonNote + '</td>';
+        html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+}
+
+function _buildMergeTraceHtml(disagElems) {
+    var html = '<div class="audit-cov-trace-list">';
+    disagElems.forEach(function(ev) {
+        var dissents = ev.disagreements || [];
+        html += '<div class="audit-cov-trace-item">'
+            + '<span class="audit-cov-trace-elem">' + esc(ev.element_label || ev.element_id) + '</span>'
+            + ' <span class="audit-cov-trace-arrow">→</span>'
+            + ' <span class="audit-cov-trace-merged">merged: <strong>' + esc(_COV_AUDIT_VERDICT_SHORT[ev.verdict] || ev.verdict) + '</strong>';
+        if (ev.reason) html += ' <span class="audit-cov-reason">' + esc(ev.reason.replace(/_/g, ' ')) + '</span>';
+        html += '</span>';
+        if (dissents.length > 0) {
+            html += '<div class="audit-cov-trace-dissents">';
+            dissents.forEach(function(d) {
+                html += '<span class="audit-cov-trace-dissent">Eval ' + esc(d.role || d.evaluator_id || '?') + ': ' + esc(_COV_AUDIT_VERDICT_SHORT[d.verdict] || d.verdict) + '</span>';
+            });
+            html += '</div>';
+        }
+        html += '</div>';
+    });
+    html += '</div>';
+    return html;
+}
+
+function buildCoverageAuditSection(items) {
+    var _POSITIVE = new Set(['explicitly_present', 'implicitly_present', 'covered_by_default_law', 'covered_in_other_LP']);
+    var html = '<div class="audit-cov-section"><div class="audit-cov-section-heading">Coverage Evaluation — ' + items.length + ' pilot LP' + (items.length > 1 ? 's' : '') + ' (Step 305)</div>';
+    items.forEach(function(a, idx) {
+        var pid = a.issue_area_id || '';
+        var name = a.issue_area_name || pid;
+        var baseline = a.coverage_state_baseline || a.coverage_state || '';
+        var method = a.coverage_method || 'step_305_per_element';
+        var evs = a.element_verdicts || [];
+        var totalCount = evs.length;
+        var nPresent = evs.filter(function(e) { return _POSITIVE.has(e.verdict); }).length;
+        var nMissing = evs.filter(function(e) { return e.verdict === 'missing'; }).length;
+        var nUnclear = evs.filter(function(e) { return e.verdict === 'unclear'; }).length;
+        var disagElems = evs.filter(function(e) { return e.disagreements && e.disagreements.length > 0; });
+        var stateVcls = _COV_AUDIT_VERDICT_CLS[baseline] || 'cv-ev-unclear';
+        var stateLabel = _COV_AUDIT_VERDICT_SHORT[baseline] || baseline;
+        var lpBodyId = 'audit-cov-lp-body-' + idx;
+        var elemListId = 'audit-cov-elems-' + idx;
+        var tableId = 'audit-cov-table-' + idx;
+        var traceId = 'audit-cov-trace-' + idx;
+        // Determine evaluator roles
+        var roleSet = {};
+        evs.forEach(function(ev) {
+            (ev.evaluator_verdicts || []).forEach(function(evr) { roleSet[evr.role || '?'] = true; });
+        });
+        var roleList = Object.keys(roleSet).sort();
+        var tableHtml = roleList.length > 0 ? _buildCovAuditTable(evs, roleList) : '';
+        var mergeHtml = disagElems.length > 0 ? _buildMergeTraceHtml(disagElems) : '';
+        var elemListHtml = '<ul class="audit-cov-elem-list">' + evs.map(function(e) { return '<li>' + esc(e.element_label || e.element_id) + '</li>'; }).join('') + '</ul>';
+        var derivNote = 'LP state: <strong>' + esc(baseline) + '</strong> — ' + nPresent + ' present, ' + nMissing + ' missing, ' + nUnclear + ' unclear of ' + totalCount + ' elements'
+            + (disagElems.length > 0 ? ' (' + disagElems.length + ' element' + (disagElems.length > 1 ? 's' : '') + ' with evaluator disagreement)' : '');
+        html += '<div class="audit-cov-lp">'
+            + '<div class="audit-cov-lp-header" onclick="(function(h){var b=document.getElementById(\'' + lpBodyId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';h.querySelector(\'.audit-cov-chevron\').textContent=o?\'▾\':\'▸\';})(this)">'
+            + '<span class="audit-cov-lp-id">' + esc(pid) + '</span>'
+            + '<span class="audit-cov-lp-name">' + esc(name) + '</span>'
+            + '<span class="cv-ev-pill ' + stateVcls + '">' + stateLabel + '</span>'
+            + '<span class="audit-cov-method-badge">' + esc(method) + '</span>'
+            + '<span class="audit-cov-chevron">▸</span>'
+            + '</div>'
+            + '<div id="' + lpBodyId + '" class="audit-cov-lp-body" style="display:none">'
+            + '<div class="audit-cov-deriv-note">' + derivNote + '</div>'
+            + '<div class="audit-cov-sub-toggle" onclick="(function(t){var b=document.getElementById(\'' + elemListId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';t.querySelector(\'.audit-sub-chev\').textContent=o?\'▾\':\'▸\';})(this)"><span class="audit-sub-chev">▸</span> ' + totalCount + ' expected elements</div>'
+            + '<div id="' + elemListId + '" style="display:none">' + elemListHtml + '</div>'
+            + (tableHtml ? '<div class="audit-cov-sub-toggle" onclick="(function(t){var b=document.getElementById(\'' + tableId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';t.querySelector(\'.audit-sub-chev\').textContent=o?\'▾\':\'▸\';})(this)"><span class="audit-sub-chev">▸</span> Per-evaluator verdicts</div><div id="' + tableId + '" style="display:none">' + tableHtml + '</div>' : '')
+            + (mergeHtml ? '<div class="audit-cov-sub-toggle" onclick="(function(t){var b=document.getElementById(\'' + traceId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';t.querySelector(\'.audit-sub-chev\').textContent=o?\'▾\':\'▸\';})(this)"><span class="audit-sub-chev">▸</span> Merge trace (' + disagElems.length + ' disagreement' + (disagElems.length > 1 ? 's' : '') + ')</div><div id="' + traceId + '" style="display:none">' + mergeHtml + '</div>' : '')
+            + '</div>'
+            + '</div>';
+    });
+    html += '</div>';
+    return html;
+}
+
 function renderAuditTrail(allTenants) {
     const tab = $("#audittrail-tab");
     if (!tab || !currentResults) return;
@@ -11128,6 +11253,12 @@ function renderAuditTrail(allTenants) {
                 ${_at_escHtml}
             </div>`;
         }
+        // Step 306d: build Coverage Evaluation section for pilot LPs
+        var _at_ca = (r.coverage_assessment || []).filter(function(a) {
+            return (a.element_verdicts || []).length > 0;
+        });
+        var _at_covEval = _at_ca.length > 0 ? buildCoverageAuditSection(_at_ca) : '';
+
         tab.innerHTML = `
             <div class="audit-mode-c-message">
                 <div class="audit-mode-c-heading">Analyze-mode audit</div>
@@ -11144,6 +11275,7 @@ function renderAuditTrail(allTenants) {
                 </p>
                 ${_at_stage5b}
             </div>
+            ${_at_covEval}
         `;
         return;
     }
