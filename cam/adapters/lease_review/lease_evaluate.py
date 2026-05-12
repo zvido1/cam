@@ -43,7 +43,7 @@ EVALUATOR_ATTEMPT_TIMEOUT = 300.0
 # Own-provider chains:
 #   A: claude-sonnet-4-6  → claude-sonnet-4
 #   B: gpt-5.2            → gpt-4o
-#   C: grok-4             → grok-3
+#   C: grok-4.3           (no same-provider fallback; grok-3 retired 2026-05-15)
 #
 # Shared fallback pool: [gemini-3.1-pro-preview, mistral-large-latest]
 #

@@ -493,7 +493,7 @@ def test_single_evaluator(n_claims=3):
 SCIFACT_EVALUATORS = [
     {"label": "A", "name": "anthropic:claude-sonnet-4-5", "provider": "anthropic", "model": "claude-sonnet-4-5-20250929"},
     {"label": "B", "name": "google:gemini-3-pro-preview", "provider": "google", "model": "gemini-3-pro-preview"},
-    {"label": "C", "name": "xai:grok", "provider": "xai", "model": "grok-3"},
+    {"label": "C", "name": "xai:grok", "provider": "xai", "model": "grok-4.3"},
 ]
 
 

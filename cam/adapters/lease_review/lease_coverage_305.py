@@ -85,11 +85,11 @@ EVALUATOR_LINEUP_305: dict[str, dict] = {
     "C": {
         "provider": EVALUATOR_C_PRIMARY[0],
         "model": EVALUATOR_C_PRIMARY[1],
-        "label": "Grok 4",
+        "label": "Grok 4.3",
         "max_output_tokens": 3000,
         "temperature": 0.0,
         "timeout_sec": 300.0,
-        "own_chain": [(EVALUATOR_C_FALLBACK[0], EVALUATOR_C_FALLBACK[1], "Grok 3")],
+        "own_chain": [],  # grok-3 retired 2026-05-15; no same-provider fallback
     },
 }
 

@@ -34,8 +34,8 @@ EVALUATOR_A_FALLBACK = ("anthropic",  "claude-haiku-4-5-20251001")
 EVALUATOR_B_PRIMARY  = ("openai",     "gpt-5.5")
 EVALUATOR_B_FALLBACK = ("openai",     "gpt-5.4")
 
-EVALUATOR_C_PRIMARY  = ("xai",        "grok-4")
-EVALUATOR_C_FALLBACK = ("xai",        "grok-3")
+EVALUATOR_C_PRIMARY  = ("xai",        "grok-4.3")
+EVALUATOR_C_FALLBACK = ("xai",        "grok-4.3")  # grok-3 retired 2026-05-15
 
 # ── Single-stage fallback chain (Challenge / Cascade / Severity) ──────────────
 SINGLE_STAGE_CHAIN = [
@@ -45,7 +45,7 @@ SINGLE_STAGE_CHAIN = [
     ("openai",     "gpt-4o"),
     ("anthropic",  "claude-sonnet-4-6"),
     ("google",     "gemini-2.5-pro"),
-    ("xai",        "grok-4"),
+    ("xai",        "grok-4.3"),
 ]
 
 # ── Chat / Advisory defaults ──────────────────────────────────────────────────
@@ -54,7 +54,7 @@ SINGLE_STAGE_CHAIN = [
 CHAT_DEFAULTS = {
     "claude":  ("anthropic", "claude-sonnet-4-6"),
     "openai":  ("openai",    "gpt-5.5"),
-    "xai":     ("xai",       "grok-4"),
+    "xai":     ("xai",       "grok-4.3"),
     "google":  ("google",    "gemini-3.1-pro-preview"),
 }
 
@@ -75,8 +75,9 @@ DISPLAY_NAMES = {
     "gpt-5.2":                     "GPT-5.2",
     "gpt-4o":                      "GPT-4o",
     # xAI
-    "grok-4":                      "Grok 4",
-    "grok-3":                      "Grok 3",
+    "grok-4.3":                    "Grok 4.3",
+    "grok-4":                      "Grok 4",    # retired 2026-05-15
+    "grok-3":                      "Grok 3",    # retired 2026-05-15
     "grok-2":                      "Grok 2",
     # Google
     "gemini-3.1-pro-preview":      "Gemini 3.1 Pro",

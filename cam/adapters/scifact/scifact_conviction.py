@@ -41,7 +41,7 @@ EVALUATOR_LABELS = ["A", "B", "C"]
 EVALUATOR_CONFIGS = {
     "A": {"name": "anthropic:claude-sonnet-4-5", "provider": "anthropic", "model": "claude-sonnet-4-5-20250929"},
     "B": {"name": "google:gemini-3-pro-preview", "provider": "google", "model": "gemini-3-pro-preview"},
-    "C": {"name": "xai:grok", "provider": "xai", "model": "grok-3"},
+    "C": {"name": "xai:grok", "provider": "xai", "model": "grok-4.3"},
 }
 
 

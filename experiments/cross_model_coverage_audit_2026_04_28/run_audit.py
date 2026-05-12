@@ -187,9 +187,9 @@ MODEL_TARGETS = [
         timeout_sec=TIMEOUT,
     )),
     ("grok", ModelTarget(
-        name="xai:grok-4",
+        name="xai:grok-4.3",
         provider="xai",
-        model="grok-4",
+        model="grok-4.3",
         max_output_tokens=MAX_OUT,
         temperature=0.0,
         timeout_sec=TIMEOUT,
