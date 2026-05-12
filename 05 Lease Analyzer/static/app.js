@@ -11077,6 +11077,23 @@ function legacyRenderAuditTechnicalGroup(title, innerHtml) {
     </div>`;
 }
 
+// Step 307b: Derive a governance-equivalent signal from element-level evaluator data.
+// Maps to the same ASSERT/ASSERT_REVIEW/REVIEW/WITHHOLD signals used by Mode A,
+// so getConfidenceBadgeData() and getSidebarConfidenceLabel() can be called directly.
+function deriveCoverageGovernanceSignal(elementVerdicts) {
+    if (!elementVerdicts || !elementVerdicts.length) return null;
+    var total = elementVerdicts.length;
+    var highConf   = elementVerdicts.filter(function(e) { return e.confidence === 'high'; }).length;
+    var medConf    = elementVerdicts.filter(function(e) { return e.confidence === 'medium'; }).length;
+    var lowConf    = elementVerdicts.filter(function(e) { return e.confidence === 'low'; }).length;
+    var hasDisag   = elementVerdicts.some(function(e) { return e.disagreements && e.disagreements.length > 0; });
+    if (highConf === total && !hasDisag) return 'ASSERT_SIGNAL';
+    if (lowConf === 0 && highConf >= total * 0.7) return 'ASSERT_REVIEW_SIGNAL';
+    if (lowConf > 0 || medConf > total * 0.3) return 'REVIEW_SIGNAL';
+    if (lowConf >= total * 0.3) return 'WITHHOLD_SIGNAL';
+    return 'REVIEW_SIGNAL';
+}
+
 // Step 306d helpers — Mode C coverage evaluation in audit trail
 
 var _COV_AUDIT_VERDICT_SHORT = {
@@ -11181,6 +11198,23 @@ function buildCoverageAuditSection(items) {
         var elemListHtml = '<ul class="audit-cov-elem-list">' + evs.map(function(e) { return '<li>' + esc(e.element_label || e.element_id) + '</li>'; }).join('') + '</ul>';
         var derivNote = 'LP state: <strong>' + esc(baseline) + '</strong> — ' + nPresent + ' present, ' + nMissing + ' missing, ' + nUnclear + ' unclear of ' + totalCount + ' elements'
             + (disagElems.length > 0 ? ' (' + disagElems.length + ' element' + (disagElems.length > 1 ? 's' : '') + ' with evaluator disagreement)' : '');
+        // Step 307b: score bars using the shared audit infrastructure (same as Mode A)
+        var _sharedLib = window.CAMAuditShared;
+        var scoreBarsHtml = '';
+        if (_sharedLib && totalCount > 0) {
+            var _unaniCount = evs.filter(function(e) { return !e.disagreements || e.disagreements.length === 0; }).length;
+            var _agreePct = Math.round(_unaniCount / totalCount * 100);
+            var _agreeTone = _agreePct >= 85 ? {tone: 'good', width: _agreePct} : _agreePct >= 60 ? {tone: 'caution', width: _agreePct} : {tone: 'danger', width: _agreePct};
+            var _sensPct = Math.round(disagElems.length / totalCount * 100);
+            var _sensTone = _sensPct <= 10 ? {tone: 'good', width: _sensPct} : _sensPct <= 30 ? {tone: 'caution', width: _sensPct} : {tone: 'danger', width: _sensPct};
+            var _crossCount = evs.filter(function(e) { return e.verdict === 'covered_in_other_LP'; }).length;
+            var _crossPct = Math.round(_crossCount / totalCount * 100);
+            scoreBarsHtml = '<div class="audit-cov-score-bars">'
+                + _sharedLib.renderAuditScoreBar('Element Agreement', _agreePct + '%', _unaniCount + ' of ' + totalCount + ' elements had unanimous evaluator agreement', _agreeTone, esc)
+                + _sharedLib.renderAuditScoreBar('Evaluator Sensitivity', _sensPct + '%', disagElems.length + ' of ' + totalCount + ' elements had evaluator disagreement', _sensTone, esc)
+                + (_crossCount > 0 ? _sharedLib.renderAuditScoreBar('Cross-LP Coverage', _crossPct + '%', _crossCount + ' element' + (_crossCount !== 1 ? 's' : '') + ' resolved via cross-provision coverage', {tone: 'caution', width: _crossPct}, esc) : '')
+                + '</div>';
+        }
         html += '<div class="audit-cov-lp">'
             + '<div class="audit-cov-lp-header" onclick="(function(h){var b=document.getElementById(\'' + lpBodyId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';h.querySelector(\'.audit-cov-chevron\').textContent=o?\'▾\':\'▸\';})(this)">'
             + '<span class="audit-cov-lp-id">' + esc(pid) + '</span>'
@@ -11191,6 +11225,7 @@ function buildCoverageAuditSection(items) {
             + '</div>'
             + '<div id="' + lpBodyId + '" class="audit-cov-lp-body" style="display:none">'
             + '<div class="audit-cov-deriv-note">' + derivNote + '</div>'
+            + scoreBarsHtml
             + '<div class="audit-cov-sub-toggle" onclick="(function(t){var b=document.getElementById(\'' + elemListId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';t.querySelector(\'.audit-sub-chev\').textContent=o?\'▾\':\'▸\';})(this)"><span class="audit-sub-chev">▸</span> ' + totalCount + ' expected elements</div>'
             + '<div id="' + elemListId + '" style="display:none">' + elemListHtml + '</div>'
             + (tableHtml ? '<div class="audit-cov-sub-toggle" onclick="(function(t){var b=document.getElementById(\'' + tableId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';t.querySelector(\'.audit-sub-chev\').textContent=o?\'▾\':\'▸\';})(this)"><span class="audit-sub-chev">▸</span> Per-evaluator verdicts</div><div id="' + tableId + '" style="display:none">' + tableHtml + '</div>' : '')
@@ -15294,8 +15329,14 @@ function renderCoveragePanel() {
 
         const toolbarHtml = buildCovToolbar(a, tenantIdx);
 
-        // Step 306a: per-element progressive disclosure for pilot LPs
+        // Step 306a + 307b: per-element progressive disclosure + confidence badge
         const elementVerdicts = a.element_verdicts || [];
+        // Step 307b: derive governance signal and confidence badge (same infrastructure as Mode A)
+        const _covGovSig = elementVerdicts.length > 0 ? deriveCoverageGovernanceSignal(elementVerdicts) : null;
+        const _covBadgeData = (_covGovSig && window.CAMAuditShared) ? window.CAMAuditShared.getConfidenceBadgeData(_covGovSig) : null;
+        const confidenceBadgeHtml = _covBadgeData
+            ? '<span class="cam-confidence-badge cam-conf-' + _covBadgeData.cssClass + '" title="' + esc(_covBadgeData.label) + '">' + _covBadgeData.dots + '</span>'
+            : '';
         let elementDetailHtml = "";
         if (elementVerdicts.length > 0) {
             const _POSITIVE_VERDICTS = new Set(['explicitly_present', 'implicitly_present', 'covered_by_default_law', 'covered_in_other_LP']);
@@ -15334,9 +15375,14 @@ function renderCoveragePanel() {
                     disagHtml = '<span class="cv-ev-disag-btn" onclick="(function(btn){var b=btn.nextElementSibling;b.style.display=b.style.display===\'none\'?\'block\':\'none\';})(this)" title="Evaluator disagreement">⚠</span>'
                         + '<div class="cv-ev-disag-body" style="display:none">' + evalLines + ' → merged: ' + esc(ev.verdict) + '</div>';
                 }
+                // Step 307b: confidence dot indicator per element
+                const confDots = ev.confidence === 'high'   ? '<span class="ev-conf-dots ev-conf-high" title="3/3 consensus">●●●</span>'
+                               : ev.confidence === 'medium' ? '<span class="ev-conf-dots ev-conf-medium" title="2/3 consensus">●●○</span>'
+                               : ev.confidence === 'low'    ? '<span class="ev-conf-dots ev-conf-low" title="Split/inconclusive">●○○</span>'
+                               : '';
                 return '<tr class="cv-ev-row">'
                     + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
-                    + '<td class="cv-ev-status"><span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + disagHtml + '</td>'
+                    + '<td class="cv-ev-status"><span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + confDots + disagHtml + '</td>'
                     + '<td class="cv-ev-citation">' + citHtml + '</td>'
                     + '</tr>';
             }).join('');
@@ -15378,6 +15424,7 @@ function renderCoveragePanel() {
                 <span class="cv-item-id">${esc(pid)}</span>
                 <span class="cv-item-name">${esc(name)}</span>${headlineHtml}
                 <span class="cv-badge ${stateInfo.cls}">${stateInfo.label}</span>
+                ${confidenceBadgeHtml}
                 ${pclsBadge}
             </div>
             ${escalationHtml}
@@ -15818,11 +15865,17 @@ function _navBuildModeCItem(a, tIdx) {
     } else {
         badgeLabel = state || "—"; badgeCls = "nav-badge-default";
     }
+    // Step 307b: derive governance signal for confidence label (same infrastructure as Mode A)
+    var _navEvs = a.element_verdicts || [];
+    var _navGovSig = _navEvs.length > 0 ? deriveCoverageGovernanceSignal(_navEvs) : null;
+    var _navConfLabel = (_navGovSig && window.CAMAuditShared) ? window.CAMAuditShared.getSidebarConfidenceLabel(_navGovSig) : null;
+    var confLabelHtml = _navConfLabel ? '<span class="nav-item-conf">' + esc(_navConfLabel) + '</span>' : '';
     return '<button class="nav-item-enriched" data-pid="' + esc(pid) + '" data-tenant-idx="' + tIdx + '" data-mode="c" title="' + esc(stmt || name) + '">'
          +   '<div class="nav-item-top">'
          +     '<span class="nav-item-id">' + esc(pid) + '</span>'
          +     '<span class="nav-item-name">' + esc(name) + '</span>'
          +     '<span class="nav-item-badge ' + badgeCls + '">' + esc(badgeLabel) + '</span>'
+         +     confLabelHtml
          +   '</div>'
          +   (headline ? '<div class="nav-item-desc">' + esc(headline) + '</div>' : "")
          + '</button>';

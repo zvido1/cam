@@ -154,6 +154,7 @@ def _build_user_prompt(
     elements_305: list,
     ns_candidates: list,
     governing_law: Optional[str],
+    cross_lp_texts: Optional[dict] = None,
 ) -> str:
     """Build the per-LP evaluator user prompt."""
     # Serialize elements with fields the evaluator needs
@@ -194,6 +195,20 @@ def _build_user_prompt(
         "LEASE PROVISION TEXT:",
         tenant_text or "(no provision text extracted)",
         "",
+    ]
+
+    if cross_lp_texts:
+        lines += [
+            "CROSS-PROVISION REFERENCE TEXT:",
+            "The following provision text is provided because one or more elements in this",
+            "assessment may be covered by a different provision. Use this text to evaluate",
+            "cross-LP coverage where the element's cross_LP_coverage field references these LPs.",
+            "",
+        ]
+        for ref_pid, ref_text in cross_lp_texts.items():
+            lines += [f"{ref_pid}: {(ref_text or '')[:1200]}", ""]
+
+    lines += [
         f"Return a JSON array of exactly {len(elements_305)} verdict objects, one per element "
         f"in the order listed above.",
     ]
@@ -231,7 +246,7 @@ def _call_single_evaluator_305(
     start_time = time.time()
     errors: list[str] = []
 
-    user_prompt = _build_user_prompt(pid, lp_name, tenant_text, elements_305, ns_candidates, governing_law)
+    user_prompt = _build_user_prompt(pid, lp_name, tenant_text, elements_305, ns_candidates, governing_law, cross_lp_texts=cfg.get("_cross_lp_texts"))
 
     def _try_claim(provider: str) -> bool:
         with claimed_lock:
@@ -631,6 +646,7 @@ def assess_coverage_305(
     negative_space_candidates: list,
     governing_law: Optional[str] = None,
     cfg: Optional[dict] = None,
+    all_lp_texts: Optional[dict] = None,
 ) -> dict:
     """Per-element multi-evaluator coverage assessment for one pilot LP.
 
@@ -652,6 +668,19 @@ def assess_coverage_305(
     """
     if cfg is None:
         cfg = {}
+
+    # Inject cross-LP texts into cfg so _call_single_evaluator_305 can pass them to the prompt.
+    # Only include LP IDs referenced in this LP's elements' cross_LP_coverage fields.
+    if all_lp_texts:
+        referenced_lps = set()
+        for el in elements_305:
+            for ref in (el.get("cross_LP_coverage") or []):
+                referenced_lps.add(ref)
+        if referenced_lps:
+            cfg = dict(cfg)  # don't mutate caller's dict
+            cfg["_cross_lp_texts"] = {
+                lp: all_lp_texts[lp] for lp in referenced_lps if lp in all_lp_texts
+            }
 
     lp_name = area.get("name", pid)
     t0 = time.time()

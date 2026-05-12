@@ -76,6 +76,14 @@ def assess_coverage(
         if pid:
             provision_map[pid] = p
 
+    # Step 307b: build LP-text map for cross-LP text injection into 305 prompts.
+    # Maps LP ID → extracted tenant_text so evaluators can assess cross-LP elements.
+    all_lp_texts: dict = {
+        p.get("provision_id"): p.get("tenant_text", "")
+        for p in provisions
+        if p.get("provision_id") and p.get("tenant_text")
+    }
+
     assessments = []
 
     def _emit(assessment):
@@ -238,6 +246,7 @@ def assess_coverage(
                     tenant_text=tenant_text,
                     elements_305=area["expected_elements_305"],
                     negative_space_candidates=_ns_candidates,
+                    all_lp_texts=all_lp_texts,
                 )
                 # Apply covered_unfavorable / potentially_unenforceable pattern checks on top
                 _state_305 = _result_305["coverage_state_baseline"]
