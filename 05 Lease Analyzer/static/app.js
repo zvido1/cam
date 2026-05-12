@@ -3198,9 +3198,9 @@ function renderResults() {
     if (backBtn) backBtn.onclick = closeContractDetail;
 
     // Wire detail sub-tab clicks (now in top nav)
-    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage").forEach(function(btn) {
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-evidence").forEach(function(btn) {
         btn.onclick = function() {
-            var _l = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail', coverage: 'Coverage & Gaps' };
+            var _l = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail', coverage: 'Coverage & Gaps', evidence: 'Evidence View' };
             // Step 281: include perspective indicator on the coverage
             // tab so the bar doesn't flash from "no perspective" to
             // "perspective" when switchResultsTab runs after this.
