@@ -15120,6 +15120,7 @@ window.CAM = {
     loadDemoTemplate,
     toggleDemoTenantPicker,
     loadDemoTenants,
+    jumpToEvidence,
 };
 
 // ── Step 245: Coverage & Gaps Panel ──
@@ -15317,7 +15318,7 @@ function renderCoveragePanel() {
                 return _POSITIVE_VERDICTS.has(e.verdict) && e.citation && e.citation.section_ref;
             });
             const lpJumpHtml = _bestCit
-                ? ' <span class="cv-section-link cv-elem-lp-jump" data-ref="' + esc(_bestCit.citation.section_ref) + '" data-quote="' + esc(_bestCit.citation.quote || '') + '" onclick="event.stopPropagation();jumpToEvidence(this.dataset.ref,this.dataset.quote)" title="Jump to evidence">&#8594; ' + esc(_bestCit.citation.section_ref) + '</span>'
+                ? ' <span class="cv-section-link cv-elem-lp-jump" data-ref="' + esc(_bestCit.citation.section_ref) + '" data-quote="' + esc(_bestCit.citation.quote || '') + '" onclick="event.stopPropagation();window.CAM.jumpToEvidence(this.dataset.ref,this.dataset.quote)" title="Jump to evidence">&#8594; ' + esc(_bestCit.citation.section_ref) + '</span>'
                 : '';
 
             const rowsHtml = elementVerdicts.map(function(ev) {
@@ -15325,7 +15326,7 @@ function renderCoveragePanel() {
                 // Step 306c: make citation clickable when section_ref is available
                 const hasCit = ev.citation && ev.citation.section_ref;
                 const citHtml = hasCit
-                    ? '<span class="cv-section-link" data-ref="' + esc(ev.citation.section_ref) + '" data-quote="' + esc(ev.citation.quote || '') + '" onclick="jumpToEvidence(this.dataset.ref,this.dataset.quote)">' + esc(ev.citation.section_ref) + '</span>'
+                    ? '<span class="cv-section-link" data-ref="' + esc(ev.citation.section_ref) + '" data-quote="' + esc(ev.citation.quote || '') + '" onclick="window.CAM.jumpToEvidence(this.dataset.ref,this.dataset.quote)">' + esc(ev.citation.section_ref) + '</span>'
                     : '—';
                 let disagHtml = '';
                 if (ev.disagreements && Array.isArray(ev.disagreements) && ev.disagreements.length > 0) {
