@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAM&#8482; Intelligence by Vered.ai</title>
-    <link rel="stylesheet" href="/static/style.css?v=352">
+    <link rel="stylesheet" href="/static/style.css?v=358">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -541,6 +541,7 @@
                         <button class="top-tab" data-tab="findings" id="contract-tab-findings">Lease Summary</button>
                         <button class="top-tab" data-tab="docview" id="contract-tab-docview">Document Comparison</button>
                         <button class="top-tab" data-tab="coverage" id="contract-tab-coverage">Coverage &amp; Gaps</button>
+                        <button class="top-tab" data-tab="synthesis" id="contract-tab-synthesis">Contract Interaction Review</button>
                         <button class="top-tab" data-tab="evidence" id="contract-tab-evidence">Evidence View</button>
                         <button class="top-tab" data-tab="audittrail" id="contract-tab-audittrail">CAM Audit Trail</button>
                     </div>
@@ -840,6 +841,11 @@
                         <!-- content rendered by renderCoveragePanel() -->
                     </div>
 
+                    <!-- ═══ SYNTHESIS TAB (Step 311) ═══ -->
+                    <div id="synthesis-tab" class="hidden">
+                        <!-- content rendered by renderSynthesisPanel() -->
+                    </div>
+
                     <!-- ═══ EVIDENCE VIEW TAB (Step 306b) ═══ -->
                     <div id="evidence-tab" class="hidden">
                         <!-- content rendered by renderEvidencePanel() -->
@@ -965,6 +971,7 @@
                 <p>CAM operates in two analysis modes. The behaviors described on this page apply differently depending on which mode produced your report:</p>
                 <p style="margin-top:0.75rem;"><strong>Coverage Analysis (single document)</strong> &mdash; When you upload a single lease without a reference template, CAM runs <strong>Coverage Analysis</strong>. This mode uses CAM&rsquo;s schema-governed assertion architecture to evaluate the lease against a curated library of expected provisions. Each issue area is classified by materiality (covered, worth reviewing, needs attention) and surfaced with exposure prose framed for the perspective you selected (tenant, landlord, or neutral). Coverage Analysis surfaces what&rsquo;s missing, what&rsquo;s incomplete, and what&rsquo;s structurally asymmetric &mdash; without requiring a reference document to compare against.</p>
                 <p style="margin-top:0.5rem;"><strong>Comparison Analysis (lease vs template)</strong> &mdash; When you upload a tenant lease alongside a reference template, CAM runs <strong>Comparison Analysis</strong>. This mode uses CAM&rsquo;s full multi-evaluator pipeline: independent evaluator roles, challenger review, severity assessment, and the disagreement governance described below. The confidence indicators, Finding Reliability scores, and Assertion Sensitivity Gap all apply to Comparison Analysis findings.</p>
+                <p style="margin-top:0.5rem;"><strong>Contract Interaction Review</strong> &mdash; After Coverage Analysis completes, CAM runs a third pass that reads the entire lease as a whole rather than provision by provision. This pass looks for three things: whether a missing provision&rsquo;s substance is supplied by another clause elsewhere in the document; whether cure, remedy, or rights language is running in favor of the correct party; and whether two or more provisions combine to create exposure that neither reveals on its own. This layer operates strictly within the four corners of the lease &mdash; it does not credit common law, background doctrine, or implied terms. Findings appear in the Contract Interaction Review tab and are flagged on individual provision cards where they apply.</p>
                 <p style="margin-top:0.5rem;"><em>The remainder of this page describes Comparison Analysis behavior in detail. Coverage Analysis surfaces issues based on schema-driven classification with materiality grading rather than multi-evaluator agreement; the confidence-score machinery described below does not apply to Coverage findings.</em></p>
             </section>
             <hr style="margin: 1.25rem 0; border: none; border-top: 1px solid #e2e8f0;">
@@ -1118,6 +1125,6 @@
     <script src="/static/app_docview_render_shared.js?v=3"></script>
     <script src="/static/app_summary_shared.js?v=10"></script>
     <script src="/static/app_notes_shared.js?v=1"></script>
-    <script src="/static/app.js?v=374"></script>
+    <script src="/static/app.js?v=382"></script>
 </body>
 </html>

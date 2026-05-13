@@ -248,16 +248,18 @@ def assess_coverage(
                     negative_space_candidates=_ns_candidates,
                     all_lp_texts=all_lp_texts,
                 )
-                # Apply covered_unfavorable / potentially_unenforceable pattern checks on top
+                # Step 305 per-element verdicts are the authoritative source for
+                # covered/partial/missing state — do NOT override with legacy regex
+                # unfavorable patterns (those fire on clause text that the element-
+                # level analysis already assessed more accurately).
+                # Only apply potentially_unenforceable override: self-help without
+                # judicial process is a jurisdiction-specific enforceability question
+                # that the element verdicts do not address.
                 _state_305 = _result_305["coverage_state_baseline"]
                 _text_lower_305 = tenant_text.lower()
-                _unfav_305 = _check_unfavorable_patterns(pid, _text_lower_305)
-                if _unfav_305:
-                    _state_305 = "covered_unfavorable"
-                else:
-                    _unenforceable_305 = _check_unenforceable_patterns(pid, _text_lower_305)
-                    if _unenforceable_305:
-                        _state_305 = "potentially_unenforceable"
+                _unenforceable_305 = _check_unenforceable_patterns(pid, _text_lower_305)
+                if _unenforceable_305:
+                    _state_305 = "potentially_unenforceable"
                 _a = _build_assessment(
                     pid=pid, area=area, coverage_state=_state_305,
                     applicability=applicability_result,

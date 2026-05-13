@@ -1687,6 +1687,24 @@ async def chat_with_analysis(job_id: str, body: dict):
                     meta = data.get("contract_metadata", {})
                     if meta:
                         context_parts.append(f"  Contract: {json.dumps(meta, default=str)}")
+                    # Step 312: include Stage 7 cross-provision findings
+                    cpfs = data.get("cross_provision_findings") or []
+                    if cpfs:
+                        context_parts.append(f"  Stage 7 — Contract Interaction Review ({len(cpfs)} finding(s)):")
+                        for cpf in cpfs:
+                            ftype = cpf.get("finding_type", "")
+                            fid   = cpf.get("finding_id", "")
+                            lps   = ", ".join(cpf.get("implicated_lps") or [])
+                            hl    = (cpf.get("headline") or "").strip()
+                            sev   = cpf.get("severity", "")
+                            agree = cpf.get("evaluator_agreement", "")
+                            direc = cpf.get("directionality") or ""
+                            context_parts.append(
+                                f"    {fid} [{ftype}] {lps} — {hl}"
+                                + (f" | severity={sev}" if sev else "")
+                                + (f" | agreement={agree}" if agree else "")
+                                + (f" | directionality={direc}" if direc else "")
+                            )
                 else:
                     # Include all provisions summary
                     for p in data.get("provisions", []):

@@ -1499,7 +1499,7 @@ function renderProcessingOverview(job, tenants) {
     // Step 254: Mode C runs a 3-stage pipeline (parse, extract, coverage);
     // Mode A runs 6. Adjust the "X of Y stages" rollup so it reads correctly.
     const _isModeCRollup = job && job.input_config && job.input_config.mode === "analyze";
-    const _stagesPerTenant = _isModeCRollup ? 3 : 6;
+    const _stagesPerTenant = _isModeCRollup ? 4 : 6;
     const currentStageNum = leadTenant
         ? (Number(leadTenant.current_stage) || 1)
         : (completedCount === totalCount ? _stagesPerTenant : 1);
@@ -1609,8 +1609,8 @@ function buildProcessingChecklistSteps(job, tenant) {
     const stageActive = (stageNum) => !isComplete && tenantStatus === "processing" && currentStage === stageNum;
     const stagePending = (stageNum) => !stageDone(stageNum) && !stageActive(stageNum);
 
-    // Step 254: Mode C runs a 3-stage pipeline (parse → extract → coverage).
-    // The backend progress_callback fires (1,3), (2,3), (3,3) — match that here
+    // Step 254: Mode C runs a 4-stage pipeline (parse → extract → coverage → synthesis).
+    // The backend progress_callback fires (1,4), (2,4), (3,4), (4,4) — match that here
     // so the checklist doesn't show Mode-A-only stages as pending forever.
     const isModeC = job && job.input_config && job.input_config.mode === "analyze";
     if (isModeC) {
@@ -1628,7 +1628,12 @@ function buildProcessingChecklistSteps(job, tenant) {
             {
                 stage: 3,
                 title: "Analyze coverage",
-                meta: "Assessing coverage, negative space, and exposure for each issue area.",
+                meta: "Evaluating all 32 issue areas with three independent models. This is the longest stage — typically 8–15 minutes depending on lease length.",
+            },
+            {
+                stage: 4,
+                title: "Cross-provision review",
+                meta: "Reading the full lease as a whole to find interactions between provisions. Takes 3–5 minutes.",
             },
         ];
         return modeCSteps.map((step) => ({
@@ -1747,7 +1752,7 @@ function renderProcessingChecklist(job) {
             : status === "processing"
                 ? `${completedSteps}/${totalSteps} complete${provisionLabel ? ` • ${provisionLabel} in checklist — may grow during extraction` : ""}`
                 : `Queued${provisionLabel ? ` • ${provisionLabel} in checklist` : ""}`;
-        const defaultStages = isModeC ? 3 : 6;
+        const defaultStages = isModeC ? 4 : 6;
         const badgeText = status === "completed" ? "Complete" : status === "processing" ? `Step ${Number(tenant.current_stage) || 1} of ${Number(tenant.total_stages) || defaultStages}` : "Queued";
 
         html += `
@@ -2502,7 +2507,14 @@ function initLpProgressPanel(jobData) {
             : `CAM is checking all ${standardCount} standard issue areas.`;
     }
 
-    list.innerHTML = allItems.map(item =>
+    // Interleave first half / second half so row-flow grid gives left col = LP-01..LP-16,
+    // right col = LP-17..LP-32 without relying on grid-auto-flow: column (Step 319).
+    const mid = Math.ceil(allItems.length / 2);
+    const firstHalf = allItems.slice(0, mid);
+    const secondHalf = allItems.slice(mid);
+    const interleaved = firstHalf.flatMap((item, i) => secondHalf[i] ? [item, secondHalf[i]] : [item]);
+
+    list.innerHTML = interleaved.map(item =>
         `<div class="lp-progress-row state-pending" id="lp-row-${esc(item.id)}">` +
         `<span class="lp-progress-icon">·</span>` +
         `<span class="lp-progress-name" title="${esc(item.name)}">${esc(item.name)}</span>` +
@@ -2621,9 +2633,36 @@ function renderProgress(job) {
     const tenants = (job.input_config || {}).tenants || [];
     const jobStatus = job.status || "";
     updateLpProgressPanel(job.lp_progress || {}, jobStatus);
+
+    // Step 316: compute Stage 3 LP sub-progress for Mode C progress interpolation.
+    // lp_progress entries with a terminal state (anything except 'pending'/'processing')
+    // indicate that LP's coverage assessment is done.
+    const _isModeC316 = (job.input_config || {}).mode === "analyze";
+    const _lpProg316 = job.lp_progress || {};
+    const _lpDone316 = _isModeC316
+        ? Object.values(_lpProg316).filter(e => e.state && e.state !== 'pending' && e.state !== 'processing').length
+        : 0;
+    const _lpFrac316 = Math.min(1, _lpDone316 / 32); // fraction of 32 standard LPs complete
+
+    // Step 319 debug: log what stage/total_stages the frontend sees for Mode C tenants.
+    if (_isModeC316) {
+        tenants.forEach((t, i) => {
+            if (t.status === 'processing') {
+                console.log(`[progress_debug] tenant[${i}] stage=${t.current_stage}/${t.total_stages} lpDone=${_lpDone316} lpFrac=${_lpFrac316.toFixed(2)} status=${t.status}`);
+            }
+        });
+    }
+
     let overallFraction = 0;
     tenants.forEach(t => {
-        overallFraction += getTenantProgressFraction(t, jobStatus);
+        let frac = getTenantProgressFraction(t, jobStatus);
+        // Stage 3 interpolation: smooth 50%→75% as each LP completes instead of flat bar.
+        // total_stages === 4 guard ensures this only fires when the backend reports the
+        // correct 4-stage Mode C pipeline (post-Step-317 backend fix).
+        if (_isModeC316 && Number(t.current_stage) === 3 && Number(t.total_stages) === 4) {
+            frac = 0.50 + (_lpFrac316 * 0.25);
+        }
+        overallFraction += frac;
     });
     const totalCount = tenants.length;
     estimateProgressFraction = totalCount > 0 ? (overallFraction / totalCount) : 0;
@@ -2674,8 +2713,19 @@ function renderProgress(job) {
                 ? "processing" : t.status;
 
             if (effectiveStatus === "processing") {
+                fillClass = "processing";
                 if (t.current_stage && t.total_stages) {
-                    const tenantPct = Math.round(getTenantProgressFraction(t, jobStatus) * 100);
+                    let _rawFrac = getTenantProgressFraction(t, jobStatus);
+                    // Step 316/317: Stage 3 interpolation — use LP completion count.
+                    // Requires total_stages === 4 (set by backend post-Step-317).
+                    if (_isModeC316 && Number(t.current_stage) === 3 && Number(t.total_stages) === 4) {
+                        _rawFrac = 0.50 + (_lpFrac316 * 0.25);
+                    }
+                    // Step 316/319: Stage 4 pulse — additive so "processing" base class is kept.
+                    if (_isModeC316 && Number(t.current_stage) === 4) {
+                        fillClass += " progress-fill--pulsing";
+                    }
+                    const tenantPct = Math.round(_rawFrac * 100);
                     statusLabel = getProcessingStageCopy(t.current_stage, "").headline;
                     width = `${tenantPct}%`;
                     const stageMeta = `Stage ${Number(t.current_stage) || 1} of ${Number(t.total_stages) || 6}`;
@@ -2686,7 +2736,6 @@ function renderProgress(job) {
                     width = "8%";
                     statusMeta = "Queued • Preparing analysis";
                 }
-                fillClass = "processing";
             } else if (effectiveStatus === "cancelled") {
                 statusLabel = "Cancelled";
                 statusMeta = "Cancelled";
@@ -3115,10 +3164,13 @@ function applyModeSpecificUI() {
     const findingsBtn = document.getElementById("contract-tab-findings");
     const docviewBtn = document.getElementById("contract-tab-docview");
     const evidenceBtn = document.getElementById("contract-tab-evidence");
+    const synthesisBtn = document.getElementById("contract-tab-synthesis");
     if (findingsBtn) findingsBtn.classList.toggle("hidden", isC);
     if (docviewBtn) docviewBtn.classList.toggle("hidden", isC);
     // Step 306b: Evidence View is Mode C-only (no template to compare against in Mode A)
     if (evidenceBtn) evidenceBtn.classList.toggle("hidden", !isC);
+    // Step 311: Contract Interaction Review is Mode C-only
+    if (synthesisBtn) synthesisBtn.classList.toggle("hidden", !isC);
     // Step 257: if persisted activeResultsTab points at a now-hidden tab, coerce
     // to coverage. This catches users who switched mode mid-session, or whose
     // sessionStorage retained "findings"/"docview" from a prior Mode A run.
@@ -3201,9 +3253,9 @@ function renderResults() {
     if (backBtn) backBtn.onclick = closeContractDetail;
 
     // Wire detail sub-tab clicks (now in top nav)
-    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-evidence").forEach(function(btn) {
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-evidence, #contract-tab-synthesis").forEach(function(btn) {
         btn.onclick = function() {
-            var _l = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail', coverage: 'Coverage & Gaps', evidence: 'Evidence View' };
+            var _l = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail', coverage: 'Coverage & Gaps', evidence: 'Evidence View', synthesis: 'Contract Interaction Review' };
             // Step 281: include perspective indicator on the coverage
             // tab so the bar doesn't flash from "no perspective" to
             // "perspective" when switchResultsTab runs after this.
@@ -5252,11 +5304,16 @@ function updateContractDetailHeader(tenantIdx) {
         });
     }
 
+    // Step 315/318: action badge for Mode A only (severity-based). "Clear" removed \u2014
+    // it has no actionable meaning ("no deviations found" is already self-evident).
+    const _isModeCHeader = isJobModeC();
     var actionBadge = '';
-    if (sevCounts['CRITICAL'] > 0)      actionBadge = ' <span class="snapshot-action-badge action-badge-critical">\u26A0 Immediate Action</span>';
-    else if (sevCounts['HIGH'] > 0)     actionBadge = ' <span class="snapshot-action-badge action-badge-high">\u26A0 Review Recommended</span>';
-    else if (s && (s.deviates || 0) > 0) actionBadge = ' <span class="snapshot-action-badge action-badge-medium">\u00B7 Monitor</span>';
-    else if (s)                          actionBadge = ' <span class="snapshot-action-badge action-badge-clear">\u2713 Clear</span>';
+    if (!_isModeCHeader) {
+        if (sevCounts['CRITICAL'] > 0)       actionBadge = ' <span class="snapshot-action-badge action-badge-critical">\u26A0 Immediate Action</span>';
+        else if (sevCounts['HIGH'] > 0)      actionBadge = ' <span class="snapshot-action-badge action-badge-high">\u26A0 Review Recommended</span>';
+        else if (s && (s.deviates || 0) > 0) actionBadge = ' <span class="snapshot-action-badge action-badge-medium">\u00B7 Monitor</span>';
+        // "\u2713 Clear" removed (Step 318) \u2014 self-evident from the absence of severity badges
+    }
 
     // Compute fragility badge — show when high-severity findings are predominantly Fragile
     var fragilityBadge = '';
@@ -5276,13 +5333,7 @@ function updateContractDetailHeader(tenantIdx) {
         ? ' <span class="contract-detail-deviation-badge">' + deviationCount + ' Deviation' + (deviationCount !== 1 ? 's' : '') + '</span>'
         : '';
 
-    var resolution = getContractResolution(tenantIdx);
-    var resBadge = '';
-    if (resolution === "clean") {
-        resBadge = ' <span class="snapshot-resolution-badge res-badge-clean">\u2713 Clean</span>';
-    } else if (resolution === "resolved") {
-        resBadge = ' <span class="snapshot-resolution-badge res-badge-resolved">\u2713 Resolved</span>';
-    }
+    // Step 318: "\u2713 Clean" / "\u2713 Resolved" pills removed \u2014 no clear meaning in either mode.
 
     var r2 = tenant.results || {};
     var provCount = provisions.length;
@@ -5297,7 +5348,7 @@ function updateContractDetailHeader(tenantIdx) {
         : '';
 
     headerEl.innerHTML = '<div class="contract-detail-header-row">'
-        + '<h2 class="contract-detail-name">' + esc(name) + actionBadge + fragilityBadge + deviationBadge + resBadge + '</h2>'
+        + '<h2 class="contract-detail-name">' + esc(name) + actionBadge + fragilityBadge + deviationBadge + '</h2>'
         + runStatBadge
         + '<div id="final-draft-status-header" class="contract-final-draft-status hidden"></div>'
         + '</div>';
@@ -7355,7 +7406,8 @@ var TAB_SUBHEADER_LABELS = {
     docview:    'Document Comparison',
     audittrail: 'Audit Trail',
     coverage:   'Coverage & Gaps',
-    evidence:   'Evidence View'
+    evidence:   'Evidence View',
+    synthesis:  'Contract Interaction Review',
 };
 
 function setDocviewStickyControlsVisible(isVisible) {
@@ -7535,7 +7587,7 @@ function switchResultsTab(tab) {
     }
 
     activeResultsTab = tab;
-    if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage" || tab === "evidence") {
+    if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage" || tab === "evidence" || tab === "synthesis") {
         activeTopTab = tab;
     }
     // Step 281: Coverage & Gaps tab in Mode C carries a right-aligned
@@ -7545,7 +7597,7 @@ function switchResultsTab(tab) {
     setSubheader(TAB_SUBHEADER_LABELS[tab] || tab, _subRight);
 
     // Update tab bar active state (Step 129 fix: $ → $ for querySelectorAll)
-    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-evidence").forEach(t => {
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-evidence, #contract-tab-synthesis").forEach(t => {
         t.classList.toggle("active", t.dataset.tab === tab);
     });
 
@@ -7555,18 +7607,21 @@ function switchResultsTab(tab) {
     const auditTab = $("#audittrail-tab");
     const coverageTab = $("#coverage-tab");
     const evidenceTab = $("#evidence-tab");
+    const synthesisTab = $("#synthesis-tab");
 
     if (tab === "findings") {
         findingsTab.classList.remove("hidden");
         docviewTab.classList.add("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
+        if (synthesisTab) synthesisTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
     } else if (tab === "audittrail") {
         findingsTab.classList.add("hidden");
         docviewTab.classList.add("hidden");
         auditTab.classList.remove("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
+        if (synthesisTab) synthesisTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
         renderAuditTrail();
     } else if (tab === "coverage") {
@@ -7575,6 +7630,7 @@ function switchResultsTab(tab) {
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.remove("hidden");
         if (evidenceTab) evidenceTab.classList.add("hidden");
+        if (synthesisTab) synthesisTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
         renderCoveragePanel();
     } else if (tab === "evidence") {
@@ -7583,14 +7639,25 @@ function switchResultsTab(tab) {
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
         if (evidenceTab) evidenceTab.classList.remove("hidden");
+        if (synthesisTab) synthesisTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
         renderEvidencePanel();
+    } else if (tab === "synthesis") {
+        findingsTab.classList.add("hidden");
+        docviewTab.classList.add("hidden");
+        auditTab.classList.add("hidden");
+        if (coverageTab) coverageTab.classList.add("hidden");
+        if (evidenceTab) evidenceTab.classList.add("hidden");
+        if (synthesisTab) synthesisTab.classList.remove("hidden");
+        setDocviewStickyControlsVisible(false);
+        renderSynthesisPanel();
     } else {
         findingsTab.classList.add("hidden");
         docviewTab.classList.remove("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
         if (evidenceTab) evidenceTab.classList.add("hidden");
+        if (synthesisTab) synthesisTab.classList.add("hidden");
         setDocviewStickyControlsVisible(true);
         renderDocumentView();
     }
@@ -15274,7 +15341,8 @@ function renderCoveragePanel() {
     const review   = ca.filter(a => a.partial_class === "partial_review");
     const covered  = ca.filter(a => a.coverage_state === "covered");
     const typical  = ca.filter(a => a.partial_class === "partial_typical");
-    const other    = ca.filter(a => !problems.includes(a) && !review.includes(a) && !covered.includes(a) && !typical.includes(a));
+    // Step 318: exclude favorable items so they don't also appear in the "Adequately Covered" rollup
+    const other    = ca.filter(a => !problems.includes(a) && !favorable.includes(a) && !review.includes(a) && !covered.includes(a) && !typical.includes(a));
 
     const _cvIsNeutral = !_viewerPerspective || _viewerPerspective === "neutral";
     const STATE_LABELS = {
@@ -15304,7 +15372,9 @@ function renderCoveragePanel() {
         // still render a usable headline.
         const headline = (a.exposure_headline || _deriveHeadlineFromExposure(stmt) || "").trim();
 
-        const stateInfo = (tier === "favorable")
+        // Step 318: perspective flip — if this provision is unfavorable to the other party,
+    // show FAVORABLE on the card face (same logic the sidebar already uses).
+        const stateInfo = (tier === "favorable" || _isFavorable(a))
             ? { label: "✓ Favorable", cls: "cv-badge-favorable" }
             : (STATE_LABELS[state] || { label: state, cls: "cv-badge-na" });
         let pclsBadge = "";
@@ -15313,8 +15383,7 @@ function renderCoveragePanel() {
 
         const missingHtml = missing.length > 0
             ? '<div class="cv-missing-elements"><span class="cv-missing-label">Missing:</span>' +
-              missing.slice(0, 3).map(m => `<span class="cv-missing-item">${esc(m)}</span>`).join("") +
-              (missing.length > 3 ? `<span class="cv-missing-more">+${missing.length - 3} more</span>` : "") +
+              missing.map(m => `<span class="cv-missing-item">${esc(m)}</span>`).join("") +
               '</div>'
             : "";
 
@@ -15338,7 +15407,7 @@ function renderCoveragePanel() {
         const _covGovSig = elementVerdicts.length > 0 ? deriveCoverageGovernanceSignal(elementVerdicts) : null;
         const _covBadgeData = (_covGovSig && window.CAMAuditShared) ? window.CAMAuditShared.getConfidenceBadgeData(_covGovSig) : null;
         const confidenceBadgeHtml = _covBadgeData
-            ? '<span class="cam-confidence-badge cam-conf-' + _covBadgeData.cssClass + '" title="' + esc(_covBadgeData.label) + '">' + _covBadgeData.dots + '</span>'
+            ? '<span class="cov-conf-label">Confidence:</span><span class="cam-confidence-badge cam-conf-' + _covBadgeData.cssClass + '" title="' + esc(_covBadgeData.label) + '">' + _covBadgeData.dots + ' ' + esc(_covBadgeData.label) + '</span>'
             : '';
         let elementDetailHtml = "";
         if (elementVerdicts.length > 0) {
@@ -15462,6 +15531,14 @@ function renderCoveragePanel() {
             escalationHtml = `<div class="cv-item-escalation" title="${esc(escalation.rationale || "")}"><span class="cv-escalation-badge">${esc(stateLabel)} rule</span><span class="cv-escalation-text">Escalated from ${esc(escalation.from)} to ${esc(escalation.to)}</span></div>`;
         }
 
+        // Step 311: synthesis badge — if this LP is implicated in any CPF finding,
+        // show the ↔ Synthesis badge that switches to the synthesis tab.
+        const _cpfs = (pr && pr.cross_provision_findings) || [];
+        const _cpfMatch = _cpfs.find(f => Array.isArray(f.implicated_lps) && f.implicated_lps.includes(pid));
+        const synthBadgeHtml = _cpfMatch
+            ? `<button class="cv-synthesis-badge" title="Appears in Contract Interaction Review: ${esc(_cpfMatch.headline || _cpfMatch.finding_id)}" onclick="event.stopPropagation();if(typeof switchResultsTab==='function'){switchResultsTab('synthesis');setTimeout(function(){var target=document.querySelector('.cpf-card[data-lps*=${JSON.stringify(esc(pid))}]')||document.getElementById('cpf-${esc(_cpfMatch.finding_id.replace(/[^a-zA-Z0-9_-]/g,'_'))}');if(target){target.scrollIntoView({behavior:'smooth',block:'start'});target.classList.add('highlight-flash');setTimeout(function(){target.classList.remove('highlight-flash');},1500);}},150);}" type="button">&#x21D4; Synthesis</button>`
+            : "";
+
         return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
             <div class="cv-item-header">
                 <span class="cv-item-id">${esc(pid)}</span>
@@ -15469,6 +15546,7 @@ function renderCoveragePanel() {
                 <span class="cv-badge ${stateInfo.cls}">${stateInfo.label}</span>
                 ${confidenceBadgeHtml}
                 ${pclsBadge}
+                ${synthBadgeHtml}
             </div>
             ${escalationHtml}
             ${leaseTextHtml}
@@ -15908,10 +15986,16 @@ function _navBuildModeCItem(a, tIdx) {
     } else {
         badgeLabel = state || "—"; badgeCls = "nav-badge-default";
     }
-    // Step 307b: derive governance signal for confidence label (same infrastructure as Mode A)
+    // Steps 307b/315: derive governance signal for confidence label.
+    // Show for every LP that has element_verdicts — same derivation as buildItem().
     var _navEvs = a.element_verdicts || [];
     var _navGovSig = _navEvs.length > 0 ? deriveCoverageGovernanceSignal(_navEvs) : null;
-    var _navConfLabel = (_navGovSig && window.CAMAuditShared) ? window.CAMAuditShared.getSidebarConfidenceLabel(_navGovSig) : null;
+    var _navConfFallback = { ASSERT_SIGNAL: "Verified", ASSERT_REVIEW_SIGNAL: "Impact Unclear", REVIEW_SIGNAL: "Needs Review", WITHHOLD_SIGNAL: "Inconclusive" };
+    var _navConfLabel = _navGovSig
+        ? ((window.CAMAuditShared && window.CAMAuditShared.getSidebarConfidenceLabel)
+            ? window.CAMAuditShared.getSidebarConfidenceLabel(_navGovSig)
+            : _navConfFallback[_navGovSig] || null)
+        : null;
     var confLabelHtml = _navConfLabel ? '<span class="nav-item-conf">' + esc(_navConfLabel) + '</span>' : '';
     return '<button class="nav-item-enriched" data-pid="' + esc(pid) + '" data-tenant-idx="' + tIdx + '" data-mode="c" title="' + esc(stmt || name) + '">'
          +   '<div class="nav-item-top">'
@@ -15921,6 +16005,150 @@ function _navBuildModeCItem(a, tIdx) {
          +     confLabelHtml
          +   '</div>'
          +   (headline ? '<div class="nav-item-desc">' + esc(headline) + '</div>' : "")
+         + '</button>';
+}
+
+// Step 313: agreement badge for CPF findings — "N of 3 evaluators" with color coding.
+function _synthAgreementBadge(agreementStr) {
+    const parts = (agreementStr || "").split("-");
+    const reported = parseInt(parts[0], 10) || 0;
+    const cls = reported === 3 ? "cpf-agree-unanimous"
+               : reported === 2 ? "cpf-agree-majority"
+               : reported === 1 ? "cpf-agree-minority"
+               : "cpf-agree-none";
+    const label = reported === 3 ? "3 of 3 evaluators"
+                : reported === 2 ? "2 of 3 evaluators"
+                : reported === 1 ? "1 of 3 evaluators"
+                : "Not confirmed";
+    return `<span class="cpf-agree-badge ${cls}" title="Evaluator agreement">${esc(label)}</span>`;
+}
+
+// Step 311: render the Contract Interaction Review tab from cross_provision_findings[].
+function renderSynthesisPanel() {
+    const tab = $("#synthesis-tab");
+    if (!tab) return;
+
+    const tenantIdx = currentTenantIndex;
+    const tenant = (currentResults && currentResults.tenants) ? currentResults.tenants[tenantIdx] : null;
+    const pr = tenant && tenant.results ? tenant.results : null;
+    const cpfs = (pr && pr.cross_provision_findings) ? pr.cross_provision_findings : null;
+
+    if (!cpfs || cpfs.length === 0) {
+        tab.innerHTML = '<div class="coverage-empty"><p>No contract interaction findings available for this run. This tab populates after a fresh analysis.</p></div>';
+        return;
+    }
+
+    const FTYPE_LABEL = {
+        "cross_coverage_gap":   "Cross-Coverage Gap",
+        "directional_mismatch": "Directional Mismatch",
+        "compound_risk":        "Compound Risk",
+    };
+    const SEV_CLS = { "HIGH": "cv-badge-missing", "MEDIUM": "cv-badge-partial", "LOW": "cv-badge-ok" };
+
+    function buildCpfCard(f) {
+        const fid      = f.finding_id || "";
+        const ftype    = f.finding_type || "cross_coverage_gap";
+        const ftLabel  = FTYPE_LABEL[ftype] || ftype;
+        const implicated = (f.implicated_lps || []);
+        const headline = (f.headline || "").trim();
+        const detail   = (f.detail || "").trim();
+        const cited    = (f.cited_sections || []);
+        const sev      = (f.severity || "MEDIUM").toUpperCase();
+        const sevCls   = SEV_CLS[sev] || "cv-badge-na";
+        const agree    = f.evaluator_agreement || "";
+        const evVerd   = f.evaluator_verdicts || {};
+        const safeId   = fid.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+        const lpPills = implicated.map(lpId =>
+            `<button class="cpf-lp-pill" onclick="switchResultsTab('coverage');setTimeout(function(){window.CAM.jumpToCoverageProvision&&window.CAM.jumpToCoverageProvision('${esc(lpId)}');},120);" type="button">${esc(lpId)}</button>`
+        ).join(" ");
+
+        const citedHtml = cited.length > 0
+            ? '<div class="cpf-cited"><span class="cpf-cited-label">Cited:</span> ' + cited.map(s => `<span class="cpf-cited-section">${esc(s)}</span>`).join(" ") + '</div>'
+            : "";
+
+        const agreeHtml = _synthAgreementBadge(agree);
+        const evLines = Object.entries(evVerd).map(([role, v]) =>
+            `<span class="cpf-ev-verdict"><strong>${esc(role)}</strong>: ${esc(v)}</span>`
+        ).join("  ");
+        const reportedCount = parseInt((agree || "0").split("-")[0], 10) || 0;
+        const minorityNote = reportedCount === 1
+            ? '<div class="cpf-minority-note">One evaluator identified this interaction. The other two did not flag it independently. Review the cited sections to assess whether the risk applies to this lease.</div>'
+            : "";
+
+        const dirNote = (ftype === "directional_mismatch" && f.directionality)
+            ? `<div class="cpf-directionality"><span class="cpf-dir-label">Directionality:</span> ${esc(f.directionality.replace(/_/g, " "))}</div>`
+            : "";
+
+        return `<div class="cpf-card cpf-type-${esc(ftype)}" id="cpf-${esc(safeId)}" data-finding-id="${esc(fid)}" data-lps="${esc(implicated.join(','))}">
+            <div class="cpf-card-header">
+                <span class="cpf-finding-id">${esc(fid)}</span>
+                <span class="cpf-type-label">${esc(ftLabel)}</span>
+                <span class="cv-badge ${sevCls}">${sev}</span>
+                ${agreeHtml}
+            </div>
+            <div class="cpf-lps">${lpPills}</div>
+            ${headline ? `<div class="cpf-headline">${esc(headline)}</div>` : ""}
+            ${detail   ? `<div class="cpf-detail">${esc(detail)}</div>` : ""}
+            ${dirNote}
+            ${citedHtml}
+            ${evLines ? `<div class="cpf-ev-row">${evLines}</div>` : ""}
+            ${minorityNote}
+        </div>`;
+    }
+
+    const mismatches = cpfs.filter(f => f.finding_type === "directional_mismatch");
+    const compounds  = cpfs.filter(f => f.finding_type === "compound_risk");
+    const gaps       = cpfs.filter(f => f.finding_type === "cross_coverage_gap");
+
+    let html = '<div class="synthesis-panel">';
+    html += '<div class="synthesis-intro"><p>This review asks three questions across the full contract: where is the missing protection actually hiding, which direction does it run, and what happens when multiple gaps combine?</p></div>';
+
+    if (mismatches.length > 0) {
+        html += '<div class="cpf-group"><div class="cpf-group-header">Directional Mismatches <span class="nav-section-count">' + mismatches.length + '</span></div>';
+        mismatches.forEach(f => { html += buildCpfCard(f); });
+        html += '</div>';
+    }
+    if (compounds.length > 0) {
+        html += '<div class="cpf-group"><div class="cpf-group-header">Compound Risks <span class="nav-section-count">' + compounds.length + '</span></div>';
+        compounds.forEach(f => { html += buildCpfCard(f); });
+        html += '</div>';
+    }
+    if (gaps.length > 0) {
+        html += '<div class="cpf-group"><div class="cpf-group-header">Cross-Coverage Gaps <span class="nav-section-count">' + gaps.length + '</span></div>';
+        gaps.forEach(f => { html += buildCpfCard(f); });
+        html += '</div>';
+    }
+
+    html += '</div>';
+    tab.innerHTML = html;
+}
+
+window.CAM.renderSynthesisPanel = renderSynthesisPanel;
+
+// Step 311: sidebar item builder for synthesis findings (cross_provision_findings).
+// Clicking opens the synthesis tab and scrolls to the relevant CPF card.
+function _navBuildSynthesisItem(f, tIdx) {
+    const fid    = f.finding_id || "";
+    const lps    = (f.implicated_lps || []).join(", ");
+    const hl     = (f.headline || fid).trim();
+    const sev    = (f.severity || "HIGH").toUpperCase();
+    const sevCls = sev === "HIGH" ? "nav-badge-high" : sev === "MEDIUM" ? "nav-badge-medium" : "nav-badge-low";
+    const label  = "[SYNTHESIS — " + sev + "]";
+    const truncHl = _navTruncate(hl, 160);
+    const safeId  = fid.replace(/[^a-zA-Z0-9_-]/g, '_');
+    return '<button class="nav-item-enriched nav-item-synthesis" data-cpf-id="' + esc(fid) + '" data-tenant-idx="' + tIdx + '" data-mode="synthesis" title="' + esc(hl) + '"'
+         + ' onclick="(function(btn){var tIdx=parseInt(btn.dataset.tenantIdx,10);'
+         + 'if(!isNaN(tIdx)&&tIdx!==currentTenantIndex){currentTenantIndex=tIdx;}'
+         + 'if(typeof openContractDetail===\'function\'){openContractDetail(tIdx).then(function(){switchResultsTab(\'synthesis\');setTimeout(function(){var el=document.getElementById(\'cpf-' + esc(safeId) + '\');if(el)el.scrollIntoView({behavior:\'smooth\',block:\'start\'});},200);});}'
+         + 'else if(typeof switchResultsTab===\'function\'){switchResultsTab(\'synthesis\');setTimeout(function(){var el=document.getElementById(\'cpf-' + esc(safeId) + '\');if(el)el.scrollIntoView({behavior:\'smooth\',block:\'start\'});},200);}'
+         + '})(this)" type="button">'
+         +   '<div class="nav-item-top">'
+         +     '<span class="nav-item-id">' + esc(lps || fid) + '</span>'
+         +     '<span class="nav-item-name">' + esc(label) + '</span>'
+         +     '<span class="nav-item-badge ' + sevCls + '">' + sev + '</span>'
+         +   '</div>'
+         +   (truncHl ? '<div class="nav-item-desc">' + esc(truncHl) + '</div>' : "")
          + '</button>';
 }
 
@@ -15967,6 +16195,8 @@ function renderNavSidebar() {
         // collapsed "Adequately Covered" section of the main panel.
         tenants.forEach((tenant, tIdx) => {
             const ca = (tenant.results && tenant.results.coverage_assessment) || [];
+            const cpfs = ((tenant.results && tenant.results.cross_provision_findings) || [])
+                .filter(f => (f.severity || "").toUpperCase() === "HIGH");
             const needsAttention = [];
             const worthReviewing = [];
             ca.forEach(a => {
@@ -15979,7 +16209,7 @@ function renderNavSidebar() {
                     worthReviewing.push(a);
                 }
             });
-            if (needsAttention.length === 0 && worthReviewing.length === 0) {
+            if (needsAttention.length === 0 && worthReviewing.length === 0 && cpfs.length === 0) {
                 if (showTenantHeaders) {
                     html += '<div class="nav-tenant-group" data-tenant-idx="' + tIdx + '">'
                          +   '<div class="nav-tenant-header">' + esc(tenant.filename || ("Lease " + (tIdx + 1))) + '</div>'
@@ -15996,6 +16226,21 @@ function renderNavSidebar() {
                 html += '<div class="nav-section nav-section-attention">'
                      +   '<div class="nav-section-header">Needs Attention <span class="nav-section-count">' + needsAttention.length + '</span></div>';
                 needsAttention.forEach(a => { html += _navBuildModeCItem(a, tIdx); });
+                html += '</div>';
+            }
+            // Step 311/315: HIGH synthesis findings in sidebar — after Needs Attention, before Worth Reviewing.
+            // Drop single-LP cross_coverage_gap entries whose LP is already in Needs Attention (redundant).
+            const _needsAttnIds = new Set(needsAttention.map(a => a.issue_area_id));
+            const cpfsFiltered = cpfs.filter(f => {
+                if (f.finding_type !== 'cross_coverage_gap') return true; // always keep directional/compound
+                const lps = f.implicated_lps || [];
+                if (lps.length === 1 && _needsAttnIds.has(lps[0])) return false; // already surfaced
+                return true;
+            });
+            if (cpfsFiltered.length > 0) {
+                html += '<div class="nav-section nav-section-synthesis">'
+                     +   '<div class="nav-section-header">Synthesis — HIGH <span class="nav-section-count">' + cpfsFiltered.length + '</span></div>';
+                cpfsFiltered.forEach(f => { html += _navBuildSynthesisItem(f, tIdx); });
                 html += '</div>';
             }
             if (worthReviewing.length > 0) {
@@ -16106,6 +16351,8 @@ function renderNavSidebar() {
             const pid = btn.dataset.pid;
             const tIdx = parseInt(btn.dataset.tenantIdx, 10);
             const mode = btn.dataset.mode;
+            // Step 311: synthesis items handle their own navigation via inline onclick
+            if (mode === "synthesis") return;
             if (!isNaN(tIdx) && tIdx !== currentTenantIndex) {
                 currentTenantIndex = tIdx;
                 const ts = document.getElementById("tenant-select");

@@ -1580,12 +1580,24 @@ def _process_lease_job(job_id: str, job: dict) -> None:
                     except (json.JSONDecodeError, OSError):
                         pass
 
+            # Collect Stage 7 cross-provision findings from all tenants
+            all_cpfs = []
+            for t in tenants:
+                rp = t.get("result_path")
+                if rp and Path(rp).exists():
+                    try:
+                        r = json.loads(Path(rp).read_text(encoding="utf-8"))
+                        all_cpfs.extend(r.get("cross_provision_findings") or [])
+                    except (json.JSONDecodeError, OSError):
+                        pass
+
             # Generate attachments
             attachments, att_info = _generate_email_attachments(job_id, tenants, results_dir)
             tenant_filenames = [t.get("filename", "") for t in tenants if t.get("filename")]
             send_job_complete_email(email, job_id, job_url, summary,
                                    attachments=attachments, attachment_info=att_info,
-                                   tenant_names=tenant_filenames, mode=mode)
+                                   tenant_names=tenant_filenames, mode=mode,
+                                   cross_provision_findings=all_cpfs or None)
 
 
 def _generate_email_attachments(

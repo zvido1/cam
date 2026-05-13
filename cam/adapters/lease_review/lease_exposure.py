@@ -70,6 +70,11 @@ _MEDIUM_MATERIALITY_ELEMENTS = {
 
 _MODEL_STATES = {"covered_unfavorable", "ambiguous", "potentially_unenforceable"}
 
+# LP IDs where any non-covered, non-N/A state should be classified as high materiality.
+# LP-27 (Landlord Default): absence or weakness is high-materiality regardless of how
+# many elements are individually scored — the provision cluster as a whole is critical.
+_HIGH_MATERIALITY_LPS = {"LP-27"}
+
 _REASON_CODES = {
     "covered_unfavorable": "unfavorable_provision",
     "ambiguous":           "ambiguous_provision",
@@ -82,6 +87,7 @@ _REASON_CODES = {
 def _classify_materiality(assessment: dict) -> str:
     state = assessment.get("coverage_state", "")
     missing = assessment.get("elements_missing", [])
+    pid = assessment.get("issue_area_id", "")
 
     if state in _MODEL_STATES:
         return "high"
@@ -91,6 +97,9 @@ def _classify_materiality(assessment: dict) -> str:
         return "medium"
     if state in ("covered", "not_applicable"):
         return "low"
+    # Per-LP floor: some provisions are high-materiality regardless of element-level scoring.
+    if pid in _HIGH_MATERIALITY_LPS and state not in ("covered", "not_applicable"):
+        return "high"
 
     missing_set = {e.lower() for e in missing}
     for element in _HIGH_MATERIALITY_ELEMENTS:
@@ -426,6 +435,12 @@ def generate_exposure(coverage_assessment: list, cfg: dict) -> list:
         partial_class = _classify_partial(assessment, materiality)
         assessment["materiality"] = materiality
         assessment["partial_class"] = partial_class
+        # Step 318: enforce requires_attention for high-materiality LPs in non-covered states.
+        # _build_assessment sets requires_attention before materiality is known; fix it here.
+        if (materiality == "high"
+                and assessment.get("coverage_state") not in ("covered", "not_applicable")
+                and not assessment.get("requires_attention")):
+            assessment["requires_attention"] = True
 
         use_model = False
         reason_code = "schema_default"

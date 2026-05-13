@@ -173,10 +173,25 @@ def _build_user_prompt(
             "absence_severity": el.get("absence_severity"),
         })
 
+    # Step 320: GPT-5.5 returns empty output when the provision is absent from the lease.
+    # Detect absent text and add an explicit instruction before the element list.
+    if not tenant_text or len(tenant_text.strip()) < 50:
+        empty_note = (
+            "NOTE: No provision text was found for this issue area. "
+            "The lease is silent on this topic. Return verdict 'missing' for every "
+            "element. Do not return an empty response — a complete JSON array is required."
+        )
+    else:
+        empty_note = ""
+
     lines = [
         f"LP: {pid} -- {lp_name}",
         f"GOVERNING LAW: {governing_law or 'Not specified'}",
         "",
+    ]
+    if empty_note:
+        lines += [empty_note, ""]
+    lines += [
         f"EXPECTED ELEMENTS ({len(elements_305)} total):",
         json.dumps(elements_for_prompt, indent=2),
         "",

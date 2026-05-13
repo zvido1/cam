@@ -24,12 +24,68 @@ logger = logging.getLogger(__name__)
 MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024
 
 
+def _stage7_summary_lines(cpfs: list) -> list:
+    """Return up to 3 plain-English lines summarising Stage 7 findings."""
+    if not cpfs:
+        return []
+    mismatches = [f for f in cpfs if f.get("finding_type") == "directional_mismatch"]
+    compounds  = [f for f in cpfs if f.get("finding_type") == "compound_risk"]
+    gaps       = [f for f in cpfs if f.get("finding_type") == "cross_coverage_gap"]
+    lines = []
+    if mismatches:
+        lp_names = ", ".join(
+            lp for f in mismatches[:2] for lp in (f.get("implicated_lps") or [])
+        )
+        lines.append(
+            f"CAM identified a directional mismatch in {lp_names or 'one or more provisions'} "
+            f"— cure or remedy language was found but runs in favor of the wrong party."
+        )
+    if compounds:
+        lp_names = ", ".join(
+            lp for f in compounds[:1] for lp in (f.get("implicated_lps") or [])
+        )
+        lines.append(
+            f"CAM identified a compound risk across {lp_names or 'multiple provisions'} "
+            f"— provisions that individually look acceptable but combine to create exposure."
+        )
+    if gaps and not mismatches and not compounds:
+        n = len(gaps)
+        lines.append(
+            f"CAM found {n} cross-provision interaction{'s' if n != 1 else ''} worth reviewing."
+        )
+    return lines
+
+
+def _build_stage7_plain_lines(cpfs: list) -> list:
+    return _stage7_summary_lines(cpfs)
+
+
+def _build_stage7_email_block(cpfs: list) -> str:
+    """Return an HTML snippet summarising Stage 7 findings, or '' if none."""
+    lines = _stage7_summary_lines(cpfs)
+    if not lines:
+        return ""
+    items_html = "".join(
+        f'<p style="margin:6px 0;color:#374151;font-size:0.88rem;">&rarr; {line}</p>'
+        for line in lines
+    )
+    return (
+        '<div style="background:#f0f4ff;border-left:4px solid #3b5bdb;border-radius:4px;'
+        'padding:12px 16px;margin:16px 0 0;">'
+        '<p style="margin:0 0 6px;font-weight:600;color:#1e2a8a;font-size:0.9rem;">'
+        'Contract Interaction Findings</p>'
+        + items_html
+        + '</div>'
+    )
+
+
 def _build_html_email(
     job_id: str,
     results_url: str,
     summary: dict,
     attachment_info: Optional[dict] = None,
     mode: str = "compare",
+    cross_provision_findings: Optional[list] = None,
 ) -> tuple:
     """Build HTML + plain text email bodies. Returns (html, plain).
 
@@ -157,6 +213,9 @@ def _build_html_email(
         </a>
       </div>
 
+      <!-- Stage 7: Cross-provision summary (Step 312) -->
+      {_build_stage7_email_block(cross_provision_findings or [])}
+
       <!-- Expiry notice -->
       <div style="background:#fffbf0;border:1px solid #f0c040;border-radius:4px;padding:12px 16px;font-size:0.85rem;color:#856404;">
         <strong>Note:</strong> Results are automatically purged from our servers after 7 days.
@@ -190,6 +249,11 @@ def _build_html_email(
         plain += f"  Low: {low}\n"
     if comparison_reference_plain:
         plain += f"\n{comparison_reference_plain}"
+    stage7_lines = _build_stage7_plain_lines(cross_provision_findings or [])
+    if stage7_lines:
+        plain += "\nContract Interaction Findings:\n"
+        for line in stage7_lines:
+            plain += f"  → {line}\n"
     plain += f"\nView your results: {results_url}\n\nJob ID: {job_id}\n"
 
     return html, plain
@@ -204,12 +268,14 @@ def send_job_complete_email(
     attachment_info: Optional[dict] = None,
     tenant_names: Optional[List[str]] = None,
     mode: str = "compare",
+    cross_provision_findings: Optional[list] = None,
 ) -> bool:
     """Send notification that analysis is done with link to results.
 
     Step 255: ``mode`` is forwarded to the body builder so Mode A emails get
     the locked Aligned Provision Comparison reference line and Mode C emails
     do not.
+    Step 312: ``cross_provision_findings`` surfaces Stage 7 interaction findings.
     """
     def _strip_ext(name: str) -> str:
         return Path(name).stem if name else name
@@ -223,7 +289,10 @@ def send_job_complete_email(
         subject = f"Lease Analysis Ready \u2014 {len(names)} Leases Reviewed"
     else:
         subject = "Your Lease Analysis is Ready"
-    html, plain = _build_html_email(job_id, job_url, summary, attachment_info, mode=mode)
+    html, plain = _build_html_email(
+        job_id, job_url, summary, attachment_info,
+        mode=mode, cross_provision_findings=cross_provision_findings,
+    )
     return _send_email(to_email, subject, plain, html=html, attachments=attachments)
 
 
