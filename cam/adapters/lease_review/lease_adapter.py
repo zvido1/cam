@@ -1189,7 +1189,7 @@ def run_lease_coverage_only(
 
     # ── Parse document ──
     if progress_callback:
-        progress_callback(1, 3, "Parsing document.")
+        progress_callback(1, 4, "Parsing document.")
     print("[lease_adapter:analyze] Parsing document...", flush=True)
     parse_start = time.time()
     tenant_text = parse_document(tenant_path)
@@ -1213,7 +1213,7 @@ def run_lease_coverage_only(
 
     # ── Single-document extraction ──
     if progress_callback:
-        progress_callback(2, 3, "Extracting provisions.")
+        progress_callback(2, 4, "Extracting provisions.")
     print("[lease_adapter:analyze] Single-document extraction...", flush=True)
     extraction = extract_provisions_single_doc(tenant_text, provisions, cfg)
     total_api_calls += 1
@@ -1231,7 +1231,7 @@ def run_lease_coverage_only(
 
     # ── Phase 5: negative-space → coverage → exposure ──
     if progress_callback:
-        progress_callback(3, 3, "Analyzing coverage.")
+        progress_callback(3, 4, "Analyzing coverage.")
     coverage_assessment = []
     coverage_summary = {}
     negative_space_by_provision = {}
@@ -1466,11 +1466,36 @@ def run_lease_coverage_only(
         "use_profile": use_profile_data_c,
         "use_analysis_status": use_analysis_status_c,
         "use_aware_governance": use_aware_governance_c,
+        "cross_provision_findings": [],
         "_stage_data": {
             "extraction_meta": extraction["meta"],
             "negative_space": negative_space_by_provision,
         },
     }
+
+    # ── Stage 7: Cross-Provision Coverage Review (Step 311) ──
+    try:
+        from cam.adapters.lease_review.lease_synthesis import run_synthesis, STAGE_7_ENABLED
+        if STAGE_7_ENABLED:
+            if progress_callback:
+                progress_callback(4, 4, "Cross-provision review")
+            print("[lease_adapter:analyze] Stage 7: Cross-provision synthesis...", flush=True)
+            synthesis_result = run_synthesis(
+                full_tenant_text=tenant_text,
+                coverage_assessment=coverage_assessment,
+                conflicts=conflicts_c,
+                perspective=cfg.get("perspective", "tenant"),
+                cfg=cfg,
+            )
+            result["cross_provision_findings"] = synthesis_result.get("cross_provision_findings", [])
+            result["_stage_data"]["synthesis_meta"] = synthesis_result.get("meta", {})
+            cpf_count = len(result["cross_provision_findings"])
+            print(f"[lease_adapter:analyze] Stage 7 complete: {cpf_count} finding(s)", flush=True)
+        else:
+            print("[lease_adapter:analyze] Stage 7: gated (flag off)", flush=True)
+    except Exception as _s7_e:
+        print(f"[lease_adapter:analyze] Stage 7 failed (non-fatal): {_s7_e}", flush=True)
+        result["cross_provision_findings"] = []
 
     output_dir = Path(cfg["output_dir"]) / run_id
     output_dir.mkdir(parents=True, exist_ok=True)

@@ -1486,8 +1486,8 @@ textarea.input-field {
 /* LP Progress Panel */
 .lp-progress-list {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.2rem 0.5rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.15rem 1.5rem;
     margin-top: 0.625rem;
 }
 .lp-progress-row {
@@ -12460,3 +12460,173 @@ body.mode-c .card-docview-link {
     text-transform: uppercase;
 }
 .cv-escalation-text { color: #0c4a6e; }
+
+/* Step 311: Contract Interaction Review tab — synthesis panel */
+.synthesis-panel { max-width: 900px; padding: 1.5rem; }
+.synthesis-intro { margin-bottom: 1.5rem; color: #6b7280; font-size: 0.9rem; }
+.cpf-group { margin-bottom: 2rem; }
+.cpf-group-header {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #374151;
+    padding: 0.5rem 0;
+    border-bottom: 2px solid #e5e7eb;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.cpf-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+    background: #fff;
+}
+.cpf-card.cpf-type-directional_mismatch { border-left: 4px solid #dc2626; }
+.cpf-card.cpf-type-compound_risk        { border-left: 4px solid #d97706; }
+.cpf-card.cpf-type-cross_coverage_gap   { border-left: 4px solid #6b7280; }
+.cpf-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.6rem;
+}
+.cpf-finding-id {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #374151;
+    font-family: monospace;
+}
+.cpf-type-label {
+    font-size: 0.8rem;
+    color: #6b7280;
+    font-weight: 500;
+}
+.cpf-agree-badge {
+    font-size: 0.75rem;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    color: #374151;
+    margin-left: auto;
+}
+.cpf-lps { margin-bottom: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.cpf-lp-pill {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+    border-radius: 12px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: monospace;
+}
+.cpf-lp-pill:hover { background: #dbeafe; }
+.cpf-headline {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #111827;
+    margin-bottom: 0.4rem;
+}
+.cpf-detail {
+    font-size: 0.875rem;
+    color: #374151;
+    line-height: 1.55;
+    margin-bottom: 0.5rem;
+    white-space: pre-line;
+}
+.cpf-directionality {
+    font-size: 0.8rem;
+    color: #7f1d1d;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    margin-bottom: 0.4rem;
+}
+.cpf-dir-label { font-weight: 700; }
+.cpf-cited { font-size: 0.8rem; color: #6b7280; margin-bottom: 0.4rem; }
+.cpf-cited-label { font-weight: 600; color: #374151; }
+.cpf-cited-section {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 3px;
+    padding: 0.1rem 0.35rem;
+    font-family: monospace;
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+}
+.cpf-ev-row {
+    font-size: 0.78rem;
+    color: #6b7280;
+    border-top: 1px solid #f3f4f6;
+    padding-top: 0.4rem;
+    margin-top: 0.4rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.cpf-ev-verdict strong { color: #374151; }
+
+/* Step 311: Synthesis badge on LP coverage cards */
+.cv-synthesis-badge {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    color: #166534;
+    border-radius: 4px;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.cv-synthesis-badge:hover { background: #dcfce7; }
+
+/* Step 311: Synthesis entries in the open issues sidebar */
+.nav-section-synthesis .nav-section-header { color: #92400e; }
+.nav-item-synthesis { border-left: 3px solid #d97706; }
+
+/* Step 313: CPF agreement badge color variants */
+.cpf-agree-unanimous { background: var(--surface-alt, #f8fafc); color: var(--text-muted, #6b7280); }
+.cpf-agree-majority  { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+.cpf-agree-minority  { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.cpf-agree-none      { background: var(--surface-alt, #f8fafc); color: var(--text-muted, #6b7280); }
+
+/* Step 313: minority-finding context note */
+.cpf-minority-note {
+    font-size: 0.72rem;
+    color: var(--text-muted, #6b7280);
+    font-style: italic;
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--border-light, #f1f5f9);
+}
+
+/* Step 315: "Confidence:" label preceding the four-dot badge on coverage cards */
+.cov-conf-label {
+    font-size: 0.7rem;
+    color: var(--text-muted, #6b7280);
+    margin-right: 0.25rem;
+    vertical-align: middle;
+}
+
+/* Step 315: flash animation for synthesis badge click — briefly highlights target CPF card */
+@keyframes cpf-flash {
+    0%   { box-shadow: 0 0 0 3px #3b5bdb88; }
+    50%  { box-shadow: 0 0 0 6px #3b5bdb44; }
+    100% { box-shadow: none; }
+}
+.highlight-flash { animation: cpf-flash 1.5s ease-out; }
+
+/* Step 316: Stage 4 (synthesis) progress bar pulse — signals ongoing work when bar is parked at 75% */
+@keyframes progressPulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.6; }
+}
+.progress-fill--pulsing { animation: progressPulse 1.8s ease-in-out infinite; }

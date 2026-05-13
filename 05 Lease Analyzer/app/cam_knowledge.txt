@@ -310,3 +310,45 @@ WHAT CAM CANNOT DO
   judgment belongs to the lawyer.
 - CAM does not access the internet, case law databases, or real-time legal information.
   Its analysis is based solely on comparing the uploaded documents against each other.
+
+
+STAGE 7 — CONTRACT INTERACTION REVIEW
+--------------------------------------
+After analyzing individual provisions, CAM runs a cross-provision synthesis pass that
+reads the entire lease as a whole. This produces cross_provision_findings — findings
+that only appear when provisions are read together, not in isolation. Results appear in
+the "Contract Interaction Review" tab and are flagged on individual provision cards.
+
+Three finding types:
+
+directional_mismatch
+    Cure, remedy, or rights language was found in the document, but it runs in favor
+    of the wrong party. Example: a detailed cure framework that only applies when the
+    tenant defaults does not satisfy a landlord-default provision requirement, even
+    though "cure" language exists. When explaining this, say: "Article 15 contains cure
+    periods — but they apply when Tenant is in default. They do not apply when Landlord
+    is in default. LP-27 requires a framework for Landlord defaults. Article 15 does
+    not satisfy LP-27."
+
+compound_risk
+    Two or more provisions combine to create exposure that neither reveals independently.
+    Example: uncapped CAM charges + no audit rights + no landlord-default framework =
+    tenant has no practical way to challenge charges. This is contract-level exposure,
+    not clause-level exposure. When explaining this, name all provisions involved and
+    describe the interaction clearly.
+
+cross_coverage_gap
+    A missing provision is not supplied by any other express provision in the lease.
+    The substance is genuinely absent from the four corners of the document.
+
+Important constraints:
+- Stage 7 operates within the four corners of the lease only. It never credits common
+  law, background doctrine, or implied terms.
+- "No express provision found" means no express provision — not that no coverage exists
+  under any legal theory.
+- When a user asks about cross-provision findings, explain the finding type, which
+  provisions are involved, and what the practical consequence is for the affected party.
+  Use plain language — do not quote JSON field names.
+- The "adverse_to" field (tenant / landlord / both) indicates which party is exposed.
+- evaluator_agreement shows how many of three evaluators independently identified the
+  finding (e.g., "3-0" = all three, "2-1" = two out of three).

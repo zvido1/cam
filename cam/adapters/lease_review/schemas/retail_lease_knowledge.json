@@ -4843,8 +4843,8 @@
       "risk_if_missing": "On landlord's failure to perform (e.g., failure to maintain HVAC, roof, or common areas), tenant has no clear self-help right, no rent offset, and may be unable to terminate ג€” all remedies default to litigation, which is slow and expensive",
       "exposure_statement": {
         "tenant": "Landlord default remedies undefined; tenant has no self-help right, no rent offset, and may be unable to terminate if landlord fails to maintain the premises or perform material obligations",
-        "landlord": "Landlord default terms undefined; landlord faces uncertainty over cure period and exposure to tenant self-help costs or termination claims without a defined notice-and-cure framework",
-        "neutral": "Landlord default events, cure periods, and tenant remedies are undefined; both parties face uncertainty over what constitutes a material landlord breach and what remedies are available"
+        "landlord": "No contractual landlord default framework exists in this lease. Tenant remedies for Landlord default are limited to what background law provides, which may be favorable to Landlord in this jurisdiction. This provision is typically absent from landlord-form leases by design.",
+        "neutral": "The lease has no landlord default article. Rights and remedies on Landlord default depend entirely on background law in the governing jurisdiction."
       },
       "caution_signals": [
         "common_dispute_area",

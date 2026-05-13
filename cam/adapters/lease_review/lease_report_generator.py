@@ -387,6 +387,80 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                 for item in section_items:
                     y = _render_coverage_item(y, item, tier_color)
 
+            # Step 312: Contract Interaction Review section (Stage 7 findings)
+            cpfs = results.get("cross_provision_findings") or []
+            if cpfs:
+                # Sort: directional_mismatch → compound_risk → cross_coverage_gap,
+                # then within each type by agreement (3-0 first).
+                _type_order = {"directional_mismatch": 0, "compound_risk": 1, "cross_coverage_gap": 2}
+                def _agree_sort(f):
+                    ag = f.get("evaluator_agreement", "")
+                    if ag.startswith("3"):
+                        return 0
+                    if ag.startswith("2"):
+                        return 1
+                    return 2
+                cpfs_sorted = sorted(cpfs, key=lambda f: (_type_order.get(f.get("finding_type", ""), 9), _agree_sort(f)))
+
+                y = new_page_if_needed(y, 40)
+                _syn_color = (0.11, 0.27, 0.53)  # dark indigo
+                y = add_text(page, M, y, "CONTRACT INTERACTION REVIEW", size=11, bold=True, color=_syn_color)
+                y += 2
+                y = add_text(page, M, y,
+                    "How provisions interact across the document — findings that only appear when the lease is read as a whole.",
+                    size=8.5, color=(0.45, 0.47, 0.52))
+                y += 6
+
+                _ftype_labels = {
+                    "directional_mismatch": "DIRECTIONAL MISMATCH",
+                    "compound_risk":        "COMPOUND RISK",
+                    "cross_coverage_gap":   "CROSS-COVERAGE GAP",
+                }
+                _ftype_colors = {
+                    "directional_mismatch": (0.76, 0.10, 0.10),
+                    "compound_risk":        (0.65, 0.30, 0.00),
+                    "cross_coverage_gap":   (0.30, 0.32, 0.38),
+                }
+                for cpf in cpfs_sorted:
+                    ftype   = cpf.get("finding_type", "cross_coverage_gap")
+                    fcolor  = _ftype_colors.get(ftype, (0.30, 0.32, 0.38))
+                    flabel  = _ftype_labels.get(ftype, ftype.upper())
+                    lps     = ", ".join(cpf.get("implicated_lps") or [])
+                    headline= (cpf.get("headline") or "").strip()
+                    detail  = (cpf.get("detail") or "").strip()
+                    cited   = ", ".join(cpf.get("cited_sections") or [])
+                    direc   = cpf.get("directionality")
+                    agree   = cpf.get("evaluator_agreement", "")
+                    sev     = (cpf.get("severity") or "").upper()
+
+                    y = new_page_if_needed(y, 30)
+                    header_parts = [flabel]
+                    if lps:
+                        header_parts.append(f"[{lps}]")
+                    if sev:
+                        header_parts.append(f"[{sev}]")
+                    y = add_text(page, M, y, "  ".join(header_parts), size=9, bold=True, color=fcolor)
+                    if headline:
+                        y = new_page_if_needed(y, 16)
+                        y = add_text(page, M + 10, y, headline, size=9, bold=True)
+                    if detail:
+                        y = new_page_if_needed(y, 16)
+                        y = add_text(page, M + 10, y, detail, size=8.5)
+                    if ftype == "directional_mismatch" and direc:
+                        y = new_page_if_needed(y, 14)
+                        dir_note = direc.replace("_", " ").title()
+                        y = add_text(page, M + 10, y, f"Directionality: {dir_note}", size=8, color=fcolor)
+                    if cited:
+                        y = new_page_if_needed(y, 14)
+                        y = add_text(page, M + 10, y, f"Cited sections: {cited}", size=8, color=(0.45, 0.47, 0.52))
+                    if agree:
+                        parts = agree.split("-")
+                        total = sum(int(p) for p in parts if p.isdigit())
+                        majority = parts[0] if parts else agree
+                        y = new_page_if_needed(y, 14)
+                        y = add_text(page, M + 10, y, f"Evaluator agreement: {majority} of {total} evaluators identified this finding.", size=8, color=(0.45, 0.47, 0.52))
+                    y += 5
+
             # Skip the deviation findings block below when Mode C
             deviations = []
         else:
