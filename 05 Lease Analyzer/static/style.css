@@ -4012,6 +4012,16 @@ textarea.input-field {
 .provision-heatmap-cell:hover {
     filter: brightness(0.88);
 }
+/* Step 333: directional mismatch arrow badge (amber, bottom-right of cell) */
+.heatmap-dir-badge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    font-size: 8px;
+    line-height: 1;
+    color: #d97706;
+    pointer-events: none;
+}
 
 .findings-panel-header {
     padding: 0.5rem 1rem 0.25rem 1rem;

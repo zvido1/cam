@@ -129,7 +129,7 @@ def _safe_parse_synthesis(text: str):
 # ── System prompt ──────────────────────────────────────────────────────────────
 _EVALUATOR_SYSTEM = """You are a commercial real estate attorney performing cross-provision analysis of a lease.
 
-Your task: answer three questions about the lease using ONLY the four corners of the document.
+Your task: answer two questions about the lease using ONLY the four corners of the document.
 No external law. No common law. No jurisdiction doctrine. No assumptions about standard practice.
 If protection is absent from the lease text, the finding is: not found. Full stop.
 
@@ -138,7 +138,7 @@ You will receive:
 2. A full matrix of all LP states
 3. The full lease text
 
-Return a JSON object with exactly two keys: "cross_coverage_findings" and "candidates".
+Return a JSON object with exactly one key: "cross_coverage_findings".
 
 --- QUESTION 1: CROSS-COVERAGE CHECK ---
 
@@ -257,21 +257,28 @@ TEACHING EXAMPLE (Atlas/Meridian lease):
 All Q2 fields (q2_applicable, q2_verdict, q2a_verdict, q2b_verdict, mismatch_flag,
 protected_party, exposed_party, opposing_framework_summary, weaker_framework_summary,
 why_mismatch_matters) go DIRECTLY in each cross_coverage_findings entry for that LP.
-Do NOT create a separate q2_results array. The candidates[] array is ONLY for Q3.
+Do NOT create a separate q2_results array.
 
---- QUESTION 3: COMPOUND RISK ANALYSIS ---
+--- HARD RULES ---
+1. Four corners only. No external law citations.
+2. Every cross-coverage credit must cite a specific article or section.
+3. Every directional mismatch must explain which direction the found provision runs.
+4. Do not modify or comment on LP coverage states — analyze only.
+5. Your response must be valid JSON starting with { and ending with }. No markdown fences."""
+
+# ── Step 334 Option B: Compound risk system prompt (Q3 only, dedicated call) ──
+_COMPOUND_SYSTEM = """You are a commercial real estate attorney analyzing compound risk patterns in a commercial lease.
+
+Your task: identify which of five compound risk patterns are present in this lease.
+Use ONLY the four corners of the document. No external law. No common law.
+
+You will receive the full LP state matrix and the full lease text.
 
 A compound risk exists when two or more provisions interact to create exposure
-that neither shows alone. Review the full LP matrix above. A compound risk
-may involve provisions marked covered, partial, missing, or unfavorable.
+that neither shows alone. A compound risk may involve provisions marked covered,
+partial, missing, or unfavorable. COVERAGE STATE IS NOT RISK STATE.
 
-COVERAGE STATE IS NOT RISK STATE. A covered provision may still participate
-in compound risk through asymmetry, missing reciprocal rights, or removal of
-practical enforcement mechanisms.
-
-Do not merely ask whether any risks are obvious. Evaluate each of the five
-compound risk patterns below independently and systematically. You must respond
-to every pattern.
+Evaluate each of the five patterns independently and systematically.
 
 ---
 
@@ -301,8 +308,7 @@ protection in return.
 
 Check: Does the lease require automatic subordination, attornment, or
 priority concession without a reciprocal non-disturbance covenant, cure
-right, or comparable protection? Does a lender or successor acquire rights
-the original tenant cannot enforce against?
+right, or comparable protection?
 
 ---
 
@@ -313,28 +319,18 @@ no meaningful remedy.
 
 Check: Are there combinations of gaps where a landlord default, casualty,
 taking, or other adverse event could leave a party liable for full performance
-with no recourse? Trace the remedies available — if the chain reaches a dead
-end, that is the finding.
+with no recourse? Trace the remedies — if the chain reaches a dead end,
+that is the finding.
 
-IMPORTANT: Do not suppress a Pattern 4 candidate merely because one of its
-component provisions is already identified as a directional mismatch under
-Pattern 1 or Question 2. Directional asymmetry may be one ingredient in a
-cascading no-remedy scenario. If a missing remedy framework (such as an absent
-landlord-default article) combines with casualty, force majeure, access
-restriction, utility interruption, or maintenance failure provisions to leave
-a party with no cure, offset, abatement, termination right, or practical remedy
-during a real-world adverse event — that is a Pattern 4 finding independent of
-any directional mismatch finding.
+Do not suppress a Pattern 4 candidate merely because one of its component
+provisions is already identified as a directional mismatch. Directional
+asymmetry may be one ingredient in a cascading no-remedy scenario.
 
 Pattern 4 examples:
-- LP-27 absent (no landlord-default remedies) + LP-14 partial (force majeure
-  excludes rent, no abatement or termination right) + LP-24 partial (casualty,
-  no landlord repair obligation, no abatement) = tenant pays full rent during
-  prolonged disruption with no cure, no offset, no exit. Neither LP alone shows
-  this. The combination does.
-- LP-07 partial (uncapped CAM, no audit rights) + LP-27 absent (no landlord-
-  default framework) = tenant has no way to challenge overcharges and no remedy
-  if landlord refuses to adjust. The right is theoretical; all levers are gone.
+- LP-27 absent + LP-14 partial (no abatement) + LP-24 partial (no repair obligation)
+  = tenant pays full rent during prolonged disruption with no cure or exit.
+- LP-07 partial (no audit rights) + LP-27 absent = no way to challenge overcharges
+  and no remedy if landlord refuses to adjust.
 
 ---
 
@@ -342,14 +338,12 @@ PATTERN 5 — OPERATIONAL DEAD-END
 The lease creates a scenario where operational performance is impaired or
 impossible, but the affected party still owes full performance obligations.
 
-Check: Do casualty, force majeure, access restrictions, maintenance failure,
-or utility interruption provisions combine with no rent abatement, no
-termination right, and no self-help to leave a party paying full rent while
-unable to operate?
+Check: Do casualty, force majeure, access restrictions, or maintenance failure
+combine with no rent abatement, no termination right, and no self-help?
 
 ---
 
-For each of the five patterns, return one structured object in candidates[]:
+For each of the five patterns, return one structured object:
 
 {
   "pattern_type": "directional_asymmetry | lever_elimination | subordination_trap | cascading_no_remedy | operational_dead_end",
@@ -362,16 +356,10 @@ For each of the five patterns, return one structured object in candidates[]:
   "confidence": "high | medium | low"
 }
 
-Return exactly five objects in candidates[] — one per pattern type.
-If a pattern is not present, still return the object with present: "no" and a brief reason.
+Return a JSON object with exactly one key: "candidates" containing an array of exactly five objects.
+One object per pattern. If a pattern is not present, include it with present: "no" and a brief reason.
 Do not skip any pattern.
-
---- HARD RULES ---
-1. Four corners only. No external law citations.
-2. Every cross-coverage credit must cite a specific article or section.
-3. Every directional mismatch must explain which direction the found provision runs.
-4. Do not modify or comment on LP coverage states — analyze only.
-5. Your response must be valid JSON starting with { and ending with }. No markdown fences."""
+Response must be valid JSON starting with { and ending with }. No markdown fences."""
 
 # ── Consolidation system prompt ────────────────────────────────────────────────
 _CONSOLIDATOR_SYSTEM = """You are a lead commercial real estate attorney reviewing three evaluator analyses of the same lease.
@@ -475,6 +463,40 @@ def _build_evaluator_user_prompt(
     if matrix_block:
         lines += [matrix_block, ""]
     lines += [
+        "FULL LEASE TEXT:",
+        full_lease_text,
+        "",
+        "Return your JSON response now.",
+    ]
+    return "\n".join(lines)
+
+
+def _build_compound_user_prompt(
+    coverage_assessment: List[dict],
+    full_lease_text: str,
+    perspective: str,
+) -> str:
+    """Build the compound risk (Q3) user prompt — LP matrix + lease text only."""
+    _presence = {"explicitly_present", "implicitly_present", "covered_by_default_law", "covered_in_other_LP"}
+    matrix_rows = []
+    for a in sorted(coverage_assessment,
+                    key=lambda x: (x.get("issue_area_id") or x.get("provision_id") or "")):
+        lp_id   = a.get("issue_area_id") or a.get("provision_id") or ""
+        lp_name = a.get("issue_area_name") or a.get("provision_name") or lp_id
+        state   = a.get("coverage_state", "unknown")
+        ev = a.get("element_verdicts") or []
+        if ev:
+            n_present = sum(1 for e in ev if e.get("verdict") in _presence)
+            matrix_rows.append(f"{lp_id}: {lp_name} — {state} ({n_present}/{len(ev)} elements)")
+        else:
+            matrix_rows.append(f"{lp_id}: {lp_name} — {state}")
+
+    lines = [
+        f"PERSPECTIVE: {perspective.upper()}",
+        "",
+        "FULL PROVISION MATRIX (all LPs — compound risk may involve any LP):",
+        "\n".join(matrix_rows),
+        "",
         "FULL LEASE TEXT:",
         full_lease_text,
         "",
@@ -598,6 +620,70 @@ def _call_single_evaluator(
         return {"role": role, "model": model, "completed": False,
                 "result": None, "error": str(e),
                 "elapsed_sec": round(time.time() - start_time, 2)}
+
+
+def _call_compound_evaluator(
+    role: str,
+    ev_cfg: dict,
+    user_prompt: str,
+) -> dict:
+    """Call one evaluator for Q3 compound risk only (dedicated short call).
+
+    Returns: {role, completed, result: {"candidates": [...]}, error, elapsed_sec}
+    """
+    from cam.core.provider_router import ModelTarget, ProviderRouter, RouterConfig
+    from cam.core.provider_health import get_health_tracker
+
+    health = get_health_tracker()
+    start_time = time.time()
+    provider = ev_cfg["provider"]
+    model    = ev_cfg["model"]
+    fallback = ev_cfg.get("fallback")
+
+    def _try_call(p: str, m: str) -> dict:
+        if not health.is_available(p):
+            raise RuntimeError(f"provider {p} degraded")
+        target = ModelTarget(
+            name=f"{p}:{m}-stage7-compound-{role}",
+            provider=p,
+            model=m,
+            max_output_tokens=4000,  # 2K was too tight for verbose Claude responses
+            temperature=0.0,
+            timeout_sec=120.0,
+        )
+        router  = ProviderRouter([target], RouterConfig())
+        adapter = router._get_adapter(p)
+        raw     = adapter.call(_COMPOUND_SYSTEM, user_prompt, target).strip()
+        parsed  = _safe_parse_synthesis(raw)
+        if parsed is None:
+            raise RuntimeError(f"compound Eval-{role}: unparseable response")
+        if not isinstance(parsed, dict):
+            raise RuntimeError(f"compound Eval-{role}: non-dict: {type(parsed)}")
+        return parsed
+
+    print(f"[lease_synthesis] Compound Eval-{role}: calling {model} ({provider})...", flush=True)
+    try:
+        result  = _try_call(provider, model)
+        elapsed = time.time() - start_time
+        print(f"[lease_synthesis] Compound Eval-{role}: succeeded in {round(elapsed, 1)}s", flush=True)
+        return {"role": role, "completed": True, "result": result,
+                "error": None, "elapsed_sec": round(elapsed, 2)}
+    except Exception as e:
+        print(f"[lease_synthesis] Compound Eval-{role}: FAILED ({type(e).__name__})", flush=True)
+        if fallback:
+            fb_provider, fb_model, _ = fallback
+            try:
+                result  = _try_call(fb_provider, fb_model)
+                elapsed = time.time() - start_time
+                print(f"[lease_synthesis] Compound Eval-{role}: fallback succeeded in {round(elapsed, 1)}s", flush=True)
+                return {"role": role, "completed": True, "result": result,
+                        "error": None, "elapsed_sec": round(elapsed, 2), "fallback_used": True}
+            except Exception as e2:
+                print(f"[lease_synthesis] Compound Eval-{role}: fallback FAILED", flush=True)
+                return {"role": role, "completed": False, "result": None,
+                        "error": str(e2), "elapsed_sec": round(time.time() - start_time, 2)}
+        return {"role": role, "completed": False, "result": None,
+                "error": str(e), "elapsed_sec": round(time.time() - start_time, 2)}
 
 
 def _call_consolidator(
@@ -1012,7 +1098,7 @@ def _build_pass2_verified_findings(
         pass2_by_role[role] = {
             v.get("candidate_id", ""): v
             for v in (output.get("verdicts") or [])
-            if v.get("candidate_id")
+            if isinstance(v, dict) and v.get("candidate_id")
         }
 
     findings: List[dict] = []
@@ -1173,6 +1259,8 @@ def _build_pass2_relief_findings(
             continue
         p2_relief[role] = {}
         for v in (output.get("verdicts") or []):
+            if not isinstance(v, dict):
+                continue
             if v.get("candidate_type") == "cross_coverage_relief" or (
                 v.get("candidate_id", "").startswith("RLF-")
             ):
@@ -1297,6 +1385,8 @@ def _build_pass2_directional_findings(
             continue
         p2_dir[role] = {}
         for v in (output.get("verdicts") or []):
+            if not isinstance(v, dict):
+                continue
             if v.get("candidate_type") == "directional_mismatch" or (
                 (v.get("candidate_id") or "").startswith("Dir-")
             ):
@@ -1558,6 +1648,34 @@ def run_synthesis(
                 },
             },
         }
+
+    # ── Step 334 Option B: Compound pass (Q3 only, dedicated 2K-token call) ──
+    # Pass 1 (Q1+Q2) hits the 8K token limit before writing candidates[].
+    # A separate focused call gives each evaluator a clean budget for Q3.
+    compound_prompt = _build_compound_user_prompt(coverage_assessment, full_tenant_text, perspective)
+    print("[lease_synthesis] Compound pass (Q3): running 3 evaluators...", flush=True)
+    with ThreadPoolExecutor(max_workers=3) as compound_pool:
+        compound_futures = {
+            compound_pool.submit(_call_compound_evaluator, role, ev_cfg, compound_prompt): role
+            for role, ev_cfg in _EVALUATOR_LINEUP_PASS1.items()
+        }
+        for fut in as_completed(compound_futures):
+            role = compound_futures[fut]
+            try:
+                comp_out = fut.result()
+            except Exception as e:
+                comp_out = {"role": role, "completed": False, "result": None, "error": str(e)}
+            if comp_out.get("completed"):
+                cands = (comp_out.get("result") or {}).get("candidates") or []
+                if evaluator_outputs.get(role, {}).get("completed"):
+                    if evaluator_outputs[role]["result"] is None:
+                        evaluator_outputs[role]["result"] = {}
+                    evaluator_outputs[role]["result"]["candidates"] = cands
+                    print(f"[synth_debug] Compound Eval-{role}: {len(cands)} candidate(s) merged", flush=True)
+                else:
+                    print(f"[synth_debug] Compound Eval-{role}: {len(cands)} candidate(s) (Pass 1 failed — not merged)", flush=True)
+            else:
+                print(f"[synth_debug] Compound Eval-{role}: compound call failed — {comp_out.get('error')}", flush=True)
 
     # ── Pass 2: cluster compound candidates + collect relief candidates ──
     for role, v in evaluator_outputs.items():
