@@ -4684,6 +4684,14 @@ function _heatmapCellStyle(a, viewerPerspective) {
     return { bg: "#d1d5db", fg: "#6b7280", label: state || "—" };
 }
 
+// Step 337: return the correct directional arrow HTML entity for a heatmap badge.
+// ← (&#x2190;) = adverse to viewer, → (&#x2192;) = favorable, ↔ (&#x2194;) = neutral/unknown.
+function _dirArrow(directionality, perspective) {
+    if (!directionality || !perspective || perspective === 'neutral') return '&#x2194;';
+    const adverseTo = directionality === 'tenant_unprotected' ? 'tenant' : 'landlord';
+    return perspective === adverseTo ? '&#x2190;' : '&#x2192;';
+}
+
 function renderProvisionHeatmap() {
     const panel = $("#provision-heatmap-panel");
     if (!panel) return;
@@ -4710,12 +4718,15 @@ function renderProvisionHeatmap() {
         const map = {};
         ca.forEach(function(a) { map[a.issue_area_id] = a; });
 
-        // Step 333: build directional mismatch index: LP id → description for badge
+        // Step 337: build directional mismatch index: LP id → {desc, directionality}
         const dirMap = {};
         ((tenant.results.cross_provision_findings) || []).forEach(function(f) {
             if (f.finding_type !== 'directional_mismatch') return;
             (f.implicated_lps || []).forEach(function(lpId) {
-                if (!dirMap[lpId]) dirMap[lpId] = f.detail || f.headline || "Directional mismatch";
+                if (!dirMap[lpId]) dirMap[lpId] = {
+                    desc: f.headline || f.detail || "Directional mismatch",
+                    directionality: f.directionality || null,
+                };
             });
         });
 
@@ -4725,19 +4736,23 @@ function renderProvisionHeatmap() {
 
         const cellsHtml = _HEATMAP_LP_IDS.map(function(pid) {
             const a = map[pid];
-            const dirDesc = dirMap[pid];
-            // Step 333: amber arrow badge when LP has a directional_mismatch finding
-            const dirBadge = dirDesc
-                ? `<span class="heatmap-dir-badge" title="${esc(dirDesc)}">&#x2195;</span>`
+            const dirInfo = dirMap[pid];
+            // Step 337: amber directional arrow badge — arrow direction reflects
+            // whether the mismatch is adverse (←) or favorable (→) to the viewer.
+            const dirBadge = dirInfo
+                ? `<span class="heatmap-dir-badge">${_dirArrow(dirInfo.directionality, viewerPerspective)}</span>`
                 : "";
             if (!a) {
-                return `<div class="provision-heatmap-cell" style="background:#d1d5db;color:#9ca3af;position:relative;" title="${esc(pid)}">${pid.replace("LP-","")}${dirBadge}</div>`;
+                // Use directional description as tooltip when badge present; LP id otherwise.
+                const cellTip = dirInfo ? esc(dirInfo.desc) : esc(pid);
+                return `<div class="provision-heatmap-cell" style="background:#d1d5db;color:#9ca3af;position:relative;" title="${cellTip}">${pid.replace("LP-","")}${dirBadge}</div>`;
             }
             const s = _heatmapCellStyle(a, viewerPerspective);
             const name = a.issue_area_name || pid;
-            const tip  = `${esc(pid)} — ${esc(name)} — ${esc(s.label)}`;
+            const baseTip = `${esc(pid)} — ${esc(name)} — ${esc(s.label)}`;
+            const cellTip = dirInfo ? esc(dirInfo.desc) : baseTip;
             const num  = pid.replace("LP-","");
-            return `<div class="provision-heatmap-cell" style="background:${s.bg};color:${s.fg};position:relative;" title="${tip}" onclick="window.CAM.jumpHeatmapCell(${tIdx},'${esc(pid)}')">${num}${dirBadge}</div>`;
+            return `<div class="provision-heatmap-cell" style="background:${s.bg};color:${s.fg};position:relative;" title="${cellTip}" onclick="window.CAM.jumpHeatmapCell(${tIdx},'${esc(pid)}')">${num}${dirBadge}</div>`;
         }).join("");
 
         html += `<div class="provision-heatmap-contract">${labelHtml}<div class="provision-heatmap-row">${cellsHtml}</div></div>`;
