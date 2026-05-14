@@ -4012,15 +4012,47 @@ textarea.input-field {
 .provision-heatmap-cell:hover {
     filter: brightness(0.88);
 }
-/* Step 333: directional mismatch arrow badge (amber, bottom-right of cell) */
+/* Step 338: directional mismatch arrow badge — white on semi-transparent dark chip
+   so it remains legible against all risk-level background colors (red, amber, green, gray) */
 .heatmap-dir-badge {
     position: absolute;
     bottom: 2px;
     right: 2px;
     font-size: 8px;
     line-height: 1;
-    color: #d97706;
+    color: #fff;
+    background: rgba(0,0,0,0.30);
+    border-radius: 2px;
+    padding: 0 1px;
     pointer-events: none;
+}
+
+/* Step 338: risk map legend */
+.provision-heatmap-legend {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    padding: 0.3rem 0.5rem 0.1rem;
+    font-size: 0.65rem;
+}
+.hm-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: #6b7280;
+    white-space: nowrap;
+}
+.hm-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.provision-heatmap-legend-note {
+    padding: 0 0.5rem 0.4rem;
+    font-size: 0.6rem;
+    color: #9ca3af;
+    line-height: 1.4;
 }
 
 .findings-panel-header {

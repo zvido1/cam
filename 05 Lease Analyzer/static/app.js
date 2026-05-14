@@ -4661,6 +4661,122 @@ const _HEATMAP_LP_IDS = [
     "LP-25","LP-26","LP-27","LP-28","LP-29","LP-30","LP-31","LP-32",
 ];
 
+// Step 338: derive risk level from LP assessment + cross_provision_findings.
+// Pure function — no DOM access, no side effects.
+// Rule ladder: first match wins. coverage_state is ONE input, not the output.
+function deriveProvisionRiskLevel(lp, crossProvisionFindings, perspective) {
+    const lpId  = lp.issue_area_id || lp.provision_id || "";
+    const state = lp.coverage_state || "";
+    const cpfs  = (crossProvisionFindings || []).filter(function(f) {
+        return (f.implicated_lps || []).indexOf(lpId) !== -1;
+    });
+
+    function isAdverse(directionality) {
+        if (!directionality || !perspective || perspective === 'neutral') return false;
+        const adverseTo = directionality === 'tenant_unprotected' ? 'tenant' : 'landlord';
+        return perspective === adverseTo;
+    }
+
+    // GRAY — not applicable
+    if (state === 'not_applicable') {
+        return { lp_id: lpId, risk_level: 'gray', dominant_reason: 'Not applicable' };
+    }
+
+    // RED — missing material LP
+    if (state === 'missing') {
+        return { lp_id: lpId, risk_level: 'red', dominant_reason: 'Missing provision' };
+    }
+
+    // RED — HIGH compound risk (regardless of coverage_state)
+    const highCpf = cpfs.find(function(f) {
+        return f.finding_type === 'compound_risk' && (f.severity || '').toUpperCase() === 'HIGH';
+    });
+    if (highCpf) {
+        return { lp_id: lpId, risk_level: 'red', dominant_reason: 'HIGH compound risk' };
+    }
+
+    // RED — 3-0 adverse directional mismatch
+    const dir3_0 = cpfs.find(function(f) {
+        return f.finding_type === 'directional_mismatch' &&
+               f.evaluator_agreement === '3-0' && isAdverse(f.directionality);
+    });
+    if (dir3_0) {
+        return { lp_id: lpId, risk_level: 'red', dominant_reason: '3-0 adverse directional mismatch' };
+    }
+
+    // RED — covered_unfavorable adverse to current perspective (with no severity on LP object,
+    // treat as RED when directly adverse to viewer)
+    if ((state === 'covered_unfavorable' || state === 'potentially_unenforceable') &&
+        perspective && lp.covered_unfavorable_adverse_to &&
+        lp.covered_unfavorable_adverse_to === perspective) {
+        return { lp_id: lpId, risk_level: 'red', dominant_reason: 'Adverse coverage at viewer perspective' };
+    }
+
+    // RED — review_needed with significant missing evidence (>=50% elements missing)
+    if (state === 'review_needed') {
+        const evs = lp.element_verdicts || [];
+        const missingCount = evs.filter(function(ev) { return ev.verdict === 'missing'; }).length;
+        if (evs.length > 0 && missingCount / evs.length >= 0.5) {
+            return { lp_id: lpId, risk_level: 'red', dominant_reason: 'Review needed — insufficient evidence' };
+        }
+    }
+
+    // AMBER — partial with material element gaps
+    if (state === 'partial' && lp.partial_class === 'partial_material') {
+        return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Partial — material gaps' };
+    }
+
+    // AMBER — MEDIUM compound risk
+    const medCpf = cpfs.find(function(f) {
+        return f.finding_type === 'compound_risk' && (f.severity || '').toUpperCase() === 'MEDIUM';
+    });
+    if (medCpf) {
+        return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'MEDIUM compound risk' };
+    }
+
+    // AMBER — 2-1 adverse directional mismatch
+    const dir2_1 = cpfs.find(function(f) {
+        return f.finding_type === 'directional_mismatch' &&
+               f.evaluator_agreement === '2-1' && isAdverse(f.directionality);
+    });
+    if (dir2_1) {
+        return { lp_id: lpId, risk_level: 'amber', dominant_reason: '2-1 adverse directional mismatch' };
+    }
+
+    // AMBER — covered_unfavorable (any remaining case)
+    if (state === 'covered_unfavorable' || state === 'potentially_unenforceable') {
+        return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Adverse coverage terms' };
+    }
+
+    // AMBER — review_needed (general)
+    if (state === 'review_needed') {
+        return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Review needed' };
+    }
+
+    // AMBER — cross_coverage_relief (structural dependency)
+    const relief = cpfs.find(function(f) { return f.finding_type === 'cross_coverage_relief'; });
+    if (relief) {
+        return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Coverage depends on another provision' };
+    }
+
+    // AMBER — partial (general, not already classified)
+    if (state === 'partial') {
+        return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Partial coverage' };
+    }
+
+    // GREEN — covered with no adverse signals
+    return { lp_id: lpId, risk_level: 'green', dominant_reason: 'Addressed' };
+}
+
+// Step 338: map risk_level to cell colors.
+function _riskLevelStyle(riskLevel) {
+    if (riskLevel === 'red')   return { bg: '#dc2626', fg: '#fff', label: 'High Risk' };
+    if (riskLevel === 'amber') return { bg: '#f59e0b', fg: '#78350f', label: 'Review Needed' };
+    if (riskLevel === 'green') return { bg: '#22c55e', fg: '#fff', label: 'Addressed' };
+    return { bg: '#9ca3af', fg: '#fff', label: 'Not Applicable' };  // gray
+}
+
+// Retained for Coverage & Gaps tab compatibility — other renderers still use coverage_state colors.
 function _heatmapCellStyle(a, viewerPerspective) {
     const state = a.coverage_state;
     const pcls  = a.partial_class;
@@ -4706,12 +4822,14 @@ function renderProvisionHeatmap() {
         return;
     }
 
-    let html = '<div class="provision-heatmap-section"><div class="provision-heatmap-section-header">PROVISION HEALTH</div>';
+    // Step 338: RISK MAP header + legend
+    let html = '<div class="provision-heatmap-section"><div class="provision-heatmap-section-header">RISK MAP</div>';
 
     // Use tenants (not rows) to preserve the original tenant index for navigation.
     tenants.forEach(function(tenant, tIdx) {
         if (!tenant || !tenant.results || !(tenant.results.coverage_assessment || []).length) return;
         const ca = tenant.results.coverage_assessment || [];
+        const cpfs = tenant.results.cross_provision_findings || [];
         const filename = tenant.results.tenant_file || tenant.filename || "";
 
         // Build pid → assessment lookup
@@ -4720,7 +4838,7 @@ function renderProvisionHeatmap() {
 
         // Step 337: build directional mismatch index: LP id → {desc, directionality}
         const dirMap = {};
-        ((tenant.results.cross_provision_findings) || []).forEach(function(f) {
+        cpfs.forEach(function(f) {
             if (f.finding_type !== 'directional_mismatch') return;
             (f.implicated_lps || []).forEach(function(lpId) {
                 if (!dirMap[lpId]) dirMap[lpId] = {
@@ -4737,27 +4855,42 @@ function renderProvisionHeatmap() {
         const cellsHtml = _HEATMAP_LP_IDS.map(function(pid) {
             const a = map[pid];
             const dirInfo = dirMap[pid];
-            // Step 337: amber directional arrow badge — arrow direction reflects
-            // whether the mismatch is adverse (←) or favorable (→) to the viewer.
             const dirBadge = dirInfo
                 ? `<span class="heatmap-dir-badge">${_dirArrow(dirInfo.directionality, viewerPerspective)}</span>`
                 : "";
+
             if (!a) {
-                // Use directional description as tooltip when badge present; LP id otherwise.
+                // LP not in assessment — show as gray (no data)
                 const cellTip = dirInfo ? esc(dirInfo.desc) : esc(pid);
                 return `<div class="provision-heatmap-cell" style="background:#d1d5db;color:#9ca3af;position:relative;" title="${cellTip}">${pid.replace("LP-","")}${dirBadge}</div>`;
             }
-            const s = _heatmapCellStyle(a, viewerPerspective);
+
+            // Step 338: derive risk level from findings, not coverage_state alone
+            const risk = deriveProvisionRiskLevel(a, cpfs, viewerPerspective);
+            const s    = _riskLevelStyle(risk.risk_level);
             const name = a.issue_area_name || pid;
-            const baseTip = `${esc(pid)} — ${esc(name)} — ${esc(s.label)}`;
-            const cellTip = dirInfo ? esc(dirInfo.desc) : baseTip;
-            const num  = pid.replace("LP-","");
+            const stateLabel = (a.coverage_state || "").replace(/_/g, ' ');
+            // Tooltip: risk signal first, then coverage state for context
+            const riskTip = risk.risk_level.toUpperCase() + ': ' + risk.dominant_reason;
+            const covTip  = pid + ' — ' + name + ' — ' + stateLabel;
+            const cellTip = dirInfo
+                ? esc(dirInfo.desc + ' | ' + riskTip)
+                : esc(riskTip + ' | ' + covTip);
+            const num = pid.replace("LP-","");
             return `<div class="provision-heatmap-cell" style="background:${s.bg};color:${s.fg};position:relative;" title="${cellTip}" onclick="window.CAM.jumpHeatmapCell(${tIdx},'${esc(pid)}')">${num}${dirBadge}</div>`;
         }).join("");
 
         html += `<div class="provision-heatmap-contract">${labelHtml}<div class="provision-heatmap-row">${cellsHtml}</div></div>`;
     });
 
+    // Step 338: legend
+    html += '<div class="provision-heatmap-legend">'
+          +   '<span class="hm-legend-item"><span class="hm-legend-dot" style="background:#dc2626"></span>High risk</span>'
+          +   '<span class="hm-legend-item"><span class="hm-legend-dot" style="background:#f59e0b"></span>Review needed</span>'
+          +   '<span class="hm-legend-item"><span class="hm-legend-dot" style="background:#22c55e"></span>Addressed</span>'
+          +   '<span class="hm-legend-item"><span class="hm-legend-dot" style="background:#9ca3af"></span>N/A</span>'
+          + '</div>'
+          + '<div class="provision-heatmap-legend-note">Risk reflects adverse findings, missing protections, and compound interactions. Coverage state is one input.</div>';
     html += "</div>";
     panel.innerHTML = html;
     panel.classList.remove("hidden");
