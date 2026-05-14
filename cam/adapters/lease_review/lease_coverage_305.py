@@ -800,4 +800,5 @@ def assess_coverage_305(
         "elements_missing": elements_missing,
         "negative_space_candidates_reviewed": negative_space_candidates,
         "evaluator_meta": evaluator_meta,
+        "api_calls": succeeded,  # Step 335: number of evaluator API calls made for this LP
     }

@@ -273,6 +273,7 @@ def assess_coverage(
                 _a["coverage_method"] = _result_305.get("coverage_method", "step_305_per_element")
                 _a["element_verdicts"] = _result_305.get("element_verdicts", [])
                 _a["coverage_state_baseline"] = _result_305["coverage_state_baseline"]
+                _a["_coverage_api_calls"] = _result_305.get("api_calls", 0)  # Step 335
                 assessments.append(_a)
                 _emit(_a)
                 continue

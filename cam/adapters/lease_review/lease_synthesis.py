@@ -378,8 +378,33 @@ For each LP appearing in any evaluator's cross_coverage_findings:
 
 STEP 2 — INCLUDE PRE-VERIFIED COMPOUND FINDINGS:
 Compound risk findings have been verified in a separate two-pass pipeline before this consolidation
-call. They are provided to you below. Do NOT re-evaluate them. Include each pre-verified compound
-finding verbatim in your cross_provision_findings[] output with finding_type "compound_risk".
+call. They are provided to you below. Apply the rules in STEPs 3 and 4, then include each compound
+finding in your cross_provision_findings[] output with finding_type "compound_risk".
+
+STEP 3 — DEDUPLICATE COMPOUND FINDINGS:
+Before including compound findings, check for overlaps. If two or more compound findings share the
+same pattern_type AND at least two of the same implicated_lps AND describe variations of the same
+core exposure mechanism, merge them into a single comprehensive finding. The merged finding must:
+- List all implicated LPs from all component findings (union, deduplicated)
+- Write a headline that captures the full scenario (complete sentence, under 160 chars)
+- Reference all relevant sections from all component findings in the detail field
+- Carry the highest severity of the merged components
+- Retain "3-0" evaluator_agreement if all components were "3-0"
+Do NOT merge findings that share pattern_type but have different triggering mechanisms or affect
+different rights. Assign the merged finding the next available CPF-NN id.
+
+STEP 4 — ASSIGN COMPOUND FINDING SEVERITY:
+Reassign severity for each compound finding (after any merges) using this rubric:
+- HIGH: scenario is structurally likely AND consequence is material financial exposure or loss of
+  operational control. Examples: paying full rent with no exit when landlord is excused from
+  performance; foreclosure defeats quiet enjoyment; full default chain with asymmetric remedies.
+- MEDIUM: scenario requires an unlikely trigger OR exposure is real but limited in financial scope.
+  Examples: missing signage/modification rights gap; parking visitor access gap; rights that
+  require a specific condition that is not the default outcome of the lease.
+- LOW: theoretical gap with low probability and minor consequence even if triggered.
+The pre-assigned severity from the pipeline is a starting point only — override it if the rubric
+clearly places the finding at a different level. Most minor-rights lever findings should be MEDIUM,
+not HIGH.
 
 Return a JSON object:
 {
@@ -406,9 +431,12 @@ Return a JSON object:
 
 Rules:
 - finding_id: CPF-01, CPF-02, ... in order
+- cited_sections: extract every section reference explicitly named in the detail field (e.g.
+  "Article 17", "Section 5.1", "Section 24.13"). Include all of them as strings in this list.
+  Never return an empty array if the detail field references specific sections.
 - finding_type:
     "directional_mismatch" when Q2 found a mismatch
-    "compound_risk" for pre-verified compound findings (include verbatim)
+    "compound_risk" for pre-verified compound findings (after dedup and severity assignment)
     "cross_coverage_gap" for all other gap findings
 - Only emit findings where verdict is not "full_coverage_found" (unless directionality overrides it)
 - Do not emit findings for LPs that are genuinely covered with no directional issues
@@ -1083,11 +1111,12 @@ def _build_pass2_verified_findings(
     - 0/3 → drop
     """
     _severity_map = {
-        "directional_asymmetry":  "HIGH",
-        "lever_elimination":      "HIGH",
-        "subordination_trap":     "MEDIUM",
-        "cascading_no_remedy":    "HIGH",
-        "operational_dead_end":   "MEDIUM",
+        "directional_asymmetry":  "HIGH",    # asymmetric remedy chain is a structural trap
+        "cascading_no_remedy":    "HIGH",    # pay full rent with no exit
+        "subordination_trap":     "HIGH",    # foreclosure defeats quiet enjoyment
+        "foreclosure_trap":       "HIGH",
+        "lever_elimination":      "MEDIUM",  # rights gap requiring an unlikely specific trigger
+        "operational_dead_end":   "MEDIUM",  # real exposure but limited financial scope
     }
 
     # Index Pass 2 verdicts by candidate_id per role
@@ -1127,14 +1156,32 @@ def _build_pass2_verified_findings(
                     next(iter(ev_details.values()), {}))
         p1_any = next(iter(cluster.get("pass1_responses", {}).values()), {})
 
-        headline = (best.get("reason") or p1_any.get("why_the_combination_matters") or "")[:160]
+        _raw_headline = (best.get("reason") or p1_any.get("why_the_combination_matters") or "")
+        if len(_raw_headline) > 160:
+            _cut = _raw_headline[:160].rsplit(" ", 1)[0]
+            headline = _cut + "..."
+        else:
+            headline = _raw_headline
         detail   = best.get("lease_evidence") or p1_any.get("evidence_from_lease") or ""
         affected = best.get("affected_party") or p1_any.get("affected_party") or ""
 
-        if present_count == 3:
-            severity = "HIGH"
-        elif present_count == 2:
-            severity = _severity_map.get(pattern_type, "MEDIUM")
+        # Extract section references from detail text.
+        # Handles plural forms ("Sections 19.1, 19.2 and 18.1") and slash-separated
+        # lists ("Articles 13/24") in addition to singular "Section 5.1".
+        _cited: list = []
+        _SEC_RE = re.compile(
+            r'\b(Articles?|Sections?|Exhibits?|Addend(?:um|a)|Riders?)\s+'
+            r'((?:[\d][\w.]*)(?:\s*[,/]\s*[\d][\w.]*)*(?:\s+and\s+[\d][\w.]*)?)',
+            re.IGNORECASE,
+        )
+        for _m in _SEC_RE.finditer(detail):
+            _kw = re.sub(r's$', '', _m.group(1), flags=re.IGNORECASE).capitalize()
+            for _n in re.findall(r'[\d][\w.]*', _m.group(2)):
+                _cited.append(f"{_kw} {_n}")
+        cited = list(dict.fromkeys(_cited))
+
+        if present_count >= 2:
+            severity = _severity_map.get(pattern_type, "HIGH")
         else:
             severity = "LOW"
 
@@ -1147,7 +1194,7 @@ def _build_pass2_verified_findings(
             "implicated_lps":    involved_lps,
             "headline":          headline or f"Compound risk: {pattern_type.replace('_', ' ')}",
             "detail":            detail,
-            "cited_sections":    [],
+            "cited_sections":    cited,
             "verdict":           "compound_risk_confirmed",
             "directionality":    None,
             "severity":          severity,
@@ -1177,6 +1224,74 @@ def _compound_signature(finding: dict) -> tuple:
         finding.get("risk_mechanism", ""),
         finding.get("affected_party", ""),
     )
+
+
+def _dedup_compound_findings(findings: List[dict]) -> List[dict]:
+    """Merge CRX findings that share the same pattern_type and >= 2 implicated_lps.
+
+    Uses connected-component grouping so that chains A-B-C all merge if A~B and B~C.
+    Re-numbers surviving findings CRX-01, CRX-02, ... preserving document order.
+    """
+    compound = [f for f in findings if f.get("finding_type") == "compound_risk"]
+    other    = [f for f in findings if f.get("finding_type") != "compound_risk"]
+    n = len(compound)
+    if n < 2:
+        return findings
+
+    parent = list(range(n))
+
+    def _find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def _union(x: int, y: int) -> None:
+        parent[_find(x)] = _find(y)
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            fi, fj = compound[i], compound[j]
+            if fi.get("pattern_type") != fj.get("pattern_type"):
+                continue
+            lps_i = set(fi.get("implicated_lps") or [])
+            lps_j = set(fj.get("implicated_lps") or [])
+            if len(lps_i & lps_j) >= 2:
+                _union(i, j)
+
+    groups: Dict[int, List[dict]] = {}
+    for i, f in enumerate(compound):
+        root = _find(i)
+        groups.setdefault(root, []).append(f)
+
+    _sev_order = {"HIGH": 2, "MEDIUM": 1, "LOW": 0}
+    merged: List[dict] = []
+    for root in sorted(groups):
+        group = groups[root]
+        if len(group) == 1:
+            merged.append(group[0])
+            continue
+        all_lps    = list(dict.fromkeys(lp for ff in group for lp in (ff.get("implicated_lps") or [])))
+        all_cited  = list(dict.fromkeys(s  for ff in group for s  in (ff.get("cited_sections")  or [])))
+        detail_pts = list(dict.fromkeys(ff.get("detail", "") for ff in group if ff.get("detail")))
+        best       = max(group, key=lambda ff: len(ff.get("implicated_lps") or []))
+        high_sev   = max((ff.get("severity", "MEDIUM") for ff in group), key=lambda s: _sev_order.get(s, 1))
+        all_3_0    = all(ff.get("evaluator_agreement") == "3-0" for ff in group)
+        merged_f   = dict(best)
+        merged_f["implicated_lps"]      = all_lps
+        merged_f["detail"]              = " | ".join(detail_pts)
+        merged_f["cited_sections"]      = all_cited
+        merged_f["severity"]            = high_sev
+        merged_f["evaluator_agreement"] = "3-0" if all_3_0 else group[0].get("evaluator_agreement", "3-0")
+        merged.append(merged_f)
+
+    for idx, f in enumerate(merged):
+        f["finding_id"] = f"CRX-{idx + 1:02d}"
+
+    if len(merged) < n:
+        print(f"[lease_synthesis] CRX dedup: {n} -> {len(merged)} compound findings after merge", flush=True)
+
+    return other + merged
 
 
 # ── Directionality normalization ───────────────────────────────────────────────
@@ -1654,6 +1769,7 @@ def run_synthesis(
     # A separate focused call gives each evaluator a clean budget for Q3.
     compound_prompt = _build_compound_user_prompt(coverage_assessment, full_tenant_text, perspective)
     print("[lease_synthesis] Compound pass (Q3): running 3 evaluators...", flush=True)
+    compound_outputs: Dict[str, dict] = {}  # Step 335: collected for api_calls count
     with ThreadPoolExecutor(max_workers=3) as compound_pool:
         compound_futures = {
             compound_pool.submit(_call_compound_evaluator, role, ev_cfg, compound_prompt): role
@@ -1665,6 +1781,7 @@ def run_synthesis(
                 comp_out = fut.result()
             except Exception as e:
                 comp_out = {"role": role, "completed": False, "result": None, "error": str(e)}
+            compound_outputs[role] = comp_out  # Step 335: track for api_calls
             if comp_out.get("completed"):
                 cands = (comp_out.get("result") or {}).get("candidates") or []
                 if evaluator_outputs.get(role, {}).get("completed"):
@@ -1819,6 +1936,9 @@ def run_synthesis(
         if dropped:
             print(f"[lease_synthesis] Dedup: dropped {dropped} consolidator compound duplicate(s)", flush=True)
 
+    # Merge CRX findings that share same pattern_type and >= 2 implicated LPs.
+    findings = _dedup_compound_findings(findings)
+
     # Normalize directionality and affected_party for known LP-pattern combinations.
     # Perspective must not flip the factual label of who is exposed.
     findings = _normalize_directionality(findings)
@@ -1835,6 +1955,7 @@ def run_synthesis(
     _pass2_ran = bool(clusters or relief_candidates or directional_candidates)
     _synth_api_calls = (
         _call_count(evaluator_outputs)                         # Pass 1
+        + _call_count(compound_outputs)                        # Step 335: compound pass (Q3)
         + (_call_count(pass2_outputs) if _pass2_ran else 0)   # Pass 2 if it ran
         + 1                                                    # consolidation minimum
     )
