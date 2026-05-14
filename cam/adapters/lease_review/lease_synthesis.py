@@ -50,7 +50,7 @@ EVALUATOR_LINEUP: Dict[str, dict] = {
         "model":    EVALUATOR_A_PRIMARY[1],
         "label":    EVALUATOR_A_LABEL,
         "fallback": (EVALUATOR_A_FALLBACK[0], EVALUATOR_A_FALLBACK[1], EVALUATOR_A_FALLBACK_LABEL),
-        "max_output_tokens": 4000,
+        "max_output_tokens": 8000,  # raised from 6K — 28 LPs × ~300 tokens/entry ≈ 8.4K needed
         "temperature": 0.0,
         "timeout_sec": 300.0,
     },
@@ -59,7 +59,7 @@ EVALUATOR_LINEUP: Dict[str, dict] = {
         "model":    EVALUATOR_B_PRIMARY[1],
         "label":    EVALUATOR_B_LABEL,
         "fallback": (EVALUATOR_B_FALLBACK[0], EVALUATOR_B_FALLBACK[1], EVALUATOR_B_FALLBACK_LABEL),
-        "max_output_tokens": 4000,
+        "max_output_tokens": 8000,  # raised from 6K — 28 LPs × ~300 tokens/entry ≈ 8.4K needed
         "temperature": 0.0,
         "timeout_sec": 300.0,
     },
@@ -68,10 +68,30 @@ EVALUATOR_LINEUP: Dict[str, dict] = {
         "model":    EVALUATOR_C_PRIMARY[1],
         "label":    EVALUATOR_C_LABEL,
         "fallback": None,  # grok-3 retired 2026-05-15; no same-provider fallback
-        "max_output_tokens": 4000,
+        "max_output_tokens": 8000,  # raised from 6K — 28 LPs × ~300 tokens/entry ≈ 8.4K needed
         "temperature": 0.0,
         "timeout_sec": 300.0,
     },
+}
+
+# ── Stage 7 model split — Pass 1 / consolidation use GPT-5.4 ──────────────────
+# NOTE: GPT-5.5 fails with RuntimeError on long Stage 7 prompts (Pass 1 + consolidation).
+# GPT-5.4 is the reliable model for long synthesis. GPT-5.5 is used for Pass 2 only
+# (short cluster verification prompt, succeeds consistently).
+# Re-test GPT-5.5 on Pass 1 after OpenAI stabilizes rate limits (post ~May 23, 2026).
+_SYNTHESIS_PASS1_B_MODEL       = "gpt-5.4"   # long prompt — gpt-5.5 fails
+_SYNTHESIS_CONSOLIDATION_MODEL = "gpt-5.4"   # long prompt — gpt-5.5 fails
+# Pass 2 uses EVALUATOR_LINEUP["B"] directly (gpt-5.5, short prompt, succeeds)
+
+_EVALUATOR_LINEUP_PASS1: Dict[str, dict] = {
+    role: (
+        cfg if role != "B" else {
+            **cfg,
+            "model": _SYNTHESIS_PASS1_B_MODEL,
+            "label": "GPT-5.4",
+        }
+    )
+    for role, cfg in EVALUATOR_LINEUP.items()
 }
 
 # ── Safe JSON parser ──────────────────────────────────────────────────────────
@@ -121,52 +141,123 @@ You will receive:
 Return a JSON object with exactly two keys: "cross_coverage_findings" and "candidates".
 
 --- QUESTION 1: CROSS-COVERAGE CHECK ---
-For each flagged LP: is this protection actually supplied elsewhere in the lease, in a
-different article or section not captured by the LP's primary coverage area?
+
+For each flagged provision, determine whether its substance is supplied
+by any other express provision in this lease.
+
+OUTCOME A — cross_coverage_gap:
+Absent or not meaningfully addressed elsewhere.
+Return: final_verdict="no_coverage_found"
+
+OUTCOME B — partial_cross_coverage:
+Partially addressed elsewhere; material elements still unmet.
+Return: final_verdict="partial_coverage_found"
+
+OUTCOME C — cross_coverage_relief:
+Another provision genuinely and substantially satisfies the substance
+of the flagged LP. The concern is materially reduced or eliminated.
+Return: final_verdict="cross_coverage_confirmed", relief_section="[exact section]"
+
+Use Outcome C sparingly. When in doubt, return Outcome A or B.
+
+HARD RULE FOR OUTCOME C:
+Cross-coverage relief may not be credited unless the substitute provision
+protects the same party, against the same risk, with a usable remedy or right.
+
+Three conditions, all required:
+1. Same party — the substitute provision protects the party who needs protection
+   under the flagged LP, not the other party.
+2. Same risk — the substitute provision addresses the same category of risk,
+   not merely related or adjacent language.
+3. Usable remedy or right — the substitute provision gives the party an
+   actionable right, remedy, cure period, or comparable protection — not
+   merely an acknowledgment, definition, or procedural requirement.
+
+If any of the three conditions fails, do NOT return Outcome C.
+
+Example: LP-27 (landlord default framework) is absent. Article 15 has
+cure language. Condition 1 fails immediately — Article 15's cure runs
+landlord-against-tenant (protects landlord from tenant default), not
+tenant-against-landlord. Return Outcome A with reasoning noting the
+directional mismatch. Do not evaluate conditions 2 and 3.
 
 For each LP return one object in cross_coverage_findings[]:
 {
   "lp_id": "LP-XX",
   "lp_name": "...",
-  "q1_verdict": "no_coverage_found" | "partial_coverage_found" | "full_coverage_found",
-  "q1_cited_sections": ["Article 15", ...],  // empty only if no relevant language found anywhere
+  "q1_verdict": "no_coverage_found" | "partial_coverage_found" | "full_coverage_found" | "cross_coverage_confirmed",
+  "q1_cited_sections": ["Article 15", ...],
   "q1_reasoning": "...",
-  "q2_applicable": true | false,  // true if q1_verdict is partial or full, OR if you found relevant language but ultimately rejected it
+  "relief_section": "Section Y.Y (only when Outcome C)",
+  "q2_applicable": true | false,
   "q2_verdict": "directional_match" | "directional_mismatch" | null,
-  "q2_direction_note": "...",  // explain which direction the found provision runs
+  "q2_direction_note": "...",
   "q2_cited_sections": ["Article 15", ...],
-  "final_verdict": "no_coverage_found" | "partial_coverage_found" | "full_coverage_found",
+  "q2a_verdict": "yes | no | unclear",
+  "q2b_verdict": "proportional | disproportionate | not_applicable",
+  "mismatch_flag": true | false,
+  "protected_party": "tenant | landlord | bilateral | none",
+  "exposed_party": "tenant | landlord | bilateral | none",
+  "opposing_framework_summary": "one sentence on the stronger party's framework",
+  "weaker_framework_summary": "one sentence on the weaker party's framework",
+  "why_mismatch_matters": "one sentence on practical consequence if mismatch flagged",
+  "final_verdict": "no_coverage_found" | "partial_coverage_found" | "full_coverage_found" | "cross_coverage_confirmed",
   "directionality": "tenant_unprotected" | "landlord_unprotected" | "match" | null,
   "severity": "HIGH" | "MEDIUM" | "LOW"
 }
 
---- QUESTION 2: DIRECTIONALITY CHECK ---
-Apply the directionality check whenever you locate relevant language — even if you
-ultimately conclude it does not satisfy the LP. If you found language that superficially
-resembles the missing provision but runs in the wrong direction for the party who needs
-protection, return:
-  q2_applicable: true
-  q2_verdict: "directional_mismatch"
-  final_verdict: "no_coverage_found"
-  directionality: "[party]_unprotected"
-and cite the misdirected language specifically in q2_cited_sections.
+--- QUESTION 2 — DIRECTIONAL MISMATCH CHECK ---
 
-For each LP where Q1 found coverage (partial or full):
-Does the provision found actually protect the implicated party in the correct direction?
+Answer TWO sequential questions for EACH flagged provision. Also populate
+the q2_applicable/q2_verdict/q2_cited_sections fields in cross_coverage_findings.
 
-Example: Article 15 may contain cure language. Q1 finds it.
-Q2 asks: does this cure period protect the TENANT against LANDLORD default,
-or does it protect the LANDLORD against TENANT default?
-If directional mismatch: override final_verdict to "no_coverage_found".
+Q2a — DIRECTION: Does a protection, remedy, or default framework exist,
+and does it protect the correct party against the correct risk?
+   yes     = protection exists and runs toward the right party
+   no      = protection runs toward the wrong party, or is absent
+   unclear = protection exists but scope or direction is ambiguous
 
-CURE PERIOD AND REMEDY LP GUIDANCE:
-For LP-27 (Landlord Default) and any LP involving cure periods, notice requirements,
-or remedies: if you find such language elsewhere in the lease but conclude it does not
-cover this LP, explicitly state whether it runs in favor of Landlord (against Tenant)
-or Tenant (against Landlord). If it runs in the wrong direction, set q2_applicable true,
-q2_verdict "directional_mismatch", directionality "[party]_unprotected", and cite the
-misdirected sections — even when final_verdict is "no_coverage_found". Do NOT leave
-directionality null when you located cure or remedy language in the wrong direction.
+Q2b — PROPORTIONALITY: If Q2a = yes, is the protection proportional to
+the opposing party's protection, or is it materially narrower?
+   proportional      = both parties have comparable remedial frameworks
+   disproportionate  = protection exists but is materially narrower, nominal,
+                       deposit-dependent, discretionary, delayed, or incomplete
+                       relative to the opposing party's framework
+   not_applicable    = Q2a was "no" or "unclear"
+
+MISMATCH FLAG: Raise mismatch_flag = true when EITHER:
+   - Q2a = "no"  (wrong direction or absent)
+   - Q2b = "disproportionate"  (correct direction but not equivalent weight)
+
+PROPORTIONALITY TEST:
+   * Does one party have a multi-remedy framework (termination, re-entry, damages,
+     self-help, acceleration, fees) while the other has a single narrow remedy?
+   * Does one party's remedy require using their own funds (e.g. security deposit)?
+   * Is one party's remedy conditional, discretionary, or procedurally demanding
+     while the other party's is self-executing?
+
+HARD CONSTRAINT: Do not treat this as "grade fairness" or "contract balance scoring."
+Commercial leases are often intentionally asymmetrical. Surface asymmetry — do not
+moralize. Directional mismatch exists when one side has a materially more complete
+remedial framework than the other for comparable default/failure scenarios.
+
+TEACHING EXAMPLE (Atlas/Meridian lease):
+   Article 17 gives Landlord: events of default, cure periods, termination,
+   re-entry, reletting, deficiency recovery, self-help cure reimbursement.
+   Section 5.1 gives Tenant: notice/cure, security-deposit setoff, termination
+   after continued failure, reservation of law/equity remedies.
+
+   Correct answer:
+   Q2a = "yes"  (tenant protection exists and runs the right direction)
+   Q2b = "disproportionate"  (tenant framework is narrower and partly deposit-dependent)
+   mismatch_flag = true  (triggered by Q2b, not Q2a)
+
+   Do NOT say "tenant has nothing." Say "tenant has something, but not equivalent machinery."
+
+All Q2 fields (q2_applicable, q2_verdict, q2a_verdict, q2b_verdict, mismatch_flag,
+protected_party, exposed_party, opposing_framework_summary, weaker_framework_summary,
+why_mismatch_matters) go DIRECTLY in each cross_coverage_findings entry for that LP.
+Do NOT create a separate q2_results array. The candidates[] array is ONLY for Q3.
 
 --- QUESTION 3: COMPOUND RISK ANALYSIS ---
 
@@ -224,6 +315,26 @@ Check: Are there combinations of gaps where a landlord default, casualty,
 taking, or other adverse event could leave a party liable for full performance
 with no recourse? Trace the remedies available — if the chain reaches a dead
 end, that is the finding.
+
+IMPORTANT: Do not suppress a Pattern 4 candidate merely because one of its
+component provisions is already identified as a directional mismatch under
+Pattern 1 or Question 2. Directional asymmetry may be one ingredient in a
+cascading no-remedy scenario. If a missing remedy framework (such as an absent
+landlord-default article) combines with casualty, force majeure, access
+restriction, utility interruption, or maintenance failure provisions to leave
+a party with no cure, offset, abatement, termination right, or practical remedy
+during a real-world adverse event — that is a Pattern 4 finding independent of
+any directional mismatch finding.
+
+Pattern 4 examples:
+- LP-27 absent (no landlord-default remedies) + LP-14 partial (force majeure
+  excludes rent, no abatement or termination right) + LP-24 partial (casualty,
+  no landlord repair obligation, no abatement) = tenant pays full rent during
+  prolonged disruption with no cure, no offset, no exit. Neither LP alone shows
+  this. The combination does.
+- LP-07 partial (uncapped CAM, no audit rights) + LP-27 absent (no landlord-
+  default framework) = tenant has no way to challenge overcharges and no remedy
+  if landlord refuses to adjust. The right is theoretical; all levers are gone.
 
 ---
 
@@ -377,6 +488,7 @@ def _build_consolidator_user_prompt(
     flagged_lps: List[dict],
     perspective: str,
     verified_compound_findings: List[dict] = None,
+    verified_relief_findings: List[dict] = None,
 ) -> str:
     """Build the consolidation pass user prompt."""
     lines = [
@@ -396,12 +508,20 @@ def _build_consolidator_user_prompt(
     ]
     if verified_compound_findings:
         lines += [
-            f"PRE-VERIFIED COMPOUND FINDINGS ({len(verified_compound_findings)} — include these verbatim as compound_risk entries, do not re-evaluate):",
+            f"PRE-VERIFIED COMPOUND FINDINGS ({len(verified_compound_findings)} — include verbatim as compound_risk entries, do not re-evaluate):",
             json.dumps(verified_compound_findings, indent=2),
             "",
         ]
     else:
-        lines += ["PRE-VERIFIED COMPOUND FINDINGS: none (no compound risk clusters confirmed in Pass 2).", ""]
+        lines += ["PRE-VERIFIED COMPOUND FINDINGS: none.", ""]
+    if verified_relief_findings:
+        lines += [
+            f"PRE-VERIFIED CROSS-COVERAGE RELIEF FINDINGS ({len(verified_relief_findings)} — include verbatim as cross_coverage_relief entries, do not re-evaluate):",
+            json.dumps(verified_relief_findings, indent=2),
+            "",
+        ]
+    else:
+        lines += ["PRE-VERIFIED RELIEF FINDINGS: none.", ""]
     lines += ["Produce the final consolidated cross_provision_findings[] now."]
     return "\n".join(lines)
 
@@ -485,6 +605,7 @@ def _call_consolidator(
     flagged_lps: List[dict],
     perspective: str,
     verified_compound_findings: List[dict] = None,
+    verified_relief_findings: List[dict] = None,
 ) -> Optional[dict]:
     """Run consolidation pass using Evaluator B as consolidator."""
     from cam.core.provider_router import ModelTarget, ProviderRouter, RouterConfig
@@ -493,7 +614,8 @@ def _call_consolidator(
     health = get_health_tracker()
     ev_cfg = EVALUATOR_LINEUP["B"]
     user_prompt = _build_consolidator_user_prompt(
-        evaluator_results, flagged_lps, perspective, verified_compound_findings
+        evaluator_results, flagged_lps, perspective,
+        verified_compound_findings, verified_relief_findings
     )
 
     def _try_call(p: str, m: str) -> dict:
@@ -518,7 +640,7 @@ def _call_consolidator(
         return parsed
 
     provider = ev_cfg["provider"]
-    model    = ev_cfg["model"]
+    model    = _SYNTHESIS_CONSOLIDATION_MODEL  # gpt-5.4 — gpt-5.5 fails on long consolidation prompt
     fallback = ev_cfg.get("fallback")
 
     print(f"[lease_synthesis] Consolidation: calling {model} ({provider})...", flush=True)
@@ -626,16 +748,17 @@ def _cluster_compound_candidates(evaluator_outputs: dict) -> list:
     return result
 
 
-_PASS2_EVALUATOR_SYSTEM = """You are a commercial real estate attorney verifying compound risk findings.
-
-Compound risk candidates have been identified from a first-pass analysis. Your task:
-evaluate every candidate and return a verdict on whether the compound risk is real.
+_PASS2_EVALUATOR_SYSTEM = """You are a commercial real estate attorney performing two verification tasks.
 
 COVERAGE STATE IS NOT RISK STATE. A provision can be fully covered and still participate
 in compound risk through asymmetry, missing reciprocal rights, or removal of practical
 enforcement mechanisms.
 
-For each candidate, return one verdict object:
+SECTION 1 — COMPOUND RISK VERIFICATION
+Compound risk candidates have been identified from a first-pass analysis. Evaluate every
+candidate and return a verdict on whether the compound risk is real.
+
+For each compound candidate, return one verdict object:
 {
   "candidate_id": "CRX-01",
   "pattern_type": "...",
@@ -647,39 +770,139 @@ For each candidate, return one verdict object:
   "confidence": "high | medium | low"
 }
 
-Return a JSON array — one object per candidate. Do not skip any candidate.
+SECTION 2 — CROSS-COVERAGE RELIEF VERIFICATION
+One or more evaluators identified potential cross-coverage relief in Pass 1 — a finding
+that another provision substantially satisfies a flagged LP's substance. Verify each:
+
+1. Does the cross-coverage genuinely exist?
+2. Does it run in the correct direction for the party who needs protection?
+
+For each relief candidate, return one verdict object:
+{
+  "candidate_type": "cross_coverage_relief",
+  "candidate_id": "RLF-01",
+  "lp_id": "LP-XX",
+  "verdict": "cross_coverage_confirmed | no_coverage_found | directional_false_positive | unclear",
+  "direction": "bilateral | tenant_only | landlord_only | other",
+  "direction_adequate": true | false,
+  "relief_section": "Section Y.Y (if confirmed)",
+  "reason": "...",
+  "confidence": "high | medium | low"
+}
+
+verdict "directional_false_positive": cross-coverage exists but runs the wrong direction.
+
+SECTION 3 — DIRECTIONAL MISMATCH VERIFICATION
+Evaluators flagged directional mismatch candidates in Pass 1 Q2. Verify each candidate
+using the same Q2a / Q2b structure. Evaluate every candidate including those you did not
+flag yourself.
+
+Q2a = "yes" if protection exists and runs toward the right party.
+Q2b = "disproportionate" if correct-direction protection exists but is materially
+narrower than the opposing party's framework.
+
+verdict = "mismatch_confirmed" if Q2a = "no" OR Q2b = "disproportionate"
+verdict = "no_mismatch" if Q2a = "yes" AND Q2b in {proportional, not_applicable}
+
+HARD CONSTRAINT: Surface asymmetry. Do not moralize about it. Directional mismatch
+exists when one side has a materially more complete remedial framework than the other
+for comparable default/failure scenarios — not merely because the lease is imperfect.
+
+For each directional candidate, return one verdict object:
+{
+  "candidate_type": "directional_mismatch",
+  "candidate_id": "Dir-01",
+  "lp_ids": ["LP-XX"],
+  "q2a_verdict": "yes | no | unclear",
+  "q2b_verdict": "proportional | disproportionate | not_applicable",
+  "verdict": "mismatch_confirmed | no_mismatch | unclear",
+  "exposed_party": "tenant | landlord | bilateral",
+  "disproportion_summary": "one sentence describing the imbalance if confirmed",
+  "confidence": "high | medium | low"
+}
+
+Return a JSON array containing ALL verdict objects from ALL sections. Do not skip any candidate.
 Response must start with [ and end with ]. No markdown fences."""
 
 
 def _build_pass2_user_prompt(
     clusters: List[dict],
+    relief_candidates: List[dict],
+    directional_candidates: List[dict],
     flagged_lps: List[dict],
     perspective: str,
 ) -> str:
-    """Build the Pass 2 compound risk verification prompt."""
-    lines = [
-        f"PERSPECTIVE: {perspective.upper()}",
-        "",
-        f"COMPOUND RISK CANDIDATES ({len(clusters)} — evaluate every one, including those you did not flag in Pass 1).",
-        "",
-    ]
-    for cluster in clusters:
-        cid      = cluster["candidate_id"]
-        pt       = cluster["pattern_type"]
-        lps      = ", ".join(cluster["involved_lps"])
-        found_by = ", ".join(f"Evaluator {r}" for r in cluster["found_by"])
-        p1r      = cluster.get("pass1_responses", {})
-        any_r    = next(iter(p1r.values()), {})
-        desc     = any_r.get("why_the_combination_matters", "")
-        evidence = any_r.get("evidence_from_lease", "")
+    """Build the Pass 2 combined compound + relief verification prompt."""
+    lines = [f"PERSPECTIVE: {perspective.upper()}", ""]
+
+    if clusters:
         lines += [
-            f"[{cid}] Pattern: {pt} | LPs: {lps}",
-            f"Found by: {found_by}",
-            f"Description: {desc}",
-            f"Evidence: {evidence}",
+            f"SECTION 1 — COMPOUND RISK CANDIDATES ({len(clusters)} — evaluate every one, including those you did not flag in Pass 1).",
             "",
         ]
-    lines.append("Return a JSON array with one verdict object per candidate. Do not skip any.")
+        for cluster in clusters:
+            cid      = cluster["candidate_id"]
+            pt       = cluster["pattern_type"]
+            lps      = ", ".join(cluster["involved_lps"])
+            found_by = ", ".join(f"Evaluator {r}" for r in cluster["found_by"])
+            p1r      = cluster.get("pass1_responses", {})
+            any_r    = next(iter(p1r.values()), {})
+            desc     = any_r.get("why_the_combination_matters", "")
+            evidence = any_r.get("evidence_from_lease", "")
+            lines += [
+                f"[{cid}] Pattern: {pt} | LPs: {lps}",
+                f"Found by: {found_by}",
+                f"Description: {desc}",
+                f"Evidence: {evidence}",
+                "",
+            ]
+
+    if relief_candidates:
+        lines += [
+            f"SECTION 2 — CROSS-COVERAGE RELIEF CANDIDATES ({len(relief_candidates)} — evaluate every one).",
+            "Verify both: (1) does the cross-coverage exist? (2) does it run the correct direction?",
+            "",
+        ]
+        for rc in relief_candidates:
+            cid      = rc["candidate_id"]
+            lp_id    = rc["lp_id"]
+            lp_name  = rc["lp_name"]
+            found_by = ", ".join(f"Evaluator {r}" for r in rc["found_by"])
+            p1_any   = next(iter(rc.get("pass1_responses", {}).values()), {})
+            section  = p1_any.get("relief_section", "")
+            reason   = p1_any.get("q1_reasoning", "")
+            lines += [
+                f"[{cid}] LP: {lp_id} ({lp_name})",
+                f"Found by: {found_by}",
+                f"Proposed relief section: {section or '(see reasoning)'}",
+                f"Pass 1 reasoning: {reason}",
+                "",
+            ]
+
+    if directional_candidates:
+        lines += [
+            f"SECTION 3 — DIRECTIONAL MISMATCH CANDIDATES ({len(directional_candidates)} — evaluate every one).",
+            "Use Q2a/Q2b structure. Do not assume the Pass 1 finding is correct.",
+            "",
+        ]
+        for dc in directional_candidates:
+            cid      = dc["candidate_id"]
+            lp_ids   = ", ".join(dc["lp_ids"])
+            found_by = ", ".join(f"Evaluator {r}" for r in dc["found_by"])
+            p1_any   = next(iter(dc.get("pass1_responses", {}).values()), {})
+            opp      = dc.get("opposing_framework_summary") or p1_any.get("opposing_framework_summary", "")
+            weak     = dc.get("weaker_framework_summary") or p1_any.get("weaker_framework_summary", "")
+            why      = dc.get("why_mismatch_matters") or p1_any.get("why_mismatch_matters", "")
+            lines += [
+                f"[{cid}] LPs: {lp_ids}",
+                f"Found by: {found_by}",
+                f"Stronger framework: {opp}",
+                f"Weaker framework: {weak}",
+                f"Why it matters: {why}",
+                "",
+            ]
+
+    lines.append("Return a JSON array with one verdict object per candidate from ALL sections. Do not skip any.")
     return "\n".join(lines)
 
 
@@ -808,8 +1031,10 @@ def _build_pass2_verified_findings(
         present_count    = sum(1 for v in verdicts_by_role.values() if v == "compound_risk_present")
         total_evaluators = len(pass2_by_role)
 
-        if total_evaluators > 0 and present_count == 0:
-            continue  # All three looked at it and said no — drop
+        if present_count == 0:
+            # 0/3: either all said no, or Pass 2 failed entirely.
+            # Either way — governed rejection, goes to audit trail only, not user output.
+            continue
 
         # Best detail for headline/evidence: prefer a "present" response
         best = next((ev_details[r] for r in verdicts_by_role if verdicts_by_role[r] == "compound_risk_present"),
@@ -849,19 +1074,332 @@ def _build_pass2_verified_findings(
     return findings
 
 
+# ── Compound risk dedup helpers ───────────────────────────────────────────────
+
+def _compound_signature(finding: dict) -> tuple:
+    """Normalized identity key for compound risk dedup.
+
+    Pass 2 CRX findings are canonical. If a consolidator CPF carries the same
+    (sorted_lps, pattern_type, risk_mechanism, affected_party), the CPF is dropped.
+    """
+    lps = tuple(sorted(
+        finding.get("involved_lps") or finding.get("implicated_lps") or []
+    ))
+    return (
+        lps,
+        finding.get("pattern_type", ""),
+        finding.get("risk_mechanism", ""),
+        finding.get("affected_party", ""),
+    )
+
+
+# ── Directionality normalization ───────────────────────────────────────────────
+
+# Maps (lp_id, finding_type) → correct directionality label.
+# Perspective must not flip the factual label of who is exposed.
+_DIRECTIONALITY_MAP: Dict[tuple, str] = {
+    ("LP-27", "directional_mismatch"): "tenant_unprotected",
+}
+
+# Maps (lp_id, finding_type) → correct affected_party label.
+_AFFECTED_PARTY_MAP: Dict[tuple, str] = {
+    ("LP-27", "directional_mismatch"): "tenant",
+}
+
+
+def _normalize_directionality(findings: List[dict]) -> List[dict]:
+    """Enforce factually correct directionality and affected_party for known LP patterns."""
+    for f in findings:
+        ftype = f.get("finding_type", "")
+        lps = tuple(sorted(f.get("implicated_lps") or []))
+        for lp in lps:
+            dir_key = (lp, ftype)
+            if dir_key in _DIRECTIONALITY_MAP:
+                f["directionality"] = _DIRECTIONALITY_MAP[dir_key]
+            if dir_key in _AFFECTED_PARTY_MAP:
+                f["affected_party"] = _AFFECTED_PARTY_MAP[dir_key]
+    return findings
+
+
+# ── Cross-coverage relief helpers ─────────────────────────────────────────────
+
+def _collect_relief_candidates(evaluator_outputs: Dict[str, dict]) -> List[dict]:
+    """Collect LP IDs where any Pass 1 evaluator returned cross_coverage_confirmed."""
+    by_lp: Dict[str, dict] = {}
+    for role, output in evaluator_outputs.items():
+        if not output.get("completed"):
+            continue
+        result = output.get("result") or {}
+        for cf in (result.get("cross_coverage_findings") or []):
+            fv = cf.get("final_verdict") or cf.get("q1_verdict") or ""
+            if fv != "cross_coverage_confirmed":
+                continue
+            lp_id = cf.get("lp_id", "")
+            if not lp_id:
+                continue
+            if lp_id not in by_lp:
+                by_lp[lp_id] = {
+                    "lp_id":          lp_id,
+                    "lp_name":        cf.get("lp_name", lp_id),
+                    "found_by":       [],
+                    "pass1_responses": {},
+                }
+            by_lp[lp_id]["found_by"].append(role)
+            by_lp[lp_id]["pass1_responses"][role] = cf
+
+    result: List[dict] = []
+    for i, (_, data) in enumerate(by_lp.items()):
+        data["candidate_id"] = f"RLF-{i + 1:02d}"
+        result.append(data)
+    return result
+
+
+def _build_pass2_relief_findings(
+    relief_candidates: List[dict],
+    pass2_outputs: Dict[str, dict],
+) -> List[dict]:
+    """Build cross_coverage_relief findings from Pass 2 verdicts.
+
+    Agreement rules (never suppress):
+    - 3/3 or 2/3 confirmed + direction_adequate → full relief finding
+    - 1/3 confirmed → minority relief finding (labelled)
+    - 0/3 confirmed → drop
+    - directional_false_positive by any evaluator → flag on finding
+    """
+    # Index relief verdicts by candidate_id per role
+    p2_relief: Dict[str, Dict[str, dict]] = {}
+    for role, output in pass2_outputs.items():
+        if not output.get("completed"):
+            continue
+        p2_relief[role] = {}
+        for v in (output.get("verdicts") or []):
+            if v.get("candidate_type") == "cross_coverage_relief" or (
+                v.get("candidate_id", "").startswith("RLF-")
+            ):
+                cid = v.get("candidate_id", "")
+                if cid:
+                    p2_relief[role][cid] = v
+
+    findings: List[dict] = []
+    for candidate in relief_candidates:
+        cid     = candidate["candidate_id"]
+        lp_id   = candidate["lp_id"]
+        lp_name = candidate["lp_name"]
+
+        verdicts_by_role: Dict[str, str] = {}
+        details_by_role:  Dict[str, dict] = {}
+        for role, by_cid in p2_relief.items():
+            v = by_cid.get(cid, {})
+            verdicts_by_role[role] = v.get("verdict", "unclear")
+            details_by_role[role]  = v
+
+        confirmed = sum(1 for v in verdicts_by_role.values() if v == "cross_coverage_confirmed")
+        dfp_count = sum(1 for v in verdicts_by_role.values() if v == "directional_false_positive")
+        total     = len(p2_relief)
+
+        if confirmed == 0:
+            # 0/3: either all said no, or Pass 2 failed entirely.
+            # Governed rejection — do not surface in user output.
+            continue
+
+        # Best confirmed detail; fall back to any
+        best = next(
+            (details_by_role[r] for r in verdicts_by_role
+             if verdicts_by_role[r] == "cross_coverage_confirmed" and details_by_role[r].get("direction_adequate")),
+            next((details_by_role[r] for r in verdicts_by_role
+                  if verdicts_by_role[r] == "cross_coverage_confirmed"), {})
+        )
+        p1_any = next(iter(candidate.get("pass1_responses", {}).values()), {})
+
+        relief_section    = best.get("relief_section") or p1_any.get("relief_section", "")
+        reason            = best.get("reason") or p1_any.get("q1_reasoning", "")
+        direction         = best.get("direction", "")
+        direction_adequate = best.get("direction_adequate", True)
+
+        ev_verdicts = {r: verdicts_by_role.get(r, "not_reported") for r in ("A", "B", "C")}
+        agreement   = f"{confirmed}-{3 - confirmed}"
+
+        findings.append({
+            "finding_id":        cid,
+            "finding_type":      "cross_coverage_relief",
+            "implicated_lps":    [lp_id],
+            "headline":          f"Relief: {lp_name} substance found in {relief_section or 'another provision'}",
+            "detail":            reason,
+            "cited_sections":    [relief_section] if relief_section else [],
+            "verdict":           "cross_coverage_confirmed",
+            "directionality":    direction or None,
+            "direction_adequate": direction_adequate,
+            "relief_section":    relief_section,
+            "severity":          "INFO",
+            "evaluator_agreement": agreement,
+            "evaluator_verdicts":  ev_verdicts,
+            "directional_false_positive_count": dfp_count,
+        })
+
+    return findings
+
+
+# ── Directional mismatch two-pass helpers ─────────────────────────────────────
+
+def _collect_directional_candidates(evaluator_outputs: Dict[str, dict]) -> List[dict]:
+    """Collect LPs where any Pass 1 evaluator raised mismatch_flag=True.
+
+    Q2a/Q2b data is embedded in cross_coverage_findings entries (not a separate key).
+    """
+    by_sig: Dict[tuple, dict] = {}
+
+    for role, output in evaluator_outputs.items():
+        if not output.get("completed"):
+            continue
+        result = output.get("result") or {}
+        # Q2a/Q2b fields are embedded directly in cross_coverage_findings entries
+        for item in (result.get("cross_coverage_findings") or []):
+            if item.get("mismatch_flag") is not True:
+                continue
+            lp_id  = item.get("lp_id", "")
+            lp_ids = sorted(item.get("lp_ids", [lp_id] if lp_id else []))
+            if not lp_ids:
+                continue
+            sig = tuple(lp_ids)
+            if sig not in by_sig:
+                by_sig[sig] = {
+                    "lp_ids":                    lp_ids,
+                    "found_by":                  [],
+                    "pass1_responses":           {},
+                    "exposed_party":             item.get("exposed_party", ""),
+                    "opposing_framework_summary": item.get("opposing_framework_summary", ""),
+                    "weaker_framework_summary":   item.get("weaker_framework_summary", ""),
+                    "why_mismatch_matters":       item.get("why_mismatch_matters", ""),
+                }
+            by_sig[sig]["found_by"].append(role)
+            by_sig[sig]["pass1_responses"][role] = item
+
+    result: List[dict] = []
+    for i, (_, data) in enumerate(by_sig.items()):
+        data["candidate_id"] = f"Dir-{i + 1:02d}"
+        result.append(data)
+    return result
+
+
+def _build_pass2_directional_findings(
+    directional_candidates: List[dict],
+    pass2_outputs: Dict[str, dict],
+) -> List[dict]:
+    """Build directional_mismatch findings from Pass 2 Q2 verdicts.
+
+    Agreement: 3/3, 2/3, 1/3 mismatch_confirmed → surface.
+    0/3 → governed rejection, suppress.
+    """
+    # Index directional verdicts by candidate_id per role
+    p2_dir: Dict[str, Dict[str, dict]] = {}
+    for role, output in pass2_outputs.items():
+        if not output.get("completed"):
+            continue
+        p2_dir[role] = {}
+        for v in (output.get("verdicts") or []):
+            if v.get("candidate_type") == "directional_mismatch" or (
+                (v.get("candidate_id") or "").startswith("Dir-")
+            ):
+                cid = v.get("candidate_id", "")
+                if cid:
+                    p2_dir[role][cid] = v
+
+    findings: List[dict] = []
+    for candidate in directional_candidates:
+        cid    = candidate["candidate_id"]
+        lp_ids = candidate["lp_ids"]
+
+        verdicts_by_role: Dict[str, str] = {}
+        details_by_role:  Dict[str, dict] = {}
+        for role, by_cid in p2_dir.items():
+            v = by_cid.get(cid, {})
+            verdicts_by_role[role] = v.get("verdict", "unclear")
+            details_by_role[role]  = v
+
+        confirmed = sum(1 for v in verdicts_by_role.values() if v == "mismatch_confirmed")
+        if confirmed == 0:
+            continue  # Governed rejection
+
+        best = next((details_by_role[r] for r in verdicts_by_role
+                     if verdicts_by_role[r] == "mismatch_confirmed"), {})
+
+        exposed_party = best.get("exposed_party") or candidate.get("exposed_party", "")
+        disproportion = best.get("disproportion_summary") or candidate.get("why_mismatch_matters", "")
+        headline      = (candidate.get("weaker_framework_summary") or
+                         f"Directional mismatch: {', '.join(lp_ids)}")[:160]
+
+        directionality = None
+        ep = (exposed_party or "").lower()
+        if "tenant" in ep:
+            directionality = "tenant_unprotected"
+        elif "landlord" in ep:
+            directionality = "landlord_unprotected"
+
+        ev_verdicts = {r: verdicts_by_role.get(r, "not_reported") for r in ("A", "B", "C")}
+        agreement   = f"{confirmed}-{3 - confirmed}"
+        severity    = "HIGH" if confirmed == 3 else "MEDIUM" if confirmed == 2 else "LOW"
+
+        findings.append({
+            "finding_id":          cid,
+            "finding_type":        "directional_mismatch",
+            "implicated_lps":      lp_ids,
+            "headline":            headline,
+            "detail":              disproportion,
+            "cited_sections":      [],
+            "verdict":             "directional_mismatch",
+            "directionality":      directionality,
+            "severity":            severity,
+            "evaluator_agreement": agreement,
+            "evaluator_verdicts":  ev_verdicts,
+        })
+
+    return _normalize_directionality(findings)
+
+
 _NOT_REPORTED = frozenset({"not_reported", "not_identified", "none", "n/a", "", "unknown"})
 
 
-def _compute_agreement(evaluator_verdicts: dict) -> str:
-    """Count evaluators who produced a substantive finding (not a not_reported variant)."""
+def _compute_agreement(evaluator_verdicts: dict, final_verdict: str = "") -> str:
+    """Count evaluators whose verdict matches the final verdict's semantic group.
+
+    Semantic groups:
+    - positive:  full_coverage_found, cross_coverage_confirmed
+    - partial:   partial_coverage_found
+    - negative:  no_coverage_found, directional_false_positive
+    - compound:  compound_risk_present, compound_risk_confirmed
+
+    Returns "X-Y" where X = matching final_group, Y = non-matching.
+    Example: A=no_coverage, B=no_coverage, C=full_coverage, final=no_coverage → "2-1"
+    """
     if not evaluator_verdicts:
         return "0-3"
-    reported = sum(
-        1 for v in evaluator_verdicts.values()
-        if v and str(v).lower() not in _NOT_REPORTED
-    )
-    not_reported = max(0, 3 - reported)
-    return f"{reported}-{not_reported}"
+
+    def _group(v: str) -> str:
+        v = (v or "").lower()
+        if v in _NOT_REPORTED:
+            return "not_reported"
+        if v in ("full_coverage_found", "cross_coverage_confirmed"):
+            return "positive"
+        if v in ("partial_coverage_found",):
+            return "partial"
+        if v in ("no_coverage_found", "directional_false_positive"):
+            return "negative"
+        if v in ("compound_risk_present", "compound_risk_confirmed"):
+            return "compound"
+        return "other"
+
+    substantive = {role: v for role, v in evaluator_verdicts.items()
+                   if _group(v) != "not_reported"}
+    if not substantive:
+        return "0-3"
+
+    final_group = _group(final_verdict)
+    if final_group in ("not_reported", "other"):
+        # No meaningful final verdict — report substantive count only
+        return f"{len(substantive)}-{max(0, 3 - len(substantive))}"
+
+    matching = sum(1 for v in substantive.values() if _group(v) == final_group)
+    return f"{matching}-{len(substantive) - matching}"
 
 
 def _normalize_findings(
@@ -909,12 +1447,12 @@ def _normalize_findings(
                                 ev_verd[role] = cf.get("final_verdict") or cf.get("q1_verdict", "unknown")
                                 break
 
-        # Recompute evaluator_agreement by counting substantive (non-not_reported) verdicts.
+        # Recompute evaluator_agreement using semantic grouping against the final verdict.
         # _compute_agreement() is authoritative; discard whatever the consolidator reported.
         if ev_verd:
-            ev_ag = _compute_agreement(ev_verd)
+            ev_ag = _compute_agreement(ev_verd, verdict)
 
-        out.append({
+        out_f: dict = {
             "finding_id": finding_id,
             "finding_type": finding_type,
             "implicated_lps": implicated,
@@ -926,7 +1464,13 @@ def _normalize_findings(
             "severity": severity,
             "evaluator_agreement": ev_ag,
             "evaluator_verdicts": ev_verd,
-        })
+        }
+        # Pass through relief/compound-specific fields when present
+        for _extra in ("relief_section", "direction_adequate", "pattern_type",
+                       "affected_party", "directional_false_positive_count"):
+            if f.get(_extra) is not None:
+                out_f[_extra] = f[_extra]
+        out.append(out_f)
 
     return out
 
@@ -978,12 +1522,14 @@ def run_synthesis(
     # ── Build user prompt (same for all evaluators) ──
     user_prompt = _build_evaluator_user_prompt(flagged_lps, full_tenant_text, perspective, coverage_assessment)
 
-    # ── Run three evaluators in parallel ──
+    # ── Run three evaluators in parallel (Pass 1) ──
+    # Eval-B uses gpt-5.4 here — gpt-5.5 fails on long Pass 1 prompt.
+    # Pass 2 uses EVALUATOR_LINEUP (gpt-5.5 succeeds on short cluster prompt).
     evaluator_outputs: Dict[str, dict] = {}
     with ThreadPoolExecutor(max_workers=3) as pool:
         futures = {
             pool.submit(_call_single_evaluator, role, ev_cfg, user_prompt): role
-            for role, ev_cfg in EVALUATOR_LINEUP.items()
+            for role, ev_cfg in _EVALUATOR_LINEUP_PASS1.items()
         }
         for fut in as_completed(futures):
             role = futures[fut]
@@ -1013,20 +1559,38 @@ def run_synthesis(
             },
         }
 
-    # ── Pass 2: cluster compound candidates and verify ──
+    # ── Pass 2: cluster compound candidates + collect relief candidates ──
+    for role, v in evaluator_outputs.items():
+        if v.get("completed"):
+            n_cands = len((v.get("result") or {}).get("candidates") or [])
+            print(f"[synth_debug] Eval-{role}: {n_cands} candidate(s) in candidates[]", flush=True)
+
     pass1_for_clustering = {
         role: {"candidates": (v.get("result") or {}).get("candidates", [])}
         for role, v in evaluator_outputs.items()
         if v.get("completed")
     }
-    clusters = _cluster_compound_candidates(pass1_for_clustering)
-    print(f"[lease_synthesis] Compound clusters: {len(clusters)}", flush=True)
+    clusters               = _cluster_compound_candidates(pass1_for_clustering)
+    relief_candidates      = _collect_relief_candidates(evaluator_outputs)
+    directional_candidates = _collect_directional_candidates(evaluator_outputs)
+    print(
+        f"[lease_synthesis] Compound clusters: {len(clusters)}, "
+        f"Relief candidates: {len(relief_candidates)}, "
+        f"Directional candidates: {len(directional_candidates)}",
+        flush=True,
+    )
 
-    verified_compound_findings: List[dict] = []
-    if clusters:
-        print(f"[lease_synthesis] Pass 2: {len(clusters)} cluster(s), running 3 evaluators...", flush=True)
-        pass2_prompt = _build_pass2_user_prompt(clusters, flagged_lps, perspective)
-        pass2_outputs: Dict[str, dict] = {}
+    verified_compound_findings:    List[dict] = []
+    verified_relief_findings:      List[dict] = []
+    verified_directional_findings: List[dict] = []
+    pass2_outputs: Dict[str, dict] = {}
+
+    if clusters or relief_candidates or directional_candidates:
+        n_items = len(clusters) + len(relief_candidates) + len(directional_candidates)
+        print(f"[lease_synthesis] Pass 2: {n_items} item(s), running 3 evaluators...", flush=True)
+        pass2_prompt = _build_pass2_user_prompt(
+            clusters, relief_candidates, directional_candidates, flagged_lps, perspective
+        )
         with ThreadPoolExecutor(max_workers=3) as pool2:
             p2futures = {
                 pool2.submit(_call_pass2_evaluator, role, ev_cfg, pass2_prompt): role
@@ -1040,10 +1604,17 @@ def run_synthesis(
                     pass2_outputs[role] = {"role": role, "completed": False, "verdicts": [], "error": str(e)}
         p2_done = sum(1 for v in pass2_outputs.values() if v.get("completed"))
         print(f"[lease_synthesis] Pass 2: {p2_done}/3 evaluators completed", flush=True)
-        verified_compound_findings = _build_pass2_verified_findings(clusters, pass2_outputs)
-        print(f"[lease_synthesis] Pass 2: {len(verified_compound_findings)} verified compound finding(s)", flush=True)
+        if clusters:
+            verified_compound_findings = _build_pass2_verified_findings(clusters, pass2_outputs)
+            print(f"[lease_synthesis] Pass 2: {len(verified_compound_findings)} verified compound finding(s)", flush=True)
+        if relief_candidates:
+            verified_relief_findings = _build_pass2_relief_findings(relief_candidates, pass2_outputs)
+            print(f"[lease_synthesis] Pass 2: {len(verified_relief_findings)} verified relief finding(s)", flush=True)
+        if directional_candidates:
+            verified_directional_findings = _build_pass2_directional_findings(directional_candidates, pass2_outputs)
+            print(f"[lease_synthesis] Pass 2: {len(verified_directional_findings)} verified directional finding(s)", flush=True)
     else:
-        print("[lease_synthesis] No compound clusters — Pass 2 skipped", flush=True)
+        print("[lease_synthesis] No candidates — Pass 2 skipped", flush=True)
 
     # ── Consolidation pass ──
     evaluator_raw = {
@@ -1051,7 +1622,11 @@ def run_synthesis(
     }
 
     print("[lease_synthesis] Running consolidation pass...", flush=True)
-    consolidated = _call_consolidator(evaluator_raw, flagged_lps, perspective, verified_compound_findings)
+    consolidated = _call_consolidator(
+        evaluator_raw, flagged_lps, perspective,
+        verified_compound_findings, verified_relief_findings
+        # Note: directional findings are added directly — consolidator handles Q1/Q2 only
+    )
 
     if not consolidated:
         # Fallback: use Evaluator B's output directly if consolidation failed
@@ -1081,23 +1656,70 @@ def run_synthesis(
                 "evaluator_agreement": "1-2",
                 "evaluator_verdicts": {"A": "unknown", "B": final_v, "C": "unknown"},
             })
-        # Add pre-verified compound findings from Pass 2
+        # Add pre-verified compound, relief, and directional findings from Pass 2
         for vcf in verified_compound_findings:
             findings.append(dict(vcf))
+        for vrf in verified_relief_findings:
+            findings.append(dict(vrf))
+        for vdf in verified_directional_findings:
+            findings.append(dict(vdf))
         consolidated = {"cross_provision_findings": findings}
 
     findings = _normalize_findings(consolidated, evaluator_raw)
 
-    # Ensure all verified compound findings appear in the final output.
+    # Ensure all verified compound and relief findings appear in the final output.
     # The consolidator is instructed to include them verbatim, but may not always comply.
     existing_ids = {f.get("finding_id") for f in findings}
     for vcf in verified_compound_findings:
         if vcf.get("finding_id") not in existing_ids:
             findings.append(dict(vcf))
+    for vrf in verified_relief_findings:
+        if vrf.get("finding_id") not in existing_ids:
+            findings.append(dict(vrf))
+    for vdf in verified_directional_findings:
+        if vdf.get("finding_id") not in existing_ids:
+            findings.append(dict(vdf))
+
+    # Dedup: CRX-prefixed Pass 2 findings are canonical compound risk output.
+    # Drop any consolidator compound_risk entries that cover the same normalized signature.
+    crx_signatures = {
+        _compound_signature(f)
+        for f in findings
+        if (f.get("finding_id") or "").startswith("CRX-")
+    }
+    if crx_signatures:
+        pre_dedup = len(findings)
+        findings = [
+            f for f in findings
+            if not (
+                f.get("finding_type") == "compound_risk"
+                and not (f.get("finding_id") or "").startswith("CRX-")
+                and _compound_signature(f) in crx_signatures
+            )
+        ]
+        dropped = pre_dedup - len(findings)
+        if dropped:
+            print(f"[lease_synthesis] Dedup: dropped {dropped} consolidator compound duplicate(s)", flush=True)
+
+    # Normalize directionality and affected_party for known LP-pattern combinations.
+    # Perspective must not flip the factual label of who is exposed.
+    findings = _normalize_directionality(findings)
 
     elapsed = time.time() - start_time
     print(f"[lease_synthesis] Stage 7 complete: {len(findings)} findings in {round(elapsed, 1)}s",
           flush=True)
+
+    # Count actual model calls: each evaluator invocation is 1 call; fallback adds 1 more.
+    def _call_count(outputs: dict) -> int:
+        return sum(1 + (1 if v.get("fallback_used") else 0)
+                   for v in outputs.values() if v.get("model"))
+
+    _pass2_ran = bool(clusters or relief_candidates or directional_candidates)
+    _synth_api_calls = (
+        _call_count(evaluator_outputs)                         # Pass 1
+        + (_call_count(pass2_outputs) if _pass2_ran else 0)   # Pass 2 if it ran
+        + 1                                                    # consolidation minimum
+    )
 
     return {
         "cross_provision_findings": findings,
@@ -1107,6 +1729,7 @@ def run_synthesis(
             "finding_count": len(findings),
             "evaluators_completed": completed_count,
             "elapsed_sec": round(elapsed, 2),
+            "api_calls": _synth_api_calls,
             "models": {
                 role: {
                     "model": v.get("model", ""),

@@ -1228,25 +1228,44 @@ def _generate_combined_synopsis_inner(
         for tr in batch_sorted:
             t_name = _format_tenant_name(tr.get("tenant_file", "Unknown"))
             s = tr.get("summary", {})
-            devs = s.get("deviates", 0)
-            highest = _get_highest_severity(s)
 
-            if s.get("critical", 0) > 0:
-                action = "Immediate"
-            elif s.get("high", 0) > 0:
-                action = "Review"
-            elif devs > 0:
-                action = "Monitor"
+            if is_mode_c:
+                # Mode C: deviates is always 0 in coverage mode — show actual gap count.
+                gap_count = sum(
+                    1 for item in tr.get("coverage_assessment", [])
+                    if _resolve_display(item, perspective_key)["bucket"] == "needs_attention"
+                )
+                synthesis_count = len(tr.get("cross_provision_findings", []))
+                gap_color = "#c2410c" if gap_count > 0 else "#16a34a"
+                gap_str = f"{gap_count} gap{'s' if gap_count != 1 else ''} found"
+                if synthesis_count > 0:
+                    gap_str += f", {synthesis_count} cross-provision finding{'s' if synthesis_count != 1 else ''}"
+                elements.append(Paragraph(
+                    f'{_esc_xml(t_name)}:  '
+                    f'<font color="{gap_color}"><b>{_esc_xml(gap_str)}</b></font>  |  '
+                    f'Coverage analysis complete',
+                    styles["BodyText"],
+                ))
             else:
-                action = "No action"
+                devs = s.get("deviates", 0)
+                highest = _get_highest_severity(s)
 
-            sev_color = _SEV_COLORS.get(highest, "#16a34a")
-            elements.append(Paragraph(
-                f'{_esc_xml(t_name)}:  {devs} deviation{"s" if devs != 1 else ""}  |  '
-                f'<font color="{sev_color}"><b>{_esc_xml(highest)}</b></font>  |  '
-                f'{_esc_xml(action)}',
-                styles["BodyText"],
-            ))
+                if s.get("critical", 0) > 0:
+                    action = "Immediate"
+                elif s.get("high", 0) > 0:
+                    action = "Review"
+                elif devs > 0:
+                    action = "Monitor"
+                else:
+                    action = "No action"
+
+                sev_color = _SEV_COLORS.get(highest, "#16a34a")
+                elements.append(Paragraph(
+                    f'{_esc_xml(t_name)}:  {devs} deviation{"s" if devs != 1 else ""}  |  '
+                    f'<font color="{sev_color}"><b>{_esc_xml(highest)}</b></font>  |  '
+                    f'{_esc_xml(action)}',
+                    styles["BodyText"],
+                ))
 
         elements.append(Spacer(1, 8))
 

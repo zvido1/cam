@@ -1490,7 +1490,9 @@ def run_lease_coverage_only(
             result["cross_provision_findings"] = synthesis_result.get("cross_provision_findings", [])
             result["_stage_data"]["synthesis_meta"] = synthesis_result.get("meta", {})
             cpf_count = len(result["cross_provision_findings"])
-            print(f"[lease_adapter:analyze] Stage 7 complete: {cpf_count} finding(s)", flush=True)
+            synth_calls = synthesis_result.get("meta", {}).get("api_calls", 0)
+            total_api_calls += synth_calls
+            print(f"[lease_adapter:analyze] Stage 7 complete: {cpf_count} finding(s), {synth_calls} model call(s)", flush=True)
         else:
             print("[lease_adapter:analyze] Stage 7: gated (flag off)", flush=True)
     except Exception as _s7_e:

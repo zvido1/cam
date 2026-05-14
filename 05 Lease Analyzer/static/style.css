@@ -12465,6 +12465,49 @@ body.mode-c .card-docview-link {
 .synthesis-panel { max-width: 900px; padding: 1.5rem; }
 .synthesis-intro { margin-bottom: 1.5rem; color: #6b7280; font-size: 0.9rem; }
 .cpf-group { margin-bottom: 2rem; }
+.cpf-root-group {
+    border: 1px solid var(--amber-300, #fcd34d);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+.cpf-root-header {
+    background: var(--amber-50, #fffbeb);
+    padding: 0.6rem 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    border-bottom: 1px solid var(--amber-200, #fde68a);
+}
+.cpf-root-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--amber-700, #b45309);
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+.cpf-root-theme {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+}
+.cpf-root-count {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+.cpf-root-findings {
+    padding: 0.5rem;
+}
+.cpf-root-findings .cpf-card {
+    margin-bottom: 0.4rem;
+    border-left-width: 2px;
+}
+.cpf-root-findings .cpf-card:last-child {
+    margin-bottom: 0;
+}
 .cpf-group-header {
     font-size: 0.85rem;
     font-weight: 700;
@@ -12486,8 +12529,37 @@ body.mode-c .card-docview-link {
     background: #fff;
 }
 .cpf-card.cpf-type-directional_mismatch { border-left: 4px solid #dc2626; }
-.cpf-card.cpf-type-compound_risk        { border-left: 4px solid #d97706; }
-.cpf-card.cpf-type-cross_coverage_gap   { border-left: 4px solid #6b7280; }
+.cpf-card.cpf-type-compound_risk         { border-left: 4px solid #d97706; }
+.cpf-card.cpf-type-cross_coverage_gap    { border-left: 4px solid #6b7280; }
+.cpf-card.cpf-type-cross_coverage_relief {
+    border-left: 4px solid var(--green-500, #22c55e);
+    background: var(--green-50, #f0fdf4);
+}
+.cpf-relief-badge {
+    background: var(--green-100, #dcfce7);
+    color: var(--green-700, #15803d);
+    border: 1px solid var(--green-300, #86efac);
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+.cpf-group-header-relief { color: #166534; }
+.cpf-relief-section { font-size: 0.78rem; color: #166534; margin-top: 0.2rem; }
+.cv-relief-badge {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    color: #15803d;
+    border-radius: 4px;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.cv-relief-badge:hover { background: #dcfce7; }
 .cpf-card-header {
     display: flex;
     align-items: center;
@@ -12593,9 +12665,9 @@ body.mode-c .card-docview-link {
 .nav-item-synthesis { border-left: 3px solid #d97706; }
 
 /* Step 313: CPF agreement badge color variants */
-.cpf-agree-unanimous { background: var(--surface-alt, #f8fafc); color: var(--text-muted, #6b7280); }
+.cpf-agree-unanimous { background: #dcfce7; color: #166534; border-color: #86efac; font-weight: 700; }
 .cpf-agree-majority  { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
-.cpf-agree-minority  { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.cpf-agree-minority  { background: #fff7ed; color: #c2410c; border-color: #fdba74; font-weight: 600; }
 .cpf-agree-none      { background: var(--surface-alt, #f8fafc); color: var(--text-muted, #6b7280); }
 
 /* Step 313: minority-finding context note */
@@ -12630,3 +12702,24 @@ body.mode-c .card-docview-link {
     50%       { opacity: 0.6; }
 }
 .progress-fill--pulsing { animation: progressPulse 1.8s ease-in-out infinite; }
+
+/* Step 332: directional risks collapsed summary line */
+.nav-section-directional { padding: 0.25rem 0.5rem 0.5rem; }
+.nav-directional-summary {
+    display: flex; align-items: center; gap: 0.4rem;
+    width: 100%; padding: 0.4rem 0.6rem;
+    background: #fefce8; border: 1px solid #fde047; border-radius: 5px;
+    cursor: pointer; font-size: 0.75rem; text-align: left;
+}
+.nav-directional-summary:hover { background: #fef9c3; }
+.nav-dir-label { font-weight: 700; color: #713f12; letter-spacing: 0.02em; }
+.nav-dir-count { background: #fbbf24; color: #78350f; font-weight: 700; border-radius: 10px; padding: 0.05rem 0.45rem; font-size: 0.72rem; }
+.nav-dir-arrow { margin-left: auto; color: #92400e; font-weight: 700; font-size: 0.9rem; }
+
+/* Step 331: pre-classified sidebar label */
+.nav-item-conf-preclass { color: #9ca3af; font-style: italic; }
+
+/* Step 331: assessment method label on coverage cards */
+.cv-assess-method { font-size: 0.68rem; padding: 0.1rem 0.35rem; border-radius: 3px; white-space: nowrap; }
+.cv-assess-method-eval    { color: #1e40af; background: #dbeafe; }
+.cv-assess-method-preclass { color: #6b7280; background: #f3f4f6; }

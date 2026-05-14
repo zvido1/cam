@@ -4597,12 +4597,12 @@ function renderModeCAISummaryBar(bar) {
                 covered++;
             } else if (state === "not_applicable") {
                 notApplicable++;
-            } else if (state === "partial" && pclass === "partial_review") {
+            } else if (pclass === "partial_review") {
                 worthReview++;
-            } else {
-                // covered_unfavorable, missing, partial_material, or unknown partial
+            } else if (state === "covered_unfavorable" || pclass === "partial_material" || state === "missing" || state === "broken_xref") {
                 needAttention++;
             }
+            // partial_typical and minor states not counted
         });
     });
 
@@ -4640,7 +4640,7 @@ function renderModeCAISummaryBar(bar) {
             <div class="ai-summary-modec-stats">
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--ok"><strong>${covered}</strong> <span>covered</span></span>
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--attention"><strong>${needAttention}</strong> <span>need attention</span></span>
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--review"><strong>${worthReview}</strong> <span>worth reviewing</span></span>
+                ${worthReview > 0 ? `<span class="ai-summary-modec-stat ai-summary-modec-stat--review"><strong>${worthReview}</strong> <span>worth reviewing</span></span>` : ''}
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${notApplicable}</strong> <span>not applicable</span></span>
                 ${_mcConflictPill}
             </div>
@@ -4678,7 +4678,8 @@ function _heatmapCellStyle(a, viewerPerspective) {
     if (state === "missing")                   return { bg: "#f97316", fg: "#fff", label: "Missing" };
     if (pcls  === "partial_material")          return { bg: "#fbbf24", fg: "#78350f", label: "Partial – Needs Attention" };
     if (pcls  === "partial_review")            return { bg: "#fef08a", fg: "#713f12", label: "Worth Reviewing" };
-    if (state === "covered" || pcls === "partial_typical") return { bg: "#e5e7eb", fg: "#374151", label: "Covered" };
+    if (state === "covered")                return { bg: "#22c55e", fg: "#fff",     label: "Covered" };
+    if (pcls  === "partial_typical")        return { bg: "#e5e7eb", fg: "#374151", label: "Adequate" };
     if (state === "not_applicable")            return { bg: "#9ca3af", fg: "#fff", label: "Not Applicable" };
     return { bg: "#d1d5db", fg: "#6b7280", label: state || "—" };
 }
@@ -13023,13 +13024,14 @@ function renderModeCRunSnapshot(container) {
                 covered++;
             } else if (state === "not_applicable") {
                 na++;
-            } else if (state === "partial" && pclass === "partial_review") {
+            } else if (pclass === "partial_review") {
                 review++;
                 reviewItems.push(a);
-            } else {
+            } else if (state === "covered_unfavorable" || pclass === "partial_material" || state === "missing" || state === "broken_xref") {
                 attention++;
                 attentionItems.push(a);
             }
+            // partial_typical and other minor states are not surfaced in the counts
         });
 
         const total = covered + attention + review + na;
@@ -15233,11 +15235,12 @@ function buildCovToolbar(a, tenantIdx) {
     const pid = a.issue_area_id || '';
     const state = a.coverage_state || '';
     const pcls = a.partial_class || '';
+    const evidSumm = a.evidence_summary || '';
 
-    // Only show full toolbar on high-priority items
+    // Status pills only for high-priority items
     const showStatus = (state === 'covered_unfavorable' || pcls === 'partial_material');
-    const showTools = showStatus || pcls === 'partial_review';
-    if (!showTools) return '';
+    // Audit Trail only when evaluators actually ran (evidence_summary mentions Step 305)
+    const showAuditBtn = evidSumm.includes('Step 305');
 
     const res = _getCovRes(tenantIdx, pid);
     const resStatus = res.status || 'open';
@@ -15277,8 +15280,8 @@ function buildCovToolbar(a, tenantIdx) {
            onclick="window.CAM.openDocviewSummary(${tenantIdx}, '${esc(pid)}'); return false;">Lease Summary</a>` : ''}
         <a class="card-docview-link card-docview-link--btn" href="#"
            onclick="window.CAM.jumpToDocview('${esc(pid)}'); return false;">${docLabel}</a>
-        <a class="card-audit-link card-audit-link--btn" href="#"
-           onclick="window.CAM.jumpToAuditProvision(${tenantIdx}, '${esc(pid)}'); return false;">CAM Audit Trail</a>
+        ${showAuditBtn ? `<a class="card-audit-link card-audit-link--btn" href="#"
+           onclick="window.CAM.jumpToAuditProvision(${tenantIdx}, '${esc(pid)}'); return false;">CAM Audit Trail</a>` : ''}
     </div>`;
 
     const notesPanel = `<div class="cov-notes-panel res-notes-panel hidden" id="cov-notes-${tenantIdx}-${esc(pid)}">
@@ -15409,6 +15412,11 @@ function renderCoveragePanel() {
         const confidenceBadgeHtml = _covBadgeData
             ? '<span class="cov-conf-label">Confidence:</span><span class="cam-confidence-badge cam-conf-' + _covBadgeData.cssClass + '" title="' + esc(_covBadgeData.label) + '">' + _covBadgeData.dots + ' ' + esc(_covBadgeData.label) + '</span>'
             : '';
+        const _covEvidSumm = a.evidence_summary || '';
+        const _evalCountMatch = _covEvidSumm.match(/(\d+\/\d+)\s+evaluator/);
+        const assessMethodHtml = _covEvidSumm.includes('Step 305')
+            ? '<span class="cv-assess-method cv-assess-method-eval">Assessed by ' + esc(_evalCountMatch ? _evalCountMatch[1] : '') + ' evaluators</span>'
+            : '<span class="cv-assess-method cv-assess-method-preclass">Pre-classified</span>';
         let elementDetailHtml = "";
         if (elementVerdicts.length > 0) {
             const _POSITIVE_VERDICTS = new Set(['explicitly_present', 'implicitly_present', 'covered_by_default_law', 'covered_in_other_LP']);
@@ -15535,8 +15543,12 @@ function renderCoveragePanel() {
         // show the ↔ Synthesis badge that switches to the synthesis tab.
         const _cpfs = (pr && pr.cross_provision_findings) || [];
         const _cpfMatch = _cpfs.find(f => Array.isArray(f.implicated_lps) && f.implicated_lps.includes(pid));
+        const _reliefMatch = _cpfs.find(f => f.finding_type === "cross_coverage_relief" && Array.isArray(f.implicated_lps) && f.implicated_lps.includes(pid));
         const synthBadgeHtml = _cpfMatch
-            ? `<button class="cv-synthesis-badge" title="Appears in Contract Interaction Review: ${esc(_cpfMatch.headline || _cpfMatch.finding_id)}" onclick="event.stopPropagation();if(typeof switchResultsTab==='function'){switchResultsTab('synthesis');setTimeout(function(){var target=document.querySelector('.cpf-card[data-lps*=${JSON.stringify(esc(pid))}]')||document.getElementById('cpf-${esc(_cpfMatch.finding_id.replace(/[^a-zA-Z0-9_-]/g,'_'))}');if(target){target.scrollIntoView({behavior:'smooth',block:'start'});target.classList.add('highlight-flash');setTimeout(function(){target.classList.remove('highlight-flash');},1500);}},150);}" type="button">&#x21D4; Synthesis</button>`
+            ? `<button class="cv-synthesis-badge" title="Appears in Contract Interaction Review: ${esc(_cpfMatch.headline || _cpfMatch.finding_id)}" onclick="event.stopPropagation();window.CAM.jumpToSynthesisFinding('${esc(pid)}','${esc(_cpfMatch.finding_id)}')" type="button">&#x21D4; Synthesis</button>`
+            : "";
+        const reliefBadgeHtml = _reliefMatch
+            ? `<button class="cv-relief-badge" title="${esc(_reliefMatch.headline || 'Substance addressed elsewhere')}" onclick="event.stopPropagation();window.CAM.jumpToSynthesisFinding('${esc(pid)}','${esc(_reliefMatch.finding_id)}')" type="button">&#x2713; Addressed elsewhere</button>`
             : "";
 
         return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
@@ -15545,8 +15557,10 @@ function renderCoveragePanel() {
                 <span class="cv-item-name">${esc(name)}</span>${headlineHtml}
                 <span class="cv-badge ${stateInfo.cls}">${stateInfo.label}</span>
                 ${confidenceBadgeHtml}
+                ${assessMethodHtml}
                 ${pclsBadge}
                 ${synthBadgeHtml}
+                ${reliefBadgeHtml}
             </div>
             ${escalationHtml}
             ${leaseTextHtml}
@@ -15996,7 +16010,12 @@ function _navBuildModeCItem(a, tIdx) {
             ? window.CAMAuditShared.getSidebarConfidenceLabel(_navGovSig)
             : _navConfFallback[_navGovSig] || null)
         : null;
-    var confLabelHtml = _navConfLabel ? '<span class="nav-item-conf">' + esc(_navConfLabel) + '</span>' : '';
+    var _navEvidSumm = a.evidence_summary || '';
+    var confLabelHtml = _navConfLabel
+        ? '<span class="nav-item-conf">' + esc(_navConfLabel) + '</span>'
+        : (!_navGovSig && !_navEvidSumm.includes('Step 305'))
+            ? '<span class="nav-item-conf nav-item-conf-preclass">Extraction-based</span>'
+            : '';
     return '<button class="nav-item-enriched" data-pid="' + esc(pid) + '" data-tenant-idx="' + tIdx + '" data-mode="c" title="' + esc(stmt || name) + '">'
          +   '<div class="nav-item-top">'
          +     '<span class="nav-item-id">' + esc(pid) + '</span>'
@@ -16016,14 +16035,37 @@ function _synthAgreementBadge(agreementStr) {
                : reported === 2 ? "cpf-agree-majority"
                : reported === 1 ? "cpf-agree-minority"
                : "cpf-agree-none";
-    const label = reported === 3 ? "3 of 3 evaluators"
+    const label = reported === 3 ? "✓ Unanimous · 3 of 3"
                 : reported === 2 ? "2 of 3 evaluators"
-                : reported === 1 ? "1 of 3 evaluators"
+                : reported === 1 ? "⚠ Minority · 1 of 3"
                 : "Not confirmed";
     return `<span class="cpf-agree-badge ${cls}" title="Evaluator agreement">${esc(label)}</span>`;
 }
 
 // Step 311: render the Contract Interaction Review tab from cross_provision_findings[].
+function _detectRootCauseGroups(compoundFindings) {
+    const lpCount = {};
+    compoundFindings.forEach(function(f) {
+        (f.implicated_lps || []).forEach(function(lp) {
+            lpCount[lp] = (lpCount[lp] || 0) + 1;
+        });
+    });
+    return Object.entries(lpCount)
+        .filter(function(e) { return e[1] >= 2; })
+        .sort(function(a, b) { return b[1] - a[1]; })
+        .map(function(e) { return e[0]; });
+}
+
+function _rootCauseLabel(rootLpId, coverageAssessment) {
+    const lp = (coverageAssessment || []).find(function(a) { return a.issue_area_id === rootLpId; });
+    if (!lp) return rootLpId + " absent";
+    const name  = lp.issue_area_name || rootLpId;
+    const state = lp.coverage_state;
+    if (state === "missing")  return "No " + name.toLowerCase() + " framework";
+    if (state === "partial")  return "Incomplete " + name.toLowerCase() + " framework";
+    return name + " gap";
+}
+
 function renderSynthesisPanel() {
     const tab = $("#synthesis-tab");
     if (!tab) return;
@@ -16039,11 +16081,17 @@ function renderSynthesisPanel() {
     }
 
     const FTYPE_LABEL = {
-        "cross_coverage_gap":   "Cross-Coverage Gap",
-        "directional_mismatch": "Directional Mismatch",
-        "compound_risk":        "Compound Risk",
+        "cross_coverage_gap":    "Cross-Coverage Gap",
+        "directional_mismatch":  "Directional Mismatch",
+        "compound_risk":         "Compound Risk",
+        "cross_coverage_relief": "Cross-Coverage Relief",
     };
-    const SEV_CLS = { "HIGH": "cv-badge-missing", "MEDIUM": "cv-badge-partial", "LOW": "cv-badge-ok" };
+    const SEV_CLS = {
+        "HIGH":   "cv-badge-missing",
+        "MEDIUM": "cv-badge-partial",
+        "LOW":    "cv-badge-ok",
+        "INFO":   "cpf-relief-badge",
+    };
 
     function buildCpfCard(f) {
         const fid      = f.finding_id || "";
@@ -16080,6 +16128,10 @@ function renderSynthesisPanel() {
             ? `<div class="cpf-directionality"><span class="cpf-dir-label">Directionality:</span> ${esc(f.directionality.replace(/_/g, " "))}</div>`
             : "";
 
+        const reliefNote = (ftype === "cross_coverage_relief" && f.relief_section)
+            ? `<div class="cpf-relief-section"><span class="cpf-dir-label">Found in:</span> ${esc(f.relief_section)}</div>`
+            : "";
+
         return `<div class="cpf-card cpf-type-${esc(ftype)}" id="cpf-${esc(safeId)}" data-finding-id="${esc(fid)}" data-lps="${esc(implicated.join(','))}">
             <div class="cpf-card-header">
                 <span class="cpf-finding-id">${esc(fid)}</span>
@@ -16091,12 +16143,14 @@ function renderSynthesisPanel() {
             ${headline ? `<div class="cpf-headline">${esc(headline)}</div>` : ""}
             ${detail   ? `<div class="cpf-detail">${esc(detail)}</div>` : ""}
             ${dirNote}
+            ${reliefNote}
             ${citedHtml}
             ${evLines ? `<div class="cpf-ev-row">${evLines}</div>` : ""}
             ${minorityNote}
         </div>`;
     }
 
+    const reliefs    = cpfs.filter(f => f.finding_type === "cross_coverage_relief");
     const mismatches = cpfs.filter(f => f.finding_type === "directional_mismatch");
     const compounds  = cpfs.filter(f => f.finding_type === "compound_risk");
     const gaps       = cpfs.filter(f => f.finding_type === "cross_coverage_gap");
@@ -16104,6 +16158,11 @@ function renderSynthesisPanel() {
     let html = '<div class="synthesis-panel">';
     html += '<div class="synthesis-intro"><p>This review asks three questions across the full contract: where is the missing protection actually hiding, which direction does it run, and what happens when multiple gaps combine?</p></div>';
 
+    if (reliefs.length > 0) {
+        html += '<div class="cpf-group cpf-group-relief"><div class="cpf-group-header cpf-group-header-relief">Cross-Coverage Relief <span class="nav-section-count">' + reliefs.length + '</span></div>';
+        reliefs.forEach(function(f) { html += buildCpfCard(f); });
+        html += '</div>';
+    }
     if (mismatches.length > 0) {
         html += '<div class="cpf-group"><div class="cpf-group-header">Directional Mismatches <span class="nav-section-count">' + mismatches.length + '</span></div>';
         mismatches.forEach(f => { html += buildCpfCard(f); });
@@ -16111,7 +16170,33 @@ function renderSynthesisPanel() {
     }
     if (compounds.length > 0) {
         html += '<div class="cpf-group"><div class="cpf-group-header">Compound Risks <span class="nav-section-count">' + compounds.length + '</span></div>';
-        compounds.forEach(f => { html += buildCpfCard(f); });
+        const rootCauses = _detectRootCauseGroups(compounds);
+        const coverageAssessment = (pr && pr.coverage_assessment) || [];
+        if (rootCauses.length > 0 && compounds.length >= 2) {
+            var renderedIds = {};
+            rootCauses.forEach(function(rootLp) {
+                var grouped = compounds.filter(function(f) {
+                    return (f.implicated_lps || []).indexOf(rootLp) !== -1;
+                });
+                grouped.forEach(function(f) { renderedIds[f.finding_id || ""] = true; });
+                var label = esc(_rootCauseLabel(rootLp, coverageAssessment));
+                html += '<div class="cpf-root-group">';
+                html += '<div class="cpf-root-header">'
+                    + '<span class="cpf-root-label">ROOT EXPOSURE</span>'
+                    + '<span class="cpf-root-theme">' + label + '</span>'
+                    + '<span class="cpf-root-count">' + grouped.length + ' compound risk finding' + (grouped.length !== 1 ? 's' : '') + '</span>'
+                    + '</div>';
+                html += '<div class="cpf-root-findings">';
+                grouped.forEach(function(f) { html += buildCpfCard(f); });
+                html += '</div></div>';
+            });
+            // Render any compound findings not captured by a root cause group
+            compounds.forEach(function(f) {
+                if (!renderedIds[f.finding_id || ""]) { html += buildCpfCard(f); }
+            });
+        } else {
+            compounds.forEach(function(f) { html += buildCpfCard(f); });
+        }
         html += '</div>';
     }
     if (gaps.length > 0) {
@@ -16126,6 +16211,33 @@ function renderSynthesisPanel() {
 
 window.CAM.renderSynthesisPanel = renderSynthesisPanel;
 
+// Jump to a CPF card in the synthesis tab.
+// Called from ↔ Synthesis badge onclick — extracted to avoid double-quote
+// collision between the HTML onclick attribute delimiter and the CSS
+// attribute selector value (JSON.stringify produced "LP-27" which broke
+// the outer onclick="..." delimiters).
+window.CAM.jumpToSynthesisFinding = function(pid, findingId) {
+    if (typeof switchResultsTab !== 'function') return;
+    switchResultsTab('synthesis');
+    // renderSynthesisPanel() runs synchronously inside switchResultsTab.
+    // requestAnimationFrame waits for the browser to paint before scrolling.
+    requestAnimationFrame(function() {
+        var target = null;
+        if (pid) {
+            target = document.querySelector('.cpf-card[data-lps*="' + pid + '"]');
+        }
+        if (!target && findingId) {
+            var safeId = findingId.replace(/[^a-zA-Z0-9_-]/g, '_');
+            target = document.getElementById('cpf-' + safeId);
+        }
+        if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            target.classList.add('highlight-flash');
+            setTimeout(function() { target.classList.remove('highlight-flash'); }, 1500);
+        }
+    });
+};
+
 // Step 311: sidebar item builder for synthesis findings (cross_provision_findings).
 // Clicking opens the synthesis tab and scrolls to the relevant CPF card.
 function _navBuildSynthesisItem(f, tIdx) {
@@ -16134,7 +16246,9 @@ function _navBuildSynthesisItem(f, tIdx) {
     const hl     = (f.headline || fid).trim();
     const sev    = (f.severity || "HIGH").toUpperCase();
     const sevCls = sev === "HIGH" ? "nav-badge-high" : sev === "MEDIUM" ? "nav-badge-medium" : "nav-badge-low";
-    const label  = "[SYNTHESIS — " + sev + "]";
+    const label  = f.finding_type === 'compound_risk'        ? 'COMPOUND RISK'
+                 : f.finding_type === 'cross_coverage_relief' ? 'RELIEF'
+                 : "[SYNTHESIS — " + sev + "]";
     const truncHl = _navTruncate(hl, 160);
     const safeId  = fid.replace(/[^a-zA-Z0-9_-]/g, '_');
     return '<button class="nav-item-enriched nav-item-synthesis" data-cpf-id="' + esc(fid) + '" data-tenant-idx="' + tIdx + '" data-mode="synthesis" title="' + esc(hl) + '"'
@@ -16230,18 +16344,34 @@ function renderNavSidebar() {
             }
             // Step 311/315: HIGH synthesis findings in sidebar — after Needs Attention, before Worth Reviewing.
             // Drop single-LP cross_coverage_gap entries whose LP is already in Needs Attention (redundant).
+            // Step 332: Tier 1 (compound_risk + cross_coverage_relief) → individual items with COMPOUND RISK badge.
+            //           Tier 2 (directional_mismatch) → single clickable summary line → Contract Interaction Review.
             const _needsAttnIds = new Set(needsAttention.map(a => a.issue_area_id));
             const cpfsFiltered = cpfs.filter(f => {
-                if (f.finding_type !== 'cross_coverage_gap') return true; // always keep directional/compound
+                if (f.finding_type !== 'cross_coverage_gap') return true;
                 const lps = f.implicated_lps || [];
-                if (lps.length === 1 && _needsAttnIds.has(lps[0])) return false; // already surfaced
+                if (lps.length === 1 && _needsAttnIds.has(lps[0])) return false;
                 return true;
             });
-            if (cpfsFiltered.length > 0) {
+            const _tier1 = cpfsFiltered.filter(f => f.finding_type === 'compound_risk' || f.finding_type === 'cross_coverage_relief');
+            const _directionals = cpfsFiltered.filter(f => f.finding_type === 'directional_mismatch');
+            if (_tier1.length > 0) {
                 html += '<div class="nav-section nav-section-synthesis">'
-                     +   '<div class="nav-section-header">Synthesis — HIGH <span class="nav-section-count">' + cpfsFiltered.length + '</span></div>';
-                cpfsFiltered.forEach(f => { html += _navBuildSynthesisItem(f, tIdx); });
+                     +   '<div class="nav-section-header">Compound Risk <span class="nav-section-count">' + _tier1.length + '</span></div>';
+                _tier1.forEach(f => { html += _navBuildSynthesisItem(f, tIdx); });
                 html += '</div>';
+            }
+            if (_directionals.length > 0) {
+                html += '<div class="nav-section nav-section-directional">'
+                     +   '<button class="nav-directional-summary" type="button"'
+                     +   ' onclick="(function(){'
+                     +     'if(typeof switchResultsTab===\'function\')switchResultsTab(\'synthesis\');'
+                     +   '})()">'
+                     +     '<span class="nav-dir-label">DIRECTIONAL RISKS</span>'
+                     +     '<span class="nav-dir-count">' + _directionals.length + '</span>'
+                     +     '<span class="nav-dir-arrow">→</span>'
+                     +   '</button>'
+                     + '</div>';
             }
             if (worthReviewing.length > 0) {
                 html += '<div class="nav-section nav-section-review">'
