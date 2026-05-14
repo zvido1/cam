@@ -4710,20 +4710,34 @@ function renderProvisionHeatmap() {
         const map = {};
         ca.forEach(function(a) { map[a.issue_area_id] = a; });
 
+        // Step 333: build directional mismatch index: LP id → description for badge
+        const dirMap = {};
+        ((tenant.results.cross_provision_findings) || []).forEach(function(f) {
+            if (f.finding_type !== 'directional_mismatch') return;
+            (f.implicated_lps || []).forEach(function(lpId) {
+                if (!dirMap[lpId]) dirMap[lpId] = f.detail || f.headline || "Directional mismatch";
+            });
+        });
+
         const labelHtml = filename
             ? `<div class="provision-heatmap-label">${esc(filename)}</div>`
             : "";
 
         const cellsHtml = _HEATMAP_LP_IDS.map(function(pid) {
             const a = map[pid];
+            const dirDesc = dirMap[pid];
+            // Step 333: amber arrow badge when LP has a directional_mismatch finding
+            const dirBadge = dirDesc
+                ? `<span class="heatmap-dir-badge" title="${esc(dirDesc)}">&#x2195;</span>`
+                : "";
             if (!a) {
-                return `<div class="provision-heatmap-cell" style="background:#d1d5db;color:#9ca3af;" title="${esc(pid)}">${pid.replace("LP-","")}</div>`;
+                return `<div class="provision-heatmap-cell" style="background:#d1d5db;color:#9ca3af;position:relative;" title="${esc(pid)}">${pid.replace("LP-","")}${dirBadge}</div>`;
             }
             const s = _heatmapCellStyle(a, viewerPerspective);
             const name = a.issue_area_name || pid;
             const tip  = `${esc(pid)} — ${esc(name)} — ${esc(s.label)}`;
             const num  = pid.replace("LP-","");
-            return `<div class="provision-heatmap-cell" style="background:${s.bg};color:${s.fg};" title="${tip}" onclick="window.CAM.jumpHeatmapCell(${tIdx},'${esc(pid)}')">${num}</div>`;
+            return `<div class="provision-heatmap-cell" style="background:${s.bg};color:${s.fg};position:relative;" title="${tip}" onclick="window.CAM.jumpHeatmapCell(${tIdx},'${esc(pid)}')">${num}${dirBadge}</div>`;
         }).join("");
 
         html += `<div class="provision-heatmap-contract">${labelHtml}<div class="provision-heatmap-row">${cellsHtml}</div></div>`;
@@ -16344,8 +16358,9 @@ function renderNavSidebar() {
             }
             // Step 311/315: HIGH synthesis findings in sidebar — after Needs Attention, before Worth Reviewing.
             // Drop single-LP cross_coverage_gap entries whose LP is already in Needs Attention (redundant).
-            // Step 332: Tier 1 (compound_risk + cross_coverage_relief) → individual items with COMPOUND RISK badge.
-            //           Tier 2 (directional_mismatch) → single clickable summary line → Contract Interaction Review.
+            // Step 332: Tier 1 → individual items; Tier 2 → single summary line.
+            // Step 333: split compound_risk and cross_coverage_relief into separate sections so
+            // the Compound Risk count matches the backend cluster count (not inflated by relief items).
             const _needsAttnIds = new Set(needsAttention.map(a => a.issue_area_id));
             const cpfsFiltered = cpfs.filter(f => {
                 if (f.finding_type !== 'cross_coverage_gap') return true;
@@ -16353,20 +16368,37 @@ function renderNavSidebar() {
                 if (lps.length === 1 && _needsAttnIds.has(lps[0])) return false;
                 return true;
             });
-            const _tier1 = cpfsFiltered.filter(f => f.finding_type === 'compound_risk' || f.finding_type === 'cross_coverage_relief');
+            const _compounds   = cpfsFiltered.filter(f => f.finding_type === 'compound_risk');
+            const _reliefItems = cpfsFiltered.filter(f => f.finding_type === 'cross_coverage_relief');
             const _directionals = cpfsFiltered.filter(f => f.finding_type === 'directional_mismatch');
-            if (_tier1.length > 0) {
+            if (_compounds.length > 0) {
                 html += '<div class="nav-section nav-section-synthesis">'
-                     +   '<div class="nav-section-header">Compound Risk <span class="nav-section-count">' + _tier1.length + '</span></div>';
-                _tier1.forEach(f => { html += _navBuildSynthesisItem(f, tIdx); });
+                     +   '<div class="nav-section-header">Compound Risk <span class="nav-section-count">' + _compounds.length + '</span></div>';
+                _compounds.forEach(f => { html += _navBuildSynthesisItem(f, tIdx); });
+                html += '</div>';
+            }
+            if (_reliefItems.length > 0) {
+                html += '<div class="nav-section nav-section-synthesis">'
+                     +   '<div class="nav-section-header">Coverage Relief <span class="nav-section-count">' + _reliefItems.length + '</span></div>';
+                _reliefItems.forEach(f => { html += _navBuildSynthesisItem(f, tIdx); });
                 html += '</div>';
             }
             if (_directionals.length > 0) {
+                // Step 333: mirror _navBuildSynthesisItem pattern — openContractDetail first,
+                // then switchResultsTab. Without the openContractDetail call, switchResultsTab
+                // hits the contractDetailOpen guard and falls through to showNoContractPlaceholder.
                 html += '<div class="nav-section nav-section-directional">'
                      +   '<button class="nav-directional-summary" type="button"'
-                     +   ' onclick="(function(){'
-                     +     'if(typeof switchResultsTab===\'function\')switchResultsTab(\'synthesis\');'
-                     +   '})()">'
+                     +   ' data-tenant-idx="' + tIdx + '"'
+                     +   ' onclick="(function(btn){'
+                     +     'var ti=parseInt(btn.dataset.tenantIdx,10);'
+                     +     'if(!isNaN(ti)&&ti!==currentTenantIndex){currentTenantIndex=ti;}'
+                     +     'if(typeof openContractDetail===\'function\'){'
+                     +       'openContractDetail(isNaN(ti)?0:ti).then(function(){if(typeof switchResultsTab===\'function\')switchResultsTab(\'synthesis\');});'
+                     +     '}else if(typeof switchResultsTab===\'function\'){'
+                     +       'switchResultsTab(\'synthesis\');'
+                     +     '}'
+                     +   '})(this)">'
                      +     '<span class="nav-dir-label">DIRECTIONAL RISKS</span>'
                      +     '<span class="nav-dir-count">' + _directionals.length + '</span>'
                      +     '<span class="nav-dir-arrow">→</span>'
