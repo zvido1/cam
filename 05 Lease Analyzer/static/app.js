@@ -13231,67 +13231,76 @@ function renderModeCRunSnapshot(container) {
         return;
     }
 
-    // Build per-tenant coverage rollup
+    // Step 340: Build per-tenant risk triage summary using deriveProvisionRiskLevel().
+    // cross_provision_findings and perspective are now included so the card tells
+    // the same story as the Risk Map \u2014 coverage_state alone was insufficient.
     const _covRes = window._covResStateRef || {};
-    const tenantData = tenants.map(function(t, i) {
-        const ca = (t && t.results && t.results.coverage_assessment) || [];
-        let covered = 0, attention = 0, review = 0, na = 0;
-        const attentionItems = [];
-        const reviewItems = [];
+    const _cardPerspective = getJobPerspective();
 
+    // Priority order for top risk driver sorting.
+    function _driverPriority(reason) {
+        if (reason === 'HIGH compound risk') return 4;
+        if (reason === '3-0 adverse directional mismatch') return 3;
+        if (reason === 'Missing provision') return 2;
+        return 1;
+    }
+
+    const tenantData = tenants.map(function(t, i) {
+        const ca    = (t && t.results && t.results.coverage_assessment) || [];
+        const cpfs  = (t && t.results && t.results.cross_provision_findings) || [];
+
+        // Derive risk levels for every LP.
+        let riskRed = 0, riskAmber = 0, riskGreen = 0, riskGray = 0;
+        const redLps = [];
         ca.forEach(function(a) {
-            const state = a.coverage_state;
-            const pclass = a.partial_class;
-            if (state === "covered") {
-                covered++;
-            } else if (state === "not_applicable") {
-                na++;
-            } else if (pclass === "partial_review") {
-                review++;
-                reviewItems.push(a);
-            } else if (state === "covered_unfavorable" || pclass === "partial_material" || state === "missing" || state === "broken_xref") {
-                attention++;
-                attentionItems.push(a);
-            }
-            // partial_typical and other minor states are not surfaced in the counts
+            const risk = deriveProvisionRiskLevel(a, cpfs, _cardPerspective);
+            if (risk.risk_level === 'red')        { riskRed++;   redLps.push({ a: a, risk: risk }); }
+            else if (risk.risk_level === 'amber') { riskAmber++; }
+            else if (risk.risk_level === 'green') { riskGreen++; }
+            else                                 { riskGray++;  }
         });
 
-        const total = covered + attention + review + na;
+        // Top risk drivers: top 5 RED LPs ranked by dominant signal.
+        redLps.sort(function(x, y) {
+            return _driverPriority(y.risk.dominant_reason) - _driverPriority(x.risk.dominant_reason);
+        });
+        const topDrivers = redLps.slice(0, 5);
+
+        // Coverage gaps: missing LPs.
+        const coverageGaps = ca.filter(function(a) { return a.coverage_state === 'missing'; });
+
+        // Secondary finding counts.
+        const compoundCount = cpfs.filter(function(f) { return f.finding_type === 'compound_risk'; }).length;
+        const dirCount      = cpfs.filter(function(f) { return f.finding_type === 'directional_mismatch'; }).length;
+
         const name = formatTenantName(t.filename) || ("Lease " + (i + 1));
         let tier, action, actionClass;
-        if (attention > 0) {
-            tier = 'problems';
-            action = '\u26A0 Issues to Address';
-            actionClass = 'action-badge-critical';
-        } else if (review > 0) {
-            tier = 'review';
-            action = '\u00B7 Review Recommended';
-            actionClass = 'action-badge-medium';
-        } else if (total > 0) {
-            tier = 'ok';
-            action = '\u2713 Adequate Coverage';
-            actionClass = 'action-badge-clear';
+        if (riskRed > 0) {
+            tier = 'problems'; action = '\u26A0 Issues to Address'; actionClass = 'action-badge-critical';
+        } else if (riskAmber > 0) {
+            tier = 'review';   action = '\u00B7 Review Recommended'; actionClass = 'action-badge-medium';
+        } else if (riskGreen > 0) {
+            tier = 'ok';       action = '\u2713 Adequate Coverage';  actionClass = 'action-badge-clear';
         } else {
-            tier = 'empty';
-            action = 'No analysis';
-            actionClass = 'res-badge-empty';
+            tier = 'empty';    action = 'No analysis';               actionClass = 'res-badge-empty';
         }
 
         return {
-            t: t, i: i, name: name, total: total,
-            covered: covered, attention: attention, review: review, na: na,
-            attentionItems: attentionItems, reviewItems: reviewItems,
+            t: t, i: i, name: name,
+            riskRed: riskRed, riskAmber: riskAmber, riskGreen: riskGreen, riskGray: riskGray,
+            topDrivers: topDrivers, coverageGaps: coverageGaps,
+            compoundCount: compoundCount, dirCount: dirCount,
             tier: tier, action: action, actionClass: actionClass
         };
     });
 
-    // Sort: attention first, then review, then ok
+    // Sort: problems first (most red LPs), then review (most amber), then ok
     const tierOrder = { problems: 0, review: 1, ok: 2, empty: 3 };
     tenantData.sort(function(a, b) {
         const tDiff = (tierOrder[a.tier] || 99) - (tierOrder[b.tier] || 99);
         if (tDiff !== 0) return tDiff;
-        if (b.attention !== a.attention) return b.attention - a.attention;
-        return b.review - a.review;
+        if (b.riskRed !== a.riskRed) return b.riskRed - a.riskRed;
+        return b.riskAmber - a.riskAmber;
     });
 
     let html = '<div class="snapshot-grid">';
@@ -13299,38 +13308,50 @@ function renderModeCRunSnapshot(container) {
         const activeClass = (snapshotActiveIndex === d.i) ? ' contract-card-active' : '';
         const nameEsc = esc(d.name);
 
+        // Step 340: risk summary pills (reuse existing modec-count color classes)
         const countParts = [];
-        if (d.covered > 0) countParts.push('<span class="modec-count modec-count-ok"><strong>' + d.covered + '</strong> covered</span>');
-        if (d.attention > 0) countParts.push('<span class="modec-count modec-count-attn"><strong>' + d.attention + '</strong> need attention</span>');
-        if (d.review > 0) countParts.push('<span class="modec-count modec-count-review"><strong>' + d.review + '</strong> worth reviewing</span>');
-        if (d.na > 0) countParts.push('<span class="modec-count modec-count-na"><strong>' + d.na + '</strong> N/A</span>');
+        if (d.riskRed > 0)   countParts.push('<span class="modec-count modec-count-attn"><strong>' + d.riskRed + '</strong> high risk</span>');
+        if (d.riskAmber > 0) countParts.push('<span class="modec-count modec-count-review"><strong>' + d.riskAmber + '</strong> review</span>');
+        if (d.riskGreen > 0) countParts.push('<span class="modec-count modec-count-ok"><strong>' + d.riskGreen + '</strong> clean</span>');
+        if (d.riskGray > 0)  countParts.push('<span class="modec-count modec-count-na"><strong>' + d.riskGray + '</strong> N/A</span>');
         const countLine = countParts.length > 0 ? '<div class="modec-count-row">' + countParts.join('') + '</div>' : '';
 
-        let chipRow = '';
-        const issueItems = d.attentionItems.concat(d.reviewItems).slice(0, 6);
-        if (issueItems.length > 0) {
-            chipRow = '<div class="overview-chip-row">';
-            issueItems.forEach(function(a) {
+        // Secondary counts row: compound, directional, coverage gap counts
+        const secParts = [];
+        if (d.compoundCount > 0)         secParts.push(d.compoundCount + ' compound risk' + (d.compoundCount !== 1 ? 's' : ''));
+        if (d.dirCount > 0)              secParts.push(d.dirCount + ' directional finding' + (d.dirCount !== 1 ? 's' : ''));
+        if (d.coverageGaps.length > 0)   secParts.push(d.coverageGaps.length + ' coverage gap' + (d.coverageGaps.length !== 1 ? 's' : ''));
+        const secondaryLine = secParts.length > 0
+            ? '<div class="modec-secondary-row">' + esc(secParts.join(' · ')) + '</div>'
+            : '';
+
+        // Top risk drivers: ranked red LP chips (max 5)
+        let driverHtml = '';
+        if (d.topDrivers.length > 0) {
+            driverHtml = '<div class="modec-risk-drivers"><span class="modec-risk-drivers-label">Top risk drivers:</span><div class="overview-chip-row">';
+            d.topDrivers.forEach(function(item) {
+                const a = item.a;
                 const pid = a.issue_area_id || '';
                 const shortName = (a.issue_area_name || pid).replace(/^LP-\d{2}\s*/, '');
                 const label = pid + (shortName ? ' ' + shortName : '');
-                let chipCls = 'overview-chip-medium';
-                if (a.coverage_state === 'covered_unfavorable' || a.coverage_state === 'missing' || a.partial_class === 'partial_material') {
-                    chipCls = 'overview-chip-high';
-                }
-                const titleStmt = (a.exposure_statement || '').replace(/"/g, '&quot;');
-                chipRow += '<span class="overview-chip ' + chipCls + ' chip-jumpable-modec" data-tenant="' + d.i + '" data-pid="' + esc(pid) + '" title="' + esc(titleStmt) + '">' + esc(label) + '</span>';
+                driverHtml += '<span class="overview-chip overview-chip-risk chip-jumpable-risk"'
+                            + ' data-tenant="' + d.i + '" data-pid="' + esc(pid) + '"'
+                            + ' title="' + esc(item.risk.dominant_reason) + '">'
+                            + esc(label) + '</span>';
             });
-            const remaining = (d.attentionItems.length + d.reviewItems.length) - issueItems.length;
-            if (remaining > 0) {
-                chipRow += '<span class="overview-chip overview-chip-medium">+' + remaining + ' more</span>';
-            }
-            chipRow += '</div>';
+            driverHtml += '</div></div>';
+        }
+
+        // Coverage gaps text line (labeled, not chips)
+        let gapLine = '';
+        if (d.coverageGaps.length > 0) {
+            const gapIds = d.coverageGaps.map(function(a) { return a.issue_area_id || ''; }).filter(Boolean);
+            gapLine = '<div class="modec-gap-line"><span class="modec-gap-label">Coverage gaps:</span> ' + esc(gapIds.join(' · ')) + '</div>';
         }
 
         let bodyMsg = '';
         if (d.tier === 'ok') {
-            bodyMsg = 'All ' + d.total + ' issue area' + (d.total === 1 ? '' : 's') + ' have adequate coverage';
+            bodyMsg = 'All issue areas addressed — no adverse findings';
         } else if (d.tier === 'empty') {
             bodyMsg = 'No coverage analysis available';
         }
@@ -13344,7 +13365,9 @@ function renderModeCRunSnapshot(container) {
             + '</div>'
             + '</div>'
             + countLine
-            + chipRow
+            + secondaryLine
+            + driverHtml
+            + gapLine
             + bodyLine
             + '<div class="snapshot-card-footer">'
             + '<button class="snapshot-open-btn" data-tenant="' + d.i + '">Open Contract \u2192</button>'
@@ -13364,16 +13387,12 @@ function renderModeCRunSnapshot(container) {
         });
     });
 
-    // Wire issue chips: open contract → jump to that issue area on the Coverage tab
-    container.querySelectorAll('.chip-jumpable-modec[data-pid]').forEach(function(chip) {
-        chip.addEventListener('click', async function(e) {
+    // Wire top risk driver chips: open contract (user navigates from there)
+    container.querySelectorAll('.chip-jumpable-risk[data-pid]').forEach(function(chip) {
+        chip.addEventListener('click', function(e) {
             e.stopPropagation();
             var idx = parseInt(chip.dataset.tenant, 10);
-            var pid = chip.dataset.pid;
-            await openContractDetail(idx);
-            if (typeof jumpToCoverageProvision === 'function') {
-                jumpToCoverageProvision(pid);
-            }
+            openContractDetail(idx);
         });
     });
 }

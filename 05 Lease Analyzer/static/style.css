@@ -12087,6 +12087,47 @@ body.mode-c .card-docview-link {
 .modec-count-review  { background: #fffbeb; border-color: #fde68a; color: #92400e; }
 .modec-count-na      { background: #f1f5f9; border-color: #cbd5e1; color: #475569; }
 
+/* Step 340: secondary counts row and risk driver section */
+.modec-secondary-row {
+    font-size: 0.68rem;
+    color: #6b7280;
+    padding: 0 1rem 0.25rem;
+    line-height: 1.4;
+}
+.modec-risk-drivers {
+    padding: 0.25rem 1rem 0;
+}
+.modec-risk-drivers-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.2rem;
+    display: block;
+}
+.modec-risk-drivers .overview-chip-row {
+    padding: 0 0 0.25rem;
+}
+/* Red risk-driver chips matching Risk Map red (#dc2626) */
+.overview-chip-risk {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+.overview-chip-risk:hover {
+    background: #fecaca;
+}
+.modec-gap-line {
+    font-size: 0.68rem;
+    color: #6b7280;
+    padding: 0.1rem 1rem 0.3rem;
+}
+.modec-gap-label {
+    font-weight: 600;
+    color: #4b5563;
+}
+
 /* ══════════════════════════════════════════════════════
    STEP 261 — PERSPECTIVE SELECTOR (upload page)
    Three radios (tenant / landlord / neutral). Must select — no default.
