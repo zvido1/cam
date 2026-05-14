@@ -11421,7 +11421,10 @@ function renderAuditTrail(allTenants) {
     // Aggregate run stats across all tenants
     const _allTenants = (currentResults && currentResults.tenants) || [];
     const _totalProvs   = _allTenants.reduce((s,t) => s + ((t.results && t.results.provisions) ? t.results.provisions.length : 0), 0);
-    const _totalElapsed = _allTenants.reduce((s,t) => s + ((t.results && t.results.elapsed_sec) || 0), 0);
+    // Step 335: use job-level wall-clock elapsed (job_created → job_completed) from the
+    // results payload. Fall back to summing per-tenant pipeline elapsed if not available.
+    const _jobElapsed   = (currentResults && currentResults.elapsed_seconds) || null;
+    const _totalElapsed = _jobElapsed || _allTenants.reduce((s,t) => s + ((t.results && t.results.elapsed_sec) || 0), 0);
     const _totalCalls   = _allTenants.reduce((s,t) => s + ((t.results && t.results.api_calls_total) || 0), 0);
     const _pipeVer      = r.pipeline_version || '';
     const _pipeDomain   = r.pipeline_domain_label || '';
@@ -11470,7 +11473,7 @@ function renderAuditTrail(allTenants) {
         <div class="audit-meta-section">
             <div class="audit-meta-label">LEASE STATS</div>
             <div>${provisions.length} provision${provisions.length !== 1 ? "s" : ""} reviewed</div>
-            <div>${r.elapsed_sec ? fmtDuration(r.elapsed_sec) + " actual runtime" : "Actual runtime unavailable"}</div>
+            <div>${_jobElapsed ? fmtDuration(_jobElapsed) + " actual runtime" : r.elapsed_sec ? fmtDuration(r.elapsed_sec) + " pipeline runtime" : "Actual runtime unavailable"}</div>
             <div>${r.api_calls_total || "—"} model calls</div>
 
         </div>

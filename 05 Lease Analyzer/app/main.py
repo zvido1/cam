@@ -433,7 +433,11 @@ def get_job_results(job_id: str):
     if not any_results_available and job["status"] not in ("completed", "cancelled"):
         raise HTTPException(status_code=404, detail="Job not yet complete")
 
-    return {"job_id": job_id, "tenants": results}
+    # Step 335: wall-clock elapsed from job_created → job_completed.
+    # Distinct from per-tenant elapsed_sec (pipeline only) — this is the number
+    # the user sees as "runtime" in the audit trail.
+    job_elapsed_seconds = job_manager._safe_elapsed_seconds(job.get("started_at"))
+    return {"job_id": job_id, "tenants": results, "elapsed_seconds": job_elapsed_seconds}
 
 
 @app.get("/api/jobs")

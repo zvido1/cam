@@ -1205,6 +1205,7 @@ def run_lease_coverage_only(
     # ── Document Gate Check ──
     print("[lease_adapter:analyze] Gate: classifying document...", flush=True)
     gate_result = check_document_is_lease(tenant_text, cfg)
+    total_api_calls += 1  # Step 335: gate call was not counted before
     print(f"[lease_adapter:analyze] Gate: is_lease={gate_result['is_lease']} in {gate_result['elapsed_sec']}s", flush=True)
     if gate_result.get("abort"):
         raise GateAbortError(gate_result["abort_message"])
@@ -1259,6 +1260,8 @@ def run_lease_coverage_only(
             extraction["provisions"], tenant_text, negative_space_by_provision,
             lp_progress_callback=_lp_progress_cb_c,
         )
+        # Step 335: sum coverage evaluator calls (3 per LP via assess_coverage_305)
+        total_api_calls += sum(a.get("_coverage_api_calls", 0) for a in coverage_assessment)
         coverage_summary = summarize_coverage(coverage_assessment)
         ns_summary = summarize_negative_space(negative_space_by_provision)
         print(
