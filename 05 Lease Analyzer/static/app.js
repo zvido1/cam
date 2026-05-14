@@ -11327,6 +11327,63 @@ function deriveCoverageGovernanceSignal(elementVerdicts) {
     return 'REVIEW_SIGNAL';
 }
 
+// Step 339: pure governance signal helpers for sidebar confidence indicators.
+// These mirror the Mode A infrastructure for compound_risk and directional_mismatch
+// findings, so the sidebar speaks the same 4-dot language as Mode A.
+
+const _SIG_ORDER = { ASSERT_SIGNAL: 0, ASSERT_REVIEW_SIGNAL: 1, REVIEW_SIGNAL: 2, WITHHOLD_SIGNAL: 3 };
+
+function getWeakestGovernanceSignal(signals) {
+    var weakest = null;
+    (signals || []).forEach(function(s) {
+        if (!s) return;
+        if (weakest === null || (_SIG_ORDER[s] ?? 99) > (_SIG_ORDER[weakest] ?? 99)) weakest = s;
+    });
+    return weakest;
+}
+
+// Maps compound finding evaluator agreement to governance signal, then caps by
+// the weakest involved LP confidence.
+function deriveCompoundGovernanceSignal(finding, coverageAssessmentByLp) {
+    var parts   = (finding.evaluator_agreement || '').split('-');
+    var agreed  = parseInt(parts[0], 10) || 0;
+    var baseSignal = agreed >= 3 ? 'ASSERT_SIGNAL'
+                   : agreed === 2 ? 'ASSERT_REVIEW_SIGNAL'
+                   : agreed === 1 ? 'REVIEW_SIGNAL'
+                   : null;
+    if (!baseSignal) return null;
+    // TODO Step 339+: cap by citation validity once compound evaluator
+    // output includes validated citation support
+    var lpSignals = (finding.implicated_lps || []).map(function(lpId) {
+        var lp = coverageAssessmentByLp && coverageAssessmentByLp[lpId];
+        if (!lp) return null;
+        var evs = lp.element_verdicts || [];
+        return evs.length > 0 ? deriveCoverageGovernanceSignal(evs) : null;
+    }).filter(Boolean);
+    return getWeakestGovernanceSignal([baseSignal].concat(lpSignals)) || baseSignal;
+}
+
+// Maps directional_mismatch finding evaluator agreement to governance signal.
+// 3-0 → ASSERT_SIGNAL, 2-1 → ASSERT_REVIEW_SIGNAL (Impact Unclear), 1-2 → REVIEW_SIGNAL.
+function deriveDirectionalGovernanceSignal(finding) {
+    var parts  = (finding.evaluator_agreement || '').split('-');
+    var agreed = parseInt(parts[0], 10) || 0;
+    if (agreed >= 3) return 'ASSERT_SIGNAL';
+    if (agreed === 2) return 'ASSERT_REVIEW_SIGNAL';
+    if (agreed === 1) return 'REVIEW_SIGNAL';
+    return null;
+}
+
+// Render compact confidence dots span for sidebar items.
+// Shows only the Unicode dot sequence; full label is in the title tooltip.
+function _navConfDotsHtml(govSig, tooltipText) {
+    if (!govSig) return '';
+    var bd = window.CAMAuditShared ? window.CAMAuditShared.getConfidenceBadgeData(govSig) : null;
+    if (!bd) return '';
+    var tip = tooltipText || ('Confidence: ' + bd.label);
+    return '<span class="nav-item-conf nav-item-conf-dots" title="' + esc(tip) + '">' + bd.dots + '</span>';
+}
+
 // Step 306d helpers — Mode C coverage evaluation in audit trail
 
 var _COV_AUDIT_VERDICT_SHORT = {
@@ -16176,8 +16233,9 @@ function _navBuildModeCItem(a, tIdx) {
             : _navConfFallback[_navGovSig] || null)
         : null;
     var _navEvidSumm = a.evidence_summary || '';
-    var confLabelHtml = _navConfLabel
-        ? '<span class="nav-item-conf">' + esc(_navConfLabel) + '</span>'
+    // Step 339: show confidence dots (●●●●) instead of text label; full label in tooltip.
+    var confLabelHtml = _navGovSig
+        ? _navConfDotsHtml(_navGovSig, 'Confidence: ' + (_navConfLabel || _navGovSig))
         : (!_navGovSig && !_navEvidSumm.includes('Step 305'))
             ? '<span class="nav-item-conf nav-item-conf-preclass">Extraction-based</span>'
             : '';
@@ -16408,10 +16466,10 @@ window.CAM.jumpToSynthesisFinding = function(pid, findingId) {
     });
 };
 
-// Step 337: sidebar item builder for synthesis findings (cross_provision_findings).
-// Navigation is handled by the centralized event listener (mode === "synthesis" branch)
-// rather than an inline onclick — avoids HTML-escaping issues in the onclick attribute.
-function _navBuildSynthesisItem(f, tIdx) {
+// Step 339: sidebar item builder for synthesis findings (cross_provision_findings).
+// govSig: pre-computed governance signal (ASSERT_SIGNAL etc.) or null.
+// Navigation is handled by the centralized event listener (mode === "synthesis" branch).
+function _navBuildSynthesisItem(f, tIdx, govSig) {
     const fid    = f.finding_id || "";
     const lps    = (f.implicated_lps || []).join(", ");
     const hl     = (f.headline || fid).trim();
@@ -16420,15 +16478,21 @@ function _navBuildSynthesisItem(f, tIdx) {
     const label  = f.finding_type === 'compound_risk'        ? 'COMPOUND RISK'
                  : f.finding_type === 'cross_coverage_relief' ? 'RELIEF'
                  : "[SYNTHESIS — " + sev + "]";
-    // Issue 3: truncate to 1 brief line matching NEEDS ATTENTION brevity.
     const truncHl = _navTruncate(hl, 80);
-    // Issue 3: hover shows full headline + detail for context without clicking through.
     const tooltipText = f.detail ? hl + " — " + f.detail : hl;
+    // Step 339: confidence dots — compound items use deriveCompoundGovernanceSignal (pre-computed).
+    var confBd = govSig && window.CAMAuditShared
+        ? window.CAMAuditShared.getConfidenceBadgeData(govSig)
+        : null;
+    var confDotsHtml = confBd
+        ? '<span class="nav-item-conf nav-item-conf-dots" title="Confidence: ' + esc(confBd.label) + '">' + confBd.dots + '</span>'
+        : '';
     return '<button class="nav-item-enriched nav-item-synthesis" data-cpf-id="' + esc(fid) + '" data-tenant-idx="' + tIdx + '" data-mode="synthesis" title="' + esc(tooltipText) + '" type="button">'
          +   '<div class="nav-item-top">'
          +     '<span class="nav-item-id">' + esc(lps || fid) + '</span>'
          +     '<span class="nav-item-name">' + esc(label) + '</span>'
          +     '<span class="nav-item-badge ' + sevCls + '">' + sev + '</span>'
+         +     confDotsHtml
          +   '</div>'
          +   (truncHl ? '<div class="nav-item-desc">' + esc(truncHl) + '</div>' : "")
          + '</button>';
@@ -16525,22 +16589,45 @@ function renderNavSidebar() {
             const _compounds   = cpfsFiltered.filter(f => f.finding_type === 'compound_risk');
             const _reliefItems = cpfsFiltered.filter(f => f.finding_type === 'cross_coverage_relief');
             const _directionals = cpfsFiltered.filter(f => f.finding_type === 'directional_mismatch');
+
+            // Step 339: build LP id → assessment map for compound confidence capping.
+            const _caByLp = {};
+            ca.forEach(function(a) { _caByLp[a.issue_area_id] = a; });
+
             if (_compounds.length > 0) {
                 html += '<div class="nav-section nav-section-synthesis">'
                      +   '<div class="nav-section-header">Compound Risk <span class="nav-section-count">' + _compounds.length + '</span></div>';
-                _compounds.forEach(f => { html += _navBuildSynthesisItem(f, tIdx); });
+                _compounds.forEach(function(f) {
+                    const govSig = deriveCompoundGovernanceSignal(f, _caByLp);
+                    html += _navBuildSynthesisItem(f, tIdx, govSig);
+                });
                 html += '</div>';
             }
             if (_reliefItems.length > 0) {
                 html += '<div class="nav-section nav-section-synthesis">'
                      +   '<div class="nav-section-header">Coverage Relief <span class="nav-section-count">' + _reliefItems.length + '</span></div>';
-                _reliefItems.forEach(f => { html += _navBuildSynthesisItem(f, tIdx); });
+                _reliefItems.forEach(f => { html += _navBuildSynthesisItem(f, tIdx, null); });
                 html += '</div>';
             }
             if (_directionals.length > 0) {
-                // Step 333: mirror _navBuildSynthesisItem pattern — openContractDetail first,
-                // then switchResultsTab. Without the openContractDetail call, switchResultsTab
-                // hits the contractDetailOpen guard and falls through to showNoContractPlaceholder.
+                // Step 339: compute aggregate confidence distribution for collapsed directional row.
+                const _dirSignals = _directionals.map(deriveDirectionalGovernanceSignal).filter(Boolean);
+                const _sigLabels = { ASSERT_SIGNAL: 'verified', ASSERT_REVIEW_SIGNAL: 'impact unclear', REVIEW_SIGNAL: 'needs review', WITHHOLD_SIGNAL: 'inconclusive' };
+                const _sigCounts = {};
+                _dirSignals.forEach(function(s) { _sigCounts[s] = (_sigCounts[s] || 0) + 1; });
+                const _sigOrder  = ['ASSERT_SIGNAL', 'ASSERT_REVIEW_SIGNAL', 'REVIEW_SIGNAL', 'WITHHOLD_SIGNAL'];
+                const _allVerified = _dirSignals.length > 0 && _dirSignals.every(s => s === 'ASSERT_SIGNAL');
+                var _dirConfHtml;
+                if (_allVerified) {
+                    var _bd = window.CAMAuditShared ? window.CAMAuditShared.getConfidenceBadgeData('ASSERT_SIGNAL') : null;
+                    _dirConfHtml = '<span class="nav-dir-conf">' + (_bd ? _bd.dots + ' Verified' : 'Verified') + '</span>';
+                } else if (_dirSignals.length > 0) {
+                    const _distParts = _sigOrder.filter(s => _sigCounts[s]).map(s => _sigCounts[s] + ' ' + _sigLabels[s]);
+                    _dirConfHtml = '<span class="nav-dir-conf">' + esc(_distParts.join(' · ')) + '</span>';
+                } else {
+                    _dirConfHtml = '';
+                }
+
                 html += '<div class="nav-section nav-section-directional">'
                      +   '<button class="nav-directional-summary" type="button"'
                      +   ' data-tenant-idx="' + tIdx + '"'
@@ -16557,6 +16644,7 @@ function renderNavSidebar() {
                      +     '<span class="nav-dir-count">' + _directionals.length + '</span>'
                      +     '<span class="nav-dir-arrow">→</span>'
                      +   '</button>'
+                     +   _dirConfHtml
                      + '</div>';
             }
             if (worthReviewing.length > 0) {

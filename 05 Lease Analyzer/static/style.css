@@ -11834,6 +11834,12 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 /* Step 307b: sidebar confidence label for Mode C LP items */
 .nav-item-conf { font-size: 0.65rem; color: var(--text-muted, #888); white-space: nowrap; margin-left: auto; padding-left: 0.25rem; }
 
+/* Step 339: dots-only variant — slightly larger for the dot symbols to read well */
+.nav-item-conf-dots { font-size: 0.7rem; letter-spacing: 0.02em; cursor: default; }
+
+/* Step 339: directional row confidence distribution line */
+.nav-dir-conf { display: block; font-size: 0.62rem; color: #92400e; padding: 0.1rem 0.6rem 0.3rem; }
+
 /* Step 307b: score bars container in coverage audit trail */
 .audit-cov-score-bars { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.5rem; margin: 0.5rem 0; }
 
