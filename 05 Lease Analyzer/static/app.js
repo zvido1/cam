@@ -16048,7 +16048,12 @@ function _navBuildModeCItem(a, tIdx) {
         : (!_navGovSig && !_navEvidSumm.includes('Step 305'))
             ? '<span class="nav-item-conf nav-item-conf-preclass">Extraction-based</span>'
             : '';
-    return '<button class="nav-item-enriched" data-pid="' + esc(pid) + '" data-tenant-idx="' + tIdx + '" data-mode="c" title="' + esc(stmt || name) + '">'
+    // Issue 4: build richer hover tooltip — exposure statement + missing elements summary.
+    const _keyMissing = (a.key_missing || []).slice(0, 3);
+    const _missingLine = _keyMissing.length > 0 ? 'Missing: ' + _keyMissing.join('; ') : '';
+    const _tooltipParts = [stmt.slice(0, 320), _missingLine].filter(Boolean);
+    const _navItemTooltip = _tooltipParts.join(' | ') || name;
+    return '<button class="nav-item-enriched" data-pid="' + esc(pid) + '" data-tenant-idx="' + tIdx + '" data-mode="c" title="' + esc(_navItemTooltip) + '">'
          +   '<div class="nav-item-top">'
          +     '<span class="nav-item-id">' + esc(pid) + '</span>'
          +     '<span class="nav-item-name">' + esc(name) + '</span>'
@@ -16270,8 +16275,9 @@ window.CAM.jumpToSynthesisFinding = function(pid, findingId) {
     });
 };
 
-// Step 311: sidebar item builder for synthesis findings (cross_provision_findings).
-// Clicking opens the synthesis tab and scrolls to the relevant CPF card.
+// Step 337: sidebar item builder for synthesis findings (cross_provision_findings).
+// Navigation is handled by the centralized event listener (mode === "synthesis" branch)
+// rather than an inline onclick — avoids HTML-escaping issues in the onclick attribute.
 function _navBuildSynthesisItem(f, tIdx) {
     const fid    = f.finding_id || "";
     const lps    = (f.implicated_lps || []).join(", ");
@@ -16281,14 +16287,11 @@ function _navBuildSynthesisItem(f, tIdx) {
     const label  = f.finding_type === 'compound_risk'        ? 'COMPOUND RISK'
                  : f.finding_type === 'cross_coverage_relief' ? 'RELIEF'
                  : "[SYNTHESIS — " + sev + "]";
-    const truncHl = _navTruncate(hl, 160);
-    const safeId  = fid.replace(/[^a-zA-Z0-9_-]/g, '_');
-    return '<button class="nav-item-enriched nav-item-synthesis" data-cpf-id="' + esc(fid) + '" data-tenant-idx="' + tIdx + '" data-mode="synthesis" title="' + esc(hl) + '"'
-         + ' onclick="(function(btn){var tIdx=parseInt(btn.dataset.tenantIdx,10);'
-         + 'if(!isNaN(tIdx)&&tIdx!==currentTenantIndex){currentTenantIndex=tIdx;}'
-         + 'if(typeof openContractDetail===\'function\'){openContractDetail(tIdx).then(function(){switchResultsTab(\'synthesis\');setTimeout(function(){var el=document.getElementById(\'cpf-' + esc(safeId) + '\');if(el)el.scrollIntoView({behavior:\'smooth\',block:\'start\'});},200);});}'
-         + 'else if(typeof switchResultsTab===\'function\'){switchResultsTab(\'synthesis\');setTimeout(function(){var el=document.getElementById(\'cpf-' + esc(safeId) + '\');if(el)el.scrollIntoView({behavior:\'smooth\',block:\'start\'});},200);}'
-         + '})(this)" type="button">'
+    // Issue 3: truncate to 1 brief line matching NEEDS ATTENTION brevity.
+    const truncHl = _navTruncate(hl, 80);
+    // Issue 3: hover shows full headline + detail for context without clicking through.
+    const tooltipText = f.detail ? hl + " — " + f.detail : hl;
+    return '<button class="nav-item-enriched nav-item-synthesis" data-cpf-id="' + esc(fid) + '" data-tenant-idx="' + tIdx + '" data-mode="synthesis" title="' + esc(tooltipText) + '" type="button">'
          +   '<div class="nav-item-top">'
          +     '<span class="nav-item-id">' + esc(lps || fid) + '</span>'
          +     '<span class="nav-item-name">' + esc(label) + '</span>'
@@ -16531,8 +16534,26 @@ function renderNavSidebar() {
             const pid = btn.dataset.pid;
             const tIdx = parseInt(btn.dataset.tenantIdx, 10);
             const mode = btn.dataset.mode;
-            // Step 311: synthesis items handle their own navigation via inline onclick
-            if (mode === "synthesis") return;
+            // Step 337: synthesis items — navigate to Contract Interaction Review tab.
+            // Navigation moved from inline onclick to this listener to avoid HTML-escaping
+            // fragility (complex onclick attributes can be silently broken by esc()).
+            if (mode === "synthesis") {
+                const cpfId  = btn.dataset.cpfId || "";
+                const safeId = cpfId.replace(/[^a-zA-Z0-9_-]/g, '_');
+                const synthTIdx = isNaN(tIdx) ? 0 : tIdx;
+                if (typeof openContractDetail === 'function') {
+                    openContractDetail(synthTIdx).then(function() {
+                        switchResultsTab('synthesis');
+                        setTimeout(function() {
+                            const el = document.getElementById('cpf-' + safeId);
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 200);
+                    });
+                } else if (typeof switchResultsTab === 'function') {
+                    switchResultsTab('synthesis');
+                }
+                return;
+            }
             if (!isNaN(tIdx) && tIdx !== currentTenantIndex) {
                 currentTenantIndex = tIdx;
                 const ts = document.getElementById("tenant-select");
