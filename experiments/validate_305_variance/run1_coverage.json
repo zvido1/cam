@@ -1,0 +1,3159 @@
+{
+  "LP-09": {
+    "coverage_state": "review_needed",
+    "coverage_state_baseline": "review_needed",
+    "coverage_method": "step_305_per_element",
+    "element_verdicts": [
+      {
+        "element_id": "LP-09.assignment_requires_landlord_consent",
+        "element_label": "Assignment requires landlord consent",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.1",
+          "quote": "Tenant shall not assign this Lease, or sublet the Premises or any part thereof, or transfer any interest in this Lease, or permit the use or occupancy of the Premises by any party other than Tenant, without the prior written consent of Landlord in each instance",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant shall not assign this Lease, or sublet the Premises or any part thereof, or transfer any interest in this Lease, or permit the use or occupancy of the Premises by any party other than Tenant, without the prior written consent of Landlord in each instance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly prohibits assignment without Landlord's prior written consent, satisfying the must_be_explicit requirement with near-literal language matching the expected element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant shall not assign this Lease... without the prior written consent of Landlord in each instance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 expressly prohibits Tenant from assigning the Lease without Landlord's prior written consent.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "Tenant shall not assign this Lease... without the prior written consent of Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease text explicitly states that the tenant shall not assign the lease without the landlord's prior written consent, matching the required element directly.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.subletting_requires_landlord_consent",
+        "element_label": "Subletting requires landlord consent",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.1",
+          "quote": "Tenant shall not assign this Lease, or sublet the Premises or any part thereof, or transfer any interest in this Lease ... without the prior written consent of Landlord in each instance",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant shall not assign this Lease, or sublet the Premises or any part thereof, or transfer any interest in this Lease ... without the prior written consent of Landlord in each instance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly prohibits subletting all or any part of the Premises without Landlord's prior written consent, directly satisfying the must_be_explicit requirement.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant shall not... sublet the Premises or any part thereof... without the prior written consent of Landlord in each instance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 expressly requires Landlord's prior written consent for any subletting of all or part of the Premises.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "or sublet the Premises or any part thereof... without the prior written consent of Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease text explicitly prohibits subletting without the landlord's prior written consent, aligning with the element's requirements.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.consent_standard_supplied",
+        "element_label": "Consent standard is supplied by lease text or applicable default law",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.1",
+          "quote": "which consent shall not be unreasonably withheld, conditioned, or delayed",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "which consent shall not be unreasonably withheld, conditioned, or delayed",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 expressly states the consent standard as 'not be unreasonably withheld, conditioned, or delayed,' which is one of the enumerated synonyms for this element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "which consent shall not be unreasonably withheld, conditioned, or delayed",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease supplies an express reasonableness standard for Landlord's consent.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "which consent shall not be unreasonably withheld, conditioned, or delayed",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease provides a specific standard for consent, stating it shall not be unreasonably withheld, conditioned, or delayed, which satisfies the element explicitly.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.affiliate_transfer_exception_defined",
+        "element_label": "Affiliate or related-party transfer exception is defined or excluded",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.1",
+          "quote": "Tenant may assign this Lease or sublet the Premises to an Affiliate without Landlord's prior written consent, provided that (a) Tenant delivers written notice to Landlord at least thirty (30) days prior to such assignment or subletting, (b) such Affiliate assumes all obligations of Tenant under this Lease, and (c) Tenant remains primarily liable for all obligations hereunder",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant may assign this Lease or sublet the Premises to an Affiliate without Landlord's prior written consent, provided that (a) Tenant delivers written notice to Landlord at least thirty (30) days prior to such assignment or subletting, (b) such Affiliate assumes all obligations of Tenant under this Lease, and (c) Tenant remains primarily liable for all obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly defines an affiliate transfer exception, specifying the conditions under which Tenant may transfer to an Affiliate without consent, directly addressing this element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant may assign this Lease or sublet the Premises to an Affiliate without Landlord's prior written consent",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 expressly creates an Affiliate transfer exception and states conditions for that exception, including notice, assumption, and continuing Tenant liability.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "Tenant may assign this Lease or sublet the Premises to an Affiliate without Landlord's prior written consent",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text defines an exception for transfers to affiliates, including conditions for such transfers, directly addressing the element.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.change_of_control_addressed",
+        "element_label": "Change of control is addressed",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "No provision in Article XI addresses change of control, transfer of controlling interest, sale of stock or membership interests, or any deemed-assignment triggered by a change in ownership. The element is absent with no coverage path given must_be_explicit is false but default_law_covers is false and cross_LP_coverage is null.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Article XI addresses assignments, subleases, transfers of interests in the Lease, and Affiliate transfers, but does not address stock transfers, ownership changes, controlling interest transfers, mergers, or other change-of-control events.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease does not mention change of control, transfer of controlling interest, or similar concepts, and implicit coverage is not acceptable for this element.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.tenant_remains_liable_after_transfer",
+        "element_label": "Original tenant remains liable after assignment or sublease",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.3",
+          "quote": "No assignment or subletting shall release Tenant from its obligations under this Lease. Tenant shall remain fully liable for the performance of all terms, covenants, and conditions of this Lease, including the payment of Rent.",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.3",
+              "quote": "No assignment or subletting shall release Tenant from its obligations under this Lease. Tenant shall remain fully liable for the performance of all terms, covenants, and conditions of this Lease, including the payment of Rent.",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.3 explicitly states that no assignment or subletting releases Tenant and that Tenant remains fully liable, directly matching the expected element language.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.3",
+              "quote": "No assignment or subletting shall release Tenant from its obligations under this Lease. Tenant shall remain fully liable",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.3 expressly provides that assignment or subletting does not release Tenant and that Tenant remains fully liable for lease obligations.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.3",
+              "quote": "No assignment or subletting shall release Tenant from its obligations under this Lease. Tenant shall remain fully liable",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text explicitly states that the original tenant remains liable after assignment or subletting, matching the element's synonyms.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.assignee_or_subtenant_assumes_obligations",
+        "element_label": "Assignee or subtenant must assume lease obligations",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "no_consensus",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly requires that an Affiliate assignee/subtenant assume all obligations of Tenant under the Lease. Additionally, Section 11.2(d) requires delivery of an executed assignment or sublease agreement, which in context implies assumption; however, the explicit assumption language in Section 11.1 satisfies the must_be_explicit requirement for affiliate transfers. Note that the assumption requirement is stated only in the affiliate transfer context, not as a universal condition for all consented assignments, which may be a gap, but the explicit text is present.",
+            "confidence": "medium"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly requires an Affiliate transferee to assume all Tenant obligations, but it does not clearly impose the same assumption requirement on every assignee or subtenant. Because this element must be explicit and the coverage appears limited to Affiliate transfers, full coverage is unclear.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The assumption of obligations is explicitly required only for affiliate transfers, but not clearly stated for general assignments or sublettings requiring consent; since the element must be explicit and applies broadly, the coverage is ambiguous.",
+            "confidence": "medium"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly requires that an Affiliate assignee/subtenant assume all obligations of Tenant under the Lease. Additionally, Section 11.2(d) requires delivery of an executed assignment or sublease agreement, which in context implies assumption; however, the explicit assumption language in Section 11.1 satisfies the must_be_explicit requirement for affiliate transfers. Note that the assumption requirement is stated only in the affiliate transfer context, not as a universal condition for all consented assignments, which may be a gap, but the explicit text is present.",
+            "confidence": "medium"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly requires an Affiliate transferee to assume all Tenant obligations, but it does not clearly impose the same assumption requirement on every assignee or subtenant. Because this element must be explicit and the coverage appears limited to Affiliate transfers, full coverage is unclear.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The assumption of obligations is explicitly required only for affiliate transfers, but not clearly stated for general assignments or sublettings requiring consent; since the element must be explicit and applies broadly, the coverage is ambiguous.",
+            "confidence": "medium"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-09.landlord_recapture_right",
+        "element_label": "Landlord recapture or termination right upon proposed transfer",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "No provision in Article XI grants Landlord a recapture or termination right upon a proposed transfer. The element is absent with no applicable coverage path.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Article XI contains consent conditions, no-release language, and profit sharing, but no Landlord recapture right or termination right upon a proposed assignment or sublease.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "There is no mention of landlord's right to recapture the premises or terminate the lease upon a proposed transfer in the provided text.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.transfer_profit_sharing",
+        "element_label": "Transfer profits or excess rent are allocated",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.4",
+          "quote": "Tenant shall pay fifty percent (50%) of such excess to Landlord as Additional Rent",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.4",
+              "quote": "Tenant shall pay fifty percent (50%) of such excess to Landlord as Additional Rent",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.4 explicitly allocates transfer profits by requiring Tenant to pay 50% of excess rent or consideration received from a subtenant or assignee (net of reasonable costs) to Landlord as Additional Rent.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.4",
+              "quote": "Tenant shall pay fifty percent (50%) of such excess to Landlord as Additional Rent",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.4 expressly allocates excess rent or other consideration from a subtenant or assignee by requiring Tenant to pay 50% of the excess to Landlord after specified deductions.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.4",
+              "quote": "Tenant shall pay fifty percent (50%) of such excess to Landlord as Additional Rent",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease includes a specific provision for sharing excess rent or consideration from transfers, directly addressing profit allocation.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.unauthorized_transfer_consequences",
+        "element_label": "Unauthorized transfers are void, default-triggering, or otherwise remedied",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.1",
+          "quote": "Any assignment, subletting, or transfer in violation of this Section shall be void and of no force or effect, and shall constitute a default under this Lease.",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Any assignment, subletting, or transfer in violation of this Section shall be void and of no force or effect, and shall constitute a default under this Lease.",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly states that unauthorized transfers are void and of no force or effect and constitute a default, directly matching the expected element synonyms.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Any assignment, subletting, or transfer in violation of this Section shall be void and of no force or effect, and shall constitute a default under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 expressly states that unauthorized assignments, sublettings, or transfers are void and constitute a lease default.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "Any assignment, subletting, or transfer in violation of this Section shall be void... and shall constitute a default under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text explicitly states that unauthorized transfers are void and constitute a default, satisfying the element.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.required_transfer_documentation",
+        "element_label": "Transfer request documentation and notice requirements are specified",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.2",
+          "quote": "Tenant delivering to Landlord an executed copy of the assignment or sublease agreement at least thirty (30) days prior to the effective date thereof",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.2",
+              "quote": "Tenant delivering to Landlord an executed copy of the assignment or sublease agreement at least thirty (30) days prior to the effective date thereof",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.2(d) specifies a documentation requirement \u2014 delivery of an executed copy of the assignment or sublease agreement at least 30 days prior to the effective date \u2014 satisfying the transfer request documentation element. Section 11.1 also requires 30-day prior written notice for affiliate transfers.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.2(d)",
+              "quote": "Tenant delivering to Landlord an executed copy of the assignment or sublease agreement at least thirty (30) days prior to the effective date thereof",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.2(d) specifies transfer documentation and timing by requiring delivery of an executed assignment or sublease agreement at least 30 days before the effective date.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.2",
+              "quote": "Tenant delivering to Landlord an executed copy of the assignment or sublease agreement at least thirty (30) days prior to the effective date thereof",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease specifies requirements for delivering documentation, such as an executed copy of the agreement, as a condition to consent.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.use_restrictions_bind_transferee",
+        "element_label": "Permitted use and operating restrictions bind assignee or subtenant",
+        "verdict": "explicitly_present",
+        "confidence": "medium",
+        "citation": {
+          "section_ref": "Section 11.2",
+          "quote": "the proposed use being consistent with the Permitted Use",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.2",
+              "quote": "the proposed use being consistent with the Permitted Use",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.2(b) conditions Landlord's consent on the proposed use being consistent with the Permitted Use, which functionally binds any assignee or subtenant to the permitted use restrictions as a condition of the transfer.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "implicitly_present",
+            "citation": {
+              "section_ref": "Section 11.2(b)",
+              "quote": "Landlord's consent to any assignment or subletting shall be conditioned upon... the proposed use being consistent with the Permitted Use",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Although the provision does not state that the transferee is expressly bound by all use restrictions, it conditions consent to any assignment or sublease on the proposed use being consistent with the Permitted Use. Because implicit coverage is acceptable for this element, that functional restriction is sufficient.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.2",
+              "quote": "the proposed use being consistent with the Permitted Use",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text conditions consent on the proposed use being consistent with the Permitted Use, effectively binding the transferee to use restrictions.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "B",
+            "verdict": "implicitly_present",
+            "citation": {
+              "section_ref": "Section 11.2(b)",
+              "quote": "Landlord's consent to any assignment or subletting shall be conditioned upon... the proposed use being consistent with the Permitted Use",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Although the provision does not state that the transferee is expressly bound by all use restrictions, it conditions consent to any assignment or sublease on the proposed use being consistent with the Permitted Use. Because implicit coverage is acceptable for this element, that functional restriction is sufficient.",
+            "confidence": "medium"
+          }
+        ]
+      }
+    ],
+    "elements_found": [
+      "Assignment requires landlord consent",
+      "Subletting requires landlord consent",
+      "Consent standard is supplied by lease text or applicable default law",
+      "Affiliate or related-party transfer exception is defined or excluded",
+      "Original tenant remains liable after assignment or sublease",
+      "Transfer profits or excess rent are allocated",
+      "Unauthorized transfers are void, default-triggering, or otherwise remedied",
+      "Transfer request documentation and notice requirements are specified",
+      "Permitted use and operating restrictions bind assignee or subtenant"
+    ],
+    "elements_missing": [
+      "Change of control is addressed",
+      "Landlord recapture or termination right upon proposed transfer"
+    ]
+  },
+  "LP-11": {
+    "coverage_state": "covered_unfavorable",
+    "coverage_state_baseline": "review_needed",
+    "coverage_method": "step_305_per_element",
+    "element_verdicts": [
+      {
+        "element_id": "LP-11.default_definition_monetary",
+        "element_label": "Monetary default is defined (what triggers default for non-payment)",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.1(a)",
+          "quote": "Failure to pay any installment of Rent or any other sum due hereunder within five (5) days after written notice from Landlord that the same is past due",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(a)",
+              "quote": "Failure to pay any installment of Rent or any other sum due hereunder within five (5) days after written notice from Landlord that the same is past due",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.1(a) explicitly defines monetary default as failure to pay any installment of Rent or other sum due, triggered after a 5-day written notice period.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(a)",
+              "quote": "Failure to pay any installment of Rent or any other sum due hereunder within five (5) days after written notice from Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision expressly defines a monetary default as failure to pay Rent or any other sum due. This satisfies the requirement for an explicit monetary default definition.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.1(a)",
+              "quote": "Failure to pay any installment of Rent or any other sum due hereunder within five (5) days after written notice from Landlord that the same is past due",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly defines monetary default as the failure to pay rent or other sums within five days after written notice, matching the expected element and synonyms.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.default_definition_non_monetary",
+        "element_label": "Non-monetary default is defined (breach of covenants other than payment)",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.1(b)",
+          "quote": "Failure to perform or observe any material term, covenant, or condition of this Lease",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(b)",
+              "quote": "Failure to perform or observe any material term, covenant, or condition of this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.1(b) explicitly defines non-monetary default as failure to perform or observe any material term, covenant, or condition of the Lease, which is a breach of covenants other than payment.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(b)",
+              "quote": "Failure to perform or observe any material term, covenant, or condition of this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly defines non-monetary default as failure to perform or observe a material lease term, covenant, or condition. That is a direct statement of non-monetary default.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.1(b)",
+              "quote": "Failure to perform or observe any material term, covenant, or condition of this Lease, if such failure continues for a period of ten (10) days after written notice",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly defines non-monetary default as failure to perform any material term, covenant, or condition, with a specified cure period after notice.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.default_definition_tenant_insolvency",
+        "element_label": "Tenant bankruptcy or insolvency is a default event",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.1(c)",
+          "quote": "The filing of a petition by or against Tenant under any bankruptcy or insolvency law, or the appointment of a receiver or trustee for Tenant's assets, if such proceeding is not dismissed within sixty (60) days",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(c)",
+              "quote": "The filing of a petition by or against Tenant under any bankruptcy or insolvency law, or the appointment of a receiver or trustee for Tenant's assets, if such proceeding is not dismissed within sixty (60) days",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.1(c) explicitly identifies bankruptcy filing, insolvency proceedings, and appointment of a receiver or trustee as default events, subject to a 60-day dismissal window.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(c)",
+              "quote": "The filing of a petition by or against Tenant under any bankruptcy or insolvency law, or the appointment of a receiver or trustee for Tenant's assets",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.1(c) expressly includes bankruptcy, insolvency proceedings, and appointment of a receiver or trustee as tenant defaults. This directly covers insolvency-related default events.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.1(c)",
+              "quote": "The filing of a petition by or against Tenant under any bankruptcy or insolvency law, or the appointment of a receiver or trustee for Tenant's assets",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly lists bankruptcy, insolvency, or related proceedings as a default event if not dismissed within 60 days, aligning with the element's requirements.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.cure_period_monetary",
+        "element_label": "Cure period for monetary default is specified",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.1(a)",
+          "quote": "within five (5) days after written notice from Landlord that the same is past due",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(a)",
+              "quote": "within five (5) days after written notice from Landlord that the same is past due",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.1(a) explicitly specifies a 5-day cure period for monetary default, triggered by written notice from Landlord.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(a)",
+              "quote": "within five (5) days after written notice from Landlord that the same is past due",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly provides a five-day cure period for monetary default after written notice from Landlord. This is an explicit cure period.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.1(a)",
+              "quote": "within five (5) days after written notice from Landlord that the same is past due",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease specifies a five-day cure period for monetary defaults after written notice, directly matching the expected element.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.cure_period_non_monetary",
+        "element_label": "Cure period for non-monetary default is specified",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.1(b)",
+          "quote": "if such failure continues for a period of ten (10) days after written notice from Landlord specifying the nature of such failure",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(b)",
+              "quote": "if such failure continues for a period of ten (10) days after written notice from Landlord specifying the nature of such failure",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.1(b) explicitly specifies a 10-day cure period for non-monetary default after written notice, with an extension for defaults that cannot reasonably be cured within 10 days.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(b)",
+              "quote": "if such failure continues for a period of ten (10) days after written notice from Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.1(b) expressly states a ten-day cure period for non-monetary defaults after written notice. That directly satisfies the element.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.1(b)",
+              "quote": "if such failure continues for a period of ten (10) days after written notice from Landlord specifying the nature of such failure",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease specifies a ten-day cure period for non-monetary defaults after written notice, with provision for extension if needed.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.notice_required_to_trigger_cure_period",
+        "element_label": "Landlord must give notice of default to trigger cure period",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.1(a) and Section 13.1(b)",
+          "quote": "after written notice from Landlord that the same is past due",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(a) and Section 13.1(b)",
+              "quote": "after written notice from Landlord that the same is past due",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Both Section 13.1(a) and 13.1(b) explicitly require written notice from Landlord to trigger the respective cure periods for monetary and non-monetary defaults.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(a) and Section 13.1(b)",
+              "quote": "after written notice from Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Both the monetary and non-monetary default provisions condition the cure period on written notice from Landlord. The notice requirement is explicit.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.1(a) and 13.1(b)",
+              "quote": "after written notice from Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease requires written notice from the landlord to trigger the cure periods for both monetary and non-monetary defaults.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.landlord_right_to_terminate_lease",
+        "element_label": "Landlord has right to terminate the lease upon uncured default",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.2(a)",
+          "quote": "Terminate this Lease by written notice to Tenant, in which event Tenant shall immediately surrender the Premises to Landlord",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(a)",
+              "quote": "Terminate this Lease by written notice to Tenant, in which event Tenant shall immediately surrender the Premises to Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2(a) explicitly grants Landlord the right to terminate the Lease by written notice upon occurrence of a Tenant default.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(a)",
+              "quote": "Terminate this Lease by written notice to Tenant",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The remedies section expressly grants Landlord the right to terminate the lease by written notice upon tenant default. This is direct termination language.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.2(a)",
+              "quote": "Terminate this Lease by written notice to Tenant",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly grants the landlord the right to terminate the lease upon tenant default by written notice.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.landlord_right_to_reenter_premises",
+        "element_label": "Landlord has right to re-enter and repossess the premises",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.2(b)",
+          "quote": "Re-enter the Premises and remove Tenant and all persons and property therefrom, with or without terminating this Lease",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(b)",
+              "quote": "Re-enter the Premises and remove Tenant and all persons and property therefrom, with or without terminating this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2(b) explicitly grants Landlord the right to re-enter the Premises and remove Tenant and property, with or without terminating the Lease.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(b)",
+              "quote": "Re-enter the Premises and remove Tenant and all persons and property therefrom",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2(b) expressly authorizes Landlord to re-enter the premises and remove Tenant and property. This directly states a re-entry and repossession remedy.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.2(b)",
+              "quote": "Re-enter the Premises and remove Tenant and all persons and property therefrom",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly allows the landlord to re-enter and repossess the premises upon default, with or without terminating the lease.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.rent_acceleration_remedy",
+        "element_label": "Landlord may accelerate remaining rent obligations upon default",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.2(c)",
+          "quote": "Accelerate all Rent due for the remainder of the Lease Term, discounted to present value at six percent (6%) per annum",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(c)",
+              "quote": "Accelerate all Rent due for the remainder of the Lease Term, discounted to present value at six percent (6%) per annum",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2(c) explicitly provides for acceleration of all remaining Rent, with a present value discount at 6% per annum.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(c)",
+              "quote": "Accelerate all Rent due for the remainder of the Lease Term, discounted to present value at six percent (6%) per annum",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly states that Landlord may accelerate all rent due for the balance of the term. This is a direct acceleration remedy.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.2(c)",
+              "quote": "Accelerate all Rent due for the remainder of the Lease Term, discounted to present value at six percent (6%) per annum",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly provides for acceleration of remaining rent upon default, including a discount rate for present value.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.damages_calculation_and_mitigation",
+        "element_label": "Damages framework on termination is specified (calculation method, mitigation duty)",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "no_consensus",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.2(a)",
+              "quote": "Tenant shall pay to Landlord all Rent and other sums due and owing through the date of termination, plus damages",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2(a) references 'plus damages' upon termination but does not specify a calculation method or mitigation duty; Section 13.2(b) references reletting but does not address how reletting proceeds offset Tenant's liability or impose a mitigation obligation, leaving the damages framework ambiguous.",
+            "confidence": "medium"
+          },
+          {
+            "role": "B",
+            "verdict": "implicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(a), Section 13.2(b), and Section 13.2(c)",
+              "quote": "Tenant shall pay to Landlord all Rent and other sums due and owing through the date of termination, plus damages; ... relet the Premises ... ; Accelerate all Rent due for the remainder of the Lease Term, discounted to present value",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease provides a damages framework by referencing post-termination damages, reletting, and present-value acceleration, but it does not expressly state a mitigation duty or a full damages formula. Because implicit coverage is allowed, this functionally addresses damages calculation in part, though not comprehensively.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "13.2(a)",
+              "quote": "plus damages",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease mentions 'plus damages' upon termination but does not specify the calculation method or any mitigation duty; since default law is jurisdiction-dependent and governing law is not specified, the coverage is ambiguous.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.2(a)",
+              "quote": "Tenant shall pay to Landlord all Rent and other sums due and owing through the date of termination, plus damages",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2(a) references 'plus damages' upon termination but does not specify a calculation method or mitigation duty; Section 13.2(b) references reletting but does not address how reletting proceeds offset Tenant's liability or impose a mitigation obligation, leaving the damages framework ambiguous.",
+            "confidence": "medium"
+          },
+          {
+            "role": "B",
+            "verdict": "implicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(a), Section 13.2(b), and Section 13.2(c)",
+              "quote": "Tenant shall pay to Landlord all Rent and other sums due and owing through the date of termination, plus damages; ... relet the Premises ... ; Accelerate all Rent due for the remainder of the Lease Term, discounted to present value",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease provides a damages framework by referencing post-termination damages, reletting, and present-value acceleration, but it does not expressly state a mitigation duty or a full damages formula. Because implicit coverage is allowed, this functionally addresses damages calculation in part, though not comprehensively.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "13.2(a)",
+              "quote": "plus damages",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease mentions 'plus damages' upon termination but does not specify the calculation method or any mitigation duty; since default law is jurisdiction-dependent and governing law is not specified, the coverage is ambiguous.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-11.reletting_rights_and_obligations",
+        "element_label": "Landlord's reletting rights and obligations are specified",
+        "verdict": "explicitly_present",
+        "confidence": "medium",
+        "citation": {
+          "section_ref": "Section 13.2(b)",
+          "quote": "relet the Premises for such term, at such rental, and upon such conditions as Landlord deems appropriate",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "implicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(b)",
+              "quote": "relet the Premises for such term, at such rental, and upon such conditions as Landlord deems appropriate",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2(b) explicitly grants Landlord the right to relet the Premises on terms Landlord deems appropriate; however, it does not address whether reletting is for Tenant's account or how proceeds are credited, so reletting rights are present but obligations are only implicitly addressed.",
+            "confidence": "medium"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(b)",
+              "quote": "relet the Premises for such term, at such rental, and upon such conditions as Landlord deems appropriate",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly gives Landlord the right to relet the premises after re-entry. While it does not detail all consequences of reletting, the reletting right itself is directly stated.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.2(b)",
+              "quote": "relet the Premises for such term, at such rental, and upon such conditions as Landlord deems appropriate",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly grants the landlord the right to relet the premises upon re-entry, specifying terms at landlord's discretion, which implies no obligation to relet.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "implicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(b)",
+              "quote": "relet the Premises for such term, at such rental, and upon such conditions as Landlord deems appropriate",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2(b) explicitly grants Landlord the right to relet the Premises on terms Landlord deems appropriate; however, it does not address whether reletting is for Tenant's account or how proceeds are credited, so reletting rights are present but obligations are only implicitly addressed.",
+            "confidence": "medium"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-11.self_help_landlord_cure",
+        "element_label": "Landlord has self-help right to cure tenant's default and bill tenant",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease provision contains no language granting Landlord a self-help right to cure Tenant's defaults and bill Tenant for the costs as Additional Rent or otherwise.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "No provision in Article XIII states that Landlord may perform Tenant's obligations and charge the cost back to Tenant as additional rent or reimbursement. The text only provides termination, re-entry, acceleration, reletting, and legal/equitable remedies.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease does not mention any self-help right for the landlord to cure tenant defaults and charge the tenant, making this element absent.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.common_law_remedies_preserved",
+        "element_label": "Common law and equitable remedies are preserved as additional remedies",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.2(d)",
+          "quote": "Exercise any other rights or remedies available to Landlord at law or in equity",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(d)",
+              "quote": "Exercise any other rights or remedies available to Landlord at law or in equity",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2(d) explicitly preserves all rights and remedies available at law or in equity as an additional remedy for Landlord.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2(d)",
+              "quote": "Exercise any other rights or remedies available to Landlord at law or in equity",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "This language expressly preserves other legal and equitable remedies in addition to the listed contractual remedies. It directly covers the element.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.2(d)",
+              "quote": "Exercise any other rights or remedies available to Landlord at law or in equity",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly preserves all other remedies available at law or in equity in addition to the listed remedies.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.remedies_cumulative_not_exclusive",
+        "element_label": "Remedies are cumulative and not exclusive (landlord may pursue multiple)",
+        "verdict": "explicitly_present",
+        "confidence": "medium",
+        "citation": {
+          "section_ref": "Section 13.2",
+          "quote": "Landlord shall have the right, at its option, to pursue any one or more of the following remedies",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "implicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2",
+              "quote": "Landlord shall have the right, at its option, to pursue any one or more of the following remedies",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2's introductory language states Landlord may pursue 'any one or more' of the listed remedies, which functionally establishes that remedies are cumulative and not exclusive, even without using that precise terminology.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2",
+              "quote": "Landlord shall have the right, at its option, to pursue any one or more of the following remedies",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The phrase 'any one or more' indicates Landlord may pursue multiple remedies, which expressly supports cumulative rather than exclusive remedies. This is sufficient textual grounding for the element.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.2",
+              "quote": "pursue any one or more of the following remedies",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease states that the landlord may pursue any one or more remedies, indicating they are cumulative and not exclusive.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "implicitly_present",
+            "citation": {
+              "section_ref": "Section 13.2",
+              "quote": "Landlord shall have the right, at its option, to pursue any one or more of the following remedies",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.2's introductory language states Landlord may pursue 'any one or more' of the listed remedies, which functionally establishes that remedies are cumulative and not exclusive, even without using that precise terminology.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-11.abandonment_default",
+        "element_label": "Abandonment or vacating as event of default",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.1(d)",
+          "quote": "Abandonment of the Premises for a period exceeding thirty (30) consecutive days",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(d)",
+              "quote": "Abandonment of the Premises for a period exceeding thirty (30) consecutive days",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.1(d) explicitly identifies abandonment of the Premises for more than 30 consecutive days as a default event.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(d)",
+              "quote": "Abandonment of the Premises for a period exceeding thirty (30) consecutive days",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly lists abandonment of the premises for more than thirty consecutive days as a tenant default. This directly satisfies the element.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.1(d)",
+              "quote": "Abandonment of the Premises for a period exceeding thirty (30) consecutive days",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly defines abandonment of the premises for over 30 days as a default event.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.diligent_pursuit_extension",
+        "element_label": "Extension of non-monetary cure period when cure is being diligently pursued",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.1(b)",
+          "quote": "if such failure cannot reasonably be cured within ten (10) days, failure to commence cure within such ten (10) day period and diligently prosecute such cure to completion",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(b)",
+              "quote": "if such failure cannot reasonably be cured within ten (10) days, failure to commence cure within such ten (10) day period and diligently prosecute such cure to completion",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.1(b) explicitly provides an extension of the non-monetary cure period where the default cannot reasonably be cured within 10 days, provided Tenant commences cure and diligently prosecutes it to completion.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.1(b)",
+              "quote": "if such failure cannot reasonably be cured within ten (10) days, failure to commence cure within such ten (10) day period and diligently prosecute such cure to completion",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.1(b) expressly extends the non-monetary cure concept where the default cannot reasonably be cured within ten days, provided Tenant commences cure and diligently pursues it. This directly matches the element.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "13.1(b)",
+              "quote": "if such failure cannot reasonably be cured within ten (10) days, failure to commence cure within such ten (10) day period and diligently prosecute such cure to completion",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly allows an extension of the non-monetary cure period if the tenant commences cure within 10 days and diligently pursues it to completion.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-11.mortgagee_guarantor_cure_right",
+        "element_label": "Third-party (mortgagee or guarantor) cure right on tenant default",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Article XIII contains no provision granting a mortgagee, guarantor, or other third party the right to cure Tenant's default, and no cross-reference to another provision addressing this right is present in the text reviewed.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "No text in Article XIII gives a tenant mortgagee, lender, or guarantor notice or cure rights. Although cross-LP coverage might exist in LP-22, no such other-LP text was provided here to support a covered_in_other_LP finding.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease does not mention any right for a mortgagee, guarantor, or third party to cure tenant defaults, and no specific coverage in LP-22 is provided in the given text.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      }
+    ],
+    "elements_found": [
+      "Monetary default is defined (what triggers default for non-payment)",
+      "Non-monetary default is defined (breach of covenants other than payment)",
+      "Tenant bankruptcy or insolvency is a default event",
+      "Cure period for monetary default is specified",
+      "Cure period for non-monetary default is specified",
+      "Landlord must give notice of default to trigger cure period",
+      "Landlord has right to terminate the lease upon uncured default",
+      "Landlord has right to re-enter and repossess the premises",
+      "Landlord may accelerate remaining rent obligations upon default",
+      "Landlord's reletting rights and obligations are specified",
+      "Common law and equitable remedies are preserved as additional remedies",
+      "Remedies are cumulative and not exclusive (landlord may pursue multiple)",
+      "Abandonment or vacating as event of default",
+      "Extension of non-monetary cure period when cure is being diligently pursued"
+    ],
+    "elements_missing": [
+      "Landlord has self-help right to cure tenant's default and bill tenant",
+      "Third-party (mortgagee or guarantor) cure right on tenant default"
+    ]
+  },
+  "LP-22": {
+    "coverage_state": "missing",
+    "coverage_state_baseline": "missing",
+    "coverage_method": "step_305_per_element",
+    "element_verdicts": [
+      {
+        "element_id": "LP-22.lease_subordinate_to_mortgages",
+        "element_label": "Lease is subordinate to landlord's mortgages or deeds of trust",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.9",
+          "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision explicitly states that the Lease is subordinate to any mortgage, deed of trust, or other encumbrance placed upon the Shopping Center by Landlord, satisfying this element literally.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision expressly states that the lease is subordinate to mortgages, deeds of trust, or other encumbrances placed on the Shopping Center by Landlord.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease text directly states that the lease is subordinate to any mortgage, deed of trust, or other encumbrance, matching the element's requirement explicitly.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.subordination_scope_includes_future_mortgages",
+        "element_label": "Subordination covers future mortgages and refinancings, not only existing",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.9",
+          "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The phrase 'now or hereafter placed' expressly covers both existing and future mortgages and encumbrances, satisfying this element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The phrase \u201cnow or hereafter placed\u201d expressly extends the subordination to both existing and future mortgages, deeds of trust, or encumbrances.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "21.9",
+              "quote": "now or hereafter placed upon the Shopping Center by Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text explicitly includes subordination to encumbrances 'now or hereafter placed,' covering both existing and future mortgages as required by the element.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.subordination_mechanism_self_executing",
+        "element_label": "Subordination is automatic or self-executing without requiring tenant signature",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision does not state that subordination is self-operative or automatic, nor does it state that no further instrument of subordination is required. Because must_be_explicit is true, no implicit or default-law coverage is available.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision states that the lease shall be subordinate, but it does not expressly state that subordination is self-operative, automatic, or effective without further instruments.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The text does not explicitly state that the subordination is automatic or self-executing without requiring further documents or tenant action, and since the element requires explicit presence, it is missing.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.tenant_executes_subordination_documents_on_request",
+        "element_label": "Tenant must execute subordination documents on landlord or lender request",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision contains no obligation for Tenant to execute or deliver subordination documents upon Landlord's or lender's request. Because must_be_explicit is true, this element is missing.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "There is no language requiring Tenant to execute or deliver subordination, SNDA, or confirmation documents upon request by Landlord or a lender.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "There is no mention in the text of the tenant being required to execute subordination documents upon request, making this element explicitly absent.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.non_disturbance_protection_for_tenant",
+        "element_label": "Lender will not disturb tenant's possession if landlord defaults under mortgage",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.9",
+          "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession of the Premises so long as Tenant is not in default hereunder",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession of the Premises so long as Tenant is not in default hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision explicitly conditions subordination on the lender's agreement not to disturb Tenant's possession, directly satisfying the non-disturbance protection element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession of the Premises so long as Tenant is not in default hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision expressly conditions subordination on the encumbrance holder agreeing not to disturb Tenant\u2019s possession while Tenant is not in default.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "21.9",
+              "quote": "the holder of such encumbrance agrees not to disturb Tenant's possession of the Premises so long as Tenant is not in default hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text explicitly provides for non-disturbance of the tenant's possession by the lender if the tenant is not in default, matching the element's requirement.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.non_disturbance_source_is_binding",
+        "element_label": "Non-disturbance source is a binding agreement, not merely a future obligation",
+        "verdict": "missing",
+        "confidence": "medium",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "While the provision conditions subordination on the lender's agreement, it does not specify that a binding, executed SNDA has been or will be obtained, nor does it reference an attached exhibit or a formal agreement. The phrase 'agrees' is ambiguous as to whether a binding instrument is required or merely a contractual promise from Landlord suffices, making this element unclear.",
+            "confidence": "medium"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Although the clause refers to the holder agreeing not to disturb Tenant, it does not expressly identify an executed SNDA, attached agreement, or binding non-disturbance agreement from an existing or future lender.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The text conditions subordination on the holder agreeing to non-disturbance but does not establish a current binding agreement or executed SNDA, and lacks any reference to obtaining such a binding source, rendering it missing under the explicit requirement.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "While the provision conditions subordination on the lender's agreement, it does not specify that a binding, executed SNDA has been or will be obtained, nor does it reference an attached exhibit or a formal agreement. The phrase 'agrees' is ambiguous as to whether a binding instrument is required or merely a contractual promise from Landlord suffices, making this element unclear.",
+            "confidence": "medium"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-22.non_disturbance_obligation_for_future_lenders",
+        "element_label": "Landlord obligated to obtain non-disturbance from future lenders, not only existing",
+        "verdict": "missing",
+        "confidence": "medium",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord, provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Because the subordination condition (lender's non-disturbance agreement) applies to encumbrances 'now or hereafter placed,' it expressly extends the non-disturbance obligation to future lenders as a condition of subordination.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision applies to encumbrances placed \u201cnow or hereafter,\u201d but it does not expressly obligate Landlord to obtain a non-disturbance agreement from future lenders.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The text does not impose an obligation on the landlord to obtain non-disturbance agreements from future lenders; it only conditions subordination on such agreement, without requiring the landlord to secure it.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord, provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Because the subordination condition (lender's non-disturbance agreement) applies to encumbrances 'now or hereafter placed,' it expressly extends the non-disturbance obligation to future lenders as a condition of subordination.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-22.tenant_attornment_to_successor",
+        "element_label": "Tenant agrees to attorn to (recognize) successor landlord after foreclosure",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision contains no language requiring Tenant to attorn to or recognize any successor landlord following foreclosure or other transfer. Because must_be_explicit is true, this element is missing.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision contains no express language requiring Tenant to attorn to, recognize, or accept a foreclosure purchaser or other successor as landlord.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease text contains no provision regarding tenant attornment to a successor landlord after foreclosure or similar events, making this element absent.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.attornment_mechanism_self_executing",
+        "element_label": "Attornment is automatic or self-executing without requiring tenant signature",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "There is no attornment provision at all in the lease text, let alone one that is self-executing or automatic. Without any underlying attornment obligation, this element cannot be satisfied.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Because the provision does not include any attornment obligation, it also does not state that attornment is automatic or self-executing.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "There is no attornment provision in the text, so it cannot address whether attornment is self-executing, resulting in the element being missing.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.snda_execution_timing_and_default_consequence",
+        "element_label": "SNDA execution timing and consequence of tenant non-execution are specified",
+        "verdict": "missing",
+        "confidence": "medium",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision specifies no timing for SNDA execution and no consequence for Tenant's failure to execute. The cross_LP_coverage references LP-11, but no LP-11 text is provided in this analysis to confirm coverage there.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision does not specify any timing for Tenant to execute SNDA or subordination documents, nor does it state any default consequence for non-execution. No text from LP-11 is provided to support cross-LP coverage.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provided lease text does not address SNDA execution timing or consequences, and while cross-coverage from LP-11 is indicated, without access to LP-11's text or specific section, coverage cannot be reliably determined.",
+            "confidence": "medium"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provided lease text does not address SNDA execution timing or consequences, and while cross-coverage from LP-11 is indicated, without access to LP-11's text or specific section, coverage cannot be reliably determined.",
+            "confidence": "medium"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-22.landlord_obligation_obtain_snda_existing_lenders",
+        "element_label": "Landlord obligated to obtain SNDA from existing lenders before lease commencement",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision does not impose an explicit obligation on Landlord to obtain and deliver an SNDA from existing lenders prior to lease commencement, nor does it reference any attached exhibit or representation to that effect.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision does not state that Landlord must obtain or deliver an SNDA or non-disturbance agreement from existing lenders before lease commencement.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The text does not mention any obligation for the landlord to obtain an SNDA from existing lenders before lease commencement or otherwise.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      }
+    ],
+    "elements_found": [
+      "Lease is subordinate to landlord's mortgages or deeds of trust",
+      "Subordination covers future mortgages and refinancings, not only existing",
+      "Lender will not disturb tenant's possession if landlord defaults under mortgage"
+    ],
+    "elements_missing": [
+      "Subordination is automatic or self-executing without requiring tenant signature",
+      "Tenant must execute subordination documents on landlord or lender request",
+      "Non-disturbance source is a binding agreement, not merely a future obligation",
+      "Landlord obligated to obtain non-disturbance from future lenders, not only existing",
+      "Tenant agrees to attorn to (recognize) successor landlord after foreclosure",
+      "Attornment is automatic or self-executing without requiring tenant signature",
+      "SNDA execution timing and consequence of tenant non-execution are specified",
+      "Landlord obligated to obtain SNDA from existing lenders before lease commencement"
+    ]
+  },
+  "LP-26": {
+    "coverage_state": "review_needed",
+    "coverage_state_baseline": "review_needed",
+    "coverage_method": "step_305_per_element",
+    "element_verdicts": [
+      {
+        "element_id": "LP-26.quiet_enjoyment_covenant_present",
+        "element_label": "Express covenant of quiet enjoyment is present in the lease",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.7",
+          "quote": "Tenant shall have the right to quiet and peaceful enjoyment of the Premises",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "Tenant shall have the right to quiet and peaceful enjoyment of the Premises",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 21.7 expressly grants Tenant the right to quiet and peaceful enjoyment of the Premises, which is a direct covenant of quiet enjoyment.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "Tenant shall have the right to quiet and peaceful enjoyment of the Premises",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 21.7 expressly grants Tenant the right to quiet and peaceful enjoyment of the Premises, which is a near-literal quiet enjoyment covenant.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "Tenant shall have the right to quiet and peaceful enjoyment of the Premises",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease text explicitly includes a covenant granting the Tenant the right to quiet and peaceful enjoyment, which matches synonyms like 'Tenant shall have quiet possession of the Premises during the Term'.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-26.scope_peaceful_possession",
+        "element_label": "Scope of quiet enjoyment includes peaceful and undisturbed possession",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.7",
+          "quote": "quiet and peaceful enjoyment of the Premises",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "quiet and peaceful enjoyment of the Premises",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The phrase 'quiet and peaceful enjoyment' directly addresses the scope of peaceful and undisturbed possession, satisfying this element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "quiet and peaceful enjoyment of the Premises without interference",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision expressly defines the scope as quiet and peaceful enjoyment without interference, satisfying peaceful and undisturbed possession.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "quiet and peaceful enjoyment of the Premises without interference",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text explicitly describes the scope as quiet and peaceful enjoyment without interference, aligning with synonyms such as 'peaceably and quietly hold and enjoy' and 'peaceful possession of the Premises'.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-26.free_from_landlord_disturbance",
+        "element_label": "Tenant is protected from disturbance by landlord directly",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.7",
+          "quote": "without interference from Landlord",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "without interference from Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision explicitly states that Tenant's quiet enjoyment is protected 'without interference from Landlord,' directly covering protection from landlord disturbance.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "without interference from Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly protects Tenant's quiet enjoyment from interference by Landlord directly.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "without interference from Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision explicitly protects the Tenant from interference by the Landlord, matching synonyms like 'without interference by Landlord' and 'Landlord shall not interfere with Tenant's possession'.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-26.free_from_third_party_claims_through_landlord",
+        "element_label": "Tenant is protected from claims by parties claiming through landlord (other tenants, lender, etc.)",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.7",
+          "quote": "or any party claiming through Landlord",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "or any party claiming through Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision explicitly extends protection to interference from 'any party claiming through Landlord,' covering third-party claims such as lenders, other tenants, or successors claiming through Landlord.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "without interference from Landlord or any party claiming through Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision expressly extends protection to interference by any party claiming through Landlord.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "or any party claiming through Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text explicitly extends protection to disturbances from any party claiming through the Landlord, which corresponds to synonyms such as 'free from claims by anyone claiming by, through, or under Landlord'.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-26.conditioning_on_tenant_performance",
+        "element_label": "Quiet enjoyment is conditioned on tenant's performance of lease obligations",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.7",
+          "quote": "So long as Tenant is not in default under this Lease",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "So long as Tenant is not in default under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision explicitly conditions quiet enjoyment on Tenant not being in default under the Lease, satisfying this must-be-explicit element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "So long as Tenant is not in default under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The quiet enjoyment right is expressly conditioned on Tenant not being in default under the Lease.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.7",
+              "quote": "So long as Tenant is not in default under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The quiet enjoyment right is explicitly conditioned on the Tenant not being in default, matching synonyms like 'so long as Tenant performs all of its obligations under this Lease' and 'provided Tenant is not in default'.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-26.remedies_for_breach_of_quiet_enjoyment",
+        "element_label": "Remedies for breach of quiet enjoyment are specified or cross-covered",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "no_consensus",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 21.7 contains no language specifying remedies for breach of the quiet enjoyment covenant, and no cross-reference to LP-27 or any other remedies provision is present in the text provided.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "covered_by_default_law",
+            "citation": {
+              "section_ref": "Default law; jurisdiction-dependent",
+              "quote": null,
+              "citation_quality": "section_only"
+            },
+            "reasoning": "Section 21.7 does not specify remedies for breach of quiet enjoyment, and no LP-27 text is provided to verify cross-coverage. Because the schema permits jurisdiction-dependent default-law coverage, remedies may be supplied by applicable background law.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provided lease text does not specify or imply remedies for breach of quiet enjoyment; without the text of LP-27 or a specified governing jurisdiction to assess default law coverage, the status is unclear.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 21.7 contains no language specifying remedies for breach of the quiet enjoyment covenant, and no cross-reference to LP-27 or any other remedies provision is present in the text provided.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "covered_by_default_law",
+            "citation": {
+              "section_ref": "Default law; jurisdiction-dependent",
+              "quote": null,
+              "citation_quality": "section_only"
+            },
+            "reasoning": "Section 21.7 does not specify remedies for breach of quiet enjoyment, and no LP-27 text is provided to verify cross-coverage. Because the schema permits jurisdiction-dependent default-law coverage, remedies may be supplied by applicable background law.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provided lease text does not specify or imply remedies for breach of quiet enjoyment; without the text of LP-27 or a specified governing jurisdiction to assess default law coverage, the status is unclear.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-26.constructive_eviction_addressed",
+        "element_label": "Constructive eviction is acknowledged or addressed in the lease",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "no_consensus",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 21.7 does not mention constructive eviction, Tenant's right to vacate upon substantial impairment, or any related concept, and no cross-reference to LP-27 or other provisions addressing this topic appears in the text provided.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "covered_by_default_law",
+            "citation": {
+              "section_ref": "Default law; jurisdiction-dependent",
+              "quote": null,
+              "citation_quality": "section_only"
+            },
+            "reasoning": "The lease text does not expressly mention constructive eviction or a right to vacate upon substantial impairment, and no LP-27 text is provided to verify cross-coverage. Because the schema permits jurisdiction-dependent default-law coverage, constructive eviction may be addressed by applicable background law.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease text does not mention or address constructive eviction explicitly or implicitly; without LP-27's text or a known jurisdiction for default law evaluation, coverage cannot be reliably determined.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 21.7 does not mention constructive eviction, Tenant's right to vacate upon substantial impairment, or any related concept, and no cross-reference to LP-27 or other provisions addressing this topic appears in the text provided.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "covered_by_default_law",
+            "citation": {
+              "section_ref": "Default law; jurisdiction-dependent",
+              "quote": null,
+              "citation_quality": "section_only"
+            },
+            "reasoning": "The lease text does not expressly mention constructive eviction or a right to vacate upon substantial impairment, and no LP-27 text is provided to verify cross-coverage. Because the schema permits jurisdiction-dependent default-law coverage, constructive eviction may be addressed by applicable background law.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease text does not mention or address constructive eviction explicitly or implicitly; without LP-27's text or a known jurisdiction for default law evaluation, coverage cannot be reliably determined.",
+            "confidence": "high"
+          }
+        ]
+      }
+    ],
+    "elements_found": [
+      "Express covenant of quiet enjoyment is present in the lease",
+      "Scope of quiet enjoyment includes peaceful and undisturbed possession",
+      "Tenant is protected from disturbance by landlord directly",
+      "Tenant is protected from claims by parties claiming through landlord (other tenants, lender, etc.)",
+      "Quiet enjoyment is conditioned on tenant's performance of lease obligations"
+    ],
+    "elements_missing": []
+  },
+  "LP-27": {
+    "coverage_state": "review_needed",
+    "coverage_state_baseline": "review_needed",
+    "coverage_method": "step_305_per_element",
+    "element_verdicts": [
+      {
+        "element_id": "LP-27.landlord_default_definition",
+        "element_label": "Landlord default is defined (what triggers landlord default)",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.3",
+          "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.3 explicitly defines landlord default as Landlord's failure to perform any of its obligations under the Lease, which directly matches the expected element definition.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.3 expressly defines Landlord default as Landlord's failure to perform its lease obligations, subject to the stated notice and cure framework.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision explicitly defines landlord default as the landlord's failure to perform obligations under the lease after notice and cure period, matching the expected synonyms closely.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-27.notice_required_to_landlord",
+        "element_label": "Tenant must give landlord written notice of default",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.3",
+          "quote": "within thirty (30) days after written notice from Tenant specifying the nature of such failure",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "within thirty (30) days after written notice from Tenant specifying the nature of such failure",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.3 explicitly requires written notice from Tenant specifying the nature of the failure before a landlord default is triggered, satisfying the notice requirement element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "within thirty (30) days after written notice from Tenant specifying the nature of such failure",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision expressly requires written notice from Tenant specifying the nature of Landlord's failure before Landlord is in default.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "within thirty (30) days after written notice from Tenant specifying the nature of such failure",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text explicitly requires the tenant to provide written notice to the landlord specifying the failure, which aligns with the element's requirements and synonyms.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-27.cure_period_for_landlord",
+        "element_label": "Cure period for landlord default is specified",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 13.3",
+          "quote": "within thirty (30) days after written notice from Tenant specifying the nature of such failure (or, if such failure cannot reasonably be cured within thirty (30) days, failure to commence cure within such period and diligently prosecute such cure to completion)",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "within thirty (30) days after written notice from Tenant specifying the nature of such failure (or, if such failure cannot reasonably be cured within thirty (30) days, failure to commence cure within such period and diligently prosecute such cure to completion)",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.3 explicitly provides a 30-day cure period with an extended cure period for defaults that cannot reasonably be cured within 30 days, provided Landlord commences cure and diligently prosecutes to completion.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "within thirty (30) days after written notice from Tenant ... or, if such failure cannot reasonably be cured within thirty (30) days, failure to commence cure within such period and diligently prosecute such cure to completion",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly gives Landlord a thirty-day cure period and, for failures not reasonably curable within that period, allows commencement within thirty days with diligent prosecution to completion.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "within thirty (30) days ... or, if such failure cannot reasonably be cured within thirty (30) days, failure to commence cure within such period and diligently prosecute such cure to completion",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision explicitly specifies a 30-day cure period for the landlord, with an extension for matters that cannot be cured within that time if commenced and diligently pursued, matching the synonyms.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-27.tenant_self_help_and_offset",
+        "element_label": "Tenant may perform landlord's obligation and offset against rent",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 contains no language granting Tenant the right to perform Landlord's obligations and offset costs against rent. Because must_be_explicit is true, no implicit or default-law coverage path is available.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 defines Landlord default and cure timing but does not state that Tenant may perform Landlord's obligations, seek reimbursement, or offset costs against rent. Because this element must be explicit, it is missing.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provided lease text defines landlord default but does not mention tenant's right to perform the landlord's obligations or offset costs against rent. Since this element must be explicit and no such language is present, it is missing.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-27.tenant_right_to_terminate",
+        "element_label": "Tenant has right to terminate the lease upon uncured landlord default",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "no_consensus",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 defines landlord default and the cure period but does not grant Tenant any right to terminate the Lease upon an uncured landlord default. No termination right language appears anywhere in the provision.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision establishes when Landlord is in default but does not expressly provide Tenant a termination remedy. Default-law termination rights may be jurisdiction-dependent, and the governing law is not specified, so coverage cannot be reliably determined.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The text does not address tenant's right to terminate upon uncured default, either explicitly or implicitly. Although default law may cover this in a jurisdiction-dependent manner, the governing law is not specified, making coverage unclear.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 defines landlord default and the cure period but does not grant Tenant any right to terminate the Lease upon an uncured landlord default. No termination right language appears anywhere in the provision.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision establishes when Landlord is in default but does not expressly provide Tenant a termination remedy. Default-law termination rights may be jurisdiction-dependent, and the governing law is not specified, so coverage cannot be reliably determined.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The text does not address tenant's right to terminate upon uncured default, either explicitly or implicitly. Although default law may cover this in a jurisdiction-dependent manner, the governing law is not specified, making coverage unclear.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-27.tenant_right_to_damages",
+        "element_label": "Tenant has right to monetary damages for landlord default",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "no_consensus",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 does not mention any right of Tenant to recover monetary damages resulting from a landlord default. The provision is limited to defining the default trigger and cure period only.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.3 does not expressly state that Tenant may recover damages for Landlord default. Damages may be available under applicable default law, but because the governing law is not specified and coverage is jurisdiction-dependent, the element is unclear.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision does not mention tenant's right to monetary damages for landlord default. Coverage by default law is jurisdiction-dependent, but with no governing law specified, it remains unclear.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 does not mention any right of Tenant to recover monetary damages resulting from a landlord default. The provision is limited to defining the default trigger and cure period only.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.3 does not expressly state that Tenant may recover damages for Landlord default. Damages may be available under applicable default law, but because the governing law is not specified and coverage is jurisdiction-dependent, the element is unclear.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision does not mention tenant's right to monetary damages for landlord default. Coverage by default law is jurisdiction-dependent, but with no governing law specified, it remains unclear.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-27.tenant_right_to_specific_performance",
+        "element_label": "Tenant has right to specific performance or injunctive relief",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "no_consensus",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 contains no reference to specific performance, injunctive relief, or equitable remedies available to Tenant upon landlord default.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease text does not expressly authorize Tenant to seek specific performance, injunctive relief, or other equitable relief. Such remedies may depend on applicable law and equitable standards, but governing law is not specified.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "There is no reference to tenant's right to specific performance or injunctive relief in the text. Since default law coverage is jurisdiction-dependent and governing law is unspecified, the element's coverage is unclear.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 contains no reference to specific performance, injunctive relief, or equitable remedies available to Tenant upon landlord default.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease text does not expressly authorize Tenant to seek specific performance, injunctive relief, or other equitable relief. Such remedies may depend on applicable law and equitable standards, but governing law is not specified.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "There is no reference to tenant's right to specific performance or injunctive relief in the text. Since default law coverage is jurisdiction-dependent and governing law is unspecified, the element's coverage is unclear.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-27.lender_notice_and_cure_right",
+        "element_label": "Tenant must notify lender and afford lender cure period before exercising remedies",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "all_evaluators_unclear",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 contains no lender notice or cure right provisions, and while cross_LP_coverage references LP-22, no LP-22 text has been provided for review. Without access to LP-22's text, coverage cannot be confirmed.",
+            "confidence": "low"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 contains no lender or mortgagee notice-and-cure requirement. Although cross-LP coverage lists LP-22, no LP-22 text or section citation is provided here, so coverage in another LP cannot be verified.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provided text does not mention any requirement for tenant to notify a lender or provide a cure period before remedies. Although cross-coverage in LP-22 is indicated, no text from LP-22 is available to confirm or cite a specific section, making coverage unclear.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 contains no lender notice or cure right provisions, and while cross_LP_coverage references LP-22, no LP-22 text has been provided for review. Without access to LP-22's text, coverage cannot be confirmed.",
+            "confidence": "low"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 contains no lender or mortgagee notice-and-cure requirement. Although cross-LP coverage lists LP-22, no LP-22 text or section citation is provided here, so coverage in another LP cannot be verified.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provided text does not mention any requirement for tenant to notify a lender or provide a cure period before remedies. Although cross-coverage in LP-22 is indicated, no text from LP-22 is available to confirm or cite a specific section, making coverage unclear.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-27.common_law_remedies_preserved",
+        "element_label": "Common law and equitable remedies are preserved as additional tenant remedies",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "no_consensus",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 contains no language preserving common law or equitable remedies as additional tenant remedies; the provision is limited solely to defining the default and cure period.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.3 does not expressly preserve Tenant's remedies at law or in equity. Such remedies may exist by default law depending on jurisdiction, but the governing law is not specified.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The text does not preserve or reference common law or equitable remedies for the tenant. With jurisdiction-dependent default law and no specified governing law, it is unclear if such remedies apply by default.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 contains no language preserving common law or equitable remedies as additional tenant remedies; the provision is limited solely to defining the default and cure period.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 13.3 does not expressly preserve Tenant's remedies at law or in equity. Such remedies may exist by default law depending on jurisdiction, but the governing law is not specified.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The text does not preserve or reference common law or equitable remedies for the tenant. With jurisdiction-dependent default law and no specified governing law, it is unclear if such remedies apply by default.",
+            "confidence": "high"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-27.remedies_cumulative_not_exclusive",
+        "element_label": "Tenant's remedies are cumulative and not exclusive",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "no_consensus",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 does not include any language stating that Tenant's remedies are cumulative and not exclusive. No such provision appears in the lease text provided.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision does not state that Tenant's remedies are cumulative or non-exclusive. Whether multiple remedies remain available may depend on applicable law and other lease provisions, but no governing law or additional remedy clause is provided.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "No language in the provision indicates that tenant's remedies are cumulative and not exclusive. Coverage under default law is jurisdiction-dependent, but without a specified governing law, the status is unclear.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 13.3 does not include any language stating that Tenant's remedies are cumulative and not exclusive. No such provision appears in the lease text provided.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 13.3",
+              "quote": "Landlord shall be in default under this Lease if Landlord fails to perform any of its obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision does not state that Tenant's remedies are cumulative or non-exclusive. Whether multiple remedies remain available may depend on applicable law and other lease provisions, but no governing law or additional remedy clause is provided.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "No language in the provision indicates that tenant's remedies are cumulative and not exclusive. Coverage under default law is jurisdiction-dependent, but without a specified governing law, the status is unclear.",
+            "confidence": "high"
+          }
+        ]
+      }
+    ],
+    "elements_found": [
+      "Landlord default is defined (what triggers landlord default)",
+      "Tenant must give landlord written notice of default",
+      "Cure period for landlord default is specified"
+    ],
+    "elements_missing": [
+      "Tenant may perform landlord's obligation and offset against rent"
+    ]
+  }
+}

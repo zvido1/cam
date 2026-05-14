@@ -1,0 +1,82 @@
+{
+  "LP-09": {
+    "coverage_state": "partial",
+    "coverage_state_baseline": "partial",
+    "coverage_method": "legacy",
+    "element_verdicts": [],
+    "elements_found": [
+      "landlord consent requirement",
+      "grounds for withholding consent (reasonableness standard)",
+      "affiliate exception (no consent required for related entities)",
+      "profit sharing on sublet above base rent"
+    ],
+    "elements_missing": [
+      "recapture right (landlord can terminate and lease directly)",
+      "assignment in connection with sale of business"
+    ]
+  },
+  "LP-11": {
+    "coverage_state": "covered_unfavorable",
+    "coverage_state_baseline": "covered_unfavorable",
+    "coverage_method": "legacy",
+    "element_verdicts": [],
+    "elements_found": [
+      "monetary default definition and cure period (typically 5 days)",
+      "non-monetary default definition and cure period (typically 30 days)",
+      "notice requirement before default declaration",
+      "landlord termination right",
+      "landlord re-entry right",
+      "rent acceleration on default"
+    ],
+    "elements_missing": [
+      "tenant's right to cure third-party defaults"
+    ]
+  },
+  "LP-22": {
+    "coverage_state": "partial",
+    "coverage_state_baseline": "partial",
+    "coverage_method": "legacy",
+    "element_verdicts": [],
+    "elements_found": [
+      "subordination of lease to senior mortgage or deed of trust",
+      "attornment obligation (tenant recognizes successor landlord after foreclosure)"
+    ],
+    "elements_missing": [
+      "non-disturbance covenant from lender (lease survives foreclosure if tenant not in default)",
+      "form of SNDA (landlord-prepared, tenant approval right, or recognized form)",
+      "lender obligation to execute SNDA within defined period",
+      "survival and binding effect on successors and assigns"
+    ]
+  },
+  "LP-26": {
+    "coverage_state": "review_needed",
+    "coverage_state_baseline": "review_needed",
+    "coverage_method": "legacy",
+    "element_verdicts": [],
+    "elements_found": [
+      "express quiet enjoyment covenant by landlord"
+    ],
+    "elements_missing": [
+      "covenant conditioned on tenant's performance of lease obligations (not absolute)",
+      "survival and binding effect on landlord's successors, assigns, and lenders",
+      "covenant not subject to any undisclosed superior lien or encumbrance"
+    ]
+  },
+  "LP-27": {
+    "coverage_state": "partial",
+    "coverage_state_baseline": "partial",
+    "coverage_method": "legacy",
+    "element_verdicts": [],
+    "elements_found": [
+      "definition of landlord default events (failure to perform material obligations after notice and cure)",
+      "notice and cure period before tenant may exercise remedies (typically 30 days written + additional reasonable time for complex repairs)",
+      "tenant self-help right to cure at landlord's expense after cure period expires",
+      "lender third-party cure right (lender may cure landlord default within additional cure period)"
+    ],
+    "elements_missing": [
+      "rent offset right against verified self-help costs",
+      "tenant's right to terminate on material uncured landlord default",
+      "limitation on landlord's personal liability (typically limited to interest in the property)"
+    ]
+  }
+}

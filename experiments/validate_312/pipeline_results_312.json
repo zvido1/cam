@@ -1,0 +1,539 @@
+{
+  "cross_provision_findings": [
+    {
+      "finding_id": "CPF-01",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-02"
+      ],
+      "headline": "No rent escalation mechanism is identified",
+      "detail": "Evaluator C found no rent escalation formula, schedule, or mechanism anywhere in the lease, and no contrary evaluator analysis was provided for this LP. On the available record, the lease does not appear to address rent escalation.",
+      "cited_sections": [],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "MEDIUM",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-02",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-03"
+      ],
+      "headline": "Lease term is addressed, but renewal economics remain incomplete",
+      "detail": "Evaluator C identified partial coverage because Article 2 and Section 1.3 address the term, commencement, and expiration, and Section 2.2 provides a renewal option, but renewal rent is not defined. No contrary evaluator analysis was provided for this LP, so partial coverage is the reconciled result.",
+      "cited_sections": [
+        "Article 2",
+        "Section 1.3",
+        "Section 2.2"
+      ],
+      "verdict": "partial_coverage_found",
+      "directionality": "match",
+      "severity": "LOW",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "partial_coverage_found",
+        "B": "partial_coverage_found",
+        "C": "partial_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-03",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-04"
+      ],
+      "headline": "Security deposit alternatives are not addressed",
+      "detail": "Evaluator C found no coverage because the lease does not address a letter of credit or alternative security form. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "LOW",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-04",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-05"
+      ],
+      "headline": "Permitted use lacks related operational protections",
+      "detail": "Evaluator C found no coverage for continuous operation and co-tenancy or anchor dependency concepts. No contrary evaluator analysis was provided for this LP, so the lease appears not to cover those requested use-related protections.",
+      "cited_sections": [],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "MEDIUM",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-05",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-06"
+      ],
+      "headline": "Maintenance and repair provisions do not define key landlord obligations",
+      "detail": "Evaluator C found no coverage because landlord structural, roof, and exterior obligations and repair response times are not defined outside Article 8. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Article 8"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-06",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-07"
+      ],
+      "headline": "CAM provisions omit allocation detail, caps, and audit rights",
+      "detail": "Evaluator C concluded there is no coverage for proportionate share calculation detail, annual caps, or audit rights beyond the basic CAM definition in Section 1.3 and reconciliation language in Section 3.3. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Section 1.3",
+        "Section 3.3"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-07",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-08"
+      ],
+      "headline": "Insurance provisions are only partial because business interruption coverage is not addressed",
+      "detail": "Evaluator C found partial coverage: Article 14 includes a mutual waiver of subrogation, but business interruption coverage is absent. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Article 14"
+      ],
+      "verdict": "partial_coverage_found",
+      "directionality": "match",
+      "severity": "LOW",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "partial_coverage_found",
+        "B": "partial_coverage_found",
+        "C": "partial_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-08",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-09"
+      ],
+      "headline": "Assignment and subletting framework lacks common tenant-side carveouts and mechanics",
+      "detail": "Evaluator C found no coverage for affiliate exceptions, continued liability, assumption, recapture, or profit allocation beyond Article 17. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Article 17"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-09",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-10"
+      ],
+      "headline": "Alterations provisions lack approval thresholds and end-of-term removal rules",
+      "detail": "Evaluator C found no coverage because the lease provides only general consent requirements in Article 8, without a dollar or scope threshold for approval or a stated removal obligation at expiration. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Article 8"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "MEDIUM",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-10",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-13"
+      ],
+      "headline": "Indemnity and liability provisions are incomplete and run materially in Landlord's favor",
+      "detail": "Evaluator A found partial coverage based on Section 24.19, Section 15.4, and Section 24.4, while Evaluator C found no coverage because there is no affirmative landlord indemnification of Tenant and no liability cap protecting Tenant. The evaluators disagree on whether the existing one-sided indemnity and fee-shifting provisions amount to partial coverage, but both identified a directional problem. Using consolidator judgment, the lease has partial but materially deficient coverage because it addresses indemnity/liability topics without providing reciprocal landlord indemnity, and Section 24.4 further limits Landlord exposure. A directional mismatch must be surfaced because both evaluators flagged Tenant-facing risk.",
+      "cited_sections": [
+        "Section 24.19",
+        "Section 24.4",
+        "Section 15.4"
+      ],
+      "verdict": "partial_coverage_found",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "partial_coverage_found",
+        "B": "partial_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-11",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-14"
+      ],
+      "headline": "Force majeure is limited to time extension and omits tenant protections",
+      "detail": "Evaluator C found no coverage because, beyond Section 24.11, the lease does not provide notice requirements, termination rights, or rent abatement tied to force majeure. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Section 24.11"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "MEDIUM",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-12",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-15"
+      ],
+      "headline": "Signage rights are not affirmatively granted beyond limited consent language",
+      "detail": "Evaluator C found no coverage because no exterior, storefront, or pylon or monument signage rights are granted beyond door-signage consent in Article 7. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Article 7"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "LOW",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-13",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-16"
+      ],
+      "headline": "Parking is only indirectly referenced and no tenant parking rights are granted",
+      "detail": "Evaluator B found partial coverage because Section 1.3 references repairs to a parking area within CAM, which confirms project parking exists in context, while Evaluator C found no coverage because no article grants parking rights or sets parking terms. This is a 1-1 split on Q1 coverage characterization. Using consolidator judgment, the better reading is partial coverage: the lease references parking facilities but does not grant Tenant any actual parking rights, allocation, or use terms. No evaluator identified a directional mismatch.",
+      "cited_sections": [
+        "Section 1.3"
+      ],
+      "verdict": "partial_coverage_found",
+      "directionality": "match",
+      "severity": "LOW",
+      "evaluator_agreement": "1-2",
+      "evaluator_verdicts": {
+        "A": "partial_coverage_found",
+        "B": "partial_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-14",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-17"
+      ],
+      "headline": "No dispute resolution mechanism is provided",
+      "detail": "Evaluator C found no mediation, arbitration, or other dispute resolution mechanism in the lease. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "LOW",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-15",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-20"
+      ],
+      "headline": "No exclusivity protection is stated",
+      "detail": "Evaluator C found no exclusivity provision anywhere in the lease, and no contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "MEDIUM",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-16",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-22"
+      ],
+      "headline": "SNDA coverage is incomplete and subordination runs against Tenant without non-disturbance protection",
+      "detail": "Evaluator C found no coverage because Article 21 provides subordination and attornment only, with no non-disturbance language and no landlord obligation to obtain an SNDA from lenders. Evaluator C also flagged a directional mismatch because the provision benefits Landlord and mortgagees while requiring Tenant to subordinate and attorn without reciprocal protection. No contrary evaluator analysis was provided for this LP, and the directional issue must be surfaced.",
+      "cited_sections": [
+        "Article 21"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-17",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-24"
+      ],
+      "headline": "Damage and destruction provisions omit repair obligations, deadlines, and proceeds treatment",
+      "detail": "Evaluator C found no coverage because Section 10.1 provides only a limited termination right and does not impose a landlord repair obligation, set a repair deadline, or address disposition of insurance proceeds. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Section 10.1"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-18",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-25"
+      ],
+      "headline": "Condemnation clause lacks key allocation and restoration mechanics",
+      "detail": "Evaluator C found no coverage because Section 10.2 provides for termination but does not define total versus partial taking, provide rent abatement, or establish restoration obligations. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Section 10.2"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "MEDIUM",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-19",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-26"
+      ],
+      "headline": "Quiet enjoyment is stated narrowly and does not address constructive eviction",
+      "detail": "Evaluator C found no coverage because Section 18.1 contains a quiet possession covenant but does not address constructive eviction. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Section 18.1"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "MEDIUM",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-20",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-27"
+      ],
+      "headline": "Default and remedies provisions protect Landlord only and leave Tenant without landlord-default remedies",
+      "detail": "Evaluator C found no coverage because Article 15 defines only tenant defaults and landlord remedies, without any landlord default definition, notice and cure framework, offset rights, or tenant termination rights. Evaluator C also flagged a directional mismatch because Article 15 and Section 15.3 operate exclusively in Landlord's favor. No contrary evaluator analysis was provided for this LP, and the directional mismatch must be surfaced.",
+      "cited_sections": [
+        "Article 15",
+        "Section 15.3"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-21",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-28"
+      ],
+      "headline": "Compliance with laws is one-sided and omits landlord-side allocation concepts",
+      "detail": "Evaluator C found no coverage because, outside Tenant's compliance duty in Article 12, the lease does not allocate landlord delivery obligations, structural or use-related compliance costs, ADA responsibility, or grandfathering protections. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Article 12"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-22",
+      "finding_type": "cross_coverage_gap",
+      "implicated_lps": [
+        "LP-30"
+      ],
+      "headline": "Estoppel certificate provision lacks response-failure consequence and request limits",
+      "detail": "Evaluator C found no coverage because Article 22 does not state a consequence for failure to respond or limit the frequency of estoppel requests. No contrary evaluator analysis was provided for this LP.",
+      "cited_sections": [
+        "Article 22"
+      ],
+      "verdict": "no_coverage_found",
+      "directionality": null,
+      "severity": "LOW",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "no_coverage_found",
+        "B": "no_coverage_found",
+        "C": "no_coverage_found"
+      }
+    },
+    {
+      "finding_id": "CPF-23",
+      "finding_type": "compound_risk",
+      "implicated_lps": [
+        "LP-22",
+        "LP-27",
+        "LP-24"
+      ],
+      "headline": "Tenant lacks remedies and non-disturbance while bearing casualty and subordination exposure",
+      "detail": "Evaluator C identified a high-severity compound risk arising from the interaction of Article 21, Article 15, and Section 10.1. Tenant must subordinate and attorn without non-disturbance protection, has no meaningful landlord-default remedies, and faces casualty provisions that do not require timely repair or provide broader abatement or recovery mechanics. Even if each provision is viewed separately, together they create a materially amplified tenant-risk profile.",
+      "cited_sections": [
+        "Article 21",
+        "Article 15",
+        "Section 10.1"
+      ],
+      "verdict": "compound_risk_confirmed",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "1-2",
+      "evaluator_verdicts": {
+        "A": "compound_risk_confirmed",
+        "B": "compound_risk_confirmed",
+        "C": "compound_risk_confirmed"
+      }
+    },
+    {
+      "finding_id": "CPF-24",
+      "finding_type": "compound_risk",
+      "implicated_lps": [
+        "LP-07",
+        "LP-06",
+        "LP-13"
+      ],
+      "headline": "Tenant faces uncapped operating and repair exposure without offsetting indemnity protection",
+      "detail": "Evaluator C identified a high-severity compound risk from the interaction of CAM reconciliation mechanics, repair allocation, and one-way indemnity. Section 3.3 gives Landlord substantial control over CAM estimates and reconciliation, Article 8 places repair burdens on Tenant, and Section 24.19 protects Landlord through a one-sided indemnity. In combination, these provisions can magnify Tenant's financial exposure without corresponding audit, cap, or reciprocal indemnity protections.",
+      "cited_sections": [
+        "Section 3.3",
+        "Article 8",
+        "Section 24.19"
+      ],
+      "verdict": "compound_risk_confirmed",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "1-2",
+      "evaluator_verdicts": {
+        "A": "compound_risk_confirmed",
+        "B": "compound_risk_confirmed",
+        "C": "compound_risk_confirmed"
+      }
+    }
+  ],
+  "meta": {
+    "skipped": false,
+    "flagged_lp_count": 22,
+    "finding_count": 24,
+    "evaluators_completed": 3,
+    "elapsed_sec": 324.34,
+    "models": {
+      "C": {
+        "model": "grok-4.3",
+        "provider": "xai",
+        "completed": true,
+        "elapsed_sec": 66.94
+      },
+      "A": {
+        "model": "claude-sonnet-4-6",
+        "provider": "anthropic",
+        "completed": true,
+        "elapsed_sec": 70.87
+      },
+      "B": {
+        "model": "gpt-5.4",
+        "provider": "openai",
+        "completed": true,
+        "elapsed_sec": 154.42
+      }
+    }
+  }
+}

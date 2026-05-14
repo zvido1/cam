@@ -1,0 +1,1138 @@
+{
+  "LP-09": {
+    "coverage_state": "review_needed",
+    "coverage_state_baseline": "review_needed",
+    "coverage_method": "step_305_per_element",
+    "element_verdicts": [
+      {
+        "element_id": "LP-09.assignment_requires_landlord_consent",
+        "element_label": "Assignment requires landlord consent",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.1",
+          "quote": "Tenant shall not assign this Lease, or sublet the Premises or any part thereof, or transfer any interest in this Lease, or permit the use or occupancy of the Premises by any party other than Tenant, without the prior written consent of Landlord in each instance",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant shall not assign this Lease, or sublet the Premises or any part thereof, or transfer any interest in this Lease, or permit the use or occupancy of the Premises by any party other than Tenant, without the prior written consent of Landlord in each instance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly prohibits assignment without Landlord's prior written consent, satisfying the must_be_explicit requirement with near-literal language matching the expected element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant shall not assign this Lease ... without the prior written consent of Landlord in each instance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 expressly prohibits assignment of the Lease without Landlord's prior written consent.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "Tenant shall not assign this Lease... without the prior written consent of Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease text explicitly states that assignment requires the landlord's prior written consent, matching the element's requirements and synonyms.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.subletting_requires_landlord_consent",
+        "element_label": "Subletting requires landlord consent",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.1",
+          "quote": "Tenant shall not assign this Lease, or sublet the Premises or any part thereof, or transfer any interest in this Lease ... without the prior written consent of Landlord in each instance",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant shall not assign this Lease, or sublet the Premises or any part thereof, or transfer any interest in this Lease ... without the prior written consent of Landlord in each instance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly prohibits subletting all or any part of the Premises without Landlord's prior written consent, directly satisfying the must_be_explicit requirement.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant shall not ... sublet the Premises or any part thereof ... without the prior written consent of Landlord in each instance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 expressly requires Landlord's prior written consent before Tenant may sublet all or any part of the Premises.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "or sublet the Premises or any part thereof... without the prior written consent of Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease text explicitly prohibits subletting without the landlord's prior written consent, directly aligning with the element and its synonyms.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.consent_standard_supplied",
+        "element_label": "Consent standard is supplied by lease text or applicable default law",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.1",
+          "quote": "which consent shall not be unreasonably withheld, conditioned, or delayed",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "which consent shall not be unreasonably withheld, conditioned, or delayed",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 expressly states the consent standard \u2014 not unreasonably withheld, conditioned, or delayed \u2014 which is one of the enumerated synonyms for this element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "which consent shall not be unreasonably withheld, conditioned, or delayed",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease supplies an express reasonableness standard for Landlord's consent to assignment or subletting.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "which consent shall not be unreasonably withheld, conditioned, or delayed",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease provides a specific standard for consent, stating it shall not be unreasonably withheld, conditioned, or delayed, which satisfies the element explicitly.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.affiliate_transfer_exception_defined",
+        "element_label": "Affiliate or related-party transfer exception is defined or excluded",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.1",
+          "quote": "Tenant may assign this Lease or sublet the Premises to an Affiliate without Landlord's prior written consent, provided that (a) Tenant delivers written notice to Landlord at least thirty (30) days prior to such assignment or subletting, (b) such Affiliate assumes all obligations of Tenant under this Lease, and (c) Tenant remains primarily liable for all obligations hereunder",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant may assign this Lease or sublet the Premises to an Affiliate without Landlord's prior written consent, provided that (a) Tenant delivers written notice to Landlord at least thirty (30) days prior to such assignment or subletting, (b) such Affiliate assumes all obligations of Tenant under this Lease, and (c) Tenant remains primarily liable for all obligations hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly defines an affiliate transfer exception with conditions, directly addressing the permitted transferee concept listed in the element's synonyms.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Tenant may assign this Lease or sublet the Premises to an Affiliate without Landlord's prior written consent, provided that...",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 expressly creates an Affiliate transfer exception from the prior-consent requirement and states conditions for that exception.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "Tenant may assign this Lease or sublet the Premises to an Affiliate without Landlord's prior written consent",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease defines an exception for transfers to an Affiliate, including conditions for such transfers, matching synonyms like 'assignment to an Affiliate' and 'permitted transfer'.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.change_of_control_addressed",
+        "element_label": "Change of control is addressed",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "No provision in Article XI addresses change of control, transfer of controlling interest, sale of stock or membership interests, or any analogous concept. The element requires explicit or implicit coverage but neither is present, and default_law_covers is false.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision addresses assignments, subletting, transfers of lease interests, and occupancy by others, but does not expressly address change of control, stock or membership interest transfers, or transfers of controlling interests.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease text does not address change of control, transfer of controlling interests, or similar concepts as per the synonyms, and no implicit coverage is allowed.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.tenant_remains_liable_after_transfer",
+        "element_label": "Original tenant remains liable after assignment or sublease",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.3",
+          "quote": "No assignment or subletting shall release Tenant from its obligations under this Lease. Tenant shall remain fully liable for the performance of all terms, covenants, and conditions of this Lease, including the payment of Rent.",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.3",
+              "quote": "No assignment or subletting shall release Tenant from its obligations under this Lease. Tenant shall remain fully liable for the performance of all terms, covenants, and conditions of this Lease, including the payment of Rent.",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.3 explicitly states that no assignment or subletting releases Tenant and that Tenant remains fully liable, matching the element's synonyms precisely.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.3",
+              "quote": "No assignment or subletting shall release Tenant from its obligations under this Lease. Tenant shall remain fully liable...",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.3 expressly states that assignment or subletting does not release Tenant and that Tenant remains fully liable for performance and Rent.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.3",
+              "quote": "No assignment or subletting shall release Tenant from its obligations under this Lease. Tenant shall remain fully liable",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease explicitly states that the original tenant remains liable after assignment or subletting, directly matching the element's synonyms.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.assignee_or_subtenant_assumes_obligations",
+        "element_label": "Assignee or subtenant must assume lease obligations",
+        "verdict": "unclear",
+        "confidence": "low",
+        "citation": null,
+        "reason": "no_consensus",
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly requires that an Affiliate assignee or subtenant assume all obligations of Tenant under the Lease, which is one of the enumerated synonyms and satisfies the must_be_explicit requirement. Note this assumption requirement is stated in the affiliate exception context; Section 11.2(d) also requires delivery of the executed assignment or sublease agreement for consented transfers, but does not explicitly require assumption for non-affiliate transfers.",
+            "confidence": "medium"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Sections 11.1 and 11.2",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease; ... proposed assignee or subtenant being a reputable entity with financial capability to perform the obligations of this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly requires an Affiliate transferee to assume all obligations, and requires other proposed assignees or subtenants to have financial capability to perform obligations. However, it does not clearly and expressly require every assignee or subtenant to assume all lease obligations.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The requirement for assumption is explicitly stated only for affiliates, but not for general assignees or subtenants; since the element requires explicit coverage and the text is ambiguous for non-affiliates, the verdict is unclear.",
+            "confidence": "medium"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly requires that an Affiliate assignee or subtenant assume all obligations of Tenant under the Lease, which is one of the enumerated synonyms and satisfies the must_be_explicit requirement. Note this assumption requirement is stated in the affiliate exception context; Section 11.2(d) also requires delivery of the executed assignment or sublease agreement for consented transfers, but does not explicitly require assumption for non-affiliate transfers.",
+            "confidence": "medium"
+          },
+          {
+            "role": "B",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Sections 11.1 and 11.2",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease; ... proposed assignee or subtenant being a reputable entity with financial capability to perform the obligations of this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease expressly requires an Affiliate transferee to assume all obligations, and requires other proposed assignees or subtenants to have financial capability to perform obligations. However, it does not clearly and expressly require every assignee or subtenant to assume all lease obligations.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "such Affiliate assumes all obligations of Tenant under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The requirement for assumption is explicitly stated only for affiliates, but not for general assignees or subtenants; since the element requires explicit coverage and the text is ambiguous for non-affiliates, the verdict is unclear.",
+            "confidence": "medium"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-09.landlord_recapture_right",
+        "element_label": "Landlord recapture or termination right upon proposed transfer",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "No provision in Article XI grants Landlord a recapture or termination right upon a proposed transfer. The element is not addressed anywhere in the lease text provided.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision does not give Landlord a right to recapture the Premises or terminate the Lease as to proposed transfer space upon a proposed assignment or subletting.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease does not mention any landlord right to recapture the premises or terminate upon proposed transfer, with no matching text or synonyms.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.transfer_profit_sharing",
+        "element_label": "Transfer profits or excess rent are allocated",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.4",
+          "quote": "Tenant shall pay fifty percent (50%) of such excess to Landlord as Additional Rent",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.4",
+              "quote": "Tenant shall pay fifty percent (50%) of such excess to Landlord as Additional Rent",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.4 explicitly allocates transfer profits by requiring Tenant to pay 50% of excess rent or consideration received from a subtenant or assignee to Landlord, matching the element's synonyms directly.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.4",
+              "quote": "Tenant shall pay fifty percent (50%) of such excess to Landlord as Additional Rent",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.4 expressly allocates excess rent or consideration from a subtenant or assignee, after specified deductions, by requiring Tenant to pay 50% of the excess to Landlord.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.4",
+              "quote": "Tenant shall pay fifty percent (50%) of such excess to Landlord as Additional Rent",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease includes a profit-sharing provision for excess rent or consideration from transfers, directly addressing the element.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.unauthorized_transfer_consequences",
+        "element_label": "Unauthorized transfers are void, default-triggering, or otherwise remedied",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.1",
+          "quote": "Any assignment, subletting, or transfer in violation of this Section shall be void and of no force or effect, and shall constitute a default under this Lease.",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Any assignment, subletting, or transfer in violation of this Section shall be void and of no force or effect, and shall constitute a default under this Lease.",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 explicitly states that unauthorized transfers are void and constitute a default, directly matching two of the element's enumerated synonyms.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.1",
+              "quote": "Any assignment, subletting, or transfer in violation of this Section shall be void and of no force or effect, and shall constitute a default under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.1 expressly states that unauthorized transfers are void and constitute a lease default.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.1",
+              "quote": "Any assignment, subletting, or transfer in violation of this Section shall be void... and shall constitute a default under this Lease",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease specifies that unauthorized transfers are void and constitute a default, matching the element's synonyms explicitly.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.required_transfer_documentation",
+        "element_label": "Transfer request documentation and notice requirements are specified",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 11.2",
+          "quote": "Tenant delivering to Landlord an executed copy of the assignment or sublease agreement at least thirty (30) days prior to the effective date thereof",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.2",
+              "quote": "Tenant delivering to Landlord an executed copy of the assignment or sublease agreement at least thirty (30) days prior to the effective date thereof",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.2(d) specifies a documentation requirement \u2014 delivery of an executed copy of the assignment or sublease agreement at least 30 days prior to the effective date \u2014 which satisfies the element's requirement for transfer request documentation and notice requirements.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Sections 11.1 and 11.2",
+              "quote": "Tenant delivers written notice to Landlord at least thirty (30) days prior ... Tenant delivering to Landlord an executed copy of the assignment or sublease agreement at least thirty (30) days prior",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease specifies notice and documentation requirements, including 30 days' prior written notice for Affiliate transfers and delivery of an executed assignment or sublease agreement at least 30 days before the effective date.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.2",
+              "quote": "Tenant delivering to Landlord an executed copy of the assignment or sublease agreement at least thirty (30) days prior to the effective date thereof",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease specifies documentation requirements, such as delivering an executed copy of the agreement prior to the effective date, and implies submission of information for consent conditions.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-09.use_restrictions_bind_transferee",
+        "element_label": "Permitted use and operating restrictions bind assignee or subtenant",
+        "verdict": "explicitly_present",
+        "confidence": "medium",
+        "citation": {
+          "section_ref": "Section 11.2",
+          "quote": "the proposed use being consistent with the Permitted Use",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 11.2",
+              "quote": "the proposed use being consistent with the Permitted Use",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 11.2(b) conditions Landlord's consent on the proposed use being consistent with the Permitted Use, which functionally binds any assignee or subtenant to the permitted use restrictions as a condition of the transfer.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "implicitly_present",
+            "citation": {
+              "section_ref": "Section 11.2",
+              "quote": "Landlord's consent ... shall be conditioned upon ... the proposed use being consistent with the Permitted Use",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Although the provision does not state verbatim that all use and operating restrictions bind the transferee, Section 11.2 functionally requires any consented transfer use to be consistent with the Permitted Use. This satisfies the permitted-use aspect implicitly.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "11.2",
+              "quote": "the proposed use being consistent with the Permitted Use",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease conditions consent on the proposed use being consistent with the Permitted Use, explicitly binding the transferee to use restrictions.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "B",
+            "verdict": "implicitly_present",
+            "citation": {
+              "section_ref": "Section 11.2",
+              "quote": "Landlord's consent ... shall be conditioned upon ... the proposed use being consistent with the Permitted Use",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Although the provision does not state verbatim that all use and operating restrictions bind the transferee, Section 11.2 functionally requires any consented transfer use to be consistent with the Permitted Use. This satisfies the permitted-use aspect implicitly.",
+            "confidence": "medium"
+          }
+        ]
+      }
+    ]
+  },
+  "LP-22": {
+    "coverage_state": "missing",
+    "coverage_state_baseline": "missing",
+    "coverage_method": "step_305_per_element",
+    "element_verdicts": [
+      {
+        "element_id": "LP-22.lease_subordinate_to_mortgages",
+        "element_label": "Lease is subordinate to landlord's mortgages or deeds of trust",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.9",
+          "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 21.9 explicitly states that the Lease is subordinate to any mortgage, deed of trust, or other encumbrance placed upon the Shopping Center by Landlord, satisfying this element with near-literal language.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision expressly states that the Lease is subordinate to mortgages, deeds of trust, and other encumbrances.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The lease text directly states that the lease is subordinate to any mortgage, deed of trust, or other encumbrance placed by the Landlord, matching the element's requirement explicitly.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.subordination_scope_includes_future_mortgages",
+        "element_label": "Subordination covers future mortgages and refinancings, not only existing",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.9",
+          "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The phrase 'now or hereafter placed' expressly extends subordination to both existing and future mortgages and encumbrances, satisfying this element.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The phrase 'now or hereafter placed' expressly extends subordination to future mortgages, deeds of trust, and encumbrances, not merely existing ones.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "21.9",
+              "quote": "now or hereafter placed upon the Shopping Center by Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text explicitly includes subordination to encumbrances 'now or hereafter placed,' covering future mortgages as required by the element.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.subordination_mechanism_self_executing",
+        "element_label": "Subordination is automatic or self-executing without requiring tenant signature",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 21.9 contains no language stating that subordination is self-operative, automatic, or that no further instrument is required. Because must_be_explicit is true, implicit coverage is not available.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The clause establishes subordination but does not state that the subordination is automatic, self-operative, or effective without further instruments.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease text does not mention or imply that subordination is automatic or self-executing without further action, and since the element requires explicit presence, it is absent.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.tenant_executes_subordination_documents_on_request",
+        "element_label": "Tenant must execute subordination documents on landlord or lender request",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 21.9 contains no obligation for Tenant to execute or deliver subordination documents upon Landlord's or lender's request. Because must_be_explicit is true, this element is missing.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision does not require Tenant to execute or deliver subordination, SNDA, or confirmation documents upon request by Landlord or a lender.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "There is no language in the provision requiring the tenant to execute subordination documents upon request, making this element explicitly absent as required.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.non_disturbance_protection_for_tenant",
+        "element_label": "Lender will not disturb tenant's possession if landlord defaults under mortgage",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.9",
+          "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession of the Premises so long as Tenant is not in default hereunder",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession of the Premises so long as Tenant is not in default hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Section 21.9 explicitly conditions subordination on the holder agreeing not to disturb Tenant's possession, which is the core non-disturbance protection.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession of the Premises so long as Tenant is not in default hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision expressly conditions subordination on the encumbrance holder agreeing not to disturb Tenant's possession while Tenant is not in default.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession of the Premises so long as Tenant is not in default hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text explicitly conditions subordination on the holder's agreement not to disturb the tenant's possession if the tenant is not in default, directly addressing non-disturbance protection.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.non_disturbance_source_is_binding",
+        "element_label": "Non-disturbance source is a binding agreement, not merely a future obligation",
+        "verdict": "missing",
+        "confidence": "medium",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "While Section 21.9 conditions subordination on the holder's agreement not to disturb Tenant, it does not specify that this agreement must be in the form of an executed, binding SNDA instrument, nor does it reference an attached exhibit or a formal agreement. The provision is ambiguous as to whether a binding written agreement is required or merely a general condition, making it unclear whether this element is satisfied.",
+            "confidence": "medium"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "Although the clause references the holder agreeing not to disturb possession, it does not state that an executed SNDA exists, is attached, has been obtained, or must be delivered in a binding form.",
+            "confidence": "medium"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision mentions a conditional agreement by the holder but does not specify a binding SNDA or executed agreement, nor does it indicate obtaining such a binding source, so the element is absent as it must be explicit.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": [
+          {
+            "role": "A",
+            "verdict": "unclear",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "While Section 21.9 conditions subordination on the holder's agreement not to disturb Tenant, it does not specify that this agreement must be in the form of an executed, binding SNDA instrument, nor does it reference an attached exhibit or a formal agreement. The provision is ambiguous as to whether a binding written agreement is required or merely a general condition, making it unclear whether this element is satisfied.",
+            "confidence": "medium"
+          }
+        ]
+      },
+      {
+        "element_id": "LP-22.non_disturbance_obligation_for_future_lenders",
+        "element_label": "Landlord obligated to obtain non-disturbance from future lenders, not only existing",
+        "verdict": "explicitly_present",
+        "confidence": "high",
+        "citation": {
+          "section_ref": "Section 21.9",
+          "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord, provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+          "citation_quality": "section_and_quote"
+        },
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord, provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision applies to encumbrances 'now or hereafter placed,' and the non-disturbance condition applies to 'the holder of such encumbrance' without limitation to existing lenders, thereby expressly conditioning subordination to future mortgages on non-disturbance by the holder.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord, provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The clause expressly applies to encumbrances 'hereafter placed' and conditions subordination on the holder's agreement not to disturb Tenant's possession.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "explicitly_present",
+            "citation": {
+              "section_ref": "21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The text explicitly conditions subordination to future encumbrances ('hereafter placed') on the holder's agreement not to disturb possession, matching synonyms for obligating non-disturbance from future lenders.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.tenant_attornment_to_successor",
+        "element_label": "Tenant agrees to attorn to (recognize) successor landlord after foreclosure",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 21.9 contains no language requiring Tenant to attorn to or recognize any successor landlord following foreclosure or other transfer. Because must_be_explicit is true, this element is missing.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision addresses subordination and non-disturbance but contains no language requiring Tenant to attorn to or recognize a foreclosure purchaser or successor landlord.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The lease text contains no reference to tenant attornment to a successor landlord after foreclosure, making this required explicit element absent.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.attornment_mechanism_self_executing",
+        "element_label": "Attornment is automatic or self-executing without requiring tenant signature",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "There is no attornment provision at all in Section 21.9, so there is no basis to find that any attornment mechanism\u2014self-executing or otherwise\u2014is present. Without an underlying attornment obligation, this element cannot be satisfied.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "There is no attornment covenant at all, and therefore no language making attornment automatic or self-executing.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Since there is no mention of attornment at all in the text, the element regarding its mechanism being self-executing cannot be present, implicitly or otherwise.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.snda_execution_timing_and_default_consequence",
+        "element_label": "SNDA execution timing and consequence of tenant non-execution are specified",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 21.9 specifies no timing for SNDA execution and no consequence for Tenant's failure to execute. No cross-LP coverage from LP-11 can be confirmed without text from that provision, and the lease text provided does not reference LP-11 or any timing/default mechanism.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "provided that the holder of such encumbrance agrees not to disturb Tenant's possession of the Premises so long as Tenant is not in default hereunder",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The provision does not specify any deadline for Tenant to execute SNDA or subordination documents, nor any default consequence for non-execution. No text from LP-11 was provided to support cross-LP coverage.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The provision does not specify timing for SNDA execution or consequences of non-execution, and without text from LP-11 to verify cross-coverage, this element is absent.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      },
+      {
+        "element_id": "LP-22.landlord_obligation_obtain_snda_existing_lenders",
+        "element_label": "Landlord obligated to obtain SNDA from existing lenders before lease commencement",
+        "verdict": "missing",
+        "confidence": "high",
+        "citation": null,
+        "reason": null,
+        "evaluator_verdicts": [
+          {
+            "role": "A",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "Section 21.9 does not impose any obligation on Landlord to obtain or deliver an SNDA from existing lenders prior to the Commencement Date, nor does it represent that such agreements have been obtained. This element is absent from the lease text.",
+            "confidence": "high"
+          },
+          {
+            "role": "B",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": "Section 21.9",
+              "quote": "This Lease shall be subordinate to any mortgage, deed of trust, or other encumbrance now or hereafter placed upon the Shopping Center by Landlord",
+              "citation_quality": "section_and_quote"
+            },
+            "reasoning": "The clause does not require Landlord to obtain or deliver an SNDA from any existing mortgagee before the commencement date, nor does it state that one has already been obtained.",
+            "confidence": "high"
+          },
+          {
+            "role": "C",
+            "verdict": "missing",
+            "citation": {
+              "section_ref": null,
+              "quote": null,
+              "citation_quality": "none"
+            },
+            "reasoning": "The text conditions subordination on the holder's agreement but does not explicitly obligate the landlord to obtain an SNDA from existing lenders before commencement.",
+            "confidence": "high"
+          }
+        ],
+        "disagreements": null
+      }
+    ]
+  }
+}
