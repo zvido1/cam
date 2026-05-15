@@ -12183,6 +12183,23 @@ body.mode-c .card-docview-link {
 }
 
 /* ══════════════════════════════════════════════════════
+   STEP 342 NEW — Coverage & Gaps provision filter select
+   ══════════════════════════════════════════════════════ */
+.cv-provision-select {
+    font-size: 0.78rem;
+    padding: 0.2rem 0.4rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #fff;
+    color: #374151;
+    cursor: pointer;
+    max-width: 16rem;
+}
+.cv-prov-hidden {
+    display: none !important;
+}
+
+/* ══════════════════════════════════════════════════════
    STEP 261 — PERSPECTIVE SELECTOR (upload page)
    Three radios (tenant / landlord / neutral). Must select — no default.
    Visually mirrors the mode-selector card so the two read as a related pair.

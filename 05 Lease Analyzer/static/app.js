@@ -3248,6 +3248,9 @@ function renderResults() {
             btn.onclick = () => switchTopTab(btn.dataset.topTab);
         });
     }
+    // Hide Leases tab when only one lease in the run — it's just noise for single-lease
+    const _leasesTabBtn = document.getElementById('top-tab-contracts');
+    if (_leasesTabBtn) _leasesTabBtn.classList.toggle('hidden', currentResults.tenants.length <= 1);
 
     const backBtn = $("#contract-detail-back");
     if (backBtn) backBtn.onclick = closeContractDetail;
@@ -15599,6 +15602,8 @@ function renderCoveragePanel() {
     const ca = pr && pr.coverage_assessment ? pr.coverage_assessment : null;
 
     _coverageTierFilter = 'all';
+    _coverageStatusFilter = 'all';
+    _coverageProvisionFilter = '';
     _cvShowFavorable = false;
 
     if (!ca || ca.length === 0) {
@@ -15904,6 +15909,15 @@ function renderCoveragePanel() {
         <button class="btn btn-outline cv-status-filter-btn" data-status="flagged" onclick="window.CAM._applyCoverageStatusFilter('flagged')">Flagged</button>
         <button class="btn btn-outline cv-status-filter-btn" data-status="accepted" onclick="window.CAM._applyCoverageStatusFilter('accepted')">Accepted Risk</button>
         <button class="btn btn-outline cv-status-filter-btn" data-status="reviewed" onclick="window.CAM._applyCoverageStatusFilter('reviewed')">Reviewed</button>
+        <span class="cv-filter-divider">|</span>
+        <select id="cv-provision-select" class="cv-provision-select" onchange="window.CAM._applyCoverageProvisionFilter(this.value)">
+            <option value="">All provisions</option>
+            ${ca.map(function(a) {
+                const pid = a.issue_area_id || a.provision_id || '';
+                const name = a.issue_area_name || a.provision_name || pid;
+                return '<option value="' + esc(pid) + '">' + esc(pid + ' ' + name) + '</option>';
+            }).join('')}
+        </select>
     </div>`;
 
     // Step 297c.1: Provision Conflicts section above issue area list
@@ -16058,6 +16072,30 @@ function _updateCovNoteCount(pid, tenantIdx) {
 let _coverageTierFilter = 'all';
 let _coverageStatusFilter = 'all'; // 'all' | 'open' | 'flagged' | 'accepted' | 'reviewed'
 let _cvShowFavorable = false;    // Step 297d.J: toggle for viewer-favorable provisions
+let _coverageProvisionFilter = ''; // '' = all; LP-XX = show only that LP
+
+function _applyCoverageProvisionFilter(pid) {
+    _coverageProvisionFilter = (_coverageProvisionFilter === pid) ? '' : pid;
+    const sel = document.getElementById('cv-provision-select');
+    if (sel) sel.value = _coverageProvisionFilter;
+    document.querySelectorAll('.cv-item').forEach(function(item) {
+        if (!_coverageProvisionFilter) {
+            item.classList.remove('cv-prov-hidden');
+        } else {
+            item.classList.toggle('cv-prov-hidden', item.dataset.pid !== _coverageProvisionFilter);
+        }
+    });
+    // Reveal the matched item if it was inside a hidden tier section
+    if (_coverageProvisionFilter) {
+        const target = document.querySelector('.cv-item[data-pid="' + CSS.escape(_coverageProvisionFilter) + '"]');
+        if (target) {
+            const hiddenParent = target.closest('.hidden');
+            if (hiddenParent) hiddenParent.classList.remove('hidden');
+            setTimeout(function() { scrollResultsTargetIntoView(target, 8); }, 100);
+        }
+    }
+}
+window.CAM._applyCoverageProvisionFilter = _applyCoverageProvisionFilter;
 
 function _applyCoverageStatusFilter(status) {
     _coverageStatusFilter = (_coverageStatusFilter === status) ? 'all' : status;
@@ -16187,6 +16225,11 @@ function jumpHeatmapCell(tIdx, pid) {
 }
 window.CAM.switchResultsTab = switchResultsTab;
 window.CAM.jumpToCoverageProvision = jumpToCoverageProvision;
+window.CAM.navToSynthesis = function(tIdxStr) {
+    var idx = parseInt(tIdxStr, 10);
+    if (isNaN(idx)) idx = currentTenantIndex;
+    openContractDetail(idx).then(function() { switchResultsTab('synthesis'); });
+};
 window.CAM.jumpHeatmapCell = jumpHeatmapCell;
 window.CAM._toggleCovNotes = _toggleCovNotes;
 window.CAM._saveCovNote = _saveCovNote;
@@ -16737,15 +16780,7 @@ function renderNavSidebar() {
                 html += '<div class="nav-section nav-section-directional">'
                      +   '<button class="nav-directional-summary" type="button"'
                      +   ' data-tenant-idx="' + tIdx + '"'
-                     +   ' onclick="(function(btn){'
-                     +     'var ti=parseInt(btn.dataset.tenantIdx,10);'
-                     +     'if(!isNaN(ti)&&ti!==currentTenantIndex){currentTenantIndex=ti;}'
-                     +     'if(typeof openContractDetail===\'function\'){'
-                     +       'openContractDetail(isNaN(ti)?0:ti).then(function(){if(typeof switchResultsTab===\'function\')switchResultsTab(\'synthesis\');});'
-                     +     '}else if(typeof switchResultsTab===\'function\'){'
-                     +       'switchResultsTab(\'synthesis\');'
-                     +     '}'
-                     +   '})(this)">'
+                     +   ' onclick="window.CAM.navToSynthesis(this.dataset.tenantIdx)">'
                      +     '<span class="nav-dir-label">DIRECTIONAL RISKS</span>'
                      +     '<span class="nav-dir-count">' + _directionals.length + '</span>'
                      +     '<span class="nav-dir-arrow">→</span>'
