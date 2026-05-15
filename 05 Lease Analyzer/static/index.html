@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAM&#8482; Intelligence by Vered.ai</title>
-    <link rel="stylesheet" href="/static/style.css?v=371">
+    <link rel="stylesheet" href="/static/style.css?v=372">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -80,17 +80,17 @@
                             <div class="mode-selector-label">Step 1: What would you like to do?</div>
                             <div class="mode-selector-options" id="mode-selector" role="radiogroup" aria-label="Analysis mode">
                                 <label class="mode-option">
-                                    <input type="radio" name="analysis-mode" value="compare" checked>
-                                    <span class="mode-option-body">
-                                        <span class="mode-option-title">Compare to reference</span>
-                                        <span class="mode-option-help">Compare a draft against a reference template to find deviations.</span>
-                                    </span>
-                                </label>
-                                <label class="mode-option">
-                                    <input type="radio" name="analysis-mode" value="analyze">
+                                    <input type="radio" name="analysis-mode" value="analyze" checked>
                                     <span class="mode-option-body">
                                         <span class="mode-option-title">Analyze single document</span>
                                         <span class="mode-option-help">Analyze a single document for structural gaps and coverage issues, without a reference.</span>
+                                    </span>
+                                </label>
+                                <label class="mode-option">
+                                    <input type="radio" name="analysis-mode" value="compare">
+                                    <span class="mode-option-body">
+                                        <span class="mode-option-title">Compare to reference</span>
+                                        <span class="mode-option-help">Compare a draft against a reference template to find deviations.</span>
                                     </span>
                                 </label>
                             </div>
@@ -1125,6 +1125,6 @@
     <script src="/static/app_docview_render_shared.js?v=3"></script>
     <script src="/static/app_summary_shared.js?v=10"></script>
     <script src="/static/app_notes_shared.js?v=1"></script>
-    <script src="/static/app.js?v=402"></script>
+    <script src="/static/app.js?v=403"></script>
 </body>
 </html>

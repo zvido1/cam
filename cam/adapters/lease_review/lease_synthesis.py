@@ -1188,11 +1188,13 @@ def _build_pass2_verified_findings(
         ev_verdicts = {r: verdicts_by_role.get(r, "not_reported") for r in ("A", "B", "C")}
         agreement   = f"{present_count}-{3 - present_count}"
 
+        _hl = headline or f"Compound risk: {pattern_type.replace('_', ' ')}"
         findings.append({
             "finding_id":        cid,
             "finding_type":      "compound_risk",
             "implicated_lps":    involved_lps,
-            "headline":          headline or f"Compound risk: {pattern_type.replace('_', ' ')}",
+            "headline":          _hl,
+            "short_summary":     _extract_short_summary(_hl),
             "detail":            detail,
             "cited_sections":    cited,
             "verdict":           "compound_risk_confirmed",
@@ -1207,7 +1209,24 @@ def _build_pass2_verified_findings(
     return findings
 
 
-# ── Compound risk dedup helpers ───────────────────────────────────────────────
+# ── Compound risk helpers ─────────────────────────────────────────────────────
+
+def _extract_short_summary(text: str, max_len: int = 65) -> str:
+    """Extract first complete clause as a punchy sidebar label (≤ max_len chars)."""
+    if not text:
+        return ""
+    if len(text) <= max_len:
+        return text
+    truncated = text[:max_len]
+    for sep in ("; ", " — ", ", "):
+        idx = truncated.rfind(sep)
+        if idx >= 20:
+            return text[:idx].strip()
+    last_space = truncated.rfind(" ")
+    if last_space >= 20:
+        return text[:last_space].strip() + "..."
+    return truncated + "..."
+
 
 def _compound_signature(finding: dict) -> tuple:
     """Normalized identity key for compound risk dedup.

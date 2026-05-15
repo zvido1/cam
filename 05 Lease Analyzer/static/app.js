@@ -11617,9 +11617,20 @@ function renderAuditTrail(allTenants) {
         });
         var _at_covEval = _at_ca.length > 0 ? buildCoverageAuditSection(_at_ca) : '';
 
+        const _mcFilename = tenant.filename || '—';
+        const _mcRawTs = r.timestamp || (currentJobData && (currentJobData.completed_at || currentJobData.started_at));
+        const _mcTs = _mcRawTs
+            ? new Date(_mcRawTs).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+            : '—';
+        const _mcElapsed = r.elapsed_sec ? fmtDuration(r.elapsed_sec) : '—';
         tab.innerHTML = `
             <div class="audit-mode-c-message">
                 <div class="audit-mode-c-heading">Analyze-mode audit</div>
+                <div class="audit-mode-c-meta">
+                    <span><strong>File:</strong> ${esc(_mcFilename)}</span>
+                    <span><strong>Processed:</strong> ${esc(_mcTs)}</span>
+                    <span><strong>Elapsed:</strong> ${esc(_mcElapsed)}</span>
+                </div>
                 <p>
                     This section shows provision-by-provision evaluator outputs, challenge reviews, and
                     severity assignments. These stages run only in <strong>Compare mode</strong>, where
@@ -16623,7 +16634,8 @@ function _navBuildSynthesisItem(f, tIdx, govSig) {
     const label  = f.finding_type === 'compound_risk'        ? 'COMPOUND RISK'
                  : f.finding_type === 'cross_coverage_relief' ? 'RELIEF'
                  : "[SYNTHESIS — " + sev + "]";
-    const truncHl = _navTruncate(hl, 80);
+    const descText = (f.short_summary || '').trim() || _navTruncate(hl, 80);
+    const truncHl = descText;
     const tooltipText = f.detail ? hl + " — " + f.detail : hl;
     // Step 339: confidence dots — compound items use deriveCompoundGovernanceSignal (pre-computed).
     var confBd = govSig && window.CAMAuditShared

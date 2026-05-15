@@ -586,6 +586,18 @@ textarea.input-field {
     color: var(--primary, #2563eb);
     text-decoration: underline;
 }
+.audit-mode-c-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.8rem;
+    color: #374151;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+}
 
 /* Step 306d: Mode C Coverage Evaluation in audit trail */
 .audit-cov-section { margin: 1rem 0; }
