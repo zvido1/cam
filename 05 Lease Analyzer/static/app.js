@@ -4735,6 +4735,21 @@ function deriveProvisionRiskLevel(lp, crossProvisionFindings, perspective) {
         return { lp_id: lpId, risk_level: 'red', dominant_reason: 'Adverse coverage at viewer perspective' };
     }
 
+    // Step 345: review_needed — Stage 5e result overrides when available
+    if (state === 'review_needed') {
+        const ui = lp.use_impact;
+        if (ui && ui.confidence !== 'no_evaluators') {
+            if (ui.gap_impact === 'adverse' && ui.materiality === 'high')
+                return { lp_id: lpId, risk_level: 'red', dominant_reason: 'Review needed — adverse high-materiality gap' };
+            if (ui.gap_impact === 'adverse' && ui.materiality === 'medium')
+                return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Review needed — adverse medium-materiality gap' };
+            if (ui.gap_impact === 'adverse' && ui.materiality === 'low')
+                return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Review needed — adverse low-materiality gap' };
+            if (ui.gap_impact === 'favorable' || ui.gap_impact === 'neutral')
+                return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Review needed — favorable or neutral gap' };
+        }
+    }
+
     // RED — review_needed with significant missing evidence (>=50% elements missing)
     if (state === 'review_needed') {
         const evs = lp.element_verdicts || [];

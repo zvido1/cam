@@ -1,8 +1,12 @@
 """
-Stage 5e: Use-Aware Provision Impact Assessment (Step 341b)
+Stage 5e: Use-Aware Provision Impact Assessment (Step 341b, extended Step 345)
 
-For each LP that is missing (applicable) or partially covered with >= 50% missing
-elements, three evaluators assess whether the gap is favorable, neutral, or adverse
+For each LP that is:
+  - missing (applicable)
+  - partially covered with >= 50% missing elements
+  - review_needed (evaluators could not resolve coverage)
+
+three evaluators assess whether the gap or uncertainty is favorable, neutral, or adverse
 for the specific tenant's use. Results are stored as `use_impact` on each LP
 assessment dict.
 
@@ -22,7 +26,7 @@ Output per LP (added to assessment dict):
 
 Non-goals:
   - Does NOT change coverage_state — preserves factual record
-  - Does NOT run for covered / not_applicable / review_needed
+  - Does NOT run for covered / not_applicable
   - Compound override rule applied downstream in deriveProvisionRiskLevel (frontend)
 """
 
@@ -83,6 +87,8 @@ def _should_assess(a: dict) -> bool:
     """Return True if this LP assessment needs use_impact evaluation."""
     state = a.get("coverage_state", "")
     if state == "missing":
+        return True
+    if state == "review_needed":
         return True
     if state == "partial":
         evs = a.get("element_verdicts") or []
@@ -162,7 +168,9 @@ def _build_user_prompt(
         name  = a.get("issue_area_name") or a.get("provision_name") or pid
         state = a.get("coverage_state", "")
         evs   = a.get("element_verdicts") or []
-        if evs:
+        if state == "review_needed":
+            status = "coverage uncertain — evaluators disagree on whether this provision is addressed. Treat the unfavorable plausible reading as the risk case."
+        elif evs:
             n_present = sum(1 for e in evs if e.get("verdict") in _PRESENT_VERDICTS)
             status = f"partially covered — {n_present} of {len(evs)} elements present"
         else:
