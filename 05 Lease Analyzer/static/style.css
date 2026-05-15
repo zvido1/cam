@@ -12155,6 +12155,29 @@ body.mode-c .card-docview-link {
 }
 
 /* ══════════════════════════════════════════════════════
+   STEP 342 — AUDIT TRAIL REASONING (per-evaluator in table + merge trace)
+   ══════════════════════════════════════════════════════ */
+.audit-cov-ev-reason {
+    font-size: 0.7rem;
+    color: #4b5563;
+    font-style: italic;
+    margin-top: 0.2rem;
+    line-height: 1.35;
+}
+.audit-cov-trace-dissent-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem;
+    margin-bottom: 0.2rem;
+}
+.audit-cov-trace-reason {
+    font-size: 0.7rem;
+    color: #6b7280;
+    font-style: italic;
+}
+
+/* ══════════════════════════════════════════════════════
    STEP 261 — PERSPECTIVE SELECTOR (upload page)
    Three radios (tenant / landlord / neutral). Must select — no default.
    Visually mirrors the mode-selector card so the two read as a related pair.

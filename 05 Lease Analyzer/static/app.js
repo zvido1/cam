@@ -11439,7 +11439,12 @@ function _buildCovAuditTable(evs, roleList) {
             var vcls = _COV_AUDIT_VERDICT_CLS[evr.verdict] || 'cv-ev-unclear';
             var vlabel = _COV_AUDIT_VERDICT_SHORT[evr.verdict] || evr.verdict;
             var citRef = (evr.citation && evr.citation.section_ref) ? ' <span class="audit-cov-cit">' + esc(evr.citation.section_ref) + '</span>' : '';
-            html += '<td class="audit-cov-td"><span class="cv-ev-pill ' + vcls + '">' + vlabel + '</span>' + citRef + '</td>';
+            var reasonHtml = '';
+            if (hasDisag && evr.reasoning) {
+                var rShort = evr.reasoning.length > 200 ? evr.reasoning.slice(0, 197) + '...' : evr.reasoning;
+                reasonHtml = '<div class="audit-cov-ev-reason">' + esc(rShort) + '</div>';
+            }
+            html += '<td class="audit-cov-td"><span class="cv-ev-pill ' + vcls + '">' + vlabel + '</span>' + citRef + reasonHtml + '</td>';
         });
         var mvcls = _COV_AUDIT_VERDICT_CLS[ev.verdict] || 'cv-ev-unclear';
         var mvlabel = _COV_AUDIT_VERDICT_SHORT[ev.verdict] || ev.verdict;
@@ -11465,7 +11470,12 @@ function _buildMergeTraceHtml(disagElems) {
         if (dissents.length > 0) {
             html += '<div class="audit-cov-trace-dissents">';
             dissents.forEach(function(d) {
-                html += '<span class="audit-cov-trace-dissent">Eval ' + esc(d.role || d.evaluator_id || '?') + ': ' + esc(_COV_AUDIT_VERDICT_SHORT[d.verdict] || d.verdict) + '</span>';
+                var dReason = (d.reasoning || '').trim();
+                var dReasonShort = dReason.length > 200 ? dReason.slice(0, 197) + '...' : dReason;
+                html += '<div class="audit-cov-trace-dissent-row">'
+                    + '<span class="audit-cov-trace-dissent">Eval ' + esc(d.role || d.evaluator_id || '?') + ': ' + esc(_COV_AUDIT_VERDICT_SHORT[d.verdict] || d.verdict) + '</span>'
+                    + (dReasonShort ? ' <span class="audit-cov-trace-reason">' + esc(dReasonShort) + '</span>' : '')
+                    + '</div>';
             });
             html += '</div>';
         }
@@ -11523,7 +11533,7 @@ function buildCoverageAuditSection(items) {
                 + (_crossCount > 0 ? _sharedLib.renderAuditScoreBar('Cross-LP Coverage', _crossPct + '%', _crossCount + ' element' + (_crossCount !== 1 ? 's' : '') + ' resolved via cross-provision coverage', {tone: 'caution', width: _crossPct}, esc) : '')
                 + '</div>';
         }
-        html += '<div class="audit-cov-lp">'
+        html += '<div class="audit-cov-lp" data-pid="' + esc(pid) + '">'
             + '<div class="audit-cov-lp-header" onclick="(function(h){var b=document.getElementById(\'' + lpBodyId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';h.querySelector(\'.audit-cov-chevron\').textContent=o?\'▾\':\'▸\';})(this)">'
             + '<span class="audit-cov-lp-id">' + esc(pid) + '</span>'
             + '<span class="audit-cov-lp-name">' + esc(name) + '</span>'
@@ -15149,18 +15159,32 @@ function injectFinalDraftBar() {
     updateFinalDraftBar();
 }
 
-// Step 186: Jump to audit trail provision row
+// Step 186: Jump to audit trail provision row (or coverage audit LP for Mode C)
 function jumpToAuditProvision(tenantIdx, pid) {
     switchResultsTab('audittrail');
     waitForResultsTarget(() => {
-        return document.querySelector(`.audit-provision-row[data-pid="${CSS.escape(pid)}"][data-tenant="${tenantIdx}"]`) ||
+        // Mode A: find the standard provision row
+        const modeARow = document.querySelector(`.audit-provision-row[data-pid="${CSS.escape(pid)}"][data-tenant="${tenantIdx}"]`) ||
                document.querySelector(`.audit-provision-row[data-pid="${CSS.escape(pid)}"]`);
+        if (modeARow) return modeARow;
+        // Mode C: find the coverage audit LP section
+        return document.querySelector(`.audit-cov-lp[data-pid="${CSS.escape(pid)}"]`);
     }, { attempts: 18, delay: 90 }).then((row) => {
         if (!row) return;
-        const idx = row.dataset.idx;
-        const detail = idx ? document.getElementById(`audit-detail-${idx}`) : null;
-        if (detail && detail.classList.contains('hidden')) {
-            toggleAuditRow(idx);
+        if (row.classList.contains('audit-cov-lp')) {
+            // Coverage audit LP — expand its body if collapsed
+            const header = row.querySelector('.audit-cov-lp-header');
+            const lpBodyId = row.querySelector('[id^="audit-cov-lp-body-"]');
+            if (lpBodyId && lpBodyId.style.display === 'none') {
+                if (header) header.click();
+            }
+        } else {
+            // Mode A provision row
+            const idx = row.dataset.idx;
+            const detail = idx ? document.getElementById(`audit-detail-${idx}`) : null;
+            if (detail && detail.classList.contains('hidden')) {
+                toggleAuditRow(idx);
+            }
         }
         setTimeout(() => {
             scrollResultsTargetIntoView(row, 8);
@@ -15672,7 +15696,7 @@ function renderCoveragePanel() {
         const srcNote = src === "model" ? '<span class="cv-source-model">AI assessed</span>' : "";
         const tenantText = (a.tenant_text || "").trim();
         const leaseTextHtml = tenantText
-            ? `<div class="cv-lease-text-row" onclick="(function(row){var body=row.nextElementSibling;var opening=body.style.display==='none';body.style.display=opening?'block':'none';row.querySelector('.cv-lt-arrow').textContent=opening?'▾':'▸';row.querySelector('.cv-lt-label').textContent=opening?'Hide lease text':'Show lease text';})(this)"><span class="cv-lt-arrow">▸</span><span class="cv-lt-label"> Show lease text</span></div><div class="cv-lease-text-body" style="display:none"><pre class="cv-lease-text-pre">${esc(tenantText)}</pre></div>`
+            ? `<div class="cv-lease-text-row" onclick="(function(row){var body=row.nextElementSibling;var opening=body.style.display==='none';body.style.display=opening?'block':'none';row.querySelector('.cv-lt-arrow').textContent=opening?'▾':'▸';row.querySelector('.cv-lt-label').textContent=opening?'Hide lease text':'Show lease text';})(this)"><span class="cv-lt-arrow">▾</span><span class="cv-lt-label"> Hide lease text</span></div><div class="cv-lease-text-body"><pre class="cv-lease-text-pre">${esc(tenantText)}</pre></div>`
             : "";
 
         const toolbarHtml = buildCovToolbar(a, tenantIdx);
@@ -16101,10 +16125,11 @@ function _openCovAdvisor(pid, tenantIdx, provName, stmt, isMissing) {
 }
 window.CAM._setCovStatus = _setCovStatus;
 
-function jumpToCoverageProvision(pid) {
+function jumpToCoverageProvision(pid, opts) {
     // Reset tier filter so the item is visible regardless of current filter
     _coverageTierFilter = 'all';
     switchResultsTab('coverage');
+    const expandElements = opts && opts.expandElements;
     waitForResultsTarget(function() {
         // Re-render coverage panel if needed to ensure data-pid attrs exist
         const el = document.querySelector('.cv-item[data-pid="' + CSS.escape(pid) + '"]');
@@ -16119,6 +16144,18 @@ function jumpToCoverageProvision(pid) {
             okList.classList.remove('hidden');
             const arrow = document.getElementById('cv-ok-arrow');
             if (arrow) arrow.textContent = '\u25BC';
+        }
+        // Auto-expand element table when navigating directly (e.g. via sidebar click)
+        if (expandElements) {
+            const elemBody = document.getElementById('cv-elem-body-' + CSS.escape(pid));
+            if (elemBody && elemBody.style.display === 'none') {
+                elemBody.style.display = 'block';
+                const summaryRow = elemBody.previousElementSibling;
+                if (summaryRow) {
+                    const chev = summaryRow.querySelector('.cv-elem-chevron');
+                    if (chev) chev.textContent = '\u25BE';
+                }
+            }
         }
         setTimeout(function() {
             scrollResultsTargetIntoView(el, 8);
@@ -16143,7 +16180,7 @@ window.CAM._toggleConformingChips = function(btn, e) {
 // then jumpToCoverageProvision switches to the Coverage & Gaps tab and scrolls.
 function jumpHeatmapCell(tIdx, pid) {
     openContractDetail(tIdx).then(function() {
-        jumpToCoverageProvision(pid);
+        jumpToCoverageProvision(pid, { expandElements: true });
     });
 }
 window.CAM.switchResultsTab = switchResultsTab;
@@ -16859,7 +16896,7 @@ function renderNavSidebar() {
                 if (typeof jumpHeatmapCell === "function") {
                     jumpHeatmapCell(tIdx, pid);
                 } else if (window.CAM && typeof window.CAM.jumpToCoverageProvision === "function") {
-                    window.CAM.jumpToCoverageProvision(pid);
+                    window.CAM.jumpToCoverageProvision(pid, { expandElements: true });
                 }
             } else {
                 // Mode A deviation → open contract detail if needed, then jump to finding
