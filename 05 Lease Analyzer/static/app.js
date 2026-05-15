@@ -16086,7 +16086,7 @@ let _cvShowFavorable = false;    // Step 297d.J: toggle for viewer-favorable pro
 let _coverageProvisionFilter = ''; // '' = all; LP-XX = show only that LP
 
 function _applyCoverageProvisionFilter(pid) {
-    _coverageProvisionFilter = (_coverageProvisionFilter === pid) ? '' : pid;
+    _coverageProvisionFilter = pid;
     const sel = document.getElementById('cv-provision-select');
     if (sel) sel.value = _coverageProvisionFilter;
     document.querySelectorAll('.cv-item').forEach(function(item) {

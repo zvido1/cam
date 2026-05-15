@@ -114,6 +114,15 @@ Definitions:
   adverse:           This gap creates meaningful risk or cost for this client given their use
   context_dependent: Cannot determine without more information about the specific situation
 
+Absence ≠ adverse by default. When a restriction is MISSING, ask: does the absence give the tenant
+MORE freedom or MORE exposure? For operational tenants (warehousing, distribution, manufacturing,
+logistics), a missing permitted use or use restriction clause means the landlord CANNOT restrict
+the tenant's activities by claiming they violate the use clause. This is favorable — not adverse.
+Example: LP-05 Permitted Use absent for a warehouse tenant → tenant has maximum operational
+flexibility; landlord cannot claim tenant violates an undefined use restriction. Gap impact: favorable.
+Only mark absent use clauses as adverse if the tenant's specific operations require an affirmative
+landlord commitment (e.g., exclusive use rights, specific permitted use carve-outs for licensing).
+
 Materiality:
   high:           Directly affects the tenant's core business operations
   medium:         Relevant but not operationally critical
