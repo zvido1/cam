@@ -12129,6 +12129,32 @@ body.mode-c .card-docview-link {
 }
 
 /* ══════════════════════════════════════════════════════
+   STEP 341b — USE-IMPACT NOTE (Coverage & Gaps card)
+   ══════════════════════════════════════════════════════ */
+.cv-use-impact-note {
+    font-size: 0.72rem;
+    margin-top: 0.35rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    line-height: 1.4;
+}
+.cv-use-impact-favorable {
+    background: #dcfce7;
+    color: #166534;
+    border-left: 3px solid #16a34a;
+}
+.cv-use-impact-neutral {
+    background: #f3f4f6;
+    color: #4b5563;
+    border-left: 3px solid #9ca3af;
+}
+.cv-use-impact-adverse {
+    background: #fff7ed;
+    color: #9a3412;
+    border-left: 3px solid #ea580c;
+}
+
+/* ══════════════════════════════════════════════════════
    STEP 261 — PERSPECTIVE SELECTOR (upload page)
    Three radios (tenant / landlord / neutral). Must select — no default.
    Visually mirrors the mode-selector card so the two read as a related pair.

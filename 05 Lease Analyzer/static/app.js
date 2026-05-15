@@ -4682,6 +4682,24 @@ function deriveProvisionRiskLevel(lp, crossProvisionFindings, perspective) {
         return { lp_id: lpId, risk_level: 'gray', dominant_reason: 'Not applicable' };
     }
 
+    // Step 341b: check use_impact BEFORE compound override.
+    // Compound override: HIGH compound risk always supersedes a favorable gap_impact.
+    const ui = lp.use_impact || null;
+    const hasHighCompound = cpfs.some(function(f) {
+        return f.finding_type === 'compound_risk' && (f.severity || '').toUpperCase() === 'HIGH';
+    });
+    if (ui && !hasHighCompound) {
+        if (ui.gap_impact === 'favorable') {
+            return { lp_id: lpId, risk_level: 'green', dominant_reason: 'Favorable absence — ' + (ui.use_reasoning || '') };
+        }
+        if (ui.gap_impact === 'neutral' && ui.materiality === 'low') {
+            return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Low impact for this tenant — ' + (ui.use_reasoning || '') };
+        }
+        if (ui.materiality === 'not_applicable') {
+            return { lp_id: lpId, risk_level: 'gray', dominant_reason: 'Not relevant to this tenant\'s use' };
+        }
+    }
+
     // RED — missing material LP
     if (state === 'missing') {
         return { lp_id: lpId, risk_level: 'red', dominant_reason: 'Missing provision' };
@@ -15506,7 +15524,9 @@ function buildCovToolbar(a, tenantIdx) {
         📝 Notes${noteCount > 0 ? ` <span class="res-note-count">${noteCount}</span>` : ''}
     </button>`;
 
-    const isMissingAdvisor = state === 'missing';
+    // Step 341b: suppress "Draft Missing Clause" when use_impact marks gap as favorable
+    const _uiFavorable = a.use_impact && a.use_impact.gap_impact === 'favorable';
+    const isMissingAdvisor = state === 'missing' && !_uiFavorable;
     const advisorLabel = isMissingAdvisor ? '💡 Draft Missing Clause' : '💡 AI Advisor';
     const advisorCls = isMissingAdvisor ? 'res-advisor-btn cov-advisor-primary' : 'res-advisor-btn';
     const advisorHtml = `<button class="${advisorCls}"
@@ -15580,9 +15600,21 @@ function renderCoveragePanel() {
             a.covered_unfavorable_adverse_to !== _viewerPerspective;
     }
 
-    const problems = ca.filter(a => !_isFavorable(a) && (a.coverage_state === "covered_unfavorable" || a.partial_class === "partial_material" || a.coverage_state === "missing"));
-    const favorable = ca.filter(a => _isFavorable(a));
-    const review   = ca.filter(a => a.partial_class === "partial_review");
+    // Step 341b: use_impact.gap_impact = "favorable" or materiality = "not_applicable"
+    // moves a missing/partial LP out of problems and into the favorable group.
+    function _isUseImpactFavorable(a) {
+        const ui = a.use_impact;
+        if (!ui) return false;
+        if (ui.gap_impact === 'favorable') return true;
+        if (ui.materiality === 'not_applicable') return true;
+        return false;
+    }
+    const problems = ca.filter(a =>
+        !_isFavorable(a) && !_isUseImpactFavorable(a) &&
+        (a.coverage_state === "covered_unfavorable" || a.partial_class === "partial_material" || a.coverage_state === "missing")
+    );
+    const favorable = ca.filter(a => _isFavorable(a) || _isUseImpactFavorable(a));
+    const review   = ca.filter(a => a.partial_class === "partial_review" && !_isUseImpactFavorable(a));
     const covered  = ca.filter(a => a.coverage_state === "covered");
     const typical  = ca.filter(a => a.partial_class === "partial_typical");
     // Step 318: exclude favorable items so they don't also appear in the "Adequately Covered" rollup
@@ -15807,7 +15839,19 @@ function renderCoveragePanel() {
             ${leaseTextHtml}
             ${elementDetailHtml}
             ${stmt ? `<div class="cv-item-stmt">${esc(stmt)} ${srcNote}</div>` : ""}
-            ${state === 'missing' ? '<div class="cv-missing-provision-note">⚠ This provision is absent from the lease. Use <strong>Draft Missing Clause</strong> to request language from the landlord.</div>' : ''}
+            ${state === 'missing'
+              ? (tenantText
+                  ? '<div class="cv-missing-provision-note cv-missing-gaps-note">⚠ This provision has significant gaps — key protections are missing.</div>'
+                  : '<div class="cv-missing-provision-note">⚠ This provision is absent from the lease. Use <strong>Draft Missing Clause</strong> to request language from the landlord.</div>')
+              : ''}
+            ${(function() {
+                const ui = a.use_impact;
+                if (!ui || !ui.use_reasoning) return ‘’;
+                if (ui.gap_impact === ‘favorable’) return ‘<div class="cv-use-impact-note cv-use-impact-favorable">&#x2713; Favorable for this tenant&#x27;s use — ‘ + esc(ui.use_reasoning) + ‘</div>’;
+                if (ui.gap_impact === ‘neutral’ && ui.materiality === ‘low’) return ‘<div class="cv-use-impact-note cv-use-impact-neutral">Low impact for this tenant&#x27;s use — ‘ + esc(ui.use_reasoning) + ‘</div>’;
+                if (ui.gap_impact === ‘adverse’) return ‘<div class="cv-use-impact-note cv-use-impact-adverse">&#x26A0; Tenant-specific concern — ‘ + esc(ui.use_reasoning) + ‘</div>’;
+                return ‘’;
+              })()}
             ${missingHtml}
             ${nsHtml}
             ${toolbarHtml}
@@ -16565,10 +16609,14 @@ function renderNavSidebar() {
             const needsAttention = [];
             const worthReviewing = [];
             ca.forEach(a => {
-                if (a.coverage_state === "potentially_unenforceable"
+                const _uiGap = a.use_impact && a.use_impact.gap_impact;
+                const _uiMat = a.use_impact && a.use_impact.materiality;
+                const _skipForUseImpact = _uiGap === 'favorable' || _uiMat === 'not_applicable';
+                if (!_skipForUseImpact && (
+                    a.coverage_state === "potentially_unenforceable"
                     || a.coverage_state === "covered_unfavorable"
                     || a.coverage_state === "missing"
-                    || a.partial_class === "partial_material") {
+                    || a.partial_class === "partial_material")) {
                     needsAttention.push(a);
                 } else if (a.partial_class === "partial_review") {
                     worthReviewing.push(a);

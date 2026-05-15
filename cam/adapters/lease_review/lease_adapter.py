@@ -974,6 +974,20 @@ def run_lease_analysis(
         except Exception as e:
             print(f"[lease_adapter] Stage 5d failed (non-fatal): {e}", flush=True)
 
+    # ── Stage 5e: Use-Aware Provision Impact Assessment (Step 341b) ──
+    from cam.adapters.lease_review.lease_use_impact import USE_IMPACT_ENABLED
+    if USE_IMPACT_ENABLED and use_profile_data:
+        try:
+            from cam.adapters.lease_review.lease_use_impact import assess_use_impact
+            coverage_assessment = assess_use_impact(
+                coverage_assessment,
+                use_profile=use_profile_data,
+                perspective=cfg.get("perspective", "tenant"),
+                cfg=cfg,
+            )
+        except Exception as e:
+            print(f"[lease_adapter] Stage 5e (use_impact) failed (non-fatal): {e}", flush=True)
+
     # ── Stage 5c: Cross-provision conflict detection (Step 297a) ──
     try:
         from cam.adapters.lease_review import lease_conflicts
@@ -1379,6 +1393,20 @@ def run_lease_coverage_only(
                     )
         except Exception as e:
             print(f"[lease_adapter:analyze] Stage 5d failed (non-fatal): {e}", flush=True)
+
+    # ── Stage 5e: Use-Aware Provision Impact Assessment (Step 341b) ──
+    from cam.adapters.lease_review.lease_use_impact import USE_IMPACT_ENABLED
+    if USE_IMPACT_ENABLED and use_profile_data_c:
+        try:
+            from cam.adapters.lease_review.lease_use_impact import assess_use_impact
+            coverage_assessment = assess_use_impact(
+                coverage_assessment,
+                use_profile=use_profile_data_c,
+                perspective=cfg.get("perspective", "tenant"),
+                cfg=cfg,
+            )
+        except Exception as e:
+            print(f"[lease_adapter:analyze] Stage 5e (use_impact) failed (non-fatal): {e}", flush=True)
 
     # ── Stage 5c: Cross-provision conflict detection (Step 297a) ──
     try:
