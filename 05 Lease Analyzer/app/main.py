@@ -270,8 +270,10 @@ def serve_index():
     """Serve the frontend index.html."""
     index_path = static_dir / "index.html"
     if index_path.exists():
-        return FileResponse(
-            str(index_path),
+        from fastapi.responses import Response as PlainResponse
+        return PlainResponse(
+            content=index_path.read_bytes(),
+            media_type="text/html",
             headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
         )
     return JSONResponse({"message": "CAM Lease Analyzer — frontend not yet built"})
@@ -2379,8 +2381,10 @@ def serve_results_page(job_id: str):
     """Serve the frontend for viewing results (same index.html, JS handles routing)."""
     index_path = static_dir / "index.html"
     if index_path.exists():
-        return FileResponse(
-            str(index_path),
+        from fastapi.responses import Response as PlainResponse
+        return PlainResponse(
+            content=index_path.read_bytes(),
+            media_type="text/html",
             headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
         )
     return JSONResponse({"message": "Results page — frontend not yet built", "job_id": job_id})
