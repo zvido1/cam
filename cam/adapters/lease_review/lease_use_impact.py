@@ -184,6 +184,7 @@ def _call_evaluator(
             claimed_providers.add(provider)
         try:
             target = ModelTarget(
+                name=f"{provider}:{model}-use5e-{role}",
                 provider=provider, model=model,
                 max_output_tokens=ev_cfg["max_output_tokens"],
                 temperature=0.0, timeout_sec=ev_cfg["timeout_sec"],
