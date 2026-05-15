@@ -15872,11 +15872,11 @@ function renderCoveragePanel() {
               : ''}
             ${(function() {
                 const ui = a.use_impact;
-                if (!ui || !ui.use_reasoning) return ‘’;
-                if (ui.gap_impact === ‘favorable’) return ‘<div class="cv-use-impact-note cv-use-impact-favorable">&#x2713; Favorable for this tenant&#x27;s use — ‘ + esc(ui.use_reasoning) + ‘</div>’;
-                if (ui.gap_impact === ‘neutral’ && ui.materiality === ‘low’) return ‘<div class="cv-use-impact-note cv-use-impact-neutral">Low impact for this tenant&#x27;s use — ‘ + esc(ui.use_reasoning) + ‘</div>’;
-                if (ui.gap_impact === ‘adverse’) return ‘<div class="cv-use-impact-note cv-use-impact-adverse">&#x26A0; Tenant-specific concern — ‘ + esc(ui.use_reasoning) + ‘</div>’;
-                return ‘’;
+                if (!ui || !ui.use_reasoning) return '';
+                if (ui.gap_impact === 'favorable') return '<div class="cv-use-impact-note cv-use-impact-favorable">&#x2713; Favorable for this tenant&#x27;s use — ' + esc(ui.use_reasoning) + '</div>';
+                if (ui.gap_impact === 'neutral' && ui.materiality === 'low') return '<div class="cv-use-impact-note cv-use-impact-neutral">Low impact for this tenant&#x27;s use — ' + esc(ui.use_reasoning) + '</div>';
+                if (ui.gap_impact === 'adverse') return '<div class="cv-use-impact-note cv-use-impact-adverse">&#x26A0; Tenant-specific concern — ' + esc(ui.use_reasoning) + '</div>';
+                return '';
               })()}
             ${missingHtml}
             ${nsHtml}
