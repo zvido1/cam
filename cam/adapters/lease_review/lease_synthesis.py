@@ -414,6 +414,7 @@ Return a JSON object:
       "finding_type": "cross_coverage_gap" | "directional_mismatch" | "compound_risk",
       "implicated_lps": ["LP-27"],
       "headline": "...",
+      "short_summary": "...",
       "detail": "...",
       "cited_sections": ["Article 15"],
       "verdict": "no_coverage_found" | "partial_coverage_found" | "full_coverage_found" | "compound_risk_confirmed",
@@ -430,6 +431,12 @@ Return a JSON object:
 }
 
 Rules:
+- short_summary: a 6-10 word punchy label naming the compound risk for sidebar display. Must be a
+  complete thought, not a fragment or truncated clause. Examples: "Automatic subordination without
+  non-disturbance protection", "Force majeure bars rent abatement and self-help". Never end with
+  "..." or trail off mid-clause. For cross_coverage_gap and directional_mismatch findings, derive
+  from the headline. For compound_risk findings, use the short_summary provided in the input if
+  present; otherwise generate one from the headline.
 - finding_id: CPF-01, CPF-02, ... in order
 - cited_sections: extract every section reference explicitly named in the detail field (e.g.
   "Article 17", "Section 5.1", "Section 24.13"). Include all of them as strings in this list.
@@ -1690,7 +1697,7 @@ def _normalize_findings(
             "evaluator_verdicts": ev_verd,
         }
         # Pass through relief/compound-specific fields when present
-        for _extra in ("relief_section", "direction_adequate", "pattern_type",
+        for _extra in ("short_summary", "relief_section", "direction_adequate", "pattern_type",
                        "affected_party", "directional_false_positive_count"):
             if f.get(_extra) is not None:
                 out_f[_extra] = f[_extra]
