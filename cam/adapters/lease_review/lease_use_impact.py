@@ -190,7 +190,7 @@ def _call_evaluator(
                 temperature=0.0, timeout_sec=ev_cfg["timeout_sec"],
             )
             router  = ProviderRouter([target], RouterConfig())
-            adapter = router._get_adapter(target)
+            adapter = router._get_adapter(provider)
             raw     = adapter.call(_SYSTEM_PROMPT, user_prompt, target).strip()
             parsed  = safe_json_extract(raw, expect_type=dict)
             if parsed and isinstance(parsed, dict):
