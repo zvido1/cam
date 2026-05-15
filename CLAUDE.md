@@ -24,24 +24,73 @@ When Tzvi says:
 - **Freeze behavior, modularize structure.** Do not refactor, optimize, or "improve" any evaluation logic. Move code as-is.
 - **Stability > elegance.** If something works but is ugly, leave it ugly.
 - **Ask, don't assume.** If an instruction is ambiguous, say so in your status file.
-- **Keep Tzvi in the loop.** If you have questions or encounter decisions during execution, ask Tzvi directly in the conversation — don't just bury them in the status file. He may not be a coder but he understands the architecture and can make decisions in real time.
-- **Step-suffix discipline.** If a step needs a `b`, `c`, `_fix`, or `_fix2` instruction, the chat-side instruction file MUST open with a one-line root-cause note: why was the prior pass insufficient? (ambiguous brief / missing context / builder error / scope miss / environment issue). The 014 and 039 series accumulated many suffixes without root-cause notes last quarter; this rule exists to stop unnamed drift.
+- **Keep Tzvi in the loop.** If you have questions or encounter decisions during implementation, ask directly in the conversation — don't bury them in the status file.
+- **Step-suffix discipline.** If a step needs a `b`, `c`, `_fix`, or `_fix2` instruction, open with a one-line root-cause note.
+
+---
+
+## ⚠️ GIT WORKFLOW — CRITICAL ⚠️
+
+### Work Directly in the Main Repo — No Worktrees
+
+**Always edit files directly in `C:\Users\Owner\OneDrive\CAM`.**
+Do NOT create or use git worktrees. Do NOT work in a `claude/*` branch.
+
+The reason: Tzvi's local uvicorn server runs from `C:\Users\Owner\OneDrive\CAM`.
+If you edit files in a worktree at a different path, your changes are invisible
+to the local server until a git pull — which defeats the point of local testing
+and has caused repeated "fix not showing up" incidents.
+
+**The correct workflow:**
+
+```bash
+# 1. Start from main in the repo directory
+cd "C:\Users\Owner\OneDrive\CAM"
+git checkout main
+git pull origin main
+
+# 2. Edit files directly here — no branch, no worktree
+
+# 3. Verify your changes work (check file contents, version numbers)
+
+# 4. Stage, commit, and push directly to main
+git add -A
+git commit -m "Step NNN: [description]"
+git push origin main
+
+# 5. Verify index.html has the correct version number
+grep "app.js" "05 Lease Analyzer/static/index.html"
+```
+
+### The One Rule
+**Every change must be pushed to `main` before a step is marked complete.**
+Railway deploys from `main`. Tzvi's local server runs from `main`.
+A step is not done until it is on `main` and the version number is confirmed.
+
+### Never Do This
+- ❌ Create a `claude/*` worktree or branch
+- ❌ Edit files anywhere other than `C:\Users\Owner\OneDrive\CAM`
+- ❌ Push to a feature branch and call the step complete
+- ❌ Ask "do you want me to push to main?" — just do it
+- ❌ Declare a step done without verifying the version number in index.html
+
+### If There Are Merge Conflicts on Main
+Report in the status file under "Decisions Needed" — do not force-push.
+
+---
 
 ## After Every Step
-When you finish a step, end your message to Tzvi with:
+End your message to Tzvi with:
 
 ```
 ✅ Step NNN complete. Status written to build_log/NNN_code_status.md.
-
+Run: git pull (in C:\Users\Owner\OneDrive\CAM) then hard-refresh browser.
 👉 Tell Chat: "Step NNN is done"
 ```
 
-Or if you hit a blocker:
+Or if blocked:
 
 ```
 ⚠️ Step NNN blocked. See build_log/NNN_code_status.md for details.
-
 👉 Tell Chat: "Step NNN is blocked, read the status"
 ```
-
-This tells Tzvi exactly what to say next to move the project forward.
