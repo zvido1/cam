@@ -4607,9 +4607,10 @@ function renderModeCAISummaryBar(bar) {
     });
 
     const docCount = tenants.length;
+    const areasPerDoc = docCount > 1 ? Math.round(totalAreas / docCount) : totalAreas;
     const meta = docCount === 1
         ? `${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed`
-        : `${docCount} documents — ${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed`;
+        : `${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed across ${docCount} contracts`;
 
     // Step 297c.2: collect conflicts + jurisdiction across all tenants
     const _mc_STATE_FULL_NAMES = {"NY": "New York", "CA": "California", "TX": "Texas", "FL": "Florida", "IL": "Illinois"};
@@ -4644,6 +4645,7 @@ function renderModeCAISummaryBar(bar) {
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${notApplicable}</strong> <span>not applicable</span></span>
                 ${_mcConflictPill}
             </div>
+            ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Combined across ${docCount} contracts — ${areasPerDoc} issue areas per contract</div>` : ''}
             <div class="ai-summary-modec-cta">Open <strong>Coverage &amp; Gaps</strong> on any contract for the full breakdown.</div>
         </div>
     `;
@@ -15736,7 +15738,7 @@ function renderCoveragePanel() {
                 return _POSITIVE_VERDICTS.has(e.verdict) && e.citation && e.citation.section_ref;
             });
             const lpJumpHtml = _bestCit
-                ? ' <span class="cv-section-link cv-elem-lp-jump" data-ref="' + esc(_bestCit.citation.section_ref) + '" data-quote="' + esc(_bestCit.citation.quote || '') + '" onclick="event.stopPropagation();window.CAM.jumpToEvidence(this.dataset.ref,this.dataset.quote)" title="Jump to evidence">&#8594; ' + esc(_bestCit.citation.section_ref) + '</span>'
+                ? ' <span class="cv-section-link cv-elem-lp-jump" data-ref="' + esc(_bestCit.citation.section_ref) + '" data-quote="' + esc(_bestCit.citation.quote || '') + '" onclick="event.stopPropagation();window.CAM.jumpToEvidence(this.dataset.ref,this.dataset.quote)" title="View ' + esc(_bestCit.citation.section_ref) + ' in Evidence View">View in document</span>'
                 : '';
 
             const rowsHtml = elementVerdicts.map(function(ev) {

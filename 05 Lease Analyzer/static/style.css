@@ -12127,6 +12127,11 @@ body.mode-c .card-docview-link {
     font-weight: 600;
     color: #4b5563;
 }
+.ai-summary-modec-combined-note {
+    font-size: 0.7rem;
+    color: #6b7280;
+    margin: 0.15rem 0 0.1rem;
+}
 
 /* ══════════════════════════════════════════════════════
    STEP 341b — USE-IMPACT NOTE (Coverage & Gaps card)
