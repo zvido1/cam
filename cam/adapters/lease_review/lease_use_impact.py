@@ -192,8 +192,10 @@ def _call_evaluator(
             router  = ProviderRouter([target], RouterConfig())
             adapter = router._get_adapter(provider)
             raw     = adapter.call(_SYSTEM_PROMPT, user_prompt, target).strip()
-            parsed  = safe_json_extract(raw, expect_type=dict)
-            if parsed and isinstance(parsed, dict):
+            parsed  = safe_json_extract(raw)
+            if not isinstance(parsed, dict):
+                raise ValueError(f"Response is not a dict (got {type(parsed).__name__})")
+            if parsed:
                 logger.info(f"[lease_use_impact] Eval-{role}: {label} succeeded in {round(time.time()-start,1)}s, {len(parsed)} LP(s)")
                 return {"role": role, "label": label, "lp_output": parsed, "completed": True,
                         "elapsed_sec": round(time.time() - start, 2), "error": None}
