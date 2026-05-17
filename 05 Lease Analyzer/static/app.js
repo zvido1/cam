@@ -5858,7 +5858,7 @@ function renderContractClauseFilterBar(provisions) {
             onclick="window.CAM.generateFinalDraft()">Generate Final Draft ↓</button>`
         : '';
 
-    // Provision filter dropdown
+    // Provision filter select (Step 346b — replaces checkbox dropdown)
     const provEntries = [...available.provisions.entries()].sort(function(a, b) {
         const ka = pidSortKeyGlobal(a[0]), kb = pidSortKeyGlobal(b[0]);
         return ka[0] - kb[0] || ka[1] - kb[1];
@@ -5866,21 +5866,13 @@ function renderContractClauseFilterBar(provisions) {
     for (const pid of [...contractClauseProvisionFilter]) {
         if (!available.provisions.has(pid)) contractClauseProvisionFilter.delete(pid);
     }
-    const provLabel = contractClauseProvisionFilter.size === 0 ? 'All' : contractClauseProvisionFilter.size === 1 ? ([...contractClauseProvisionFilter][0]) : contractClauseProvisionFilter.size + ' selected';
-    const provisionDropdownHtml = `<div class="filter-dropdown clause-filter-dropdown" id="clause-provision-dropdown">
-        <button class="btn btn-outline filter-dropdown-trigger clause-filter-trigger snap-filter-btn" id="clause-provision-trigger" type="button">
-            Provision: <span id="clause-provision-label">${provLabel}</span> &#9662;
-        </button>
-        <div class="filter-dropdown-panel clause-filter-panel hidden" id="clause-provision-panel" style="max-height:18rem;overflow-y:auto">
-            <label class="filter-option filter-option-all">
-                <input type="checkbox" id="clause-provision-all"${contractClauseProvisionFilter.size === 0 ? ' checked' : ''}>
-                <span>All Provisions</span>
-            </label>
-            ${provEntries.map(function(e) {
-                return '<label class="filter-option"><input type="checkbox" value="' + esc(e[0]) + '" class="clause-prov-cb"' + (contractClauseProvisionFilter.has(e[0]) ? ' checked' : '') + '><span>' + esc(e[0] + ' ' + e[1]) + '</span></label>';
-            }).join('')}
-        </div>
-    </div>`;
+    const currentProvVal = contractClauseProvisionFilter.size === 1 ? [...contractClauseProvisionFilter][0] : '';
+    const provisionDropdownHtml = `<select id="clause-provision-select" class="filter-provision-select contract-clause-filter-select">
+        <option value="">All Provisions</option>
+        ${provEntries.map(function(e) {
+            return '<option value="' + esc(e[0]) + '"' + (contractClauseProvisionFilter.has(e[0]) ? ' selected' : '') + '>' + esc(e[0] + ' ' + e[1]) + '</option>';
+        }).join('')}
+    </select>`;
 
     // Sort dropdown
     const sortOptions = '<option value="severity"' + (contractClauseSort === 'severity' ? ' selected' : '') + '>Order: Risk level</option>'
@@ -5926,7 +5918,7 @@ function renderContractClauseFilterBar(provisions) {
 
     // Severity multi-select dropdown
     function closeAllClausePanels(except) {
-        ["clause-severity-panel", "clause-confidence-panel", "clause-provision-panel"].forEach(function(id) {
+        ["clause-severity-panel", "clause-confidence-panel"].forEach(function(id) {
             if (id !== except) { const p = $("#" + id); if (p) p.classList.add("hidden"); }
         });
     }
@@ -5994,36 +5986,12 @@ function renderContractClauseFilterBar(provisions) {
         });
     });
 
-    // Provision multi-select dropdown
-    const _provTrigger = $("#clause-provision-trigger");
-    if (_provTrigger) _provTrigger.addEventListener("click", () => {
-        closeAllClausePanels("clause-provision-panel");
-        const panel = $("#clause-provision-panel");
-        if (panel) {
-            panel.classList.toggle("hidden");
-            if (!panel.classList.contains("hidden")) positionClausePanel(_provTrigger, panel);
-        }
-    });
-    const _provAll = $("#clause-provision-all");
-    if (_provAll) _provAll.addEventListener("change", function() {
-        if (this.checked) {
-            contractClauseProvisionFilter.clear();
-            document.querySelectorAll(".clause-prov-cb").forEach(cb => cb.checked = false);
-        }
+    // Provision select (Step 346b)
+    const _provSel = $("#clause-provision-select");
+    if (_provSel) _provSel.addEventListener("change", function() {
+        contractClauseProvisionFilter.clear();
+        if (this.value) contractClauseProvisionFilter.add(this.value);
         applyContractClauseFilters();
-        const label = $("#clause-provision-label");
-        if (label) label.textContent = "All";
-    });
-    document.querySelectorAll(".clause-prov-cb").forEach(cb => {
-        cb.addEventListener("change", function() {
-            if (this.checked) contractClauseProvisionFilter.add(this.value);
-            else contractClauseProvisionFilter.delete(this.value);
-            const allCb = $("#clause-provision-all");
-            if (allCb) allCb.checked = contractClauseProvisionFilter.size === 0;
-            const label = $("#clause-provision-label");
-            if (label) label.textContent = contractClauseProvisionFilter.size === 0 ? "All" : contractClauseProvisionFilter.size === 1 ? [...contractClauseProvisionFilter][0] : contractClauseProvisionFilter.size + " selected";
-            applyContractClauseFilters();
-        });
     });
 
     // Sort dropdown
