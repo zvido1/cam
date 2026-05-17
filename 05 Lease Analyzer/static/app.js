@@ -209,8 +209,8 @@ const EVALUATOR_COLORS = {
     C: "eval-red",
 };
 
-// Step 308: fallback display labels for evaluator roles (used when ev.label not in payload)
-const EVAL_ROLE_LABELS = { A: "Claude", B: "GPT", C: "Grok" };
+// Step 308: fallback display labels for evaluator roles — now delegated to evalName() (Step 347i)
+const EVAL_ROLE_LABELS = {}; // retained for back-compat; evalName(role) is the canonical source
 
 // ── Fragility Signal Translations (1D) ──
 const FRAGILITY_TRANSLATIONS = {
@@ -11334,7 +11334,7 @@ var _COV_AUDIT_VERDICT_CLS = {
 
 function _buildCovAuditTable(evs, roleList) {
     var html = '<div class="audit-cov-table-wrap"><table class="audit-cov-table"><thead><tr><th class="audit-cov-th">Element</th>';
-    roleList.forEach(function(role) { html += '<th class="audit-cov-th">Eval ' + esc(role) + '</th>'; });
+    roleList.forEach(function(role) { html += '<th class="audit-cov-th">' + esc(evalName(role)) + '</th>'; });
     html += '<th class="audit-cov-th">Merged</th></tr></thead><tbody>';
     evs.forEach(function(ev) {
         var hasDisag = ev.disagreements && ev.disagreements.length > 0;
@@ -15711,7 +15711,7 @@ function renderCoveragePanel() {
                     evalToggle = '<button class="' + btnCls + '" onclick="(function(btn){var p=document.getElementById(\'' + evalPanelId + '\');if(p){var wasHidden=p.style.display===\'none\';p.style.display=wasHidden?\'\':\'none\';btn.classList.toggle(\'cv-ev-evals-open\',wasHidden);}})(this);event.stopPropagation();" type="button">' + esc(btnLabel) + '</button>';
                     // Build inner per-evaluator rows for the panel
                     const evalRowsHtml = evalVerdicts.map(function(evi) {
-                        const evLabel = evi.label || EVAL_ROLE_LABELS[evi.role] || ('Eval-' + (evi.role || '?'));
+                        const evLabel = evi.label || evalName(evi.role || '?');
                         const evc = VERDICT_CFG[evi.verdict] || { cls: 'cv-ev-unclear', label: evi.verdict || '?' };
                         const roleCls = EVALUATOR_COLORS[evi.role] ? 'cv-eval-badge eval-badge-' + evi.role + ' ' + EVALUATOR_COLORS[evi.role] : 'cv-eval-badge';
                         const evCitRef = evi.citation && evi.citation.section_ref ? ' <span class="cv-eval-ref">' + esc(evi.citation.section_ref) + '</span>' : '';
