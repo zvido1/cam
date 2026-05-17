@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAM&#8482; Intelligence by Vered.ai</title>
-    <link rel="stylesheet" href="/static/style.css?v=372">
+    <link rel="stylesheet" href="/static/style.css?v=373">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -694,19 +694,9 @@
                             </div>
                         </div>
 
-                        <div class="filter-dropdown" id="filter-provision-dropdown">
-                            <button class="btn btn-outline filter-dropdown-trigger" id="filter-provision-trigger"
-                                    onclick="window.CAM.toggleFilterDropdown('provision')">
-                                &#9662; Provision: <span id="filter-provision-label">All</span>
-                            </button>
-                            <div class="filter-dropdown-panel hidden" id="filter-provision-panel">
-                                <label class="filter-option filter-option-all">
-                                    <input type="checkbox" value="" id="filter-provision-all" checked>
-                                    <span>All Provisions</span>
-                                </label>
-                                <div id="filter-provision-options"></div>
-                            </div>
-                        </div>
+                        <select id="filter-provision-select" class="filter-provision-select" onchange="window.CAM.setProvisionFilter(this.value)">
+                            <option value="">All Provisions</option>
+                        </select>
 
                         <button class="btn btn-outline filter-clear-btn hidden" id="filter-clear-btn"
                                 onclick="window.CAM.clearFilters()">&#10005; Clear</button>
@@ -1125,6 +1115,6 @@
     <script src="/static/app_docview_render_shared.js?v=3"></script>
     <script src="/static/app_summary_shared.js?v=10"></script>
     <script src="/static/app_notes_shared.js?v=1"></script>
-    <script src="/static/app.js?v=406"></script>
+    <script src="/static/app.js?v=407"></script>
 </body>
 </html>
