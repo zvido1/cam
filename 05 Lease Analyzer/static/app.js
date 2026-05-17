@@ -16907,7 +16907,9 @@ function updateNavActive(tenantIdx, focusPid) {
 
 // ── Step 347: Architecture C Phase 1 — Unified Sidebar ─────────────────────
 
-// context: { perspective, govSig } — both optional; default to review_needed when missing.
+// context: { perspective, govSig }
+// Step 347d: confidence threshold applies to directional_mismatch only.
+// Coverage assessments use severity + Stage 5e data; conservative default is Risk.
 function classifyFindingType(finding, mode, context) {
     var perspective = (context && context.perspective) || null;
     var ctxGovSig   = (context && context.govSig)   || null;
@@ -16917,74 +16919,81 @@ function classifyFindingType(finding, mode, context) {
         var ft  = finding.finding_type || '';
         var sev = (finding.severity || 'MEDIUM').toUpperCase();
 
-        if (ft === 'compound_risk') {
-            // HIGH/CRIT compounds are always Risk; lower severity needs Verified confidence
-            if (sev === 'CRITICAL' || sev === 'HIGH') return 'risk';
-            return isVerified ? 'risk' : 'review_needed';
-        }
+        if (ft === 'compound_risk') return 'risk'; // guardrail #1: always Risk
+
         if (ft === 'directional_mismatch') {
             var dir = finding.directionality || '';
             var adverseTo = dir === 'tenant_unprotected' ? 'tenant'
                           : dir === 'landlord_unprotected' ? 'landlord' : null;
             if (!adverseTo || !perspective || perspective === 'neutral') return 'review_needed';
             if (adverseTo !== perspective) return 'addressed'; // favorable to viewer
-            // Adverse to viewer — apply confidence threshold
-            return isVerified ? 'risk' : 'review_needed';
+            // Adverse to viewer: Verified → Risk; below Verified → Addressed (out of primary view)
+            return isVerified ? 'risk' : 'addressed';
         }
         if (ft === 'cross_coverage_relief') return 'addressed';
-        // cross_coverage_gap: need Verified to be more than review_needed
-        if (!isVerified) return 'review_needed';
+        // cross_coverage_gap: severity-based, no confidence gate
         if (sev === 'CRITICAL' || sev === 'HIGH') return 'risk';
-        if (sev === 'MEDIUM') return 'review_needed';
-        return 'improvement';
+        if (sev === 'LOW') return 'improvement';
+        return 'risk'; // MEDIUM default → risk (conservative)
     }
+
     if (mode === 'a' || finding._item_type === 'deviation') {
         var verdict = finding.final_verdict || '';
         if (verdict !== 'DEVIATES') return 'addressed';
-        var gs = (finding.cam_score && finding.cam_score.governance_signal) || '';
+        var gs     = (finding.cam_score && finding.cam_score.governance_signal) || '';
         var govSig = gs ? gs.toUpperCase() : null;
-        var sev2 = (finding.severity || 'MEDIUM').toUpperCase();
+        var sev2   = (finding.severity || 'MEDIUM').toUpperCase();
         if (govSig === 'REVIEW_SIGNAL' || govSig === 'WITHHOLD_SIGNAL') return 'review_needed';
         if (sev2 === 'CRITICAL' || sev2 === 'HIGH') return 'risk';
         if (govSig === 'ASSERT_SIGNAL') return 'risk';
         if (sev2 === 'LOW') return 'improvement';
         return 'review_needed';
     }
-    // Mode C coverage assessment
-    var state = finding.coverage_state || '';
-    var pcls  = finding.partial_class  || '';
-    var ui    = finding.use_impact;
-    var gap   = ui && ui.gap_impact;
-    var mat   = ui && ui.materiality;
+
+    // Mode C coverage assessment — severity-first, conservative default is Risk
+    var state    = finding.coverage_state || '';
+    var pcls     = finding.partial_class  || '';
+    var ui       = finding.use_impact;
+    var gap      = ui && ui.gap_impact;
+    var mat      = ui && ui.materiality;
     var uiActive = ui && ui.confidence !== 'no_evaluators';
+
     if (state === 'covered' || state === 'covered_typical' || state === 'not_applicable') return 'addressed';
     if (state === 'potentially_unenforceable') return 'risk';
+
     if (state === 'covered_unfavorable') {
         var advTo = finding.covered_unfavorable_adverse_to || null;
-        if (!advTo || !perspective || perspective === 'neutral') return 'review_needed';
+        if (!advTo) return 'risk'; // conservative: missing adverse_to → risk
+        if (!perspective || perspective === 'neutral') return 'risk';
         return advTo === perspective ? 'risk' : 'addressed';
     }
+
+    // Helper: severity tier from materiality (HIGH default when unknown)
+    function matSevTier() {
+        return mat === 'low' ? 'LOW' : mat === 'medium' ? 'MEDIUM' : 'HIGH';
+    }
+    // Helper: triage by severity + Stage 5e
+    function sevTriage() {
+        var tier = matSevTier();
+        if (tier === 'HIGH') return 'risk';
+        if (tier === 'LOW')  return 'improvement';
+        // MEDIUM: use Stage 5e if available; default risk
+        if (uiActive && (gap === 'favorable' || gap === 'neutral')) return 'improvement';
+        return 'risk';
+    }
+
     if (state === 'missing') {
-        if (uiActive && gap === 'favorable') return 'addressed';
-        if (uiActive && (gap === 'neutral' || mat === 'not_applicable')) return 'improvement';
-        if (uiActive && gap === 'adverse' && (mat === 'high' || mat === 'medium')) return 'risk';
-        if (uiActive && gap === 'adverse' && mat === 'low') return 'improvement';
-        return 'review_needed';
+        if (uiActive && gap === 'favorable') return 'addressed'; // beneficial absence
+        if (uiActive && mat === 'not_applicable') return 'improvement';
+        return sevTriage();
     }
     if (state === 'partial') {
         if (pcls === 'partial_review') return 'improvement';
-        if (pcls === 'partial_material') {
-            if (uiActive && gap === 'adverse' && (mat === 'high' || mat === 'medium')) return 'risk';
-            if (uiActive && (mat === 'low' || gap === 'neutral' || gap === 'favorable')) return 'improvement';
-            return 'review_needed';
-        }
-        return 'review_needed';
+        if (pcls === 'partial_material') return sevTriage();
+        return sevTriage(); // partial without class — use severity
     }
-    if (state === 'review_needed') {
-        if (uiActive && gap === 'adverse' && (mat === 'high' || mat === 'medium')) return 'risk';
-        if (uiActive && (gap === 'favorable' || gap === 'neutral')) return 'improvement';
-        return 'review_needed';
-    }
+    if (state === 'review_needed') return sevTriage();
+
     console.warn('[CAM classifyFindingType] Unclassifiable finding — state:', state, 'pcls:', pcls);
     return 'review_needed';
 }
