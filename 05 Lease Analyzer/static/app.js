@@ -16995,7 +16995,7 @@ function classifyFindingType(finding, mode, context) {
         if (pcls === 'partial_material') return sevTriage();
         return sevTriage();
     }
-    if (state === 'review_needed') return sevTriage();
+    if (state === 'review_needed') return 'review_needed'; // CAM has no coverage verdict; use_impact is downstream
 
     console.warn('[CAM classifyFindingType] Unclassifiable finding — state:', state, 'pcls:', pcls);
     return 'review_needed';
