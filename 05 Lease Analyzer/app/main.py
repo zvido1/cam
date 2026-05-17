@@ -2246,11 +2246,19 @@ async def delete_job(job_id: str):
 @app.get("/api/models")
 def get_models():
     """Return model display names for the frontend — single source of truth."""
-    from cam.adapters.lease_review.model_config import DISPLAY_NAMES, CHAT_DEFAULTS
+    from cam.adapters.lease_review.model_config import (
+        DISPLAY_NAMES, CHAT_DEFAULTS,
+        EVALUATOR_A_LABEL, EVALUATOR_B_LABEL, EVALUATOR_C_LABEL,
+    )
     return {
         "display_names": DISPLAY_NAMES,
         "chat_defaults": {
             k: v[1] for k, v in CHAT_DEFAULTS.items()
+        },
+        "evaluator_slots": {
+            "A": EVALUATOR_A_LABEL,
+            "B": EVALUATOR_B_LABEL,
+            "C": EVALUATOR_C_LABEL,
         },
     }
 

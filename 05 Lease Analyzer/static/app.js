@@ -33,6 +33,7 @@ const SEVERITY_ICONS = {
 
 // ── Model Display Names (populated from /api/models at startup) ──
 let MODEL_DISPLAY_NAMES = {};
+let EVALUATOR_SLOT_NAMES = {};  // slot letter → display name, e.g. { A: "Claude Sonnet 4.6" }
 
 async function loadModelNames() {
     try {
@@ -40,10 +41,17 @@ async function loadModelNames() {
         if (resp.ok) {
             const data = await resp.json();
             MODEL_DISPLAY_NAMES = data.display_names || {};
+            EVALUATOR_SLOT_NAMES = data.evaluator_slots || {};
         }
     } catch (e) {
         console.warn('[CAM] Could not load model names:', e);
     }
+}
+
+// Return the display name for an evaluator slot (A/B/C).
+// Falls back to "Eval {slot}" if the slot mapping hasn't loaded yet.
+function evalName(slot) {
+    return EVALUATOR_SLOT_NAMES[slot] || ('Eval ' + slot);
 }
 
 // ── Evaluator Color Classes ──
@@ -5322,9 +5330,9 @@ function renderTechDetails() {
 
     const modelNames = [];
     if (modelsUsed.extraction) modelNames.push(`Extraction: ${getModelDisplayName(modelsUsed.extraction)}`);
-    if (modelsUsed.evaluator_a) modelNames.push(`Eval A: ${getModelDisplayName(modelsUsed.evaluator_a)}`);
-    if (modelsUsed.evaluator_b) modelNames.push(`Eval B: ${getModelDisplayName(modelsUsed.evaluator_b)}`);
-    if (modelsUsed.evaluator_c) modelNames.push(`Eval C: ${getModelDisplayName(modelsUsed.evaluator_c)}`);
+    if (modelsUsed.evaluator_a) modelNames.push(`${evalName('A')}: ${getModelDisplayName(modelsUsed.evaluator_a)}`);
+    if (modelsUsed.evaluator_b) modelNames.push(`${evalName('B')}: ${getModelDisplayName(modelsUsed.evaluator_b)}`);
+    if (modelsUsed.evaluator_c) modelNames.push(`${evalName('C')}: ${getModelDisplayName(modelsUsed.evaluator_c)}`);
     if (modelsUsed.challenger) modelNames.push(`Challenger: ${getModelDisplayName(modelsUsed.challenger)}`);
     if (modelsUsed.severity) modelNames.push(`Severity: ${getModelDisplayName(modelsUsed.severity)}`);
 
@@ -9120,9 +9128,9 @@ function exportAuditText(singleContract) {
         lines.push("MODELS USED");
         lines.push(sep());
         if (m.extractor) lines.push(`  Extractor:   ${m.extractor} (${m.extractor_provider || ""})`);
-        if (m.evaluator_a) lines.push(`  Evaluator A: ${m.evaluator_a} (${m.evaluator_a_provider || ""})`);
-        if (m.evaluator_b) lines.push(`  Evaluator B: ${m.evaluator_b} (${m.evaluator_b_provider || ""})`);
-        if (m.evaluator_c) lines.push(`  Evaluator C: ${m.evaluator_c} (${m.evaluator_c_provider || ""})`);
+        if (m.evaluator_a) lines.push(`  ${evalName('A')}: ${m.evaluator_a} (${m.evaluator_a_provider || ""})`);
+        if (m.evaluator_b) lines.push(`  ${evalName('B')}: ${m.evaluator_b} (${m.evaluator_b_provider || ""})`);
+        if (m.evaluator_c) lines.push(`  ${evalName('C')}: ${m.evaluator_c} (${m.evaluator_c_provider || ""})`);
         if (m.challenger)  lines.push(`  Challenger:  ${m.challenger}`);
         if (m.severity_assessor) lines.push(`  Severity:    ${m.severity_assessor}`);
         lines.push("");
@@ -11342,8 +11350,7 @@ function _buildCovAuditTable(evs, roleList) {
             var citRef = (evr.citation && evr.citation.section_ref) ? ' <span class="audit-cov-cit">' + esc(evr.citation.section_ref) + '</span>' : '';
             var reasonHtml = '';
             if (hasDisag && evr.reasoning) {
-                var rShort = evr.reasoning.length > 200 ? evr.reasoning.slice(0, 197) + '...' : evr.reasoning;
-                reasonHtml = '<div class="audit-cov-ev-reason">' + esc(rShort) + '</div>';
+                reasonHtml = '<div class="audit-cov-ev-reason">' + esc(evr.reasoning) + '</div>';
             }
             html += '<td class="audit-cov-td"><span class="cv-ev-pill ' + vcls + '">' + vlabel + '</span>' + citRef + reasonHtml + '</td>';
         });
@@ -11372,10 +11379,9 @@ function _buildMergeTraceHtml(disagElems) {
             html += '<div class="audit-cov-trace-dissents">';
             dissents.forEach(function(d) {
                 var dReason = (d.reasoning || '').trim();
-                var dReasonShort = dReason.length > 200 ? dReason.slice(0, 197) + '...' : dReason;
                 html += '<div class="audit-cov-trace-dissent-row">'
-                    + '<span class="audit-cov-trace-dissent">Eval ' + esc(d.role || d.evaluator_id || '?') + ': ' + esc(_COV_AUDIT_VERDICT_SHORT[d.verdict] || d.verdict) + '</span>'
-                    + (dReasonShort ? ' <span class="audit-cov-trace-reason">' + esc(dReasonShort) + '</span>' : '')
+                    + '<span class="audit-cov-trace-dissent">' + esc(evalName(d.role || d.evaluator_id || '?')) + ': ' + esc(_COV_AUDIT_VERDICT_SHORT[d.verdict] || d.verdict) + '</span>'
+                    + (dReason ? ' <span class="audit-cov-trace-reason">' + esc(dReason) + '</span>' : '')
                     + '</div>';
             });
             html += '</div>';
@@ -11846,9 +11852,9 @@ function buildAuditDetailV2(p, modelsUsed, stageData, idx) {
     const challengeModel = modelsUsed.challenger || "—";
     const evalMeta = stageData.evaluation_meta || {};
     const evalModelMap = {
-        A: modelsUsed.evaluator_a || "Evaluator A",
-        B: modelsUsed.evaluator_b || "Evaluator B",
-        C: modelsUsed.evaluator_c || "Evaluator C",
+        A: modelsUsed.evaluator_a || evalName('A'),
+        B: modelsUsed.evaluator_b || evalName('B'),
+        C: modelsUsed.evaluator_c || evalName('C'),
     };
 
     // ── Redesigned audit detail (Step 229) ──
@@ -12270,9 +12276,9 @@ function buildAuditDetail(p, modelsUsed, stageData) {
                 <div class="audit-evaluators">`;
 
         const evalModelMap = {
-            A: modelsUsed.evaluator_a || 'Evaluator A',
-            B: modelsUsed.evaluator_b || 'Evaluator B',
-            C: modelsUsed.evaluator_c || 'Evaluator C',
+            A: modelsUsed.evaluator_a || evalName('A'),
+            B: modelsUsed.evaluator_b || evalName('B'),
+            C: modelsUsed.evaluator_c || evalName('C'),
         };
 
         ['A','B','C'].forEach(key => {
