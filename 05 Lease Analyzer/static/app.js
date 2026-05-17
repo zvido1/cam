@@ -16908,8 +16908,7 @@ function updateNavActive(tenantIdx, focusPid) {
 // ── Step 347: Architecture C Phase 1 — Unified Sidebar ─────────────────────
 
 // context: { perspective, govSig }
-// Step 347d: confidence threshold applies to directional_mismatch only.
-// Coverage assessments use severity + Stage 5e data; conservative default is Risk.
+// Step 347e: Risk = HIGH/CRIT only. MEDIUM → Improvement everywhere.
 function classifyFindingType(finding, mode, context) {
     var perspective = (context && context.perspective) || null;
     var ctxGovSig   = (context && context.govSig)   || null;
@@ -16927,14 +16926,12 @@ function classifyFindingType(finding, mode, context) {
                           : dir === 'landlord_unprotected' ? 'landlord' : null;
             if (!adverseTo || !perspective || perspective === 'neutral') return 'review_needed';
             if (adverseTo !== perspective) return 'addressed'; // favorable to viewer
-            // Adverse to viewer: Verified → Risk; below Verified → Addressed (out of primary view)
-            return isVerified ? 'risk' : 'addressed';
+            return isVerified ? 'risk' : 'addressed'; // below Verified → addressed (out of view)
         }
         if (ft === 'cross_coverage_relief') return 'addressed';
-        // cross_coverage_gap: severity-based, no confidence gate
+        // cross_coverage_gap: HIGH/CRIT → risk; MEDIUM/LOW → improvement
         if (sev === 'CRITICAL' || sev === 'HIGH') return 'risk';
-        if (sev === 'LOW') return 'improvement';
-        return 'risk'; // MEDIUM default → risk (conservative)
+        return 'improvement';
     }
 
     if (mode === 'a' || finding._item_type === 'deviation') {
@@ -16950,7 +16947,7 @@ function classifyFindingType(finding, mode, context) {
         return 'review_needed';
     }
 
-    // Mode C coverage assessment — severity-first, conservative default is Risk
+    // Mode C coverage assessment — HIGH/CRIT → Risk; MEDIUM/LOW → Improvement
     var state    = finding.coverage_state || '';
     var pcls     = finding.partial_class  || '';
     var ui       = finding.use_impact;
@@ -16961,36 +16958,32 @@ function classifyFindingType(finding, mode, context) {
     if (state === 'covered' || state === 'covered_typical' || state === 'not_applicable') return 'addressed';
     if (state === 'potentially_unenforceable') return 'risk';
 
+    // Severity tier: HIGH when materiality is high or unknown; else MEDIUM/LOW
+    var matTier = mat === 'low' ? 'LOW' : mat === 'medium' ? 'MEDIUM' : 'HIGH';
+    var isHighSev = (matTier === 'HIGH');
+
     if (state === 'covered_unfavorable') {
         var advTo = finding.covered_unfavorable_adverse_to || null;
-        if (!advTo) return 'risk'; // conservative: missing adverse_to → risk
-        if (!perspective || perspective === 'neutral') return 'risk';
-        return advTo === perspective ? 'risk' : 'addressed';
+        if (advTo && perspective && perspective !== 'neutral' && advTo !== perspective) return 'addressed';
+        // Adverse or unknown direction: triage by severity
+        return isHighSev ? 'risk' : 'improvement';
     }
 
-    // Helper: severity tier from materiality (HIGH default when unknown)
-    function matSevTier() {
-        return mat === 'low' ? 'LOW' : mat === 'medium' ? 'MEDIUM' : 'HIGH';
-    }
-    // Helper: triage by severity + Stage 5e
+    // For missing / partial: severity-first
     function sevTriage() {
-        var tier = matSevTier();
-        if (tier === 'HIGH') return 'risk';
-        if (tier === 'LOW')  return 'improvement';
-        // MEDIUM: use Stage 5e if available; default risk
-        if (uiActive && (gap === 'favorable' || gap === 'neutral')) return 'improvement';
-        return 'risk';
+        if (isHighSev) return 'risk';
+        return 'improvement'; // MEDIUM and LOW → improvement
     }
 
     if (state === 'missing') {
-        if (uiActive && gap === 'favorable') return 'addressed'; // beneficial absence
+        if (uiActive && gap === 'favorable') return 'addressed';
         if (uiActive && mat === 'not_applicable') return 'improvement';
         return sevTriage();
     }
     if (state === 'partial') {
         if (pcls === 'partial_review') return 'improvement';
         if (pcls === 'partial_material') return sevTriage();
-        return sevTriage(); // partial without class — use severity
+        return sevTriage();
     }
     if (state === 'review_needed') return sevTriage();
 
@@ -17228,9 +17221,26 @@ function renderNavSidebar() {
         if (improvement.length > 0)
             html += _navSectionWrap('improvement_' + tIdx, '✶', 'IMPROVEMENT', improvement.length,
                 improvement.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
-        if (addressed.length > 0)
-            html += _navSectionWrap('addressed_' + tIdx, '✓', 'ADDRESSED', addressed.length,
-                _navAddressedChips(addressed, tIdx), jobId);
+        // Dedupe addressed chips: only gap items not also in risk/reviewNeeded/improvement
+        var _lpWithIssues = new Set();
+        function _splitPids(pid) {
+            return String(pid || '').split(/[\s,]+/).map(function(s) { return s.trim(); }).filter(Boolean);
+        }
+        [risk, reviewNeeded, improvement].forEach(function(bucket) {
+            bucket.forEach(function(i) { _splitPids(i.pid).forEach(function(id) { _lpWithIssues.add(id); }); });
+        });
+        var _chipSeen = new Set();
+        var addressedChips = [];
+        addressed.forEach(function(i) {
+            if (i._item_type !== 'gap') return;
+            var id = i.pid;
+            if (!id || _chipSeen.has(id) || _lpWithIssues.has(id)) return;
+            _chipSeen.add(id);
+            addressedChips.push({ pid: id, name: i.name });
+        });
+        if (addressedChips.length > 0)
+            html += _navSectionWrap('addressed_' + tIdx, '✓', 'ADDRESSED', addressedChips.length,
+                _navAddressedChips(addressedChips, tIdx), jobId);
         if (!risk.length && !reviewNeeded.length && !improvement.length && !addressed.length)
             html += '<div class="nav-empty">No findings</div>';
         html += '</div>';
