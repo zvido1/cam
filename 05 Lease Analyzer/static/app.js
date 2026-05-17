@@ -680,8 +680,8 @@ function init() {
     setupEventListeners();
 }
 
-function enterApp() {
-    loadModelNames();
+async function enterApp() {
+    await loadModelNames(); // ensure evalName() is ready before any rendering
     if (ANALYSIS_TYPES.length === 1) {
         selectedAnalysisType = ANALYSIS_TYPES[0];
         showState("upload");
@@ -9208,6 +9208,7 @@ function exportAuditText(singleContract) {
 // ── Direct Job Load (from URL) ──
 
 async function loadJobDirect(jobId) {
+    await loadModelNames(); // ensure evalName() is ready before any rendering
     currentJobId = jobId;
 
     setupEventListeners();
