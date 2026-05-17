@@ -16989,8 +16989,19 @@ function classifyFindingType(finding, mode, context) {
     return 'review_needed';
 }
 
+var _RISK_SUBGROUP_DEFAULT_COLLAPSED = { risk_gaps: false, risk_compound: false, risk_directional: true };
+
+function _navSubGroupCollapsed(sectionId, jobId) {
+    var key = 'cam_sidebar_' + sectionId + (jobId ? '_' + jobId : '');
+    var stored = localStorage.getItem(key);
+    if (stored !== null) return stored === '1';
+    // Strip trailing _N (tenant index) to get the base sub-group name
+    var base = sectionId.replace(/_\d+$/, '');
+    return _RISK_SUBGROUP_DEFAULT_COLLAPSED[base] || false;
+}
+
 function _navSubGroupWrap(sectionId, title, count, bodyHtml, jobId) {
-    var collapsed = _navSectionCollapsed(sectionId, jobId);
+    var collapsed = _navSubGroupCollapsed(sectionId, jobId);
     var oc = "window.CAM._navSectionToggle('" + sectionId + "','" + (jobId || '') + "')";
     return '<div class="nav-subgroup">'
          + '<div class="nav-subgroup-header">'
