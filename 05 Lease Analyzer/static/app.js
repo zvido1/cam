@@ -16907,37 +16907,63 @@ function updateNavActive(tenantIdx, focusPid) {
 
 // ── Step 347: Architecture C Phase 1 — Unified Sidebar ─────────────────────
 
-function classifyFindingType(finding, mode) {
+// context: { perspective, govSig } — both optional; default to review_needed when missing.
+function classifyFindingType(finding, mode, context) {
+    var perspective = (context && context.perspective) || null;
+    var ctxGovSig   = (context && context.govSig)   || null;
+    var isVerified  = ctxGovSig === 'ASSERT_SIGNAL';
+
     if (finding._item_type === 'synthesis') {
-        const ft = finding.finding_type || '';
-        if (ft === 'compound_risk') return 'risk';
-        if (ft === 'directional_mismatch') return 'risk';
+        var ft  = finding.finding_type || '';
+        var sev = (finding.severity || 'MEDIUM').toUpperCase();
+
+        if (ft === 'compound_risk') {
+            // HIGH/CRIT compounds are always Risk; lower severity needs Verified confidence
+            if (sev === 'CRITICAL' || sev === 'HIGH') return 'risk';
+            return isVerified ? 'risk' : 'review_needed';
+        }
+        if (ft === 'directional_mismatch') {
+            var dir = finding.directionality || '';
+            var adverseTo = dir === 'tenant_unprotected' ? 'tenant'
+                          : dir === 'landlord_unprotected' ? 'landlord' : null;
+            if (!adverseTo || !perspective || perspective === 'neutral') return 'review_needed';
+            if (adverseTo !== perspective) return 'addressed'; // favorable to viewer
+            // Adverse to viewer — apply confidence threshold
+            return isVerified ? 'risk' : 'review_needed';
+        }
         if (ft === 'cross_coverage_relief') return 'addressed';
-        const sev = (finding.severity || 'MEDIUM').toUpperCase();
+        // cross_coverage_gap: need Verified to be more than review_needed
+        if (!isVerified) return 'review_needed';
         if (sev === 'CRITICAL' || sev === 'HIGH') return 'risk';
         if (sev === 'MEDIUM') return 'review_needed';
         return 'improvement';
     }
     if (mode === 'a' || finding._item_type === 'deviation') {
-        const verdict = finding.final_verdict || '';
+        var verdict = finding.final_verdict || '';
         if (verdict !== 'DEVIATES') return 'addressed';
-        const gs = (finding.cam_score && finding.cam_score.governance_signal) || '';
-        const govSig = gs ? gs.toUpperCase() : null;
-        const sev = (finding.severity || 'MEDIUM').toUpperCase();
+        var gs = (finding.cam_score && finding.cam_score.governance_signal) || '';
+        var govSig = gs ? gs.toUpperCase() : null;
+        var sev2 = (finding.severity || 'MEDIUM').toUpperCase();
         if (govSig === 'REVIEW_SIGNAL' || govSig === 'WITHHOLD_SIGNAL') return 'review_needed';
-        if (sev === 'CRITICAL' || sev === 'HIGH') return 'risk';
+        if (sev2 === 'CRITICAL' || sev2 === 'HIGH') return 'risk';
         if (govSig === 'ASSERT_SIGNAL') return 'risk';
-        if (sev === 'LOW') return 'improvement';
+        if (sev2 === 'LOW') return 'improvement';
         return 'review_needed';
     }
-    const state = finding.coverage_state || '';
-    const pcls = finding.partial_class || '';
-    const ui = finding.use_impact;
-    const gap = ui && ui.gap_impact;
-    const mat = ui && ui.materiality;
-    const uiActive = ui && ui.confidence !== 'no_evaluators';
+    // Mode C coverage assessment
+    var state = finding.coverage_state || '';
+    var pcls  = finding.partial_class  || '';
+    var ui    = finding.use_impact;
+    var gap   = ui && ui.gap_impact;
+    var mat   = ui && ui.materiality;
+    var uiActive = ui && ui.confidence !== 'no_evaluators';
     if (state === 'covered' || state === 'covered_typical' || state === 'not_applicable') return 'addressed';
-    if (state === 'covered_unfavorable' || state === 'potentially_unenforceable') return 'risk';
+    if (state === 'potentially_unenforceable') return 'risk';
+    if (state === 'covered_unfavorable') {
+        var advTo = finding.covered_unfavorable_adverse_to || null;
+        if (!advTo || !perspective || perspective === 'neutral') return 'review_needed';
+        return advTo === perspective ? 'risk' : 'addressed';
+    }
     if (state === 'missing') {
         if (uiActive && gap === 'favorable') return 'addressed';
         if (uiActive && (gap === 'neutral' || mat === 'not_applicable')) return 'improvement';
@@ -16961,6 +16987,21 @@ function classifyFindingType(finding, mode) {
     }
     console.warn('[CAM classifyFindingType] Unclassifiable finding — state:', state, 'pcls:', pcls);
     return 'review_needed';
+}
+
+function _navSubGroupWrap(sectionId, title, count, bodyHtml, jobId) {
+    var collapsed = _navSectionCollapsed(sectionId, jobId);
+    var oc = "window.CAM._navSectionToggle('" + sectionId + "','" + (jobId || '') + "')";
+    return '<div class="nav-subgroup">'
+         + '<div class="nav-subgroup-header">'
+         + '<span class="nav-subgroup-title">' + esc(title) + '</span>'
+         + ' <span class="nav-subgroup-count">' + count + '</span>'
+         + '<button class="nav-collapse-toggle nav-subgroup-toggle" id="nav-section-toggle-' + sectionId
+         + '" onclick="' + oc + '" type="button">' + (collapsed ? '▶' : '▼') + '</button>'
+         + '</div>'
+         + '<div class="nav-section-body" id="nav-section-body-' + sectionId + '"'
+         + (collapsed ? ' style="display:none"' : '') + '>'
+         + bodyHtml + '</div></div>';
 }
 
 function _navBuildUnifiedItem(item, tIdx) {
@@ -17064,10 +17105,11 @@ function renderNavSidebar() {
             var caByLp = {};
             ca.forEach(function(a) { caByLp[a.issue_area_id || a.provision_id] = a; });
 
+            var _perspective = getJobPerspective();
             ca.forEach(function(a) {
                 var state = a.coverage_state || '';
                 if (state === 'not_applicable') return;
-                var bucket = classifyFindingType(a, 'c');
+                var bucket = classifyFindingType(a, 'c', { perspective: _perspective });
                 var pid = a.issue_area_id || a.provision_id || '';
                 var name = a.issue_area_name || a.provision_name || pid;
                 var ui = a.use_impact, mat = ui && ui.materiality;
@@ -17087,15 +17129,16 @@ function renderNavSidebar() {
 
             var cpfs = r.cross_provision_findings || [];
             cpfs.forEach(function(f) {
-                var fi = { _item_type: 'synthesis', finding_type: f.finding_type, severity: f.severity };
-                var bucket = classifyFindingType(fi, 'c');
+                var govSig = f.finding_type === 'compound_risk' ? deriveCompoundGovernanceSignal(f, caByLp)
+                           : f.finding_type === 'directional_mismatch' ? deriveDirectionalGovernanceSignal(f) : null;
+                var fi = { _item_type: 'synthesis', finding_type: f.finding_type,
+                           severity: f.severity, directionality: f.directionality || '' };
+                var bucket = classifyFindingType(fi, 'c', { perspective: _perspective, govSig: govSig });
                 var sev = (f.severity || 'HIGH').toUpperCase();
                 var lps = (f.implicated_lps || []).join(', ');
                 var typeLabel = f.finding_type === 'compound_risk' ? 'COMPOUND'
                               : f.finding_type === 'directional_mismatch' ? 'DIRECTIONAL'
                               : f.finding_type === 'cross_coverage_relief' ? 'RELIEF' : 'SYNTHESIS';
-                var govSig = f.finding_type === 'compound_risk' ? deriveCompoundGovernanceSignal(f, caByLp)
-                           : f.finding_type === 'directional_mismatch' ? deriveDirectionalGovernanceSignal(f) : null;
                 var summary = (f.short_summary || _navTruncate(f.headline || '', 80)).trim();
                 pushItem(bucket, { _item_type: 'synthesis', _mode: 'synthesis', pid: lps,
                     name: f.headline || f.finding_id || '', sev: sev, typeLabel: typeLabel,
@@ -17118,10 +17161,11 @@ function renderNavSidebar() {
                     govSig: govSig, summary: _navTruncate(desc, 80), tooltip: desc || d.provision_name || '' });
             });
             var ca2 = r.coverage_assessment || [];
+            var _perspA = getJobPerspective();
             ca2.forEach(function(a) {
                 var state = a.coverage_state || '';
                 if (state === 'not_applicable') return;
-                var bucket = classifyFindingType(a, 'c');
+                var bucket = classifyFindingType(a, 'c', { perspective: _perspA });
                 var pid = a.issue_area_id || a.provision_id || '';
                 var ui = a.use_impact, mat = ui && ui.materiality;
                 var sev = mat === 'high' ? 'HIGH' : mat === 'medium' ? 'MEDIUM' : mat === 'low' ? 'LOW' : 'MEDIUM';
@@ -17142,9 +17186,22 @@ function renderNavSidebar() {
         if (showTenantHeaders) {
             html += '<div class="nav-tenant-header">' + esc(tenant.filename || ('Lease ' + (tIdx + 1))) + '</div>';
         }
-        if (risk.length > 0)
-            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', risk.length,
-                risk.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+        if (risk.length > 0) {
+            var riskGaps = risk.filter(function(i) { return i._item_type !== 'synthesis'; });
+            var riskCompound = risk.filter(function(i) { return i.typeLabel === 'COMPOUND'; });
+            var riskDirectional = risk.filter(function(i) { return i.typeLabel === 'DIRECTIONAL'; });
+            var subHtml = '';
+            if (riskGaps.length > 0)
+                subHtml += _navSubGroupWrap('risk_gaps_' + tIdx, 'GAPS / COVERAGE', riskGaps.length,
+                    riskGaps.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+            if (riskCompound.length > 0)
+                subHtml += _navSubGroupWrap('risk_compound_' + tIdx, 'COMPOUND', riskCompound.length,
+                    riskCompound.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+            if (riskDirectional.length > 0)
+                subHtml += _navSubGroupWrap('risk_directional_' + tIdx, 'DIRECTIONAL', riskDirectional.length,
+                    riskDirectional.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', risk.length, subHtml, jobId);
+        }
         if (reviewNeeded.length > 0)
             html += _navSectionWrap('review_' + tIdx, '?', 'REVIEW NEEDED', reviewNeeded.length,
                 reviewNeeded.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
