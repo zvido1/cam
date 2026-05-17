@@ -12864,6 +12864,94 @@ body.mode-c .card-docview-link {
 .nav-section-synthesis .nav-section-header { color: #92400e; }
 .nav-item-synthesis { border-left: 3px solid #d97706; }
 
+/* Step 347: Unified sidebar — four-bucket layout */
+.nav-section-header-collapsible {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    user-select: none;
+}
+.nav-section-icon { font-size: 0.85rem; flex-shrink: 0; }
+.nav-section-title { font-weight: 600; font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.nav-collapse-toggle {
+    margin-left: auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.65rem;
+    color: #9ca3af;
+    padding: 0 0.15rem;
+    line-height: 1;
+}
+.nav-collapse-toggle:hover { color: #374151; }
+.nav-section-body { padding-bottom: 0.25rem; }
+
+/* Section accent colors */
+.nav-section-risk    .nav-section-header { color: #b91c1c; }
+.nav-section-risk    .nav-section-title  { color: #b91c1c; }
+.nav-section-review  .nav-section-header { color: #92400e; }
+.nav-section-review  .nav-section-title  { color: #92400e; }
+.nav-section-improvement .nav-section-header { color: #1e40af; }
+.nav-section-improvement .nav-section-title  { color: #1e40af; }
+.nav-section-addressed  .nav-section-header  { color: #166534; }
+.nav-section-addressed  .nav-section-title   { color: #166534; }
+
+/* Unified items */
+.nav-item-unified {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    border-left: 3px solid transparent;
+    padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+    margin-bottom: 1px;
+    cursor: pointer;
+    border-radius: 0 3px 3px 0;
+}
+.nav-item-unified:hover { background: #f1f5f9; }
+.nav-item-unified.active { background: #eff6ff; border-left-color: #3b82f6; }
+.nav-item-sev-critical.nav-item-unified { border-left-color: #dc2626; }
+.nav-item-sev-high.nav-item-unified     { border-left-color: #ea580c; }
+.nav-item-sev-medium.nav-item-unified   { border-left-color: #ca8a04; }
+.nav-item-sev-low.nav-item-unified      { border-left-color: #6b7280; }
+
+/* Type label (COMPOUND / GAP / DEVIATION etc.) */
+.nav-item-type-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #6b7280;
+    background: #f3f4f6;
+    border-radius: 3px;
+    padding: 0.05rem 0.25rem;
+    margin-left: 0.25rem;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+/* Addressed chip-list */
+.nav-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.35rem 0.5rem;
+}
+.nav-chip {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #374151;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 3px;
+    padding: 0.1rem 0.3rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.nav-chip:hover { background: #dbeafe; border-color: #93c5fd; color: #1e40af; }
+.nav-empty-inner { font-size: 0.75rem; color: #9ca3af; padding: 0.35rem 0.5rem; }
+
 /* Step 313: CPF agreement badge color variants */
 .cpf-agree-unanimous { background: #dcfce7; color: #166534; border-color: #86efac; font-weight: 700; }
 .cpf-agree-majority  { background: #fef3c7; color: #92400e; border-color: #fcd34d; }

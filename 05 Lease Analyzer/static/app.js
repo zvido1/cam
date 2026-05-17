@@ -5890,14 +5890,8 @@ function renderContractClauseFilterBar(provisions) {
                 </div>
             </div>
             <div class="contract-clause-filter-controls">
-                <select id="contract-selector-dropdown" class="contract-selector-select"></select>
-                <select id="contract-clause-sort" class="contract-clause-filter-select">${sortOptions}</select>
+                ${currentResults && currentResults.tenants && currentResults.tenants.length > 1 ? '<select id="contract-selector-dropdown" class="contract-selector-select"></select>' : ''}
                 ${severityDropdownHtml}
-                ${confidenceDropdownHtml}
-                <select id="contract-clause-status-filter" class="contract-clause-filter-select">
-                    ${statusOptions}
-                </select>
-                ${provisionDropdownHtml}
                 <select id="contract-clause-read-filter" class="contract-clause-filter-select">
                     ${readOptions}
                 </select>
@@ -5953,57 +5947,8 @@ function renderContractClauseFilterBar(provisions) {
         });
     });
 
-    // Confidence multi-select dropdown
-    const _confTrigger = $("#clause-confidence-trigger");
-    if (_confTrigger) _confTrigger.addEventListener("click", () => {
-        closeAllClausePanels("clause-confidence-panel");
-        const panel = $("#clause-confidence-panel");
-        if (panel) {
-            panel.classList.toggle("hidden");
-            if (!panel.classList.contains("hidden")) positionClausePanel(_confTrigger, panel);
-        }
-    });
-    const _confAll = $("#clause-confidence-all");
-    if (_confAll) _confAll.addEventListener("change", function() {
-        if (this.checked) {
-            contractClauseConfidenceFilter.clear();
-            document.querySelectorAll(".clause-conf-cb").forEach(cb => cb.checked = false);
-        }
-        applyContractClauseFilters();
-        const label = $("#clause-confidence-label");
-        if (label) label.textContent = "All";
-    });
-    document.querySelectorAll(".clause-conf-cb").forEach(cb => {
-        cb.addEventListener("change", function() {
-            if (this.checked) contractClauseConfidenceFilter.add(this.value);
-            else contractClauseConfidenceFilter.delete(this.value);
-            const allCb = $("#clause-confidence-all");
-            if (allCb) allCb.checked = contractClauseConfidenceFilter.size === 0;
-            const label = $("#clause-confidence-label");
-            const labelMap = { verified: 'Verified', impact_unclear: 'Impact Unclear', needs_review: 'Needs Review', inconclusive: 'Inconclusive' };
-            if (label) label.textContent = contractClauseConfidenceFilter.size === 0 ? "All" : contractClauseConfidenceFilter.size === 1 ? (labelMap[[...contractClauseConfidenceFilter][0]] || [...contractClauseConfidenceFilter][0]) : "Custom";
-            applyContractClauseFilters();
-        });
-    });
-
-    // Provision select (Step 346b)
-    const _provSel = $("#clause-provision-select");
-    if (_provSel) _provSel.addEventListener("change", function() {
-        contractClauseProvisionFilter.clear();
-        if (this.value) contractClauseProvisionFilter.add(this.value);
-        applyContractClauseFilters();
-    });
-
-    // Sort dropdown
-    $("#contract-clause-sort")?.addEventListener("change", (e) => {
-        contractClauseSort = e.target.value;
-        applyContractClauseFilters();
-    });
-
-    $("#contract-clause-status-filter")?.addEventListener("change", (e) => {
-        contractClauseStatusFilter = e.target.value;
-        applyContractClauseFilters();
-    });
+    // Step 347: confidence, provision, sort, status removed from toolbar.
+    // Read and Notes remain.
     $("#contract-clause-read-filter")?.addEventListener("change", (e) => {
         contractClauseReadFilter = e.target.value;
         applyContractClauseFilters();
@@ -16959,6 +16904,327 @@ function updateNavActive(tenantIdx, focusPid) {
         } catch (e) { /* silent */ }
     }
 }
+
+// ── Step 347: Architecture C Phase 1 — Unified Sidebar ─────────────────────
+
+function classifyFindingType(finding, mode) {
+    if (finding._item_type === 'synthesis') {
+        const ft = finding.finding_type || '';
+        if (ft === 'compound_risk') return 'risk';
+        if (ft === 'directional_mismatch') return 'risk';
+        if (ft === 'cross_coverage_relief') return 'addressed';
+        const sev = (finding.severity || 'MEDIUM').toUpperCase();
+        if (sev === 'CRITICAL' || sev === 'HIGH') return 'risk';
+        if (sev === 'MEDIUM') return 'review_needed';
+        return 'improvement';
+    }
+    if (mode === 'a' || finding._item_type === 'deviation') {
+        const verdict = finding.final_verdict || '';
+        if (verdict !== 'DEVIATES') return 'addressed';
+        const gs = (finding.cam_score && finding.cam_score.governance_signal) || '';
+        const govSig = gs ? gs.toUpperCase() : null;
+        const sev = (finding.severity || 'MEDIUM').toUpperCase();
+        if (govSig === 'REVIEW_SIGNAL' || govSig === 'WITHHOLD_SIGNAL') return 'review_needed';
+        if (sev === 'CRITICAL' || sev === 'HIGH') return 'risk';
+        if (govSig === 'ASSERT_SIGNAL') return 'risk';
+        if (sev === 'LOW') return 'improvement';
+        return 'review_needed';
+    }
+    const state = finding.coverage_state || '';
+    const pcls = finding.partial_class || '';
+    const ui = finding.use_impact;
+    const gap = ui && ui.gap_impact;
+    const mat = ui && ui.materiality;
+    const uiActive = ui && ui.confidence !== 'no_evaluators';
+    if (state === 'covered' || state === 'covered_typical' || state === 'not_applicable') return 'addressed';
+    if (state === 'covered_unfavorable' || state === 'potentially_unenforceable') return 'risk';
+    if (state === 'missing') {
+        if (uiActive && gap === 'favorable') return 'addressed';
+        if (uiActive && (gap === 'neutral' || mat === 'not_applicable')) return 'improvement';
+        if (uiActive && gap === 'adverse' && (mat === 'high' || mat === 'medium')) return 'risk';
+        if (uiActive && gap === 'adverse' && mat === 'low') return 'improvement';
+        return 'review_needed';
+    }
+    if (state === 'partial') {
+        if (pcls === 'partial_review') return 'improvement';
+        if (pcls === 'partial_material') {
+            if (uiActive && gap === 'adverse' && (mat === 'high' || mat === 'medium')) return 'risk';
+            if (uiActive && (mat === 'low' || gap === 'neutral' || gap === 'favorable')) return 'improvement';
+            return 'review_needed';
+        }
+        return 'review_needed';
+    }
+    if (state === 'review_needed') {
+        if (uiActive && gap === 'adverse' && (mat === 'high' || mat === 'medium')) return 'risk';
+        if (uiActive && (gap === 'favorable' || gap === 'neutral')) return 'improvement';
+        return 'review_needed';
+    }
+    console.warn('[CAM classifyFindingType] Unclassifiable finding — state:', state, 'pcls:', pcls);
+    return 'review_needed';
+}
+
+function _navBuildUnifiedItem(item, tIdx) {
+    const sev = (item.sev || 'MEDIUM').toUpperCase();
+    const sevCls = sev.toLowerCase();
+    const confHtml = item.govSig ? _navConfDotsHtml(item.govSig, 'Confidence: ' + item.govSig) : '';
+    const dataAttrs = 'data-item-type="' + esc(item._item_type || '') + '"'
+        + ' data-pid="' + esc(item.pid || '') + '"'
+        + ' data-tenant-idx="' + tIdx + '"'
+        + ' data-mode="' + esc(item._mode || '') + '"'
+        + (item.cpfId ? ' data-cpf-id="' + esc(item.cpfId) + '"' : '');
+    return '<button class="nav-item-enriched nav-item-unified nav-item-sev-' + sevCls + '" '
+         + dataAttrs + ' title="' + esc(item.tooltip || item.summary || item.name || '') + '" type="button">'
+         +   '<div class="nav-item-top">'
+         +     '<span class="nav-item-id">' + esc(item.pid || '') + '</span>'
+         +     '<span class="nav-item-badge nav-badge-' + sevCls + '">' + esc(sev) + '</span>'
+         +     (item.typeLabel ? '<span class="nav-item-type-label">' + esc(item.typeLabel) + '</span>' : '')
+         +     confHtml
+         +   '</div>'
+         +   (item.summary ? '<div class="nav-item-desc">' + esc(item.summary) + '</div>' : '')
+         + '</button>';
+}
+
+function _navSectionCollapsed(sectionId, jobId) {
+    return localStorage.getItem('cam_sidebar_' + sectionId + (jobId ? '_' + jobId : '')) === '1';
+}
+
+function _navSectionToggle(sectionId, jobId) {
+    const body = document.getElementById('nav-section-body-' + sectionId);
+    const btn  = document.getElementById('nav-section-toggle-' + sectionId);
+    if (!body) return;
+    const collapsing = body.style.display !== 'none';
+    body.style.display = collapsing ? 'none' : '';
+    if (btn) btn.textContent = collapsing ? '▶' : '▼';
+    localStorage.setItem('cam_sidebar_' + sectionId + (jobId ? '_' + jobId : ''), collapsing ? '1' : '0');
+}
+
+function _navSectionWrap(sectionId, icon, title, count, bodyHtml, jobId) {
+    const collapsed = _navSectionCollapsed(sectionId, jobId);
+    const oc = "window.CAM._navSectionToggle('" + sectionId + "','" + (jobId || '') + "')";
+    return '<div class="nav-section nav-section-unified nav-section-' + sectionId.replace(/_\d+$/, '') + '">'
+         + '<div class="nav-section-header nav-section-header-collapsible">'
+         + '<span class="nav-section-icon">' + icon + '</span>'
+         + '<span class="nav-section-title">' + esc(title) + '</span>'
+         + ' <span class="nav-section-count">' + count + '</span>'
+         + '<button class="nav-collapse-toggle" id="nav-section-toggle-' + sectionId
+         + '" onclick="' + oc + '" type="button">' + (collapsed ? '▶' : '▼') + '</button>'
+         + '</div>'
+         + '<div class="nav-section-body" id="nav-section-body-' + sectionId + '"'
+         + (collapsed ? ' style="display:none"' : '') + '>'
+         + bodyHtml
+         + '</div></div>';
+}
+
+function _navAddressedChips(items, tIdx) {
+    if (!items.length) return '<div class="nav-empty-inner">—</div>';
+    return '<div class="nav-chip-list">'
+         + items.map(function(item) {
+               const tip = item.pid + (item.name && item.name !== item.pid ? ' — ' + item.name : '');
+               return '<span class="nav-chip" data-pid="' + esc(item.pid) + '" data-tenant-idx="' + tIdx
+                    + '" title="' + esc(tip) + '">' + esc(item.pid) + '</span>';
+           }).join('')
+         + '</div>';
+}
+
+// Overrides the earlier renderNavSidebar (JS hoisting: last declaration wins).
+function renderNavSidebar() {
+    const container = document.getElementById('nav-sidebar-content');
+    if (!container) return;
+    if (!currentResults || !currentResults.tenants) { container.innerHTML = ''; return; }
+
+    const tenants = currentResults.tenants;
+    const isModeC = isJobModeC();
+    const showTenantHeaders = tenants.length > 1;
+    const jobId = currentJobId || '';
+    const sevRank = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+    function sortItems(arr) {
+        return arr.sort(function(a, b) {
+            var sa = sevRank[a.sev] !== undefined ? sevRank[a.sev] : 4;
+            var sb = sevRank[b.sev] !== undefined ? sevRank[b.sev] : 4;
+            if (sa !== sb) return sa - sb;
+            return (a.pid || '').localeCompare(b.pid || '');
+        });
+    }
+    var html = '';
+
+    tenants.forEach(function(tenant, tIdx) {
+        var r = tenant.results;
+        if (!r) return;
+        var risk = [], reviewNeeded = [], improvement = [], addressed = [];
+
+        function pushItem(bucket, item) {
+            if (bucket === 'risk') risk.push(item);
+            else if (bucket === 'review_needed') reviewNeeded.push(item);
+            else if (bucket === 'improvement') improvement.push(item);
+            else addressed.push(item);
+        }
+
+        if (isModeC) {
+            var ca = r.coverage_assessment || [];
+            var caByLp = {};
+            ca.forEach(function(a) { caByLp[a.issue_area_id || a.provision_id] = a; });
+
+            ca.forEach(function(a) {
+                var state = a.coverage_state || '';
+                if (state === 'not_applicable') return;
+                var bucket = classifyFindingType(a, 'c');
+                var pid = a.issue_area_id || a.provision_id || '';
+                var name = a.issue_area_name || a.provision_name || pid;
+                var ui = a.use_impact, mat = ui && ui.materiality;
+                var sev = (state === 'potentially_unenforceable' || state === 'covered_unfavorable') ? 'HIGH'
+                        : a.partial_class === 'partial_material' ? 'HIGH'
+                        : mat === 'high' ? 'HIGH' : mat === 'medium' ? 'MEDIUM' : mat === 'low' ? 'LOW' : 'MEDIUM';
+                var typeLabel = state === 'missing' ? 'GAP' : state === 'partial' ? 'PARTIAL'
+                              : state === 'review_needed' ? 'REVIEW' : state === 'covered_unfavorable' ? 'UNFAVORABLE'
+                              : state === 'potentially_unenforceable' ? 'ENFORCEABILITY' : '';
+                var evs = a.element_verdicts || [];
+                var govSig = evs.length > 0 ? deriveCoverageGovernanceSignal(evs) : null;
+                var summary = (a.exposure_headline || _deriveHeadlineFromExposure(a.exposure_statement || '')).trim();
+                pushItem(bucket, { _item_type: 'gap', _mode: 'c', pid: pid, name: name,
+                    sev: sev, typeLabel: typeLabel, govSig: govSig, summary: summary,
+                    tooltip: (a.exposure_statement || '').slice(0, 200) || name });
+            });
+
+            var cpfs = r.cross_provision_findings || [];
+            cpfs.forEach(function(f) {
+                var fi = { _item_type: 'synthesis', finding_type: f.finding_type, severity: f.severity };
+                var bucket = classifyFindingType(fi, 'c');
+                var sev = (f.severity || 'HIGH').toUpperCase();
+                var lps = (f.implicated_lps || []).join(', ');
+                var typeLabel = f.finding_type === 'compound_risk' ? 'COMPOUND'
+                              : f.finding_type === 'directional_mismatch' ? 'DIRECTIONAL'
+                              : f.finding_type === 'cross_coverage_relief' ? 'RELIEF' : 'SYNTHESIS';
+                var govSig = f.finding_type === 'compound_risk' ? deriveCompoundGovernanceSignal(f, caByLp)
+                           : f.finding_type === 'directional_mismatch' ? deriveDirectionalGovernanceSignal(f) : null;
+                var summary = (f.short_summary || _navTruncate(f.headline || '', 80)).trim();
+                pushItem(bucket, { _item_type: 'synthesis', _mode: 'synthesis', pid: lps,
+                    name: f.headline || f.finding_id || '', sev: sev, typeLabel: typeLabel,
+                    govSig: govSig, summary: summary, cpfId: f.finding_id || '',
+                    tooltip: f.headline || '' });
+            });
+        } else {
+            var provs = r.provisions || [];
+            var devs = getDeviationWorkflowProvisions(provs, tIdx);
+            devs.forEach(function(d) {
+                var di = { _item_type: 'deviation', final_verdict: d.final_verdict,
+                           cam_score: d.cam_score, severity: d.severity };
+                var bucket = classifyFindingType(di, 'a');
+                var gs = d.cam_score && d.cam_score.governance_signal;
+                var govSig = gs ? gs.toUpperCase() : null;
+                var desc = (d.risk_headline || d.challenge_details || d.summary || '').trim();
+                pushItem(bucket, { _item_type: 'deviation', _mode: 'a',
+                    pid: d.provision_id || '', name: d.provision_name || d.provision_id || '',
+                    sev: (d.severity || 'MEDIUM').toUpperCase(), typeLabel: 'DEVIATION',
+                    govSig: govSig, summary: _navTruncate(desc, 80), tooltip: desc || d.provision_name || '' });
+            });
+            var ca2 = r.coverage_assessment || [];
+            ca2.forEach(function(a) {
+                var state = a.coverage_state || '';
+                if (state === 'not_applicable') return;
+                var bucket = classifyFindingType(a, 'c');
+                var pid = a.issue_area_id || a.provision_id || '';
+                var ui = a.use_impact, mat = ui && ui.materiality;
+                var sev = mat === 'high' ? 'HIGH' : mat === 'medium' ? 'MEDIUM' : mat === 'low' ? 'LOW' : 'MEDIUM';
+                var typeLabel = state === 'missing' ? 'GAP' : state === 'partial' ? 'PARTIAL' : '';
+                var evs = a.element_verdicts || [];
+                var govSig = evs.length > 0 ? deriveCoverageGovernanceSignal(evs) : null;
+                var summary = (a.exposure_headline || _deriveHeadlineFromExposure(a.exposure_statement || '')).trim();
+                pushItem(bucket, { _item_type: 'gap', _mode: 'c', pid: pid,
+                    name: a.issue_area_name || a.provision_name || pid, sev: sev,
+                    typeLabel: typeLabel, govSig: govSig, summary: summary,
+                    tooltip: (a.exposure_statement || '').slice(0, 200) || pid });
+            });
+        }
+
+        sortItems(risk); sortItems(reviewNeeded); sortItems(improvement); sortItems(addressed);
+
+        html += '<div class="nav-tenant-group" data-tenant-idx="' + tIdx + '">';
+        if (showTenantHeaders) {
+            html += '<div class="nav-tenant-header">' + esc(tenant.filename || ('Lease ' + (tIdx + 1))) + '</div>';
+        }
+        if (risk.length > 0)
+            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', risk.length,
+                risk.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+        if (reviewNeeded.length > 0)
+            html += _navSectionWrap('review_' + tIdx, '?', 'REVIEW NEEDED', reviewNeeded.length,
+                reviewNeeded.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+        if (improvement.length > 0)
+            html += _navSectionWrap('improvement_' + tIdx, '✶', 'IMPROVEMENT', improvement.length,
+                improvement.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+        if (addressed.length > 0)
+            html += _navSectionWrap('addressed_' + tIdx, '✓', 'ADDRESSED', addressed.length,
+                _navAddressedChips(addressed, tIdx), jobId);
+        if (!risk.length && !reviewNeeded.length && !improvement.length && !addressed.length)
+            html += '<div class="nav-empty">No findings</div>';
+        html += '</div>';
+    });
+
+    if (!html.trim()) html = '<div class="nav-empty-state">No open issues to review</div>';
+    container.innerHTML = html;
+
+    // Chip clicks → Coverage & Gaps
+    container.querySelectorAll('.nav-chip').forEach(function(chip) {
+        chip.addEventListener('click', function() {
+            var pid = chip.dataset.pid;
+            var tIdx = parseInt(chip.dataset.tenantIdx, 10);
+            if (!isNaN(tIdx) && tIdx !== currentTenantIndex) currentTenantIndex = tIdx;
+            if (typeof jumpHeatmapCell === 'function') jumpHeatmapCell(tIdx, pid);
+            else if (window.CAM && typeof window.CAM.jumpToCoverageProvision === 'function')
+                window.CAM.jumpToCoverageProvision(pid, { expandElements: true });
+        });
+    });
+
+    // Item clicks — routed by _mode
+    container.querySelectorAll('.nav-item-unified').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var pid = btn.dataset.pid;
+            var tIdx = parseInt(btn.dataset.tenantIdx, 10);
+            var mode = btn.dataset.mode;
+            var cpfId = btn.dataset.cpfId || '';
+            if (!isNaN(tIdx) && tIdx !== currentTenantIndex) {
+                currentTenantIndex = tIdx;
+                var ts = document.getElementById('tenant-select');
+                if (ts) ts.value = String(tIdx);
+                var dts = document.getElementById('docview-tenant-select');
+                if (dts) dts.value = String(tIdx);
+                if (typeof syncChatScopeToCurrentTenant === 'function') {
+                    try { syncChatScopeToCurrentTenant(true); } catch(e) {}
+                }
+            }
+            if (mode === 'synthesis') {
+                if (typeof openContractDetail === 'function') {
+                    await openContractDetail(isNaN(tIdx) ? 0 : tIdx);
+                    switchResultsTab('synthesis');
+                    setTimeout(function() {
+                        var el = document.getElementById('cpf-' + cpfId.replace(/[^a-zA-Z0-9_-]/g, '_'));
+                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 200);
+                }
+            } else if (mode === 'c') {
+                if (typeof jumpHeatmapCell === 'function') jumpHeatmapCell(tIdx, pid);
+                else if (window.CAM && typeof window.CAM.jumpToCoverageProvision === 'function')
+                    window.CAM.jumpToCoverageProvision(pid, { expandElements: true });
+            } else {
+                if (activeResultsTab === 'audittrail' && contractDetailOpen && currentTenantIndex === tIdx) {
+                    if (typeof jumpToAuditProvision === 'function') jumpToAuditProvision(tIdx, pid);
+                } else {
+                    await openContractDetail(tIdx);
+                    switchResultsTab('findings');
+                    await waitForResultsTarget(function() {
+                        return document.getElementById('dev-' + pid) ||
+                               document.querySelector('[data-pid="' + CSS.escape(pid) + '"]');
+                    });
+                    if (typeof jumpToFinding === 'function') jumpToFinding(pid);
+                }
+            }
+            updateNavActive(currentTenantIndex, pid);
+        });
+    });
+
+    updateNavActive(currentTenantIndex);
+}
+window.CAM._navSectionToggle = _navSectionToggle;
+window.CAM.classifyFindingType = classifyFindingType;
 
 // ── Boot ──
 document.addEventListener("DOMContentLoaded", init);
