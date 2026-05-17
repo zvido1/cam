@@ -16959,7 +16959,10 @@ function classifyFindingType(finding, mode, context) {
     if (state === 'potentially_unenforceable') return 'risk';
 
     // Severity tier: HIGH when materiality is high or unknown; else MEDIUM/LOW
-    var matTier = mat === 'high' ? 'HIGH' : mat === 'low' ? 'LOW' : 'MEDIUM';
+    var matTier = (pcls === 'partial_material') ? 'HIGH'
+                : mat === 'high' ? 'HIGH'
+                : mat === 'low'  ? 'LOW'
+                : 'MEDIUM';
     var isHighSev = (matTier === 'HIGH');
 
     if (state === 'covered_unfavorable') {
