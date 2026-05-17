@@ -729,10 +729,11 @@ function setupEventListeners() {
         radio.addEventListener("change", handlePerspectiveChange);
     });
 
-    // Step 284: apply the initial mode-aware state so a default Mode A
-    // page-load hides the perspective selector and force-sets the
-    // tenant value. (No `change` event fires on initial render.)
+    // Step 284: apply the initial mode-aware state. Step 346: also mark
+    // mode as explicitly selected so the default (analyze) is pre-chosen
+    // and the submit gate doesn't prompt the user to pick a mode.
     handleModeChange();
+    modeExplicitlySelected = true;
 
     // Help chat
     initHelpChat();
@@ -10656,9 +10657,9 @@ function initFilterBar() {
         });
     });
 
-    // ── Provision filter (049) ──
-    const provisionOptions = $("#filter-provision-options");
-    if (provisionOptions && currentResults && currentResults.tenants) {
+    // ── Provision filter (049, select replacement Step 346) ──
+    const provisionSel = $("#filter-provision-select");
+    if (provisionSel && currentResults && currentResults.tenants) {
         const lpProvisions = new Map();
         const customProvisions = new Map();
 
@@ -10679,61 +10680,26 @@ function initFilterBar() {
         const lpSorted = [...lpProvisions.entries()].sort((a, b) => a[0].localeCompare(b[0]));
         const customSorted = [...customProvisions.entries()].sort((a, b) => a[0].localeCompare(b[0]));
 
-        let phtml = "";
+        let optHtml = '<option value="">All Provisions</option>';
         if (lpSorted.length > 0) {
-            phtml += `<div class="filter-provision-group-label">Standard</div>`;
-            phtml += lpSorted.map(([pid, name]) => {
+            optHtml += '<optgroup label="Standard">';
+            optHtml += lpSorted.map(([pid, name]) => {
                 const shortName = name.replace(/^LP-\d{2}\s*/, "");
-                return `<label class="filter-option">
-                    <input type="checkbox" value="${esc(pid)}" class="filter-provision-cb">
-                    <span class="filter-provision-pid">${esc(pid)}</span>
-                    <span class="filter-provision-name">${esc(shortName)}</span>
-                </label>`;
+                return `<option value="${esc(pid)}">${esc(pid + ' ' + shortName)}</option>`;
             }).join("");
+            optHtml += '</optgroup>';
         }
         if (customSorted.length > 0) {
-            phtml += `<div class="filter-provision-group-label filter-provision-group-custom">Discovered</div>`;
-            phtml += customSorted.map(([pid, name]) => {
+            optHtml += '<optgroup label="Discovered">';
+            optHtml += customSorted.map(([pid, name]) => {
                 const shortName = name.replace(/^CUSTOM-\d+\s*/, "").replace(/^ADDED-\d+\s*/, "");
-                return `<label class="filter-option">
-                    <input type="checkbox" value="${esc(pid)}" class="filter-provision-cb">
-                    <span class="filter-provision-pid filter-provision-pid-custom">${esc(pid)}</span>
-                    <span class="filter-provision-name">${esc(shortName)}</span>
-                </label>`;
+                return `<option value="${esc(pid)}">${esc(pid + ' ' + shortName)}</option>`;
             }).join("");
+            optHtml += '</optgroup>';
         }
-        provisionOptions.innerHTML = phtml;
+        provisionSel.innerHTML = optHtml;
+        provisionSel.value = filterProvisions.size === 1 ? [...filterProvisions][0] : '';
     }
-
-    // Provision "All" checkbox
-    const provAll = $("#filter-provision-all");
-    if (provAll) {
-        provAll.addEventListener("change", () => {
-            if (provAll.checked) {
-                filterProvisions.clear();
-                document.querySelectorAll(".filter-provision-cb").forEach(cb => cb.checked = false);
-            }
-            updateFilterLabels();
-            updateContractOptions();
-            applyFilters();
-        });
-    }
-
-    // Individual provision checkboxes
-    document.querySelectorAll(".filter-provision-cb").forEach(cb => {
-        cb.addEventListener("change", () => {
-            if (cb.checked) {
-                filterProvisions.add(cb.value);
-            } else {
-                filterProvisions.delete(cb.value);
-            }
-            const allCb = $("#filter-provision-all");
-            if (allCb) allCb.checked = filterProvisions.size === 0;
-            updateFilterLabels();
-            updateContractOptions();
-            applyFilters();
-        });
-    });
 
     // Step 184: Confidence filter
     const confAll = document.getElementById('filter-confidence-all');
@@ -10862,16 +10828,10 @@ function updateFilterLabels() {
         }
     }
 
-    // Provision label (049)
-    const provLabel = $("#filter-provision-label");
-    if (provLabel) {
-        if (filterProvisions.size === 0) {
-            provLabel.textContent = "All";
-        } else if (filterProvisions.size === 1) {
-            provLabel.textContent = [...filterProvisions][0];
-        } else {
-            provLabel.textContent = `${filterProvisions.size} selected`;
-        }
+    // Provision select sync (049, Step 346)
+    const provSelSync = $("#filter-provision-select");
+    if (provSelSync) {
+        provSelSync.value = filterProvisions.size === 1 ? [...filterProvisions][0] : '';
     }
 
     // Step 184: Confidence label
@@ -10957,20 +10917,28 @@ function applyFilters() {
     // (contract filter no longer auto-navigates to a single contract — just filters the cards in place)
 }
 
+function setProvisionFilter(value) {
+    filterProvisions.clear();
+    if (value) filterProvisions.add(value);
+    updateFilterLabels();
+    updateContractOptions();
+    applyFilters();
+}
+
 function clearFilters() {
     filterContracts.clear();
     filterSeverities.clear();
     filterProvisions.clear();
     filterConfidence.clear();
-    document.querySelectorAll(".filter-contract-cb, .filter-sev-cb, .filter-provision-cb, .filter-conf-cb").forEach(cb => cb.checked = false);
+    document.querySelectorAll(".filter-contract-cb, .filter-sev-cb, .filter-conf-cb").forEach(cb => cb.checked = false);
     const allContract = $("#filter-contract-all");
     const allSev = $("#filter-severity-all");
-    const allProv = $("#filter-provision-all");
     const allConf = $("#filter-confidence-all");
+    const provSel = $("#filter-provision-select");
     if (allContract) allContract.checked = true;
     if (allSev) allSev.checked = true;
-    if (allProv) allProv.checked = true;
     if (allConf) allConf.checked = true;
+    if (provSel) provSel.value = '';
     updateFilterLabels();
     updateContractOptions();
     applyFilters();
@@ -11575,6 +11543,15 @@ function buildCoverageAuditSection(items) {
     return html;
 }
 
+function _parseTimestampFromRunId(runId) {
+    if (!runId) return null;
+    const m = String(runId).match(/(\d{8})_(\d{6})/);
+    if (!m) return null;
+    const d = m[1], t = m[2];
+    return d.slice(0,4) + '-' + d.slice(4,6) + '-' + d.slice(6,8)
+         + 'T' + t.slice(0,2) + ':' + t.slice(2,4) + ':' + t.slice(4,6);
+}
+
 function renderAuditTrail(allTenants) {
     const tab = $("#audittrail-tab");
     if (!tab || !currentResults) return;
@@ -11633,7 +11610,9 @@ function renderAuditTrail(allTenants) {
         var _at_covEval = _at_ca.length > 0 ? buildCoverageAuditSection(_at_ca) : '';
 
         const _mcFilename = tenant.filename || '—';
-        const _mcRawTs = r.timestamp || (currentJobData && (currentJobData.completed_at || currentJobData.started_at));
+        const _mcRawTs = r.timestamp
+            || (currentJobData && (currentJobData.completed_at || currentJobData.started_at))
+            || _parseTimestampFromRunId(currentJobId);
         const _mcTs = _mcRawTs
             ? new Date(_mcRawTs).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
             : '—';
@@ -11669,7 +11648,12 @@ function renderAuditTrail(allTenants) {
     const modelsUsed = r.models_used || {};
 
     // Run metadata block
-    const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : "Unknown";
+    const _rawTs = r.timestamp
+        || (currentJobData && (currentJobData.completed_at || currentJobData.started_at))
+        || _parseTimestampFromRunId(currentJobId);
+    const ts = _rawTs
+        ? new Date(_rawTs).toLocaleString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
+        : "Unknown";
     const evalModels = [
         modelsUsed.evaluator_a,
         modelsUsed.evaluator_b,
@@ -11699,7 +11683,13 @@ function renderAuditTrail(allTenants) {
         _pipeVer      ? `Pipeline ${esc(_pipeVer)}` : '',
     ].filter(Boolean).join(' &middot; ');
 
-    let html = `<div class="audit-export-bar">
+    const _auditFilename = tenant.filename || r.tenant_file || '—';
+    let html = `<div class="audit-run-header">
+        <span class="audit-run-header-file"><strong>File:</strong> ${esc(_auditFilename)}</span>
+        <span class="audit-run-header-sep">|</span>
+        <span class="audit-run-header-ts"><strong>Processed:</strong> ${esc(ts)}</span>
+    </div>
+    <div class="audit-export-bar">
         <div class="audit-export-group">
             <span class="audit-export-label">This contract:</span>
             <button class="btn btn-secondary btn-sm" onclick="window.CAM.exportAuditJSON(true)">
@@ -15466,6 +15456,7 @@ window.CAM = {
     searchInDoc,
     toggleFilterDropdown,
     clearFilters,
+    setProvisionFilter,
     resetChatScope,
     toggleTechDetails,
     downloadSynopsis,

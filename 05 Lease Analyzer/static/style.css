@@ -6625,6 +6625,19 @@ textarea.input-field {
     white-space: nowrap;
 }
 
+/* Step 346: provision filter select replaces checkbox dropdown */
+.filter-provision-select {
+    font-size: 0.8125rem;
+    padding: 0.25rem 0.4rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    background: #fff;
+    color: #374151;
+    cursor: pointer;
+    max-width: 16rem;
+    height: 2rem;
+}
+
 /* Active state — filled navy when filter is on */
 .filter-dropdown-trigger.filter-trigger-active {
     background: var(--primary, #1a365d);
@@ -7435,6 +7448,21 @@ textarea.input-field {
 }
 
 /* ── Audit Trail Tab ── */
+/* Step 346: file + processed date header at top of audit trail */
+.audit-run-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 0.75rem;
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+.audit-run-header-sep { color: #cbd5e1; }
+
 .audit-run-meta {
     display: grid;
     grid-template-columns: repeat(3, minmax(13.75rem, 1fr));
