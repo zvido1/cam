@@ -11871,6 +11871,25 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 .ev-conf-medium { color: #d97706; }
 .ev-conf-low    { color: #dc2626; }
 
+/* Step 349b: disputed element verdict — amber "review" treatment */
+.element-status-disputed,
+.element-merged-disputed {
+    color: #b45309;
+    background-color: #fef3c7;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #f59e0b;
+    font-size: 0.7rem;
+    display: inline-block;
+}
+.element-vote-count,
+.element-merged-votes {
+    color: #6b7280;
+    font-size: 0.85em;
+    margin-left: 4px;
+}
+
 /* Step 307b: sidebar confidence label for Mode C LP items */
 .nav-item-conf { font-size: 0.65rem; color: var(--text-muted, #888); white-space: nowrap; margin-left: auto; padding-left: 0.25rem; }
 

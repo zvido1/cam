@@ -11359,7 +11359,15 @@ function _buildCovAuditTable(evs, roleList) {
         var mvlabel = _COV_AUDIT_VERDICT_SHORT[ev.verdict] || ev.verdict;
         var conf = ev.confidence ? ' (' + ev.confidence + ')' : '';
         var reasonNote = ev.reason ? ' <span class="audit-cov-reason">' + esc(ev.reason.replace(/_/g, ' ')) + '</span>' : '';
-        html += '<td class="audit-cov-td"><span class="cv-ev-pill ' + mvcls + '">' + mvlabel + '</span>' + conf + reasonNote + '</td>';
+        // Step 349b: disputed verdict — amber badge with vote count
+        if (ev.verdict === 'disputed') {
+            var _dpPres = ['explicitly_present','implicitly_present','covered_by_default_law','covered_in_other_LP'];
+            var _dpPresCount = (ev.disagreements || []).filter(function(d){ return _dpPres.indexOf(d.verdict) !== -1; }).length;
+            var _dpMissCount = (ev.disagreements || []).filter(function(d){ return d.verdict === 'missing'; }).length;
+            html += '<td class="audit-cov-td"><span class="element-merged-disputed">Disputed</span><span class="element-merged-votes">(' + _dpPresCount + 'v' + _dpMissCount + ')</span></td>';
+        } else {
+            html += '<td class="audit-cov-td"><span class="cv-ev-pill ' + mvcls + '">' + mvlabel + '</span>' + conf + reasonNote + '</td>';
+        }
         html += '</tr>';
     });
     html += '</tbody></table></div>';
@@ -15695,6 +15703,11 @@ function renderCoveragePanel() {
                                : ev.confidence === 'medium' ? '<span class="ev-conf-dots ev-conf-medium" title="2/3 consensus">●●○</span>'
                                : ev.confidence === 'low'    ? '<span class="ev-conf-dots ev-conf-low" title="Split/inconclusive">●○○</span>'
                                : '';
+                // Step 349b: vote count for disputed verdict
+                const _DISP_PRES_VERDICTS = new Set(['explicitly_present','implicitly_present','covered_by_default_law','covered_in_other_LP']);
+                const _dispPresCount = (ev.disagreements || []).filter(function(d){ return _DISP_PRES_VERDICTS.has(d.verdict); }).length;
+                const _dispMissCount = (ev.disagreements || []).filter(function(d){ return d.verdict === 'missing'; }).length;
+                const _dispVoteLabel = '(' + _dispPresCount + 'v' + _dispMissCount + ')';
                 // Step 308: per-evaluator expandable panel
                 const hasDisagreement = ev.disagreements && ev.disagreements.length > 0;
                 const evalVerdicts = ev.evaluator_verdicts;
@@ -15742,7 +15755,7 @@ function renderCoveragePanel() {
                 }
                 const mainRow = '<tr class="cv-ev-row">'
                     + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
-                    + '<td class="cv-ev-status"><span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + confDots + evalToggle + '</td>'
+                    + '<td class="cv-ev-status">' + (ev.verdict === 'disputed' ? '<span class="element-status-disputed">Disputed</span><span class="element-vote-count">' + _dispVoteLabel + '</span>' : '<span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + confDots + evalToggle) + '</td>'
                     + '<td class="cv-ev-citation">' + citHtml + '</td>'
                     + '</tr>';
                 return mainRow + panelRow;
