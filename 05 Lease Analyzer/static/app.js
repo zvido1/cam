@@ -4594,27 +4594,23 @@ function renderModeCAISummaryBar(bar) {
     const tenants = (currentResults && currentResults.tenants) || [];
 
     let totalAreas = 0;
-    let covered = 0;
-    let needAttention = 0;
-    let worthReview = 0;
-    let notApplicable = 0;
+    // Step 350: five-bucket tally using classifyFindingType (same as sidebar)
+    const counts = { risk: 0, review_needed: 0, improvement: 0, addressed: 0, na: 0 };
+    const _snapPerspective = getJobPerspective();
 
     tenants.forEach(function(t) {
         const ca = (t && t.results && t.results.coverage_assessment) || [];
-        ca.forEach(function(a) {
+        ca.forEach(function(item) {
             totalAreas++;
-            const state = a.coverage_state;
-            const pclass = a.partial_class;
-            if (state === "covered") {
-                covered++;
-            } else if (state === "not_applicable") {
-                notApplicable++;
-            } else if (pclass === "partial_review") {
-                worthReview++;
-            } else if (state === "covered_unfavorable" || pclass === "partial_material" || state === "missing" || state === "broken_xref") {
-                needAttention++;
+            if (item.coverage_state === 'not_applicable') {
+                counts.na++;
+                return;
             }
-            // partial_typical and minor states not counted
+            const bucket = classifyFindingType(item, 'c', { perspective: _snapPerspective });
+            if (bucket === 'risk') counts.risk++;
+            else if (bucket === 'review_needed') counts.review_needed++;
+            else if (bucket === 'improvement') counts.improvement++;
+            else counts.addressed++;
         });
     });
 
@@ -4651,10 +4647,11 @@ function renderModeCAISummaryBar(bar) {
                 ${_mcGovBadge}
             </div>
             <div class="ai-summary-modec-stats">
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--ok"><strong>${covered}</strong> <span>covered</span></span>
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--attention"><strong>${needAttention}</strong> <span>need attention</span></span>
-                ${worthReview > 0 ? `<span class="ai-summary-modec-stat ai-summary-modec-stat--review"><strong>${worthReview}</strong> <span>worth reviewing</span></span>` : ''}
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${notApplicable}</strong> <span>not applicable</span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--attention"><strong>${counts.risk}</strong> <span>Risk</span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--review"><strong>${counts.review_needed}</strong> <span>Review Needed</span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--improvement"><strong>${counts.improvement}</strong> <span>Improvement</span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--ok"><strong>${counts.addressed}</strong> <span>Addressed</span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${counts.na}</strong> <span>Not applicable</span></span>
                 ${_mcConflictPill}
             </div>
             ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Combined across ${docCount} contracts — ${areasPerDoc} issue areas per contract</div>` : ''}
