@@ -15718,10 +15718,11 @@ function renderCoveragePanel() {
                 let evalToggle = '';
                 let panelRow = '';
                 if (evalVerdicts && evalVerdicts.length > 0) {
-                    const btnLabel = hasDisagreement
-                        ? '⚠ 2v1 Disagreement'
-                        : (evalVerdicts.length + ' Evaluators');
-                    const btnCls = 'cv-ev-evals-btn' + (hasDisagreement ? ' cv-ev-evals-btn-disag' : '');
+                    // Step 349c: disputed rows use plain "N Evaluators" label (not warning badge)
+                    const btnLabel = (ev.verdict === 'disputed' || !hasDisagreement)
+                        ? (evalVerdicts.length + ' Evaluators')
+                        : '⚠ 2v1 Disagreement';
+                    const btnCls = 'cv-ev-evals-btn' + ((hasDisagreement && ev.verdict !== 'disputed') ? ' cv-ev-evals-btn-disag' : '');
                     evalToggle = '<button class="' + btnCls + '" onclick="(function(btn){var p=document.getElementById(\'' + evalPanelId + '\');if(p){var wasHidden=p.style.display===\'none\';p.style.display=wasHidden?\'\':\'none\';btn.classList.toggle(\'cv-ev-evals-open\',wasHidden);}})(this);event.stopPropagation();" type="button">' + esc(btnLabel) + '</button>';
                     // Build inner per-evaluator rows for the panel
                     const evalRowsHtml = evalVerdicts.map(function(evi) {
@@ -15755,7 +15756,7 @@ function renderCoveragePanel() {
                 }
                 const mainRow = '<tr class="cv-ev-row">'
                     + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
-                    + '<td class="cv-ev-status">' + (ev.verdict === 'disputed' ? '<span class="element-status-disputed">Disputed</span><span class="element-vote-count">' + _dispVoteLabel + '</span>' : '<span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + confDots + evalToggle) + '</td>'
+                    + '<td class="cv-ev-status">' + (ev.verdict === 'disputed' ? '<span class="element-status-disputed">Disputed</span><span class="element-vote-count">' + _dispVoteLabel + '</span>' + evalToggle : '<span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + confDots + evalToggle) + '</td>'
                     + '<td class="cv-ev-citation">' + citHtml + '</td>'
                     + '</tr>';
                 return mainRow + panelRow;
