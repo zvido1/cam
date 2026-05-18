@@ -579,6 +579,22 @@ def merge_element_verdicts(verdicts: list[dict], element: dict) -> dict:
             "disagreements": verdicts,
         }
 
+    # ── Disputed gate (Supplement #21 Phase 1) ───────────────────────────────
+    # If active verdicts span both presence and missing — the disagreement crosses
+    # the presence/absence divide (maximally-distant ordinal split per the verdict
+    # ladder). Per the action-type doctrine CAM cannot safely classify the rubric
+    # criterion as met or unmet; merged verdict is `disputed` not the majority winner.
+    has_presence = any(v["verdict"] in PRESENCE_VERDICTS for v in active)
+    has_missing  = any(v["verdict"] == "missing" for v in active)
+    if has_presence and has_missing:
+        return {
+            "verdict": "disputed",
+            "confidence": "low",
+            "citation": None,
+            "reason": "distant_split_presence_missing",
+            "disagreements": verdicts,  # preserve ALL evaluators (not just dissents)
+        }
+
     # 2-of-3 or 3-of-3 consensus
     confidence = "high" if majority_count == len(verdicts) else "medium"
     majority_citations = [
@@ -632,8 +648,10 @@ def derive_lp_state(element_results: list[dict], elements_305: list[dict]) -> st
 
     any_unclear = any(r["verdict"] == "unclear" for r in element_results)
     all_positive = all(r["verdict"] in PRESENCE_VERDICTS for r in element_results)
-    missing_results = [r for r in element_results if r["verdict"] == "missing"]
-    high_severity_missing = any(r["element_id"] in high_severity_ids for r in missing_results)
+    # Supplement #21 Phase 1: treat disputed as missing for LP-state derivation
+    # (conservative; Phase 3 will add criticality-gated propagation to Review Needed).
+    missing_or_disputed = [r for r in element_results if r["verdict"] in ("missing", "disputed")]
+    high_severity_missing = any(r["element_id"] in high_severity_ids for r in missing_or_disputed)
 
     if any_unclear:
         return "review_needed"
@@ -642,7 +660,7 @@ def derive_lp_state(element_results: list[dict], elements_305: list[dict]) -> st
         return "covered"
 
     total = len(element_results)
-    n_missing = len(missing_results)
+    n_missing = len(missing_or_disputed)
 
     if high_severity_missing:
         # Many missing elements → missing; some → partial
@@ -736,6 +754,7 @@ def assess_coverage_305(
     element_verdicts_merged = []
     elements_present = []
     elements_missing = []
+    elements_disputed = []   # Supplement #21 Phase 1
 
     for element in elements_305:
         element_id = element.get("element_id", "")
@@ -760,19 +779,23 @@ def assess_coverage_305(
             elements_present.append(element_label)
         elif merged["verdict"] == "missing":
             elements_missing.append(element_label)
+        elif merged["verdict"] == "disputed":
+            elements_disputed.append(element_label)
 
     # ── 3. Derive LP-level coverage state ─────────────────────────────────────
     coverage_state_baseline = derive_lp_state(element_verdicts_merged, elements_305)
 
     # ── 4. Build evidence summary ─────────────────────────────────────────────
-    n_present = len(elements_present)
-    n_missing = len(elements_missing)
-    n_unclear = sum(1 for v in element_verdicts_merged if v["verdict"] == "unclear")
-    elapsed = round(time.time() - t0, 1)
+    n_present   = len(elements_present)
+    n_missing   = len(elements_missing)
+    n_disputed  = len(elements_disputed)
+    n_unclear   = sum(1 for v in element_verdicts_merged if v["verdict"] == "unclear")
+    elapsed     = round(time.time() - t0, 1)
 
+    _disputed_phrase = f", {n_disputed} disputed" if n_disputed else ""
     evidence_summary = (
         f"Step 305 per-element assessment ({n_present} present, "
-        f"{n_missing} missing, {n_unclear} unclear of {len(elements_305)} elements; "
+        f"{n_missing} missing{_disputed_phrase}, {n_unclear} unclear of {len(elements_305)} elements; "
         f"{succeeded}/3 evaluators; {elapsed}s)"
     )
 
@@ -788,7 +811,7 @@ def assess_coverage_305(
 
     logger.info(
         f"[lease_coverage_305] {pid}: {coverage_state_baseline} | "
-        f"{n_present} present, {n_missing} missing, {n_unclear} unclear | {elapsed}s"
+        f"{n_present} present, {n_missing} missing, {n_disputed} disputed, {n_unclear} unclear | {elapsed}s"
     )
 
     return {
@@ -798,6 +821,7 @@ def assess_coverage_305(
         "element_verdicts": element_verdicts_merged,
         "elements_present": elements_present,
         "elements_missing": elements_missing,
+        "elements_disputed": elements_disputed,   # Supplement #21 Phase 1
         "negative_space_candidates_reviewed": negative_space_candidates,
         "evaluator_meta": evaluator_meta,
         "api_calls": succeeded,  # Step 335: number of evaluator API calls made for this LP
