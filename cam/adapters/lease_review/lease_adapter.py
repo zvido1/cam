@@ -988,6 +988,30 @@ def run_lease_analysis(
         except Exception as e:
             print(f"[lease_adapter] Stage 5e (use_impact) failed (non-fatal): {e}", flush=True)
 
+    # ── Stage 5f: Verdict distance confidence cap + review priority (Step 351) ──
+    try:
+        from cam.adapters.lease_review.lease_verdict_distance import (
+            apply_distance_confidence_cap,
+            derive_review_priority_distance_signal,
+        )
+        for _a in coverage_assessment:
+            _vd = _a.get("verdict_distance")
+            if not _vd:
+                continue
+            _severity = _vd.get("severity", "none")
+            _base_conf = _a.get("lp_confidence_base", "low")
+            _vote_count = {"high": 3, "medium": 2, "low": 1}.get(_base_conf, 1)
+            _ui = _a.get("use_impact") or {}
+            _consequence = _ui.get("materiality") or "moderate"
+            _a["lp_confidence"] = apply_distance_confidence_cap(
+                _base_conf, _severity, _vote_count, _consequence
+            )
+            _a["review_priority_distance_signal"] = derive_review_priority_distance_signal(
+                _severity, _consequence
+            )
+    except Exception as _e351:
+        print(f"[lease_adapter] Step 351 distance cap failed (non-fatal): {_e351}", flush=True)
+
     # ── Stage 5c: Cross-provision conflict detection (Step 297a) ──
     try:
         from cam.adapters.lease_review import lease_conflicts
@@ -1407,6 +1431,30 @@ def run_lease_coverage_only(
             )
         except Exception as e:
             print(f"[lease_adapter:analyze] Stage 5e (use_impact) failed (non-fatal): {e}", flush=True)
+
+    # ── Stage 5f: Verdict distance confidence cap + review priority (Step 351) ──
+    try:
+        from cam.adapters.lease_review.lease_verdict_distance import (
+            apply_distance_confidence_cap,
+            derive_review_priority_distance_signal,
+        )
+        for _a in coverage_assessment:
+            _vd = _a.get("verdict_distance")
+            if not _vd:
+                continue
+            _severity = _vd.get("severity", "none")
+            _base_conf = _a.get("lp_confidence_base", "low")
+            _vote_count = {"high": 3, "medium": 2, "low": 1}.get(_base_conf, 1)
+            _ui = _a.get("use_impact") or {}
+            _consequence = _ui.get("materiality") or "moderate"
+            _a["lp_confidence"] = apply_distance_confidence_cap(
+                _base_conf, _severity, _vote_count, _consequence
+            )
+            _a["review_priority_distance_signal"] = derive_review_priority_distance_signal(
+                _severity, _consequence
+            )
+    except Exception as _e351:
+        print(f"[lease_adapter:analyze] Step 351 distance cap failed (non-fatal): {_e351}", flush=True)
 
     # ── Stage 5c: Cross-provision conflict detection (Step 297a) ──
     try:

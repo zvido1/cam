@@ -11429,6 +11429,20 @@ function buildCoverageAuditSection(items) {
         var elemListHtml = '<ul class="audit-cov-elem-list">' + evs.map(function(e) { return '<li>' + esc(e.element_label || e.element_id) + '</li>'; }).join('') + '</ul>';
         var derivNote = 'LP state: <strong>' + esc(baseline) + '</strong> — ' + nPresent + ' present, ' + nMissing + ' missing, ' + nUnclear + ' unclear of ' + totalCount + ' elements'
             + (disagElems.length > 0 ? ' (' + disagElems.length + ' element' + (disagElems.length > 1 ? 's' : '') + ' with evaluator disagreement)' : '');
+        // Step 351: audit trail disagreement severity language
+        var _auditVd = a.verdict_distance;
+        var _auditSev = _auditVd && _auditVd.severity;
+        var _auditSevNote = '';
+        if (_auditSev === 'minor') {
+            _auditSevNote = '<div class="audit-cov-sev-note audit-cov-sev-minor">Evaluator mechanism disagreement — minor (drafting nuance only)</div>';
+        } else if (_auditSev === 'moderate') {
+            _auditSevNote = '<div class="audit-cov-sev-note audit-cov-sev-moderate">Evaluator disagreement — moderate (inference confidence gap)</div>';
+        } else if (_auditSev === 'severe') {
+            var _pair = (_auditVd.pair || []);
+            var _v1 = esc(_pair[0] || '');
+            var _v2 = esc(_pair[1] || '');
+            _auditSevNote = '<div class="audit-cov-sev-note audit-cov-sev-severe">&#x26A0; Evaluator disagreement — severe: one evaluator found <strong>' + _v1 + '</strong>, another found <strong>' + _v2 + '</strong>. Epistemic conflict — one evaluator asserts clear presence, another asserts confident absence. Full evaluator reasoning preserved below.</div>';
+        }
         // Step 307b: score bars using the shared audit infrastructure (same as Mode A)
         var _sharedLib = window.CAMAuditShared;
         var scoreBarsHtml = '';
@@ -11455,6 +11469,7 @@ function buildCoverageAuditSection(items) {
             + '<span class="audit-cov-chevron">▸</span>'
             + '</div>'
             + '<div id="' + lpBodyId + '" class="audit-cov-lp-body" style="display:none">'
+            + _auditSevNote
             + '<div class="audit-cov-deriv-note">' + derivNote + '</div>'
             + scoreBarsHtml
             + '<div class="audit-cov-sub-toggle" onclick="(function(t){var b=document.getElementById(\'' + elemListId + '\');var o=b.style.display===\'none\';b.style.display=o?\'block\':\'none\';t.querySelector(\'.audit-sub-chev\').textContent=o?\'▾\':\'▸\';})(this)"><span class="audit-sub-chev">▸</span> ' + totalCount + ' expected elements</div>'
@@ -15758,12 +15773,27 @@ function renderCoveragePanel() {
                     + '</tr>';
                 return mainRow + panelRow;
             }).join('');
+            // Step 351: LP-level severity header above element table
+            const _lpVd = a.verdict_distance;
+            const _lpSev = _lpVd && _lpVd.severity;
+            const _lpConf = a.lp_confidence || a.lp_confidence_base || '';
+            let _sevHeaderHtml = '';
+            if (_lpSev === 'severe') {
+                const _pair = (_lpVd.pair || []).join(' vs ');
+                const _capNote = _lpConf ? ' Confidence capped at ' + esc(_lpConf) + '.' : '';
+                _sevHeaderHtml = '<div class="cv-lp-sev-header cv-lp-sev-header-severe">&#x26A0; Severe disagreement: ' + esc(_pair) + _capNote + ' Full evaluator reasoning below.</div>';
+            } else if (_lpSev === 'moderate') {
+                const _pair = (_lpVd.pair || []).join(' vs ');
+                const _capNote = _lpConf ? ' Confidence capped.' : '';
+                _sevHeaderHtml = '<div class="cv-lp-sev-header cv-lp-sev-header-moderate">〜 Moderate disagreement: ' + esc(_pair) + _capNote + ' Full evaluator reasoning below.</div>';
+            }
             elementDetailHtml = '<div class="cv-elem-summary-row" onclick="(function(row){var body=document.getElementById(\'' + elemTableId + '\');var opening=body.style.display===\'none\';body.style.display=opening?\'block\':\'none\';row.querySelector(\'.cv-elem-chevron\').textContent=opening?\'▾\':\'▸\';})(this)">'
                 + '<span class="cv-elem-chevron">▸</span>'
                 + '<span class="cv-elem-summary-text">' + summaryText + '</span>'
                 + lpJumpHtml
                 + '</div>'
                 + '<div id="' + elemTableId + '" class="cv-elem-table-body" style="display:none">'
+                + _sevHeaderHtml
                 + '<table class="cv-ev-table"><thead><tr>'
                 + '<th class="cv-ev-th cv-ev-th-label">Element</th>'
                 + '<th class="cv-ev-th cv-ev-th-status">Status</th>'
@@ -15803,11 +15833,21 @@ function renderCoveragePanel() {
             ? `<button class="cv-relief-badge" title="${esc(_reliefMatch.headline || 'Substance addressed elsewhere')}" onclick="event.stopPropagation();window.CAM.jumpToSynthesisFinding('${esc(pid)}','${esc(_reliefMatch.finding_id)}')" type="button">&#x2713; Addressed elsewhere</button>`
             : "";
 
+        // Step 351: disagreement severity label beneath STATUS badge
+        const _vd = a.verdict_distance;
+        const _vdSev = _vd && _vd.severity;
+        const disagSeverityHtml = (_vdSev === 'moderate')
+            ? '<span class="cv-disag-severity cv-disag-severity-moderate" title="Evaluator disagreement — moderate (inference confidence gap)">〜 moderate disagreement</span>'
+            : (_vdSev === 'severe')
+            ? '<span class="cv-disag-severity cv-disag-severity-severe" title="Evaluator disagreement — severe: ' + esc((_vd.pair || []).join(' vs ')) + '">&#x26A0; severe disagreement</span>'
+            : '';
+
         return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
             <div class="cv-item-header">
                 <span class="cv-item-id">${esc(pid)}</span>
                 <span class="cv-item-name">${esc(name)}</span>${headlineHtml}
                 <span class="cv-badge ${stateInfo.cls}">${stateInfo.label}</span>
+                ${disagSeverityHtml}
                 ${confidenceBadgeHtml}
                 ${assessMethodHtml}
                 ${pclsBadge}

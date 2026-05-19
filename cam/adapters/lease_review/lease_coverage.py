@@ -274,6 +274,10 @@ def assess_coverage(
                 _a["element_verdicts"] = _result_305.get("element_verdicts", [])
                 _a["coverage_state_baseline"] = _result_305["coverage_state_baseline"]
                 _a["_coverage_api_calls"] = _result_305.get("api_calls", 0)  # Step 335
+                # Step 351: Architecture A Phase 2 — verdict distance at LP layer
+                _a["verdict_distance"] = _result_305.get("verdict_distance")
+                _a["lp_confidence_base"] = _result_305.get("lp_confidence_base", "low")
+                _a["per_evaluator_lp_verdicts"] = _result_305.get("per_evaluator_lp_verdicts", {})
                 assessments.append(_a)
                 _emit(_a)
                 continue

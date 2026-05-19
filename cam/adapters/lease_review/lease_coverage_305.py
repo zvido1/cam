@@ -785,6 +785,47 @@ def assess_coverage_305(
     # ── 3. Derive LP-level coverage state ─────────────────────────────────────
     coverage_state_baseline = derive_lp_state(element_verdicts_merged, elements_305)
 
+    # ── 3a. Compute LP-level verdict distance (Architecture A Phase 2) ────────
+    verdict_distance = None
+    lp_confidence_base = "low"
+    per_evaluator_lp_verdicts = {}
+    try:
+        from cam.adapters.lease_review.lease_verdict_distance import (
+            derive_per_evaluator_lp_verdict,
+            derive_disagreement_severity,
+        )
+        completed_roles = [role for role, r in evaluator_results.items() if r.get("completed") and r.get("element_verdicts")]
+        if len(completed_roles) >= 2:
+            for role in completed_roles:
+                raw_list = evaluator_results[role]["element_verdicts"]
+                role_verdicts = []
+                for el in elements_305:
+                    eid = el.get("element_id", "")
+                    match = next((item for item in raw_list if isinstance(item, dict) and item.get("element_id") == eid), None)
+                    if match:
+                        role_verdicts.append(_normalize_verdict(match.get("verdict", "unclear"), el))
+                    else:
+                        role_verdicts.append("unclear")
+                per_evaluator_lp_verdicts[role] = derive_per_evaluator_lp_verdict(role_verdicts)
+
+            lp_verdict_list = list(per_evaluator_lp_verdicts.values())
+            verdict_distance = derive_disagreement_severity(lp_verdict_list)
+
+            # LP-level confidence from vote count on the LP-level verdicts
+            from collections import Counter as _Counter
+            _lp_counts = _Counter(lp_verdict_list)
+            _majority_count = _lp_counts.most_common(1)[0][1] if _lp_counts else 1
+            if _majority_count == len(lp_verdict_list):
+                lp_confidence_base = "high"
+            elif _majority_count >= 2:
+                lp_confidence_base = "medium"
+            else:
+                lp_confidence_base = "low"
+        else:
+            verdict_distance = None
+    except Exception as _vd_exc:
+        logger.warning(f"[lease_coverage_305] {pid}: verdict distance computation failed: {_vd_exc}")
+
     # ── 4. Build evidence summary ─────────────────────────────────────────────
     n_present   = len(elements_present)
     n_missing   = len(elements_missing)
@@ -825,4 +866,8 @@ def assess_coverage_305(
         "negative_space_candidates_reviewed": negative_space_candidates,
         "evaluator_meta": evaluator_meta,
         "api_calls": succeeded,  # Step 335: number of evaluator API calls made for this LP
+        # Step 351: Architecture A Phase 2 — verdict distance at LP layer
+        "verdict_distance": verdict_distance,
+        "lp_confidence_base": lp_confidence_base,
+        "per_evaluator_lp_verdicts": per_evaluator_lp_verdicts,
     }
