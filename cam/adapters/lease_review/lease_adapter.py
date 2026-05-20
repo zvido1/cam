@@ -996,7 +996,7 @@ def run_lease_analysis(
         )
         for _a in coverage_assessment:
             _vd = _a.get("verdict_distance")
-            if not _vd:
+            if not _vd or _vd.get("severity") == "not_assessed":
                 continue
             _severity = _vd.get("severity", "none")
             _base_conf = _a.get("lp_confidence_base", "low")
@@ -1440,7 +1440,7 @@ def run_lease_coverage_only(
         )
         for _a in coverage_assessment:
             _vd = _a.get("verdict_distance")
-            if not _vd:
+            if not _vd or _vd.get("severity") == "not_assessed":
                 continue
             _severity = _vd.get("severity", "none")
             _base_conf = _a.get("lp_confidence_base", "low")

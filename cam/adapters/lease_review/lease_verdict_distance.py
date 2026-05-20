@@ -15,6 +15,17 @@ These are consumed independently to govern confidence ceiling and review priorit
 from collections import Counter
 
 
+# ── Sentinel for LPs that never entered Stage 305 ─────────────────────────────
+# Distinct from severity="none" (evaluators agreed) and from bare null (error).
+NOT_ASSESSED_SENTINEL = {
+    "max_distance": None,
+    "severity": "not_assessed",
+    "pair": [],
+    "all_distances": [],
+    "reason": "stage_305_not_run",
+}
+
+
 # ── Six-rung ordinal ladder ────────────────────────────────────────────────────
 
 VERDICT_RANK = {
@@ -60,6 +71,8 @@ def derive_disagreement_severity(verdicts: list) -> dict:
         distance 2–3     → "moderate"
         distance ≥ 4     → "severe"  (only EP ↔ MI = 5 reaches this)
     """
+    if not verdicts:
+        return dict(NOT_ASSESSED_SENTINEL)
     pairs = [
         (verdicts[i], verdicts[j])
         for i in range(len(verdicts))
@@ -114,7 +127,7 @@ def apply_distance_confidence_cap(
 
     Returns capped confidence string.
     """
-    if severity == "none" or vote_count == 3:
+    if severity in ("none", "not_assessed") or vote_count == 3:
         return base_confidence
     # Normalize "medium" → "moderate" for matrix lookup
     _con = "moderate" if consequence in ("medium", "moderate") else consequence
@@ -147,7 +160,7 @@ def derive_review_priority_distance_signal(severity: str, consequence: str) -> d
     _con = "moderate" if consequence in ("medium", "moderate") else consequence
     no_change = {"escalated": False, "hard_flag": False, "reason": None}
 
-    if severity == "none" or severity == "minor":
+    if severity in ("none", "minor", "not_assessed"):
         return no_change
     if severity == "moderate":
         if _con == "low":

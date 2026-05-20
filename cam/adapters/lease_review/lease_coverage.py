@@ -25,6 +25,8 @@ import re
 import logging
 from typing import Optional
 
+from cam.adapters.lease_review.lease_verdict_distance import NOT_ASSESSED_SENTINEL
+
 logger = logging.getLogger(__name__)
 
 
@@ -727,6 +729,11 @@ def _build_assessment(pid, area, coverage_state, applicability, evidence_summary
         "use_aware_consensus": None,   # "3_of_3" | "2_of_3" | "1_of_3" | "2_of_2" | None
         "use_aware_abstained": False,  # True when merge outcome is abstain
         "tenant_text": tenant_text,
+        # Step 352: verdict distance defaults — Stage 305 overrides these when it runs.
+        # not_assessed means Stage 305 genuinely did not run for this LP.
+        "verdict_distance": dict(NOT_ASSESSED_SENTINEL),
+        "per_evaluator_lp_verdicts": {},
+        "lp_confidence_base": None,
     }
 
 
