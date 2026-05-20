@@ -16159,19 +16159,32 @@ function jumpToCoverageProvision(pid, opts) {
     switchResultsTab('coverage');
     const expandElements = opts && opts.expandElements;
     waitForResultsTarget(function() {
-        // Re-render coverage panel if needed to ensure data-pid attrs exist
         const el = document.querySelector('.cv-item[data-pid="' + CSS.escape(pid) + '"]');
         return el;
     }, { attempts: 25, delay: 100 }).then(function(el) {
         if (!el) return;
-        // If inside a hidden section (tier filter or collapsed "Adequately Covered"), reveal it
-        const hiddenParent = el.closest('.hidden');
-        if (hiddenParent) hiddenParent.classList.remove('hidden');
+        // cv-section-favorable uses style="display:none" (not class), so closest('.hidden')
+        // misses it. Reveal it first so getBoundingClientRect() works in the scroll below.
+        const favSection = document.getElementById('cv-section-favorable');
+        if (favSection && favSection.contains(el) && favSection.style.display === 'none') {
+            favSection.style.display = '';
+            _cvShowFavorable = true;
+            document.querySelectorAll('.cv-favorable-toggle-btn').forEach(function(btn) {
+                btn.classList.add('cv-tier-btn-active');
+            });
+        }
+        // cv-ok-list uses class hidden \u2014 reveal and update the section arrow.
+        // Must check this BEFORE the general closest('.hidden') call, otherwise
+        // closest removes hidden first and the okList.contains check becomes false.
         const okList = document.getElementById('cv-ok-list');
         if (okList && okList.classList.contains('hidden') && okList.contains(el)) {
             okList.classList.remove('hidden');
             const arrow = document.getElementById('cv-ok-arrow');
             if (arrow) arrow.textContent = '\u25BC';
+        } else {
+            // General: reveal any other class-hidden ancestor (e.g. tier-filtered section)
+            const hiddenParent = el.closest('.hidden');
+            if (hiddenParent) hiddenParent.classList.remove('hidden');
         }
         // Auto-expand element table when navigating directly (e.g. via sidebar click)
         if (expandElements) {
