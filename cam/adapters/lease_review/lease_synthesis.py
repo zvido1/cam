@@ -74,20 +74,30 @@ EVALUATOR_LINEUP: Dict[str, dict] = {
     },
 }
 
-# ── Stage 7 model split — Pass 1 / consolidation use GPT-5.4 ──────────────────
-# NOTE: GPT-5.5 fails with RuntimeError on long Stage 7 prompts (Pass 1 + consolidation).
-# GPT-5.4 is the reliable model for long synthesis. GPT-5.5 is used for Pass 2 only
-# (short cluster verification prompt, succeeds consistently).
-# Re-test GPT-5.5 on Pass 1 after OpenAI stabilizes rate limits (post ~May 23, 2026).
+# ── Stage 7 model split — all Stage 7 paths use GPT-5.4 for Eval-B ───────────
+# NOTE: GPT-5.5 fails with RuntimeError on all three Stage 7 paths (Pass 1, Pass 2,
+# consolidation). GPT-5.4 is the reliable model for Stage 7 synthesis.
+# TODO: Re-test gpt-5.5 on all Stage 7 paths after OpenAI stabilizes (~June 2026)
 _SYNTHESIS_PASS1_B_MODEL       = "gpt-5.4"   # long prompt — gpt-5.5 fails
 _SYNTHESIS_CONSOLIDATION_MODEL = "gpt-5.4"   # long prompt — gpt-5.5 fails
-# Pass 2 uses EVALUATOR_LINEUP["B"] directly (gpt-5.5, short prompt, succeeds)
+_SYNTHESIS_PASS2_B_MODEL       = "gpt-5.4"   # gpt-5.5 returns wrong format (dict not array)
 
 _EVALUATOR_LINEUP_PASS1: Dict[str, dict] = {
     role: (
         cfg if role != "B" else {
             **cfg,
             "model": _SYNTHESIS_PASS1_B_MODEL,
+            "label": "GPT-5.4",
+        }
+    )
+    for role, cfg in EVALUATOR_LINEUP.items()
+}
+
+_EVALUATOR_LINEUP_PASS2: Dict[str, dict] = {
+    role: (
+        cfg if role != "B" else {
+            **cfg,
+            "model": _SYNTHESIS_PASS2_B_MODEL,
             "label": "GPT-5.4",
         }
     )
@@ -1061,7 +1071,8 @@ def _call_pass2_evaluator(
         raw     = adapter.call(_PASS2_EVALUATOR_SYSTEM, user_prompt, target).strip()
         parsed  = _safe_parse_synthesis(raw)
         if parsed is None:
-            raise RuntimeError(f"Pass2 Eval-{role}: unparseable response")
+            preview = raw[:200].replace('\n', ' ') if raw else '(empty)'
+            raise RuntimeError(f"Pass2 Eval-{role}: unparseable response — preview: {preview}")
         # Normalize to list (some models wrap in a dict)
         if isinstance(parsed, dict):
             for _val in parsed.values():
@@ -1069,7 +1080,10 @@ def _call_pass2_evaluator(
                     parsed = _val
                     break
         if not isinstance(parsed, list):
-            raise RuntimeError(f"Pass2 Eval-{role}: expected list, got {type(parsed)}")
+            raise RuntimeError(
+                f"Pass2 Eval-{role}: expected list, got {type(parsed).__name__}"
+                f" — keys: {list(parsed.keys()) if isinstance(parsed, dict) else '(n/a)'}"
+            )
         return parsed
 
     print(f"[lease_synthesis] Pass2 Eval-{role}: calling {model} ({provider})...", flush=True)
@@ -1754,8 +1768,8 @@ def run_synthesis(
     user_prompt = _build_evaluator_user_prompt(flagged_lps, full_tenant_text, perspective, coverage_assessment)
 
     # ── Run three evaluators in parallel (Pass 1) ──
-    # Eval-B uses gpt-5.4 here — gpt-5.5 fails on long Pass 1 prompt.
-    # Pass 2 uses EVALUATOR_LINEUP (gpt-5.5 succeeds on short cluster prompt).
+    # Eval-B uses gpt-5.4 — gpt-5.5 fails on long Pass 1 prompt.
+    # Pass 2 uses _EVALUATOR_LINEUP_PASS2 (also gpt-5.4 — gpt-5.5 returns dict not array).
     evaluator_outputs: Dict[str, dict] = {}
     with ThreadPoolExecutor(max_workers=3) as pool:
         futures = {
@@ -1855,7 +1869,7 @@ def run_synthesis(
         with ThreadPoolExecutor(max_workers=3) as pool2:
             p2futures = {
                 pool2.submit(_call_pass2_evaluator, role, ev_cfg, pass2_prompt): role
-                for role, ev_cfg in EVALUATOR_LINEUP.items()
+                for role, ev_cfg in _EVALUATOR_LINEUP_PASS2.items()
             }
             for fut in as_completed(p2futures):
                 role = p2futures[fut]
