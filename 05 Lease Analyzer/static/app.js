@@ -15613,8 +15613,9 @@ function renderCoveragePanel() {
     }
     const problems = ca.filter(a =>
         !_isFavorable(a) && !_isUseImpactFavorable(a) &&
-        (a.coverage_state === "covered_unfavorable" || a.partial_class === "partial_material" || a.coverage_state === "missing")
-    );
+        (a.coverage_state === "covered_unfavorable" || a.partial_class === "partial_material"
+            || a.coverage_state === "missing" || a.coverage_state === "review_needed")
+    );  // Step 357: review_needed added (Phase 3 LPs surface in Needs Attention)
     const favorable = ca.filter(a => _isFavorable(a) || _isUseImpactFavorable(a));
     const review   = ca.filter(a => a.partial_class === "partial_review" && !_isUseImpactFavorable(a));
     const covered  = ca.filter(a => a.coverage_state === "covered");
@@ -16724,6 +16725,7 @@ function renderNavSidebar() {
                     a.coverage_state === "potentially_unenforceable"
                     || a.coverage_state === "covered_unfavorable"
                     || a.coverage_state === "missing"
+                    || a.coverage_state === "review_needed"   // Step 357: Phase 3 LPs
                     || a.partial_class === "partial_material")) {
                     needsAttention.push(a);
                 } else if (a.partial_class === "partial_review") {

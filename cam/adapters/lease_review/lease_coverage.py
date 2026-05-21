@@ -741,7 +741,7 @@ def _build_assessment(pid, area, coverage_state, applicability, evidence_summary
         "related_issue_areas": get_related_issue_areas(pid),
         "requires_attention": coverage_state in (
             "missing", "broken_xref", "covered_unfavorable",
-            "partial", "potentially_unenforceable"
+            "partial", "potentially_unenforceable", "review_needed"
         ),
         # Step 297d.J-fix: which party is adversely affected when state is covered_unfavorable.
         # Read from schema area.covered_unfavorable_adverse_to; null for non-unfavorable states.
