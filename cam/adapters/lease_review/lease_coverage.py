@@ -258,10 +258,38 @@ def assess_coverage(
                 # judicial process is a jurisdiction-specific enforceability question
                 # that the element verdicts do not address.
                 _state_305 = _result_305["coverage_state_baseline"]
+
+                # ── Supplement #21 Phase 3: dispute_signal propagation ──────────
+                _disputed_critical = _result_305.get("elements_disputed_critical", 0)
+                _dispute_signal = {
+                    "triggered": False,
+                    "critical_disputed_count": _disputed_critical,
+                    "reason": None,
+                }
+                if _disputed_critical > 0 and _state_305 != "not_applicable":
+                    _state_305 = "review_needed"
+                    _dispute_signal = {
+                        "triggered": True,
+                        "critical_disputed_count": _disputed_critical,
+                        "reason": (
+                            f"{_disputed_critical} critical rubric element(s) disputed — "
+                            f"majority verdict withheld, human review required"
+                        ),
+                    }
+                    logger.info(
+                        f"[lease_coverage] {pid}: Phase 3 dispute_signal triggered — "
+                        f"{_disputed_critical} critical disputed element(s); state → review_needed"
+                    )
+
+                # Unenforceable override runs after Phase 3
+                # (potentially_unenforceable is more specific than review_needed;
+                # dispute_signal.triggered may still be True even when state is
+                # potentially_unenforceable — Phase 4 reads dispute_signal directly)
                 _text_lower_305 = tenant_text.lower()
                 _unenforceable_305 = _check_unenforceable_patterns(pid, _text_lower_305)
                 if _unenforceable_305:
                     _state_305 = "potentially_unenforceable"
+
                 _a = _build_assessment(
                     pid=pid, area=area, coverage_state=_state_305,
                     applicability=applicability_result,
@@ -280,6 +308,10 @@ def assess_coverage(
                 _a["verdict_distance"] = _result_305.get("verdict_distance")
                 _a["lp_confidence_base"] = _result_305.get("lp_confidence_base", "low")
                 _a["per_evaluator_lp_verdicts"] = _result_305.get("per_evaluator_lp_verdicts", {})
+                # Step 356 Phase 3 fields
+                _a["elements_disputed_critical"] = _disputed_critical
+                _a["elements_disputed_important"] = _result_305.get("elements_disputed_important", 0)
+                _a["dispute_signal"] = _dispute_signal
                 assessments.append(_a)
                 _emit(_a)
                 continue
@@ -734,6 +766,14 @@ def _build_assessment(pid, area, coverage_state, applicability, evidence_summary
         "verdict_distance": dict(NOT_ASSESSED_SENTINEL),
         "per_evaluator_lp_verdicts": {},
         "lp_confidence_base": None,
+        # Step 356 Phase 3: dispute_signal defaults — Stage 305 overrides when it runs.
+        "elements_disputed_critical": 0,
+        "elements_disputed_important": 0,
+        "dispute_signal": {
+            "triggered": False,
+            "critical_disputed_count": 0,
+            "reason": None,
+        },
     }
 
 

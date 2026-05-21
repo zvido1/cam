@@ -11443,6 +11443,19 @@ function buildCoverageAuditSection(items) {
             var _v2 = esc(_pair[1] || '');
             _auditSevNote = '<div class="audit-cov-sev-note audit-cov-sev-severe">&#x26A0; Evaluator disagreement — severe: one evaluator found <strong>' + _v1 + '</strong>, another found <strong>' + _v2 + '</strong>. Epistemic conflict — one evaluator asserts clear presence, another asserts confident absence. Full evaluator reasoning preserved below.</div>';
         }
+        // Step 356 Phase 3: dispute_signal note
+        var _ds = a.dispute_signal || {};
+        var _auditDisputeNote = '';
+        if (_ds.triggered) {
+            var _dsCrit = _ds.critical_disputed_count || 0;
+            var _dsBaseline = esc(a.coverage_state_baseline || '');
+            _auditDisputeNote = '<div class="audit-cov-sev-note audit-cov-dispute-signal">'
+                + '&#x2691; <strong>Critical dispute — majority verdict withheld.</strong><br>'
+                + _dsCrit + ' critical rubric element' + (_dsCrit !== 1 ? 's' : '') + ' produced evaluator disagreement spanning presence and absence. '
+                + 'Review Required regardless of majority reading.<br>'
+                + '<span class="audit-cov-dispute-baseline">Baseline verdict: <strong>' + _dsBaseline + '</strong></span>'
+                + '</div>';
+        }
         // Step 307b: score bars using the shared audit infrastructure (same as Mode A)
         var _sharedLib = window.CAMAuditShared;
         var scoreBarsHtml = '';
@@ -11469,6 +11482,7 @@ function buildCoverageAuditSection(items) {
             + '<span class="audit-cov-chevron">▸</span>'
             + '</div>'
             + '<div id="' + lpBodyId + '" class="audit-cov-lp-body" style="display:none">'
+            + _auditDisputeNote
             + _auditSevNote
             + '<div class="audit-cov-deriv-note">' + derivNote + '</div>'
             + scoreBarsHtml
@@ -15842,12 +15856,22 @@ function renderCoveragePanel() {
             ? '<span class="cv-disag-severity cv-disag-severity-severe" title="Evaluator disagreement — severe: ' + esc((_vd.pair || []).join(' vs ')) + '">&#x26A0; severe disagreement</span>'
             : '';
 
+        // Step 356 Phase 3: dispute_signal badge
+        const _dispCrit = a.elements_disputed_critical || 0;
+        const _dispImp  = a.elements_disputed_important || 0;
+        const disputeSignalHtml = _dispCrit > 0
+            ? '<span class="cv-dispute-signal cv-dispute-signal-critical" title="' + _dispCrit + ' critical rubric element(s) disputed — LP reclassified to Review Needed">&#x2691; Critical Dispute</span>'
+            : (_dispImp > 0
+                ? '<span class="cv-dispute-signal cv-dispute-signal-important" title="Evaluator disagreement on ' + _dispImp + ' important element(s) — LP classification unaffected">Disputed</span>'
+                : '');
+
         return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
             <div class="cv-item-header">
                 <span class="cv-item-id">${esc(pid)}</span>
                 <span class="cv-item-name">${esc(name)}</span>${headlineHtml}
                 <span class="cv-badge ${stateInfo.cls}">${stateInfo.label}</span>
                 ${disagSeverityHtml}
+                ${disputeSignalHtml}
                 ${confidenceBadgeHtml}
                 ${assessMethodHtml}
                 ${pclsBadge}

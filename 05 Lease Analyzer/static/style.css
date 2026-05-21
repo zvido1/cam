@@ -11954,6 +11954,40 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
     border-left-color: #f59e0b;
 }
 
+/* Step 356 Phase 3: dispute_signal badge in Coverage & Gaps STATUS column */
+.cv-dispute-signal {
+    display: inline-block;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 10px;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+.cv-dispute-signal-critical {
+    color: #92400e;
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+}
+.cv-dispute-signal-important {
+    color: #6b7280;
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
+}
+
+/* Step 356 Phase 3: audit trail dispute_signal note */
+.audit-cov-dispute-signal {
+    color: #78350f;
+    background: #fffbeb;
+    border-left-color: #d97706;
+}
+.audit-cov-dispute-baseline {
+    font-size: 0.78rem;
+    color: #6b7280;
+    margin-top: 3px;
+    display: inline-block;
+}
+
 /* Step 307b: sidebar confidence label for Mode C LP items */
 .nav-item-conf { font-size: 0.65rem; color: var(--text-muted, #888); white-space: nowrap; margin-left: auto; padding-left: 0.25rem; }
 
