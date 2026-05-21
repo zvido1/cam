@@ -755,16 +755,20 @@ def assess_coverage_305(
     elements_present = []
     elements_missing = []
     elements_disputed = []   # Supplement #21 Phase 1
+    elements_disputed_critical = 0   # Step 355: Phase 2 criticality counters
+    elements_disputed_important = 0  # Step 355: Phase 2 criticality counters
 
     for element in elements_305:
         element_id = element.get("element_id", "")
         element_label = element.get("element_label", element_id)
+        criticality = element.get("criticality", "important")  # Phase 2 pass-through
 
         per_evaluator = _extract_verdicts_for_element(evaluator_results, element_id, element)
         merged = merge_element_verdicts(per_evaluator, element)
 
         verdict_record = {
             "element_id": element_id,
+            "criticality": criticality,  # Phase 2 pass-through
             "element_label": element_label,
             "verdict": merged["verdict"],
             "confidence": merged.get("confidence", "low"),
@@ -781,6 +785,10 @@ def assess_coverage_305(
             elements_missing.append(element_label)
         elif merged["verdict"] == "disputed":
             elements_disputed.append(element_label)
+            if criticality == "critical":        # Step 355: track criticality of disputed elements
+                elements_disputed_critical += 1
+            elif criticality == "important":
+                elements_disputed_important += 1
 
     # ── 3. Derive LP-level coverage state ─────────────────────────────────────
     coverage_state_baseline = derive_lp_state(element_verdicts_merged, elements_305)
@@ -862,7 +870,9 @@ def assess_coverage_305(
         "element_verdicts": element_verdicts_merged,
         "elements_present": elements_present,
         "elements_missing": elements_missing,
-        "elements_disputed": elements_disputed,   # Supplement #21 Phase 1
+        "elements_disputed": elements_disputed,          # Supplement #21 Phase 1
+        "elements_disputed_critical": elements_disputed_critical,   # Step 355 Phase 2
+        "elements_disputed_important": elements_disputed_important, # Step 355 Phase 2
         "negative_space_candidates_reviewed": negative_space_candidates,
         "evaluator_meta": evaluator_meta,
         "api_calls": succeeded,  # Step 335: number of evaluator API calls made for this LP
