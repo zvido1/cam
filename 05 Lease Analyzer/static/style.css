@@ -12662,6 +12662,22 @@ body.mode-c .card-docview-link {
     word-break: break-word;
 }
 
+/* Disputed element indicator on Risk sidebar cards */
+.cv-disputed-indicator {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-warning, #854F0B);
+    background: var(--color-warning-subtle, #FAEEDA);
+    border-radius: 4px;
+    padding: 1px 6px;
+    margin-top: 4px;
+}
+.cv-disputed-indicator--critical {
+    color: var(--color-danger, #A32D2D);
+    background: var(--color-danger-subtle, #FCEBEB);
+}
+
 /* Empty states */
 .nav-sidebar-content .nav-empty {
     padding: 0.4rem 0.75rem;

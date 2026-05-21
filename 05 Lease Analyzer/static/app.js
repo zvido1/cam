@@ -17126,6 +17126,11 @@ function _navBuildUnifiedItem(item, tIdx) {
         + ' data-tenant-idx="' + tIdx + '"'
         + ' data-mode="' + esc(item._mode || '') + '"'
         + (item.cpfId ? ' data-cpf-id="' + esc(item.cpfId) + '"' : '');
+    const disputedHtml = item.elements_disputed_critical > 0
+        ? '<span class="cv-disputed-indicator cv-disputed-indicator--critical">⚑ Critical Disputed</span>'
+        : item.elements_disputed > 0
+        ? '<span class="cv-disputed-indicator">◈ Disputed</span>'
+        : '';
     return '<button class="nav-item-enriched nav-item-unified nav-item-sev-' + sevCls + '" '
          + dataAttrs + ' title="' + esc(item.tooltip || item.summary || item.name || '') + '" type="button">'
          +   '<div class="nav-item-top">'
@@ -17135,6 +17140,7 @@ function _navBuildUnifiedItem(item, tIdx) {
          +     confHtml
          +   '</div>'
          +   (item.summary ? '<div class="nav-item-desc">' + esc(item.summary) + '</div>' : '')
+         +   disputedHtml
          + '</button>';
 }
 
@@ -17237,6 +17243,8 @@ function renderNavSidebar() {
                 var summary = (a.exposure_headline || _deriveHeadlineFromExposure(a.exposure_statement || '')).trim();
                 pushItem(bucket, { _item_type: 'gap', _mode: 'c', pid: pid, name: name,
                     sev: sev, typeLabel: typeLabel, govSig: govSig, summary: summary,
+                    elements_disputed: a.elements_disputed || 0,
+                    elements_disputed_critical: a.elements_disputed_critical || 0,
                     tooltip: (a.exposure_statement || '').slice(0, 200) || name });
             });
 
@@ -17289,6 +17297,8 @@ function renderNavSidebar() {
                 pushItem(bucket, { _item_type: 'gap', _mode: 'c', pid: pid,
                     name: a.issue_area_name || a.provision_name || pid, sev: sev,
                     typeLabel: typeLabel, govSig: govSig, summary: summary,
+                    elements_disputed: a.elements_disputed || 0,
+                    elements_disputed_critical: a.elements_disputed_critical || 0,
                     tooltip: (a.exposure_statement || '').slice(0, 200) || pid });
             });
         }
