@@ -16709,6 +16709,16 @@ function renderContractViewPanel() {
         return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    // Step 360: filter out evaluator/pipeline-internal CPF quotes from lawyer-facing display
+    function isCPFQuoteDisplayable(quote) {
+        if (!quote) return false;
+        var lower = quote.toLowerCase();
+        if (lower.indexOf('evaluator') === 0) return false;   // "Evaluator C flagged..."
+        if (lower.indexOf('merged from') === 0) return false; // "Merged from CRX-01..."
+        if (/^(crx|cpf|rlf)-\d+/i.test(quote)) return false; // bare finding IDs
+        return true;
+    }
+
     var html = '<div class="cv-index" style="padding:1rem 1.25rem">';
 
     articleOrder.forEach(function(ak) {
@@ -16775,13 +16785,16 @@ function renderContractViewPanel() {
                 if (lps) {
                     html += '<div style="font-size:.75rem;color:var(--text-muted,#888);margin-bottom:.2rem">';
                     if (isCross) {
-                        html += 'Cross-provision · ' + esc(lps);
+                        // Step 360: "Multi-clause" replaces internal "Cross-provision" label
+                        html += 'Multi-clause · ' + esc(lps);
                     } else {
                         html += esc(f.issue_area_name || '') + ' · ' + esc(lps);
                     }
                     html += '</div>';
                 }
-                if (f.quote) {
+                // Step 360: filter evaluator attribution and merge notes from CPF quotes
+                var _quoteOk = isCross ? isCPFQuoteDisplayable(f.quote) : !!f.quote;
+                if (_quoteOk) {
                     var quoteText = f.quote.length > 120 ? f.quote.slice(0, 120) + '…' : f.quote;
                     html += '<div style="font-size:.75rem;color:var(--text-muted,#777);font-style:italic;border-left:2px solid var(--border,#e0e0e0);padding-left:.4rem;margin-top:.2rem">"' + esc(quoteText) + '"</div>';
                 }
@@ -17331,10 +17344,10 @@ function _navSubGroupWrap(sectionId, title, count, bodyHtml, jobId) {
          + bodyHtml + '</div></div>';
 }
 
+// Step 360: provision name leads, action chip replaces severity badge + typeLabel + confidence dots.
 function _navBuildUnifiedItem(item, tIdx) {
     const sev = (item.sev || 'MEDIUM').toUpperCase();
     const sevCls = sev.toLowerCase();
-    const confHtml = item.govSig ? _navConfDotsHtml(item.govSig, 'Confidence: ' + item.govSig) : '';
     const dataAttrs = 'data-item-type="' + esc(item._item_type || '') + '"'
         + ' data-pid="' + esc(item.pid || '') + '"'
         + ' data-tenant-idx="' + tIdx + '"'
@@ -17345,15 +17358,25 @@ function _navBuildUnifiedItem(item, tIdx) {
         : item.elements_disputed > 0
         ? '<span class="cv-disputed-indicator">◈ Disputed</span>'
         : '';
+    // Action bucket chip: Risk / Needs Review / Improvement / Addressed
+    var _bucketLabel = { risk: 'Risk', review_needed: 'Needs Review', improvement: 'Improvement', addressed: 'Addressed' };
+    var _bucketBadge = { risk: 'nav-badge-high', review_needed: 'nav-badge-review', improvement: 'nav-badge-medium', addressed: 'nav-badge-favorable' };
+    var _bucket = item._bucket || '';
+    var actionChipHtml = _bucket
+        ? '<span class="nav-item-badge ' + (_bucketBadge[_bucket] || 'nav-badge-default') + '" style="margin-left:auto;flex-shrink:0">' + esc(_bucketLabel[_bucket] || _bucket) + '</span>'
+        : '';
+    // LP identifier line below description (small, muted)
+    var lpMetaHtml = item.pid
+        ? '<div style="font-size:.7rem;color:var(--text-muted,#888);margin-top:.15rem;font-family:var(--font-mono,monospace);letter-spacing:.02em">' + esc(item.pid) + '</div>'
+        : '';
     return '<button class="nav-item-enriched nav-item-unified nav-item-sev-' + sevCls + '" '
          + dataAttrs + ' title="' + esc(item.tooltip || item.summary || item.name || '') + '" type="button">'
          +   '<div class="nav-item-top">'
-         +     '<span class="nav-item-id">' + esc(item.pid || '') + '</span>'
-         +     '<span class="nav-item-badge nav-badge-' + sevCls + '">' + esc(sev) + '</span>'
-         +     (item.typeLabel ? '<span class="nav-item-type-label">' + esc(item.typeLabel) + '</span>' : '')
-         +     confHtml
+         +     '<span class="nav-item-name">' + esc(item.name || item.pid || '') + '</span>'
+         +     actionChipHtml
          +   '</div>'
          +   (item.summary ? '<div class="nav-item-desc">' + esc(item.summary) + '</div>' : '')
+         +   lpMetaHtml
          +   disputedHtml
          + '</button>';
 }
@@ -17427,6 +17450,7 @@ function renderNavSidebar() {
         var risk = [], reviewNeeded = [], improvement = [], addressed = [];
 
         function pushItem(bucket, item) {
+            item._bucket = bucket; // Step 360: used by _navBuildUnifiedItem for action chip
             if (bucket === 'risk') risk.push(item);
             else if (bucket === 'review_needed') reviewNeeded.push(item);
             else if (bucket === 'improvement') improvement.push(item);
@@ -17529,18 +17553,19 @@ function renderNavSidebar() {
             var riskDirectional = risk.filter(function(i) { return i.typeLabel === 'DIRECTIONAL'; });
             var subHtml = '';
             if (riskGaps.length > 0)
-                subHtml += _navSubGroupWrap('risk_gaps_' + tIdx, 'GAPS / COVERAGE', riskGaps.length,
+                subHtml += _navSubGroupWrap('risk_gaps_' + tIdx, 'Coverage Gaps', riskGaps.length,
                     riskGaps.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
             if (riskCompound.length > 0)
-                subHtml += _navSubGroupWrap('risk_compound_' + tIdx, 'COMPOUND', riskCompound.length,
+                subHtml += _navSubGroupWrap('risk_compound_' + tIdx, 'Cross-clause Risks', riskCompound.length,
                     riskCompound.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
             if (riskDirectional.length > 0)
-                subHtml += _navSubGroupWrap('risk_directional_' + tIdx, 'DIRECTIONAL', riskDirectional.length,
+                subHtml += _navSubGroupWrap('risk_directional_' + tIdx, 'One-sided Terms', riskDirectional.length,
                     riskDirectional.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
-            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', risk.length, subHtml, jobId);
+            // Step 360: no aggregate count on RISK header — sub-bucket counts tell the story
+            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', '', subHtml, jobId);
         }
         if (reviewNeeded.length > 0)
-            html += _navSectionWrap('review_' + tIdx, '?', 'REVIEW NEEDED', reviewNeeded.length,
+            html += _navSectionWrap('review_' + tIdx, '?', 'Needs Review', reviewNeeded.length,
                 reviewNeeded.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
         if (improvement.length > 0)
             html += _navSectionWrap('improvement_' + tIdx, '✶', 'IMPROVEMENT', improvement.length,
