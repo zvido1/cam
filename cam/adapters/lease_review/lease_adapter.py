@@ -1145,6 +1145,15 @@ def run_lease_analysis(
         },
     }
 
+    # ── Build contract section index (Step 359) ──
+    try:
+        from cam.adapters.lease_review.lease_contract_index import build_contract_section_index
+        result['contract_section_index'] = build_contract_section_index(result)
+        print(f"[lease_adapter] Contract section index: {len(result['contract_section_index'])} section(s)", flush=True)
+    except Exception as _csi_e:
+        print(f"[lease_adapter] Contract section index failed (non-fatal): {_csi_e}", flush=True)
+        result['contract_section_index'] = []
+
     # ── Save output ──
     output_dir = Path(cfg["output_dir"]) / run_id
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1577,6 +1586,15 @@ def run_lease_coverage_only(
     except Exception as _s7_e:
         print(f"[lease_adapter:analyze] Stage 7 failed (non-fatal): {_s7_e}", flush=True)
         result["cross_provision_findings"] = []
+
+    # ── Build contract section index (Step 359) ──
+    try:
+        from cam.adapters.lease_review.lease_contract_index import build_contract_section_index
+        result['contract_section_index'] = build_contract_section_index(result)
+        print(f"[lease_adapter:analyze] Contract section index: {len(result['contract_section_index'])} section(s)", flush=True)
+    except Exception as _csi_e:
+        print(f"[lease_adapter:analyze] Contract section index failed (non-fatal): {_csi_e}", flush=True)
+        result['contract_section_index'] = []
 
     output_dir = Path(cfg["output_dir"]) / run_id
     output_dir.mkdir(parents=True, exist_ok=True)

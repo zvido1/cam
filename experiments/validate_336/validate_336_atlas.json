@@ -1,0 +1,698 @@
+{
+  "cross_provision_findings": [
+    {
+      "finding_id": "RLF-01",
+      "finding_type": "cross_coverage_relief",
+      "implicated_lps": [
+        "LP-03"
+      ],
+      "headline": "Relief: Lease Term & Renewal substance found in Section 1.2",
+      "detail": "Article 1 and 2 expressly define initial term, commencement and expiration dates.",
+      "cited_sections": [
+        "Section 1.2"
+      ],
+      "verdict": "cross_coverage_confirmed",
+      "directionality": "bilateral",
+      "direction_adequate": true,
+      "relief_section": "Section 1.2",
+      "severity": "INFO",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "cross_coverage_confirmed",
+        "B": "cross_coverage_confirmed",
+        "C": "cross_coverage_confirmed"
+      },
+      "directional_false_positive_count": 0
+    },
+    {
+      "finding_id": "RLF-02",
+      "finding_type": "cross_coverage_relief",
+      "implicated_lps": [
+        "LP-26"
+      ],
+      "headline": "Relief: Quiet Enjoyment substance found in Section 18.1",
+      "detail": "Quiet enjoyment covenant is expressly granted.",
+      "cited_sections": [
+        "Section 18.1"
+      ],
+      "verdict": "cross_coverage_confirmed",
+      "directionality": "bilateral",
+      "direction_adequate": true,
+      "relief_section": "Section 18.1",
+      "severity": "INFO",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "cross_coverage_confirmed",
+        "B": "cross_coverage_confirmed",
+        "C": "cross_coverage_confirmed"
+      },
+      "directional_false_positive_count": 0
+    },
+    {
+      "finding_id": "Dir-01",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-01"
+      ],
+      "headline": "Tenant has no specification of payment methods or tenant-favorable payment terms.",
+      "detail": "Landlord has detailed rent payment and late-charge machinery; tenant lacks specification of compliant payment methods.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-02",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-02"
+      ],
+      "headline": "Tenant has no cap protection against higher increases.",
+      "detail": "Landlord receives fixed 3% escalations; tenant has no cap protection against higher increases.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-03",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-04"
+      ],
+      "headline": "Tenant has limited setoff rights only after landlord default.",
+      "detail": "Landlord controls deposit application and return; tenant has only limited post-default setoff rights.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-04",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-05"
+      ],
+      "headline": "Tenant has no continuous operation or co-tenancy protections.",
+      "detail": "Landlord restricts tenant to narrow permitted use; tenant has no continuous-operation or co-tenancy protections.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "mismatch_confirmed",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-05",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-06"
+      ],
+      "headline": "Tenant has no defined response times for landlord repairs.",
+      "detail": "Landlord maintains structure without defined timelines; tenant has no enforceable response-time standards for repairs.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "mismatch_confirmed",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-06",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-07"
+      ],
+      "headline": "Tenant has no cap on annual CAM increases.",
+      "detail": "Landlord recovers all CAM with tenant audit rights only; tenant has no cap on annual CAM increases.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-07",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-08"
+      ],
+      "headline": "Tenant has no explicit certificate delivery timeline.",
+      "detail": "Landlord requires extensive insurance; tenant has no explicit certificate delivery timeline.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-08",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-09"
+      ],
+      "headline": "Tenant has no change of control relief or profit sharing.",
+      "detail": "Landlord controls all assignments with recapture; tenant has no change-of-control relief or profit sharing.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-09",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-10"
+      ],
+      "headline": "Tenant owns no improvements at end and has no removal standards.",
+      "detail": "Landlord approves alterations with no contribution; tenant owns no improvements at end and lacks removal standards.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-10",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-11"
+      ],
+      "headline": "Tenant has no acceleration protection or lender cure rights.",
+      "detail": "Landlord has termination, re-entry and deficiency remedies; tenant has no acceleration protection or lender cure rights.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "mismatch_confirmed",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-11",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-14"
+      ],
+      "headline": "Tenant has no rent abatement or exit right after extended force majeure.",
+      "detail": "Both parties receive time extensions but tenant has no rent abatement or exit right after extended force majeure.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "mismatch_confirmed",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-12",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-15"
+      ],
+      "headline": "Tenant has no pylon rights or protection from landlord removal.",
+      "detail": "Landlord controls signage approval and removal; tenant has no pylon rights or protection from removal.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-13",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-16"
+      ],
+      "headline": "Tenant has no protection against parking area changes or visitor access.",
+      "detail": "Landlord maintains parking via CAM; tenant has no protection against parking-area changes.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-14",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-18"
+      ],
+      "headline": "Tenant has no protection from consequential damages claims.",
+      "detail": "Landlord can charge 150% rent and terminate at sufferance; tenant has no protection from consequential-damages claims.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "mismatch_confirmed",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-15",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-19"
+      ],
+      "headline": "Tenant bears all upgrade costs without allocation.",
+      "detail": "Landlord provides initial capacity; tenant bears all upgrade costs without allocation.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-16",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-20"
+      ],
+      "headline": "Landlord has no remedies defined for violation.",
+      "detail": "Tenant receives limited exclusivity with carve-out; landlord has no defined remedies for violation.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "mismatch_confirmed",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-17",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-21"
+      ],
+      "headline": "Tenant's guarantor has no cap or release provisions.",
+      "detail": "Landlord receives full unconditional guaranty; tenant's guarantor has no cap or release provisions.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-18",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-22"
+      ],
+      "headline": "Tenant must execute documents on demand with no timing protections.",
+      "detail": "Landlord requires subordination with best-efforts non-disturbance; tenant must execute documents on demand without timing protections.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "mismatch_confirmed",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-19",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-24"
+      ],
+      "headline": "Tenant has no claim to insurance proceeds on termination.",
+      "detail": "Both parties can terminate; tenant has no claim to insurance proceeds on termination.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-20",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-25"
+      ],
+      "headline": "Tenant has no restoration obligation or right after partial taking.",
+      "detail": "Both parties can terminate; tenant has no restoration obligation or right after partial taking.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-21",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-27"
+      ],
+      "headline": "Tenant has only security deposit setoff after 30-day notice.",
+      "detail": "Landlord has full default remedies in Article 17; tenant has only security-deposit setoff after 30-day notice.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "mismatch_confirmed",
+        "C": "mismatch_confirmed"
+      },
+      "affected_party": "tenant"
+    },
+    {
+      "finding_id": "Dir-22",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-28"
+      ],
+      "headline": "Tenant has no ADA allocation or grandfathering protection.",
+      "detail": "Landlord responsible for structure; tenant has no ADA allocation or grandfathering protection.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "mismatch_confirmed",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-23",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-29"
+      ],
+      "headline": "Tenant has no right to representative or frequency limits.",
+      "detail": "Landlord has 48-hour notice entry for multiple purposes; tenant has no representative or frequency limits.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-24",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-30"
+      ],
+      "headline": "Tenant has no form protection or request frequency limit.",
+      "detail": "Both parties can request estoppels with 15-day deadline; tenant has no form protection or request-frequency limit.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "no_mismatch",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "Dir-25",
+      "finding_type": "directional_mismatch",
+      "implicated_lps": [
+        "LP-32"
+      ],
+      "headline": "Tenant has no testing rights or protection from pre-existing conditions.",
+      "detail": "Landlord prohibits tenant hazardous materials with remediation duty; tenant has no testing rights or pre-existing-condition protection.",
+      "cited_sections": [],
+      "verdict": "directional_mismatch",
+      "directionality": "tenant_unprotected",
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "mismatch_confirmed",
+        "B": "mismatch_confirmed",
+        "C": "mismatch_confirmed"
+      }
+    },
+    {
+      "finding_id": "CRX-01",
+      "finding_type": "compound_risk",
+      "implicated_lps": [
+        "LP-22"
+      ],
+      "headline": "Automatic subordination without guaranteed non-disturbance for future lenders exposes tenant to loss of possession on foreclosure.",
+      "detail": "Sections 19.1, 19.2, 19.3 and 18.1",
+      "cited_sections": [],
+      "verdict": "compound_risk_confirmed",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "compound_risk_present",
+        "B": "compound_risk_present",
+        "C": "compound_risk_present"
+      },
+      "pattern_type": "subordination_trap",
+      "affected_party": "tenant"
+    },
+    {
+      "finding_id": "CRX-02",
+      "finding_type": "compound_risk",
+      "implicated_lps": [
+        "LP-11",
+        "LP-27",
+        "LP-01"
+      ],
+      "headline": "Article 17 supplies landlord with full default-remedy machinery; tenant must assemble remedies piecemeal from isolated clauses with no parallel default article.",
+      "detail": "Article 17 vs. Section 5.1 and Articles 13/24 | Article 17 vs. Sections 5.1, 24.11 and 3.1",
+      "cited_sections": [
+        "Article 17",
+        "Section 5.1"
+      ],
+      "verdict": "compound_risk_confirmed",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "compound_risk_present",
+        "B": "compound_risk_present",
+        "C": "compound_risk_present"
+      },
+      "pattern_type": "directional_asymmetry",
+      "affected_party": "tenant"
+    },
+    {
+      "finding_id": "CRX-03",
+      "finding_type": "compound_risk",
+      "implicated_lps": [
+        "LP-01",
+        "LP-07",
+        "LP-27"
+      ],
+      "headline": "Audit right exists but Section 3.1 bars offset, withholding or self-help, leaving only litigation or 60-day termination path.",
+      "detail": "Section 3.4 vs. Sections 3.1, 3.3(b) and 5.1",
+      "cited_sections": [
+        "Section 3.4"
+      ],
+      "verdict": "compound_risk_confirmed",
+      "directionality": null,
+      "severity": "MEDIUM",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "compound_risk_present",
+        "B": "compound_risk_present",
+        "C": "compound_risk_present"
+      },
+      "pattern_type": "lever_elimination",
+      "affected_party": "tenant"
+    },
+    {
+      "finding_id": "CRX-04",
+      "finding_type": "compound_risk",
+      "implicated_lps": [
+        "LP-22",
+        "LP-26"
+      ],
+      "headline": "Future-lender SNDA obligation is only commercially reasonable efforts; quiet enjoyment is expressly subject to superior interests.",
+      "detail": "Sections 19.1, 19.2, 19.3 and 18.1",
+      "cited_sections": [],
+      "verdict": "compound_risk_confirmed",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "compound_risk_present",
+        "B": "compound_risk_present",
+        "C": "compound_risk_present"
+      },
+      "pattern_type": "subordination_trap",
+      "affected_party": "tenant"
+    },
+    {
+      "finding_id": "CRX-05",
+      "finding_type": "compound_risk",
+      "implicated_lps": [
+        "LP-14",
+        "LP-24",
+        "LP-27",
+        "LP-01",
+        "LP-06"
+      ],
+      "headline": "Structural repair obligation can be suspended indefinitely by force majeure while no abatement or self-help right exists and rent remains due.",
+      "detail": "Sections 24.1, 13.1, 13.3, 5.1 and 17 | Sections 8.2, 24.1, 3.1, 6.3, 13.3 and 5.1",
+      "cited_sections": [],
+      "verdict": "compound_risk_confirmed",
+      "directionality": null,
+      "severity": "HIGH",
+      "evaluator_agreement": "3-0",
+      "evaluator_verdicts": {
+        "A": "compound_risk_present",
+        "B": "compound_risk_present",
+        "C": "compound_risk_present"
+      },
+      "pattern_type": "cascading_no_remedy",
+      "affected_party": "tenant"
+    },
+    {
+      "finding_id": "CRX-06",
+      "finding_type": "compound_risk",
+      "implicated_lps": [
+        "LP-05",
+        "LP-20",
+        "LP-28"
+      ],
+      "headline": "Regulatory change impairing permitted use triggers no rent relief or termination right and exclusivity contains material carve-outs.",
+      "detail": "Sections 4.1, 4.2 and 24.14",
+      "cited_sections": [],
+      "verdict": "compound_risk_confirmed",
+      "directionality": null,
+      "severity": "MEDIUM",
+      "evaluator_agreement": "2-1",
+      "evaluator_verdicts": {
+        "A": "compound_risk_present",
+        "B": "no_compound_risk",
+        "C": "compound_risk_present"
+      },
+      "pattern_type": "operational_dead_end",
+      "affected_party": "tenant"
+    }
+  ],
+  "meta": {
+    "skipped": false,
+    "flagged_lp_count": 28,
+    "finding_count": 33,
+    "evaluators_completed": 3,
+    "elapsed_sec": 431.68,
+    "api_calls": 8,
+    "models": {
+      "C": {
+        "model": "grok-4.3",
+        "provider": "xai",
+        "completed": true,
+        "elapsed_sec": 50.49
+      },
+      "B": {
+        "model": "gpt-5.4",
+        "provider": "openai",
+        "completed": true,
+        "elapsed_sec": 112.82
+      },
+      "A": {
+        "model": "claude-sonnet-4-6",
+        "provider": "anthropic",
+        "completed": true,
+        "elapsed_sec": 129.97
+      }
+    }
+  }
+}

@@ -540,10 +540,11 @@
                         <div class="top-tab-divider" id="contract-tab-divider"></div>
                         <button class="top-tab" data-tab="findings" id="contract-tab-findings">Lease Summary</button>
                         <button class="top-tab" data-tab="docview" id="contract-tab-docview">Document Comparison</button>
-                        <button class="top-tab" data-tab="coverage" id="contract-tab-coverage">Coverage &amp; Gaps</button>
-                        <button class="top-tab" data-tab="synthesis" id="contract-tab-synthesis">Contract Interaction Review</button>
-                        <button class="top-tab" data-tab="evidence" id="contract-tab-evidence">Evidence View</button>
-                        <button class="top-tab" data-tab="audittrail" id="contract-tab-audittrail">CAM Audit Trail</button>
+                        <button class="top-tab" data-tab="coverage" id="contract-tab-coverage">Key Issues</button>
+                        <button class="top-tab" data-tab="contractview" id="contract-tab-contractview">Contract View</button>
+                        <button class="top-tab" data-tab="synthesis" id="contract-tab-synthesis">Contract Interaction</button>
+                        <button class="top-tab" data-tab="evidence" id="contract-tab-evidence">Evidence</button>
+                        <button class="top-tab" data-tab="audittrail" id="contract-tab-audittrail">Audit</button>
                     </div>
                     <div class="top-tab-actions" id="top-tab-actions">
                         <button class="tab-action-btn" id="new-analysis-btn" title="Start New Analysis">&#128196;</button>
@@ -831,6 +832,11 @@
                         <!-- content rendered by renderCoveragePanel() -->
                     </div>
 
+                    <!-- ═══ CONTRACT VIEW TAB (Step 359) ═══ -->
+                    <div id="contractview-tab" class="hidden">
+                        <!-- content rendered by renderContractViewPanel() -->
+                    </div>
+
                     <!-- ═══ SYNTHESIS TAB (Step 311) ═══ -->
                     <div id="synthesis-tab" class="hidden">
                         <!-- content rendered by renderSynthesisPanel() -->
@@ -1115,6 +1121,6 @@
     <script src="/static/app_docview_render_shared.js?v=3"></script>
     <script src="/static/app_summary_shared.js?v=10"></script>
     <script src="/static/app_notes_shared.js?v=1"></script>
-    <script src="/static/app.js?v=427"></script>
+    <script src="/static/app.js?v=428"></script>
 </body>
 </html>

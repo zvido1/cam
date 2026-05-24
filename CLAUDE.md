@@ -31,47 +31,38 @@ When Tzvi says:
 
 ## ⚠️ GIT WORKFLOW — CRITICAL ⚠️
 
-### Work Directly in the Main Repo — No Worktrees
+### Why we push and pull
 
-**Always edit files directly in `C:\Users\Owner\OneDrive\CAM`.**
-Do NOT create or use git worktrees. Do NOT work in a `claude/*` branch.
+Claude Code runs in its own container. File edits in that container do NOT
+automatically reach Tzvi's Windows machine. The ONLY bridge between Code's
+container and Tzvi's local repo is GitHub: Code pushes, Tzvi pulls.
 
-The reason: Tzvi's local uvicorn server runs from `C:\Users\Owner\OneDrive\CAM`.
-If you edit files in a worktree at a different path, your changes are invisible
-to the local server until a git pull — which defeats the point of local testing
-and has caused repeated "fix not showing up" incidents.
+**This is non-negotiable. Without the push, the work does not exist for Tzvi.**
 
-**The correct workflow:**
+### Work directly on main — no worktrees, no branches
 
 ```bash
-# 1. Start from main in the repo directory
 cd "C:\Users\Owner\OneDrive\CAM"
 git checkout main
 git pull origin main
-
-# 2. Edit files directly here — no branch, no worktree
-
-# 3. Verify your changes work (check file contents, version numbers)
-
-# 4. Stage, commit, and push directly to main
+# edit files
 git add -A
-git commit -m "Step NNN: [description]"
+git commit -m "Step NNN: [short description]"
 git push origin main
-
-# 5. Verify index.html has the correct version number
-grep "app.js" "05 Lease Analyzer/static/index.html"
 ```
+
+Railway auto-deploys from main. Tzvi pulls from GitHub to sync his local repo.
 
 ### The One Rule
 **Every change must be pushed to `main` before a step is marked complete.**
-Railway deploys from `main`. Tzvi's local server runs from `main`.
-A step is not done until it is on `main` and the version number is confirmed.
+A step is not done until the commit is on `main` AND the version number in
+`05 Lease Analyzer/static/index.html` is confirmed.
 
 ### Never Do This
 - ❌ Create a `claude/*` worktree or branch
 - ❌ Edit files anywhere other than `C:\Users\Owner\OneDrive\CAM`
 - ❌ Push to a feature branch and call the step complete
-- ❌ Ask "do you want me to push to main?" — just do it
+- ❌ Commit without pushing — the commit is invisible to Tzvi
 - ❌ Declare a step done without verifying the version number in index.html
 
 ### If There Are Merge Conflicts on Main
@@ -84,7 +75,8 @@ End your message to Tzvi with:
 
 ```
 ✅ Step NNN complete. Status written to build_log/NNN_code_status.md.
-Run: git pull (in C:\Users\Owner\OneDrive\CAM) then hard-refresh browser.
+Pushed to main as <SHA>. Run: git pull (in C:\Users\Owner\OneDrive\CAM)
+then hard-refresh browser.
 👉 Tell Chat: "Step NNN is done"
 ```
 

@@ -3174,12 +3174,15 @@ function applyModeSpecificUI() {
     const docviewBtn = document.getElementById("contract-tab-docview");
     const evidenceBtn = document.getElementById("contract-tab-evidence");
     const synthesisBtn = document.getElementById("contract-tab-synthesis");
+    const contractviewBtn = document.getElementById("contract-tab-contractview");
     if (findingsBtn) findingsBtn.classList.toggle("hidden", isC);
     if (docviewBtn) docviewBtn.classList.toggle("hidden", isC);
     // Step 306b: Evidence View is Mode C-only (no template to compare against in Mode A)
     if (evidenceBtn) evidenceBtn.classList.toggle("hidden", !isC);
     // Step 311: Contract Interaction Review is Mode C-only
     if (synthesisBtn) synthesisBtn.classList.toggle("hidden", !isC);
+    // Step 359: Contract View is Mode C-only
+    if (contractviewBtn) contractviewBtn.classList.toggle("hidden", !isC);
     // Step 257: if persisted activeResultsTab points at a now-hidden tab, coerce
     // to coverage. This catches users who switched mode mid-session, or whose
     // sessionStorage retained "findings"/"docview" from a prior Mode A run.
@@ -3265,9 +3268,9 @@ function renderResults() {
     if (backBtn) backBtn.onclick = closeContractDetail;
 
     // Wire detail sub-tab clicks (now in top nav)
-    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-evidence, #contract-tab-synthesis").forEach(function(btn) {
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-contractview, #contract-tab-evidence, #contract-tab-synthesis").forEach(function(btn) {
         btn.onclick = function() {
-            var _l = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit Trail', coverage: 'Coverage & Gaps', evidence: 'Evidence View', synthesis: 'Contract Interaction Review' };
+            var _l = { findings: 'Lease Summary', docview: 'Document Comparison', audittrail: 'Audit', coverage: 'Key Issues', contractview: 'Contract View', evidence: 'Evidence', synthesis: 'Contract Interaction' };
             // Step 281: include perspective indicator on the coverage
             // tab so the bar doesn't flash from "no perspective" to
             // "perspective" when switchResultsTab runs after this.
@@ -7522,12 +7525,13 @@ function showNoContractPlaceholder(tab) {
 }
 
 var TAB_SUBHEADER_LABELS = {
-    findings:   'Contract Summary',
-    docview:    'Document Comparison',
-    audittrail: 'Audit Trail',
-    coverage:   'Coverage & Gaps',
-    evidence:   'Evidence View',
-    synthesis:  'Contract Interaction Review',
+    findings:     'Contract Summary',
+    docview:      'Document Comparison',
+    audittrail:   'Audit',
+    coverage:     'Key Issues',
+    contractview: 'Contract View',
+    evidence:     'Evidence',
+    synthesis:    'Contract Interaction',
 };
 
 function setDocviewStickyControlsVisible(isVisible) {
@@ -7661,7 +7665,7 @@ function switchResultsTab(tab) {
     // Audit Trail can show the full run view; other tabs need a contract
     if (!contractDetailOpen) {
         if (tab === 'audittrail') {
-            setSubheader('Audit Trail');
+            setSubheader('Audit');
             // Show detail area, hide overview + contracts tab, mark tab active
             var overview     = document.getElementById('overview-tab-content');
             var contractsTab = document.getElementById('contracts-tab-content');
@@ -7686,10 +7690,12 @@ function switchResultsTab(tab) {
             var _dTab = document.getElementById('docview-tab');
             var _aTab = document.getElementById('audittrail-tab');
             var _cTab = document.getElementById('coverage-tab');
+            var _cvTab = document.getElementById('contractview-tab');
             if (_fTab) _fTab.classList.add('hidden');
             if (_dTab) _dTab.classList.add('hidden');
             if (_aTab) _aTab.classList.remove('hidden');
             if (_cTab) _cTab.classList.add('hidden');
+            if (_cvTab) _cvTab.classList.add('hidden');
             setDocviewStickyControlsVisible(false);
             activeResultsTab = 'audittrail';
             renderAuditTrail(true);
@@ -7707,7 +7713,7 @@ function switchResultsTab(tab) {
     }
 
     activeResultsTab = tab;
-    if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage" || tab === "evidence" || tab === "synthesis") {
+    if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage" || tab === "contractview" || tab === "evidence" || tab === "synthesis") {
         activeTopTab = tab;
     }
     // Step 281: Coverage & Gaps tab in Mode C carries a right-aligned
@@ -7717,7 +7723,7 @@ function switchResultsTab(tab) {
     setSubheader(TAB_SUBHEADER_LABELS[tab] || tab, _subRight);
 
     // Update tab bar active state (Step 129 fix: $ → $ for querySelectorAll)
-    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-evidence, #contract-tab-synthesis").forEach(t => {
+    document.querySelectorAll("#contract-tab-findings, #contract-tab-docview, #contract-tab-audittrail, #contract-tab-coverage, #contract-tab-contractview, #contract-tab-evidence, #contract-tab-synthesis").forEach(t => {
         t.classList.toggle("active", t.dataset.tab === tab);
     });
 
@@ -7726,6 +7732,7 @@ function switchResultsTab(tab) {
     const docviewTab = $("#docview-tab");
     const auditTab = $("#audittrail-tab");
     const coverageTab = $("#coverage-tab");
+    const contractviewTab = $("#contractview-tab");
     const evidenceTab = $("#evidence-tab");
     const synthesisTab = $("#synthesis-tab");
 
@@ -7734,6 +7741,7 @@ function switchResultsTab(tab) {
         docviewTab.classList.add("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
+        if (contractviewTab) contractviewTab.classList.add("hidden");
         if (synthesisTab) synthesisTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
     } else if (tab === "audittrail") {
@@ -7741,6 +7749,7 @@ function switchResultsTab(tab) {
         docviewTab.classList.add("hidden");
         auditTab.classList.remove("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
+        if (contractviewTab) contractviewTab.classList.add("hidden");
         if (synthesisTab) synthesisTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
         renderAuditTrail();
@@ -7749,15 +7758,27 @@ function switchResultsTab(tab) {
         docviewTab.classList.add("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.remove("hidden");
+        if (contractviewTab) contractviewTab.classList.add("hidden");
         if (evidenceTab) evidenceTab.classList.add("hidden");
         if (synthesisTab) synthesisTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
         renderCoveragePanel();
+    } else if (tab === "contractview") {
+        findingsTab.classList.add("hidden");
+        docviewTab.classList.add("hidden");
+        auditTab.classList.add("hidden");
+        if (coverageTab) coverageTab.classList.add("hidden");
+        if (contractviewTab) contractviewTab.classList.remove("hidden");
+        if (evidenceTab) evidenceTab.classList.add("hidden");
+        if (synthesisTab) synthesisTab.classList.add("hidden");
+        setDocviewStickyControlsVisible(false);
+        renderContractViewPanel();
     } else if (tab === "evidence") {
         findingsTab.classList.add("hidden");
         docviewTab.classList.add("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
+        if (contractviewTab) contractviewTab.classList.add("hidden");
         if (evidenceTab) evidenceTab.classList.remove("hidden");
         if (synthesisTab) synthesisTab.classList.add("hidden");
         setDocviewStickyControlsVisible(false);
@@ -7767,6 +7788,7 @@ function switchResultsTab(tab) {
         docviewTab.classList.add("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
+        if (contractviewTab) contractviewTab.classList.add("hidden");
         if (evidenceTab) evidenceTab.classList.add("hidden");
         if (synthesisTab) synthesisTab.classList.remove("hidden");
         setDocviewStickyControlsVisible(false);
@@ -7776,6 +7798,7 @@ function switchResultsTab(tab) {
         docviewTab.classList.remove("hidden");
         auditTab.classList.add("hidden");
         if (coverageTab) coverageTab.classList.add("hidden");
+        if (contractviewTab) contractviewTab.classList.add("hidden");
         if (evidenceTab) evidenceTab.classList.add("hidden");
         if (synthesisTab) synthesisTab.classList.add("hidden");
         setDocviewStickyControlsVisible(true);
@@ -16609,6 +16632,161 @@ function renderSynthesisPanel() {
 }
 
 window.CAM.renderSynthesisPanel = renderSynthesisPanel;
+
+// ── Step 359: Contract View Panel ──────────────────────────────────────────
+// Renders the contract_section_index from pipeline_results as a
+// hierarchical article → section → findings view.
+
+function renderContractViewPanel() {
+    var tab = document.getElementById('contractview-tab');
+    if (!tab) return;
+
+    var data = currentResults && currentResults.tenants && currentResults.tenants[currentTenantIndex];
+    if (!data) return;
+
+    var idx = data.contract_section_index;
+    if (!idx || !Array.isArray(idx) || idx.length === 0) {
+        tab.innerHTML = '<div class="cv-empty" style="padding:2rem;text-align:center;color:var(--text-muted,#888)">' +
+            '<p style="font-size:1rem;margin-bottom:.5rem">Contract View is not available for this analysis.</p>' +
+            '<p style="font-size:.875rem">Re-run the analysis to generate the contract section index.</p>' +
+            '</div>';
+        return;
+    }
+
+    // Bucket display config
+    var BUCKET_ICON = { risk: '🔴', review_needed: '🟠', improvement: '🔵', addressed: '✅' };
+    var BUCKET_LABEL = { risk: 'Risk', review_needed: 'Review Needed', improvement: 'Improvement', addressed: 'Addressed' };
+
+    // Group sections by article_key (preserve source_order within article)
+    var articleMap = {};
+    var articleOrder = [];
+    idx.forEach(function(entry) {
+        var ak = entry.article_key;
+        if (!articleMap[ak]) {
+            articleMap[ak] = { article_key: ak, article_display: entry.article_display, sections: [] };
+            articleOrder.push(ak);
+        }
+        articleMap[ak].sections.push(entry);
+    });
+
+    function esc(s) {
+        return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    var html = '<div class="cv-index" style="padding:1rem 1.25rem">';
+
+    articleOrder.forEach(function(ak) {
+        var article = articleMap[ak];
+        var artId = 'cvi-art-' + esc(ak).replace(/[^a-zA-Z0-9]/g, '-');
+        html += '<div class="cvi-article" id="' + artId + '">';
+        html += '<div class="cvi-article-header" onclick="this.parentElement.classList.toggle(\'cvi-collapsed\')" style="cursor:pointer;display:flex;align-items:center;gap:.5rem;padding:.5rem 0;border-bottom:1px solid var(--border,#e0e0e0);margin-bottom:.25rem;user-select:none">';
+        html += '<span class="cvi-art-arrow" style="font-size:.75rem;transition:transform .15s">▼</span>';
+        html += '<span style="font-weight:600;font-size:.85rem;letter-spacing:.05em;color:var(--text-muted,#888);text-transform:uppercase">' + esc(article.article_display) + '</span>';
+        html += '<span style="font-size:.75rem;color:var(--text-muted,#999);margin-left:auto">' + article.sections.length + ' section' + (article.sections.length !== 1 ? 's' : '') + '</span>';
+        html += '</div>';
+        html += '<div class="cvi-article-body">';
+
+        article.sections.forEach(function(entry) {
+            var secId = 'cvi-sec-' + entry.source_order;
+            var icon = BUCKET_ICON[entry.primary_action_bucket] || '⬜';
+            var bucketLabel = BUCKET_LABEL[entry.primary_action_bucket] || entry.primary_action_bucket;
+            var primaryFinding = entry.findings[0] || {};
+            var primaryLabel = primaryFinding.element_label || '';
+            var lpChips = entry.affected_lp_ids.slice(0, 5).map(function(lpId) {
+                return '<span class="cvi-lp-chip" style="font-size:.7rem;background:var(--bg-subtle,#f0f0f0);border-radius:3px;padding:1px 5px;color:var(--text-muted,#666);margin-left:3px">' + esc(lpId) + '</span>';
+            }).join('');
+
+            html += '<div class="cvi-section" id="' + secId + '">';
+            // Section row (collapsed)
+            html += '<div class="cvi-section-row" onclick="document.getElementById(\'' + secId + '\').classList.toggle(\'cvi-sec-expanded\')" style="cursor:pointer;display:flex;align-items:center;gap:.5rem;padding:.4rem .25rem;border-bottom:1px solid var(--border-light,#f0f0f0)">';
+            html += '<span title="' + esc(bucketLabel) + '" style="font-size:1rem;flex-shrink:0">' + icon + '</span>';
+            html += '<span style="font-weight:500;font-size:.875rem;flex-shrink:0;min-width:7rem">' + esc(entry.display_ref) + '</span>';
+            if (primaryLabel) {
+                html += '<span style="font-size:.8rem;color:var(--text-muted,#666);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(primaryLabel) + '</span>';
+            } else {
+                html += '<span style="flex:1"></span>';
+            }
+            html += '<span style="font-size:.75rem;color:var(--text-muted,#888);white-space:nowrap;margin-left:.5rem">' + entry.finding_count + ' finding' + (entry.finding_count !== 1 ? 's' : '') + '</span>';
+            if (lpChips) html += '<span class="cvi-lp-chips" style="flex-shrink:0">' + lpChips + '</span>';
+            html += '<span class="cvi-sec-arrow" style="font-size:.65rem;color:var(--text-muted,#aaa);flex-shrink:0;transition:transform .15s">▶</span>';
+            html += '</div>';
+
+            // Section expanded findings
+            html += '<div class="cvi-section-findings" style="display:none;padding:.5rem .5rem .5rem 1.75rem;background:var(--bg-subtle,#fafafa)">';
+            entry.findings.forEach(function(f) {
+                var fIcon = BUCKET_ICON[f.action_bucket] || '⬜';
+                var fLabel = BUCKET_LABEL[f.action_bucket] || f.action_bucket;
+                var isCross = f.finding_source === 'cross_provision';
+                var lps = isCross ? (f.implicated_lps || []).join(', ') : (f.issue_area_id || '');
+
+                // Click behavior: navigate to coverage tab for LP findings, synthesis for cross-provision
+                var clickFn = '';
+                if (isCross) {
+                    clickFn = 'event.stopPropagation();window.CAM.switchResultsTab(\'synthesis\')';
+                } else if (f.issue_area_id) {
+                    var tid = typeof currentTenantIndex !== 'undefined' ? currentTenantIndex : 0;
+                    clickFn = 'event.stopPropagation();window.CAM.jumpToCoverageProvision(' + tid + ',\'' + esc(f.issue_area_id) + '\')';
+                }
+
+                html += '<div class="cvi-finding" onclick="' + clickFn + '" style="padding:.4rem .25rem .4rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);cursor:' + (clickFn ? 'pointer' : 'default') + '">';
+                html += '<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.2rem">';
+                html += '<span title="' + esc(fLabel) + '" style="font-size:.85rem">' + fIcon + '</span>';
+                html += '<span style="font-size:.8rem;font-weight:500">' + esc(f.element_label || f.finding_id) + '</span>';
+                if (f.verdict === 'disputed') {
+                    html += '<span style="font-size:.7rem;background:#fff3cd;color:#856404;border-radius:3px;padding:1px 5px;margin-left:3px">◈ Disputed</span>';
+                }
+                html += '</div>';
+                if (lps) {
+                    html += '<div style="font-size:.75rem;color:var(--text-muted,#888);margin-bottom:.2rem">';
+                    if (isCross) {
+                        html += 'Cross-provision · ' + esc(lps);
+                    } else {
+                        html += esc(f.issue_area_name || '') + ' · ' + esc(lps);
+                    }
+                    html += '</div>';
+                }
+                if (f.quote) {
+                    var quoteText = f.quote.length > 120 ? f.quote.slice(0, 120) + '…' : f.quote;
+                    html += '<div style="font-size:.75rem;color:var(--text-muted,#777);font-style:italic;border-left:2px solid var(--border,#e0e0e0);padding-left:.4rem;margin-top:.2rem">"' + esc(quoteText) + '"</div>';
+                }
+                html += '</div>';
+            });
+            html += '</div>'; // /cvi-section-findings
+            html += '</div>'; // /cvi-section
+        });
+
+        html += '</div>'; // /cvi-article-body
+        html += '</div>'; // /cvi-article
+    });
+
+    html += '</div>'; // /cv-index
+    tab.innerHTML = html;
+
+    // Wire expand/collapse CSS for articles and sections
+    tab.querySelectorAll('.cvi-article').forEach(function(art) {
+        var obs = new MutationObserver(function() {
+            var collapsed = art.classList.contains('cvi-collapsed');
+            var body = art.querySelector('.cvi-article-body');
+            var arrow = art.querySelector('.cvi-art-arrow');
+            if (body) body.style.display = collapsed ? 'none' : '';
+            if (arrow) arrow.style.transform = collapsed ? 'rotate(-90deg)' : '';
+        });
+        obs.observe(art, { attributes: true, attributeFilter: ['class'] });
+    });
+
+    tab.querySelectorAll('.cvi-section').forEach(function(sec) {
+        var obs = new MutationObserver(function() {
+            var expanded = sec.classList.contains('cvi-sec-expanded');
+            var findings = sec.querySelector('.cvi-section-findings');
+            var arrow = sec.querySelector('.cvi-sec-arrow');
+            if (findings) findings.style.display = expanded ? '' : 'none';
+            if (arrow) arrow.style.transform = expanded ? 'rotate(90deg)' : '';
+        });
+        obs.observe(sec, { attributes: true, attributeFilter: ['class'] });
+    });
+}
+
+window.CAM.renderContractViewPanel = renderContractViewPanel;
 
 // Jump to a CPF card in the synthesis tab.
 // Called from ↔ Synthesis badge onclick — extracted to avoid double-quote
