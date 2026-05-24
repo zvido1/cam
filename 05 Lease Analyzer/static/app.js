@@ -16641,10 +16641,12 @@ function renderContractViewPanel() {
     var tab = document.getElementById('contractview-tab');
     if (!tab) return;
 
-    var data = currentResults && currentResults.tenants && currentResults.tenants[currentTenantIndex];
-    if (!data) return;
+    var tenantIdx = currentTenantIndex;
+    var tenant = (currentResults && currentResults.tenants) ? currentResults.tenants[tenantIdx] : null;
+    var pr = tenant && tenant.results ? tenant.results : null;
+    if (!pr) return;
 
-    var idx = data.contract_section_index;
+    var idx = pr.contract_section_index;
     if (!idx || !Array.isArray(idx) || idx.length === 0) {
         tab.innerHTML = '<div class="cv-empty" style="padding:2rem;text-align:center;color:var(--text-muted,#888)">' +
             '<p style="font-size:1rem;margin-bottom:.5rem">Contract View is not available for this analysis.</p>' +
