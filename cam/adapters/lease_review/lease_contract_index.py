@@ -14,7 +14,7 @@ import re
 
 # ── Regex constants ────────────────────────────────────────────────────────
 
-_LP_PREFIX_RE = re.compile(r'^LP-\d+\s+', re.IGNORECASE)
+_LP_PREFIX_RE = re.compile(r'^LP-\d+[,\s]+\s*', re.IGNORECASE)  # handles "LP-27, Section" and "LP-27 Section"
 _LP_SUFFIX_RE = re.compile(r'\s*\(LP-\d+\)\s*$', re.IGNORECASE)
 _BARE_NUMBER_RE = re.compile(r'^\d+(\.\d+)*[a-z]?$', re.IGNORECASE)
 _VALID_SEC_PART_RE = re.compile(r'^\d+(\.\d+)*[a-z]?$', re.IGNORECASE)
@@ -29,13 +29,14 @@ def normalize_section_ref(raw: str) -> list:
     normalized section keys.
 
     Rules applied in order:
-    1. Strip LP prefix  ("LP-24 Section 13.1" → "Section 13.1")
+    1. Strip LP prefix  ("LP-24 Section 13.1" → "Section 13.1"; also "LP-27, Section 5.1")
     2. Strip LP suffix  ("Section 5.1 (LP-27)" → "Section 5.1")
     3. Bare number      ("15.1" → "Section 15.1")
     4. Plural split     ("Sections 11.1 and 11.2" → ["Section 11.1", "Section 11.2"])
     5. Range split      ("Sections 8.1-8.2" → ["Section 8.1", "Section 8.2"])
     6. Already "Section X.Y" → return as-is
     7. Article ref      → return as article-level ref
+    7b. Embedded section ref ("Default law; Section 12.2" → "Section 12.2")
     8. Anything else    → return as-is
 
     Never throws. Returns [] for None/empty input.
@@ -95,7 +96,15 @@ def normalize_section_ref(raw: str) -> list:
             return [art_match.group(1)]
         return [s]
 
-    # 8. Anything else → return as-is
+    # 7b. Contains an embedded "Section X.Y" — extract it
+    # Handles: "Default law; Section 12.2", "Common law (Section 5.1)", etc.
+    # This is a fallback for strings that reached this point without matching rules 1–7.
+    # Use a numeric-only pattern to avoid capturing trailing punctuation like ")".
+    sec_embedded = re.search(r'\bsection\s+(\d+(?:\.\d+)*[a-z]?)', s, re.IGNORECASE)
+    if sec_embedded:
+        return [f'Section {sec_embedded.group(1)}']
+
+    # 8. Anything else → return as-is (do not invent precision)
     return [s]
 
 

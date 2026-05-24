@@ -16686,10 +16686,12 @@ function renderContractViewPanel() {
         articleMap[ak].sections.push(entry);
     });
 
-    // Sort articles numerically by article_key
+    // Sort articles numerically by article_key; non-numeric keys (NaN) sort to the end
     articleOrder.sort(function(a, b) {
-        var artA = parseInt(a, 10) || 0;
-        var artB = parseInt(b, 10) || 0;
+        var artARaw = parseInt(a, 10);
+        var artBRaw = parseInt(b, 10);
+        var artA = isNaN(artARaw) ? Infinity : artARaw;
+        var artB = isNaN(artBRaw) ? Infinity : artBRaw;
         return artA !== artB ? artA - artB : a.localeCompare(b);
     });
 
