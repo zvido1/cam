@@ -7771,6 +7771,9 @@ function switchResultsTab(tab) {
         if (contractviewTab) contractviewTab.classList.remove("hidden");
         if (evidenceTab) evidenceTab.classList.add("hidden");
         if (synthesisTab) synthesisTab.classList.add("hidden");
+        // Hide the shared clause filter bar — it belongs to the findings/audit tabs
+        var _cvFilterBar = document.getElementById('contract-clause-filter-bar');
+        if (_cvFilterBar) _cvFilterBar.classList.add('hidden');
         setDocviewStickyControlsVisible(false);
         renderContractViewPanel();
     } else if (tab === "evidence") {
@@ -16659,7 +16662,19 @@ function renderContractViewPanel() {
     var BUCKET_ICON = { risk: '🔴', review_needed: '🟠', improvement: '🔵', addressed: '✅' };
     var BUCKET_LABEL = { risk: 'Risk', review_needed: 'Review Needed', improvement: 'Improvement', addressed: 'Addressed' };
 
-    // Group sections by article_key (preserve source_order within article)
+    // Helper: compare section keys numerically ("3.1" < "3.2" < "3.10" < "15.1")
+    function compareSectionKeys(a, b) {
+        var parseKey = function(k) { return (k || '').split('.').map(function(p) { return parseInt(p, 10) || 0; }); };
+        var aParts = parseKey(a);
+        var bParts = parseKey(b);
+        for (var i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+            var diff = (aParts[i] || 0) - (bParts[i] || 0);
+            if (diff !== 0) return diff;
+        }
+        return 0;
+    }
+
+    // Group sections by article_key, then sort articles and sections numerically
     var articleMap = {};
     var articleOrder = [];
     idx.forEach(function(entry) {
@@ -16669,6 +16684,23 @@ function renderContractViewPanel() {
             articleOrder.push(ak);
         }
         articleMap[ak].sections.push(entry);
+    });
+
+    // Sort articles numerically by article_key
+    articleOrder.sort(function(a, b) {
+        var artA = parseInt(a, 10) || 0;
+        var artB = parseInt(b, 10) || 0;
+        return artA !== artB ? artA - artB : a.localeCompare(b);
+    });
+
+    // Sort sections within each article numerically by section_key
+    articleOrder.forEach(function(ak) {
+        articleMap[ak].sections.sort(function(a, b) {
+            var artA = parseInt(a.article_key, 10) || 0;
+            var artB = parseInt(b.article_key, 10) || 0;
+            if (artA !== artB) return artA - artB;
+            return compareSectionKeys(a.section_key, b.section_key);
+        });
     });
 
     function esc(s) {
