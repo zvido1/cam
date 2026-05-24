@@ -1587,6 +1587,26 @@ def run_lease_coverage_only(
         print(f"[lease_adapter:analyze] Stage 7 failed (non-fatal): {_s7_e}", flush=True)
         result["cross_provision_findings"] = []
 
+    # ── Step 362: Perspective leak detection (non-fatal logging only) ──
+    # Catches CPF prose that names the opposing party first in a tenant-perspective run.
+    _perspective_cfg = cfg.get("perspective", "tenant")
+    _PERSPECTIVE_LEAK_PHRASES = [
+        "landlord holds", "landlord retains", "landlord loses",
+        "landlord gains", "lender loses", "lender gains",
+        "lender retains",
+    ]
+    if _perspective_cfg == "tenant":
+        for _cpf in result.get("cross_provision_findings", []):
+            for _leak_field in ("headline", "detail", "summary"):
+                _leak_text = (_cpf.get(_leak_field) or "").lower()
+                if any(_leak_text.startswith(_phrase) for _phrase in _PERSPECTIVE_LEAK_PHRASES):
+                    print(
+                        f"[lease_adapter] PERSPECTIVE LEAK WARNING: "
+                        f"{_cpf.get('finding_id')} — {_leak_field} starts with "
+                        f"landlord/lender framing in {_perspective_cfg}-perspective analysis.",
+                        flush=True,
+                    )
+
     # ── Build contract section index (Step 359) ──
     try:
         from cam.adapters.lease_review.lease_contract_index import build_contract_section_index

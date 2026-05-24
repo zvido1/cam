@@ -461,6 +461,41 @@ Rules:
 - Response must be valid JSON starting with { and ending with }. No markdown fences."""
 
 
+def _build_perspective_block(perspective: str) -> str:
+    """Build the perspective framing instruction block for Stage 7 user prompts.
+
+    Replaces the bare 'PERSPECTIVE: X' line with a full instruction so models
+    frame finding text (headline, detail, summary, reasoning) from the specified
+    party's point of view — not the opposing party's.
+    """
+    p = (perspective or "tenant").lower()
+    p_cap = p.capitalize()
+    if p == "tenant":
+        other = "Landlord"
+    elif p in ("landlord", "lender"):
+        other = "Tenant"
+    else:
+        other = "the other party"
+    return "\n".join([
+        f"PERSPECTIVE: This analysis is written from the {p_cap}'s point of view.",
+        "",
+        "Perspective framing rules — apply to EVERY headline, detail, summary, and reasoning field:",
+        f"- Describe what this means FOR the {p_cap}. Do NOT describe what the {other} loses, gains, or retains.",
+        f"- Do NOT narrate from the {other}'s perspective.",
+        f"- CORRECT: \"{p_cap} has no remedy if {other} defaults without cure notice.\"",
+        f"- WRONG:   \"{other} loses the protection of cure notice requirements.\"",
+        f"- CORRECT: \"{p_cap}'s remedy options are limited to termination only.\"",
+        f"- WRONG:   \"{other} retains all self-help and offset protections.\"",
+        "",
+        f"For directional mismatches, name the {p_cap}'s position FIRST:",
+        f"  CORRECT: \"{p_cap} has [their position]. {other} has [opposing position].\"",
+        f"  WRONG:   \"{other} has [their position]. {p_cap} has [their position].\"",
+        "",
+        f"The headline MUST describe the finding from the {p_cap}'s perspective.",
+        f"Begin with what the {p_cap} faces — not what {other} holds or retains.",
+    ])
+
+
 def _build_evaluator_user_prompt(
     flagged_lps: List[dict],
     full_lease_text: str,
@@ -499,7 +534,7 @@ def _build_evaluator_user_prompt(
         matrix_block = ""
 
     lines = [
-        f"PERSPECTIVE: {perspective.upper()} (analyze from this party's point of view)",
+        _build_perspective_block(perspective),
         "",
         f"FLAGGED ISSUE AREAS ({len(flagged_lps)} total — only these need cross-provision analysis):",
         json.dumps(lp_block, indent=2),
@@ -537,7 +572,7 @@ def _build_compound_user_prompt(
             matrix_rows.append(f"{lp_id}: {lp_name} — {state}")
 
     lines = [
-        f"PERSPECTIVE: {perspective.upper()}",
+        _build_perspective_block(perspective),
         "",
         "FULL PROVISION MATRIX (all LPs — compound risk may involve any LP):",
         "\n".join(matrix_rows),
@@ -559,7 +594,7 @@ def _build_consolidator_user_prompt(
 ) -> str:
     """Build the consolidation pass user prompt."""
     lines = [
-        f"PERSPECTIVE: {perspective.upper()}",
+        _build_perspective_block(perspective),
         "",
         f"FLAGGED LPs: {[lp['lp_id'] for lp in flagged_lps]}",
         "",
@@ -964,7 +999,7 @@ def _build_pass2_user_prompt(
     perspective: str,
 ) -> str:
     """Build the Pass 2 combined compound + relief verification prompt."""
-    lines = [f"PERSPECTIVE: {perspective.upper()}", ""]
+    lines = [_build_perspective_block(perspective), ""]
 
     if clusters:
         lines += [
