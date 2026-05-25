@@ -16078,8 +16078,9 @@ function renderCoveragePanel() {
                 let panelRow = '';
                 if (evalVerdicts && evalVerdicts.length > 0) {
                     // Step 349c: disputed rows use plain "N Evaluators" label (not warning badge)
+                    const _evalCount = evalVerdicts.length;
                     const btnLabel = (ev.verdict === 'disputed' || !hasDisagreement)
-                        ? (evalVerdicts.length + ' Evaluators')
+                        ? (_evalCount + (_evalCount === 1 ? ' Evaluator' : ' Evaluators'))
                         : '⚠ 2v1 Disagreement';
                     const btnCls = 'cv-ev-evals-btn' + ((hasDisagreement && ev.verdict !== 'disputed') ? ' cv-ev-evals-btn-disag' : '');
                     evalToggle = '<button class="' + btnCls + '" onclick="(function(btn){var p=document.getElementById(\'' + evalPanelId + '\');if(p){var wasHidden=p.style.display===\'none\';p.style.display=wasHidden?\'\':\'none\';btn.classList.toggle(\'cv-ev-evals-open\',wasHidden);}})(this);event.stopPropagation();" type="button">' + esc(btnLabel) + '</button>';
