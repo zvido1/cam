@@ -16101,7 +16101,7 @@ function renderCoveragePanel() {
                             + '</div>';
                     }).join('');
                     panelRow = '<tr class="cv-ev-panel-row" id="' + evalPanelId + '" style="display:none">'
-                        + '<td colspan="3" class="cv-ev-panel-cell">'
+                        + '<td colspan="5" class="cv-ev-panel-cell">'
                         + '<div class="cv-eval-panel">' + evalRowsHtml + '</div>'
                         + '</td>'
                         + '</tr>';
@@ -16116,9 +16116,17 @@ function renderCoveragePanel() {
                 // Step 363: red highlight for missing/disputed, amber for unclear
                 const rowProblemClass = (ev.verdict === 'missing' || ev.verdict === 'disputed') ? ' elem-row-problem'
                     : ev.verdict === 'unclear' ? ' elem-row-warn' : '';
+                // Step 364f: split STATUS into three separate <td> columns for true cross-row alignment
+                const pillTd = ev.verdict === 'disputed'
+                    ? '<td class="cv-ev-td-pill"><span class="element-status-disputed">Disputed</span></td>'
+                    : '<td class="cv-ev-td-pill"><span class="cv-ev-pill ' + vc.cls + '">' + esc(vcLabel) + '</span></td>';
+                const dotsTd = ev.verdict === 'disputed'
+                    ? '<td class="cv-ev-td-dots"><span class="element-vote-count">' + _dispVoteLabel + '</span></td>'
+                    : '<td class="cv-ev-td-dots">' + confDots + '</td>';
+                const evalTd = '<td class="cv-ev-td-eval">' + evalToggle + '</td>';
                 const mainRow = '<tr class="cv-ev-row' + rowProblemClass + '">'
                     + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
-                    + '<td class="cv-ev-status">' + (ev.verdict === 'disputed' ? '<span class="element-status-disputed">Disputed</span><span class="element-vote-count">' + _dispVoteLabel + '</span>' + evalToggle : '<span class="cv-ev-pill ' + vc.cls + '">' + esc(vcLabel) + '</span>' + confDots + evalToggle) + '</td>'
+                    + pillTd + dotsTd + evalTd
                     + '<td class="cv-ev-citation">' + citHtml + '</td>'
                     + '</tr>';
                 return mainRow + panelRow;
@@ -16146,7 +16154,9 @@ function renderCoveragePanel() {
                 + _sevHeaderHtml
                 + '<table class="cv-ev-table"><thead><tr>'
                 + '<th class="cv-ev-th cv-ev-th-label">Element</th>'
-                + '<th class="cv-ev-th cv-ev-th-status">Status</th>'
+                + '<th class="cv-ev-th cv-ev-th-pill">Status</th>'
+                + '<th class="cv-ev-th cv-ev-th-dots"></th>'
+                + '<th class="cv-ev-th cv-ev-th-eval"></th>'
                 + '<th class="cv-ev-th cv-ev-th-citation">Citation</th>'
                 + '</tr></thead><tbody>' + rowsHtml + '</tbody></table>'
                 + '</div>';
