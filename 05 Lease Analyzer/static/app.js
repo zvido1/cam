@@ -7977,11 +7977,7 @@ function switchResultsTab(tab) {
         return;
     }
 
-    // Step 306b: save Evidence View scroll position when leaving it
-    if (activeResultsTab === "evidence") {
-        var _evDetailLeave = document.getElementById('contract-detail-view');
-        if (_evDetailLeave) _evidenceScrollTop = _evDetailLeave.scrollTop;
-    }
+    // Step 361: Evidence View re-renders every call — no scroll preservation needed.
 
     activeResultsTab = tab;
     if (tab === "findings" || tab === "docview" || tab === "audittrail" || tab === "coverage" || tab === "contractview" || tab === "evidence" || tab === "synthesis") {
@@ -8055,6 +8051,9 @@ function switchResultsTab(tab) {
         if (contractviewTab) contractviewTab.classList.add("hidden");
         if (evidenceTab) evidenceTab.classList.remove("hidden");
         if (synthesisTab) synthesisTab.classList.add("hidden");
+        // Step 361: hide shared clause filter bar (same as contractview case)
+        var _evFilterBar = document.getElementById('contract-clause-filter-bar');
+        if (_evFilterBar) _evFilterBar.classList.add('hidden');
         setDocviewStickyControlsVisible(false);
         renderEvidencePanel();
     } else if (tab === "synthesis") {
@@ -8079,15 +8078,11 @@ function switchResultsTab(tab) {
         renderDocumentView();
     }
 
-    // Scroll to top on tab switch — but restore Evidence View's saved scroll position.
+    // Scroll to top on every tab switch (Evidence re-renders fresh each time)
     var detail = document.getElementById('contract-detail-view');
-    if (tab === "evidence") {
-        if (detail) detail.scrollTop = _evidenceScrollTop;
-    } else {
-        if (detail) detail.scrollTo({ top: 0, behavior: 'instant' });
-        var resultsPane = document.getElementById('results-content') || document.querySelector('.results-content');
-        if (resultsPane) resultsPane.scrollTo({ top: 0, behavior: 'instant' });
-    }
+    if (detail) detail.scrollTo({ top: 0, behavior: 'instant' });
+    var resultsPane = document.getElementById('results-content') || document.querySelector('.results-content');
+    if (resultsPane) resultsPane.scrollTo({ top: 0, behavior: 'instant' });
     persistResultsViewState();
 }
 
