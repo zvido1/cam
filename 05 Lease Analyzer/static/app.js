@@ -16036,7 +16036,14 @@ function renderCoveragePanel() {
                 ? ' <span class="cv-section-link cv-elem-lp-jump" data-ref="' + esc(_bestCit.citation.section_ref) + '" data-quote="' + esc(_bestCit.citation.quote || '') + '" onclick="event.stopPropagation();window.CAM.jumpToEvidence(this.dataset.ref,this.dataset.quote)" title="View ' + esc(_bestCit.citation.section_ref) + ' in Evidence View">View in document</span>'
                 : '';
 
-            const rowsHtml = elementVerdicts.map(function(ev) {
+            // Step 363: sort elements — disputed(0) → missing(1) → unclear(2) → present variants(3)
+            const _cvVOrder = { 'disputed': 0, 'missing': 1, 'unclear': 2 };
+            const sortedVerdicts = elementVerdicts.slice().sort(function(a, b) {
+                const oa = (_cvVOrder[a.verdict] !== undefined) ? _cvVOrder[a.verdict] : 3;
+                const ob = (_cvVOrder[b.verdict] !== undefined) ? _cvVOrder[b.verdict] : 3;
+                return oa - ob;
+            });
+            const rowsHtml = sortedVerdicts.map(function(ev) {
                 const vc = VERDICT_CFG[ev.verdict] || { cls: 'cv-ev-unclear', label: ev.verdict || '?' };
                 // Step 306c: clickable citation
                 const hasCit = ev.citation && ev.citation.section_ref;
@@ -16099,7 +16106,10 @@ function renderCoveragePanel() {
                     evalToggle = '<span class="cv-ev-disag-btn" onclick="(function(btn){var b=btn.nextElementSibling;b.style.display=b.style.display===\'none\'?\'block\':\'none\';})(this);event.stopPropagation();" title="Evaluator disagreement">⚠ Disagreement</span>'
                         + '<div class="cv-ev-disag-body" style="display:none">' + evalLines + ' → merged: ' + esc(ev.verdict) + '</div>';
                 }
-                const mainRow = '<tr class="cv-ev-row">'
+                // Step 363: red highlight for missing/disputed, amber for unclear
+                const rowProblemClass = (ev.verdict === 'missing' || ev.verdict === 'disputed') ? ' elem-row-problem'
+                    : ev.verdict === 'unclear' ? ' elem-row-warn' : '';
+                const mainRow = '<tr class="cv-ev-row' + rowProblemClass + '">'
                     + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
                     + '<td class="cv-ev-status">' + (ev.verdict === 'disputed' ? '<span class="element-status-disputed">Disputed</span><span class="element-vote-count">' + _dispVoteLabel + '</span>' + evalToggle : '<span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + confDots + evalToggle) + '</td>'
                     + '<td class="cv-ev-citation">' + citHtml + '</td>'
