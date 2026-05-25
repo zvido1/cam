@@ -3114,6 +3114,7 @@ async function loadResults() {
         }
         if (!resp.ok) throw new Error("Failed to load results");
         currentResults = await resp.json();
+        window.evidenceFocus = null;  // Step 361: reset on new job load
         restoreResultsViewState();
         renderResults();
     } catch (err) {
@@ -7540,118 +7541,388 @@ function setDocviewStickyControlsVisible(isVisible) {
     controls.classList.toggle('hidden', !isVisible);
 }
 
-// Step 306b: Evidence View state
-var _evidenceScrollTop = 0;
-var _evidenceRenderedTenantIndex = -1;  // tracks which tenant index was last rendered
+// Step 361: Evidence View focus state — set by navigation actions, null = standalone browse
+window.evidenceFocus = null;
 
-// Step 306b/306c: Convert a section_ref string to a stable anchor ID used in Evidence View.
-// "Section 15.1(a)" → "ev-sec-15-1-a"
-// "§21.9"           → "ev-sec-21-9"
-// "Article 3"       → "ev-sec-article-3"
-function sectionRefToAnchorId(sectionRef) {
-    if (!sectionRef) return null;
-    var normalized = sectionRef
-        .replace(/^(section|article|§)\s*/i, '')
-        .replace(/[^a-zA-Z0-9]/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '')
-        .toLowerCase();
-    return normalized ? 'ev-sec-' + normalized : null;
+// ── Step 361: Evidence View as Targeted Proof Inspector ──
+
+var _EV_VERDICT_CFG = {
+    'explicitly_present':     { cls: 'ev-v-present',  label: 'Present' },
+    'implicitly_present':     { cls: 'ev-v-implicit', label: 'Implicit' },
+    'covered_by_default_law': { cls: 'ev-v-default',  label: 'Default Law' },
+    'covered_in_other_LP':    { cls: 'ev-v-crosslp',  label: 'Cross-LP' },
+    'missing':                { cls: 'ev-v-missing',  label: 'Missing' },
+    'unclear':                { cls: 'ev-v-unclear',  label: 'Unclear' },
+    'disputed':               { cls: 'ev-v-disputed', label: 'Disputed' },
+};
+
+var _currentEvBucket = '';
+
+function _evBucketChip(bucket) {
+    var labels = { risk: 'Risk', review_needed: 'Needs Review', improvement: 'Improvement', addressed: 'Addressed' };
+    var clss = { risk: 'ev-bucket-risk', review_needed: 'ev-bucket-review', improvement: 'ev-bucket-improve', addressed: 'ev-bucket-addressed' };
+    if (!bucket) return '';
+    return '<span class="ev-bucket-chip ' + (clss[bucket] || 'ev-bucket-default') + '">' + esc(labels[bucket] || bucket) + '</span>';
 }
 
-// Step 306b: Render the Evidence View tab with full lease text and section anchors.
-// Called once on first show; subsequent calls are no-ops (preserves scroll).
-function renderEvidencePanel() {
-    var tab = document.getElementById('evidence-tab');
-    if (!tab) return;
-    if (_evidenceRenderedTenantIndex === currentTenantIndex) return;
-    _evidenceRenderedTenantIndex = currentTenantIndex;
-    _evidenceScrollTop = 0;  // reset scroll when switching tenants
-
-    var tenant = currentResults && currentResults.tenants && currentResults.tenants[currentTenantIndex];
-    var fullText = tenant && tenant.results ? (tenant.results.full_tenant_text || '') : '';
-
-    if (!fullText) {
-        tab.innerHTML = '<div class="ev-empty">Lease text not available for this analysis. Evidence View requires a Mode C analysis run with full document extraction.</div>';
-        return;
-    }
-
-    // Detect section headings line-by-line and insert anchor IDs.
-    var HEADING_LINE = /^\s*((?:ARTICLE|Article|Section|SECTION)\s+[\dIVXivx]+[\d.]*(?:\s*\([^)]+\))?|(?:\d+\.[\d.]+)\s)/;
-    var lines = fullText.split('\n');
-    var html = '<div class="ev-doc-wrap"><pre class="ev-pre">';
-    for (var i = 0; i < lines.length; i++) {
-        var line = lines[i];
-        var m = HEADING_LINE.exec(line);
-        if (m) {
-            var anchorId = sectionRefToAnchorId(m[1].trim());
-            if (anchorId) {
-                html += '<span class="ev-heading" id="' + anchorId + '">' + esc(line) + '</span>\n';
-            } else {
-                html += '<span class="ev-heading">' + esc(line) + '</span>\n';
-            }
-        } else {
-            html += esc(line) + '\n';
-        }
-    }
-    html += '</pre></div>';
-    tab.innerHTML = html;
+function _evCoverageStateLabel(state) {
+    var labels = {
+        covered_favorable: 'Favorable', covered_unfavorable: 'Unfavorable',
+        missing: 'Missing', partial: 'Partial', covered: 'Covered', unclear: 'Unclear',
+    };
+    return labels[state] || '';
 }
 
-// Step 306c: Remove any existing quote highlights from the Evidence View.
-function _clearEvidenceQuoteHighlights() {
-    document.querySelectorAll('.ev-quote-highlight').forEach(function(m) {
-        var parent = m.parentNode;
-        if (parent) {
-            parent.replaceChild(document.createTextNode(m.textContent), m);
-            parent.normalize();
-        }
+function _findElementLabel(lp, elementId) {
+    if (!lp || !elementId) return null;
+    var evs = lp.element_verdicts || [];
+    for (var i = 0; i < evs.length; i++) {
+        if (evs[i].element_id === elementId) return evs[i].element_label || evs[i].element_id || null;
+    }
+    return null;
+}
+
+function _evToggleLp(safePid) {
+    var body = document.getElementById('ev-lp-body-' + safePid);
+    if (!body) return;
+    var opening = body.style.display === 'none';
+    body.style.display = opening ? '' : 'none';
+    var group = body.parentElement;
+    if (group) {
+        var arrow = group.querySelector('.ev-lp-arrow');
+        if (arrow) arrow.textContent = opening ? '▾' : '▸';
+    }
+}
+
+function _evToggleCpf() {
+    var body = document.getElementById('ev-cpf-body');
+    var arrow = document.getElementById('ev-cpf-arrow');
+    if (!body) return;
+    var opening = body.style.display === 'none';
+    body.style.display = opening ? '' : 'none';
+    if (arrow) arrow.textContent = opening ? '▾' : '▸';
+}
+
+function _evGoBack(tabName) {
+    window.evidenceFocus = null;
+    switchResultsTab(tabName);
+}
+
+function _evFilter(searchText) {
+    var lc = (searchText || '').toLowerCase();
+    document.querySelectorAll('.ev-lp-group').forEach(function(group) {
+        var text = (group.dataset.searchText || '').toLowerCase();
+        var groupBucket = group.dataset.bucket || '';
+        var matchSearch = !lc || text.indexOf(lc) >= 0;
+        var matchBucket = !_currentEvBucket || groupBucket === _currentEvBucket;
+        group.style.display = (matchSearch && matchBucket) ? '' : 'none';
     });
 }
 
-// Step 306c: Try to highlight a quoted string in the text nodes following the anchor span.
-function highlightQuoteInSection(anchor, quote) {
-    if (!quote || quote.length < 10) return;
-    _clearEvidenceQuoteHighlights();
-    var node = anchor.nextSibling;
-    while (node) {
-        if (node.nodeType === 1 && node.classList && node.classList.contains('ev-heading')) break;
-        if (node.nodeType === 3 && node.textContent.indexOf(quote) >= 0) {
-            var idx = node.textContent.indexOf(quote);
-            var before = document.createTextNode(node.textContent.slice(0, idx));
-            var mark = document.createElement('mark');
-            mark.className = 'ev-quote-highlight';
-            mark.textContent = quote;
-            var after = document.createTextNode(node.textContent.slice(idx + quote.length));
-            var parent = node.parentNode;
-            parent.insertBefore(before, node);
-            parent.insertBefore(mark, node);
-            parent.insertBefore(after, node);
-            parent.removeChild(node);
-            setTimeout(function() { if (mark.parentNode) mark.classList.add('ev-quote-fade'); }, 5000);
-            return;
-        }
-        node = node.nextSibling;
+function _evSetFilter(bucket) {
+    _currentEvBucket = bucket;
+    document.querySelectorAll('.ev-filter-chip').forEach(function(chip) {
+        chip.classList.toggle('ev-filter-active', chip.dataset.bucket === bucket);
+    });
+    var inp = document.getElementById('ev-search-input');
+    _evFilter(inp ? inp.value : '');
+}
+
+function _navGoEvidenceFromContract(issueAreaId, elementId, findingId, sectionKey, actionBucket) {
+    window.evidenceFocus = {
+        origin: 'contract_view',
+        origin_label: 'Contract View',
+        issue_area_id: issueAreaId || null,
+        element_id: elementId || null,
+        finding_id: findingId || null,
+        section_key: sectionKey || null,
+        action_bucket: actionBucket || null,
+    };
+    switchResultsTab('evidence');
+}
+
+function _navGoEvidenceFromKeyIssues(issueAreaId, actionBucket) {
+    window.evidenceFocus = {
+        origin: 'key_issues',
+        origin_label: 'Key Issues',
+        issue_area_id: issueAreaId || null,
+        element_id: null,
+        finding_id: null,
+        section_key: null,
+        action_bucket: actionBucket || null,
+    };
+    switchResultsTab('evidence');
+}
+
+function _buildElementRow(ev, safePid, highlighted) {
+    var verdict = ev.verdict || 'unclear';
+    var vcfg = _EV_VERDICT_CFG[verdict] || { cls: 'ev-v-unclear', label: verdict };
+    var label = ev.element_label || ev.element_id || '?';
+    var citation = ev.citation || {};
+    var citRef = citation.section_ref || '';
+    var citQuote = citation.quote || '';
+    var evalVerdicts = ev.per_evaluator_verdicts || ev.evaluator_verdicts || [];
+    var safeEid = (ev.element_id || label).replace(/[^a-zA-Z0-9_-]/g, '_');
+    var evalPanelId = 'ev-ep-' + safePid + '-' + safeEid;
+
+    var html = '<div class="ev-elem-row' + (highlighted ? ' ev-elem-highlighted' : '') + '">';
+    html += '<div class="ev-elem-header">';
+    html += '<span class="ev-elem-label">' + esc(label) + '</span>';
+    html += '<span class="ev-v-pill ' + vcfg.cls + '">' + esc(vcfg.label) + '</span>';
+    if (verdict === 'disputed') html += '<span class="ev-disputed-badge">◈ Disputed</span>';
+    if (citRef) html += '<span class="ev-elem-citation">' + esc(citRef) + '</span>';
+    html += '</div>';
+    if (verdict === 'missing') {
+        html += '<div class="ev-elem-missing">✗ Missing — not found in lease</div>';
+    } else if (citQuote) {
+        var qDisplay = citQuote.length > 120 ? citQuote.slice(0, 120) + '…' : citQuote;
+        html += '<div class="ev-elem-quote">"' + esc(qDisplay) + '"</div>';
+    }
+    if (evalVerdicts.length > 0) {
+        html += '<button class="ev-evals-toggle" onclick="(function(btn){var p=document.getElementById(\'' + evalPanelId + '\');if(p){var h=p.style.display===\'none\';p.style.display=h?\'\':\'none\';btn.classList.toggle(\'ev-evals-open\',h)}})(this);event.stopPropagation()" type="button">'
+            + evalVerdicts.length + ' Evaluators</button>';
+        html += '<div class="ev-evals-panel" id="' + evalPanelId + '" style="display:none">';
+        evalVerdicts.forEach(function(evi) {
+            var eRole = evi.role || evi.evaluator_id || '?';
+            var eName = evi.label || evalName(eRole);
+            var eVerdict = evi.verdict || 'unclear';
+            var evcfg = _EV_VERDICT_CFG[eVerdict] || { cls: 'ev-v-unclear', label: eVerdict };
+            var eRef = evi.citation && evi.citation.section_ref ? evi.citation.section_ref : '';
+            var eColor = EVALUATOR_COLORS[eRole] || 'eval-blue';
+            html += '<div class="ev-eval-row">';
+            html += '<span class="ev-eval-badge eval-badge-' + esc(eRole) + ' ' + esc(eColor) + '">' + esc(eRole) + '</span>';
+            html += '<span class="ev-eval-name">' + esc(eName) + '</span>';
+            html += '<span class="ev-v-pill ' + evcfg.cls + ' ev-eval-vpill">' + esc(evcfg.label) + '</span>';
+            if (eRef) html += '<span class="ev-eval-ref">' + esc(eRef) + '</span>';
+            html += '</div>';
+        });
+        html += '</div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+function _buildLpBlock(lp, idx, expanded, highlightElementId) {
+    var pid = lp.issue_area_id || '';
+    var safePid = pid.replace(/[^a-zA-Z0-9_-]/g, '_');
+    var name = lp.issue_area_name || pid;
+    var actionBucket = lp.action_bucket || '';
+
+    var searchText = name.toLowerCase();
+    var elements = lp.element_verdicts || [];
+    elements.forEach(function(ev) {
+        searchText += ' ' + (ev.element_label || ev.element_id || '').toLowerCase();
+        if (ev.citation && ev.citation.quote) searchText += ' ' + ev.citation.quote.toLowerCase();
+    });
+
+    var lpConfBadge = lp.lp_confidence
+        ? '<span class="ev-lp-conf ev-lp-conf-' + esc(lp.lp_confidence) + '">' + esc(lp.lp_confidence) + '</span>'
+        : '';
+    var vdSev = lp.verdict_distance && lp.verdict_distance.severity;
+    var vdBadge = (vdSev && vdSev !== 'none' && vdSev !== 'not_assessed')
+        ? '<span class="ev-vd-badge">Evaluators disagreed (' + esc(vdSev) + ' distance)</span>'
+        : '';
+    var stateLabel = _evCoverageStateLabel(lp.coverage_state);
+    var stateBadge = stateLabel
+        ? '<span class="ev-state-badge ev-state-' + esc(lp.coverage_state || '') + '">' + esc(stateLabel) + '</span>'
+        : '';
+
+    var bodyId = 'ev-lp-body-' + safePid;
+    var toggleFn = 'window.CAM._evToggleLp(\'' + safePid + '\')';
+
+    var html = '<div class="ev-lp-group" data-pid="' + esc(pid) + '" data-bucket="' + esc(actionBucket) + '" data-search-text="' + esc(searchText) + '">';
+    html += '<div class="ev-lp-header" onclick="' + toggleFn + '">';
+    html += '<div class="ev-lp-header-main">';
+    html += '<span class="ev-lp-name">' + esc(name) + '</span>';
+    html += _evBucketChip(actionBucket);
+    html += stateBadge;
+    if (lpConfBadge) html += lpConfBadge;
+    html += '</div>';
+    if (vdBadge) html += '<div class="ev-lp-vd">' + vdBadge + '</div>';
+    html += '<span class="ev-lp-arrow">' + (expanded ? '▾' : '▸') + '</span>';
+    html += '</div>';
+
+    html += '<div class="ev-lp-body" id="' + bodyId + '" style="' + (expanded ? '' : 'display:none') + '">';
+    if (lp.evidence_summary) {
+        html += '<div class="ev-lp-summary">' + esc(lp.evidence_summary) + '</div>';
+    }
+    if (elements.length > 0) {
+        html += '<div class="ev-elements">';
+        elements.forEach(function(ev) {
+            html += _buildElementRow(ev, safePid, ev.element_id === highlightElementId);
+        });
+        html += '</div>';
+    } else {
+        html += '<div class="ev-empty" style="padding:.5rem 1rem;font-size:.8rem">No element evidence available.</div>';
+    }
+    html += '</div>';
+    html += '</div>';
+    return html;
+}
+
+function _buildCpfDetail(cpfItem) {
+    var html = '<div class="ev-cpf-detail">';
+    html += '<div class="ev-cpf-detail-meta">';
+    var ftLabel = cpfItem.finding_type ? cpfItem.finding_type.replace(/_/g, ' ') : '';
+    if (ftLabel) html += '<span class="ev-cpf-type-badge">' + esc(ftLabel) + '</span>';
+    if (cpfItem.severity) html += '<span class="ev-cpf-sev-badge ev-cpf-sev-' + esc(cpfItem.severity) + '">' + esc(cpfItem.severity) + '</span>';
+    html += '</div>';
+    if (cpfItem.headline) html += '<div class="ev-cpf-headline">' + esc(cpfItem.headline) + '</div>';
+    var detail = cpfItem.detail || cpfItem.summary || '';
+    if (detail) html += '<div class="ev-cpf-text">' + esc(detail) + '</div>';
+    if (cpfItem.cited_sections && cpfItem.cited_sections.length > 0) {
+        html += '<div class="ev-cpf-sections">Cited sections: ';
+        html += cpfItem.cited_sections.map(function(s) {
+            return '<span class="ev-cpf-sec-chip">' + esc(s) + '</span>';
+        }).join(' ');
+        html += '</div>';
+    }
+    if (cpfItem.implicated_lps && cpfItem.implicated_lps.length > 0) {
+        html += '<div class="ev-cpf-lps">Implicated LPs: ';
+        html += cpfItem.implicated_lps.map(function(lp) {
+            return '<span class="ev-lp-chip">' + esc(lp) + '</span>';
+        }).join(' ');
+        html += '</div>';
+    }
+    if (cpfItem.evaluator_consensus === 'unanimous') {
+        html += '<div class="ev-cpf-consensus"><span class="ev-consensus-badge">✓ Unanimous</span></div>';
+    }
+    html += '</div>';
+    return html;
+}
+
+function _buildCpfSection(cpf) {
+    var html = '<div class="ev-cpf-section">';
+    html += '<div class="ev-cpf-section-header" onclick="window.CAM._evToggleCpf()">';
+    html += '<span class="ev-cpf-section-title">Cross-Provision Findings (' + cpf.length + ')</span>';
+    html += '<span class="ev-cpf-arrow" id="ev-cpf-arrow">▸</span>';
+    html += '</div>';
+    html += '<div class="ev-cpf-body" id="ev-cpf-body" style="display:none">';
+    cpf.forEach(function(cpfItem) {
+        var fid = cpfItem.finding_id || '';
+        var safeId = fid.replace(/[^a-zA-Z0-9_-]/g, '_');
+        var bodyId = 'ev-cpf-row-' + safeId;
+        html += '<div class="ev-cpf-row">';
+        html += '<div class="ev-cpf-row-header" onclick="(function(el){var b=document.getElementById(\'' + bodyId + '\');var arr=el.querySelector(\'.ev-cpf-row-arrow\');if(b){var h=b.style.display===\'none\';b.style.display=h?\'\':\'none\';if(arr)arr.textContent=h?\'▾\':\'▸\'}})(this)">';
+        html += '<span class="ev-cpf-row-id">' + esc(fid) + '</span>';
+        var hl = cpfItem.headline || '';
+        html += '<span class="ev-cpf-row-headline">' + esc(hl.length > 80 ? hl.slice(0, 80) + '…' : hl) + '</span>';
+        html += '<span class="ev-cpf-row-arrow">▸</span>';
+        html += '</div>';
+        html += '<div class="ev-cpf-row-body" id="' + bodyId + '" style="display:none">' + _buildCpfDetail(cpfItem) + '</div>';
+        html += '</div>';
+    });
+    html += '</div>';
+    html += '</div>';
+    return html;
+}
+
+function renderEvidencePanel() {
+    var tab = document.getElementById('evidence-tab');
+    if (!tab) return;
+    var tenant = currentResults && currentResults.tenants && currentResults.tenants[currentTenantIndex];
+    if (!tenant || !tenant.results) {
+        tab.innerHTML = '<div class="ev-empty">No analysis data available.</div>';
+        return;
+    }
+    var pr = tenant.results;
+    var coverage = pr.coverage_assessment || [];
+    var cpf = pr.cross_provision_findings || [];
+    var focus = window.evidenceFocus;
+    if (focus && focus.issue_area_id) {
+        _renderEvidenceFocused(tab, coverage, cpf, focus);
+    } else {
+        _currentEvBucket = '';
+        _renderEvidenceStandalone(tab, coverage, cpf);
     }
 }
 
-// Step 306c: Switch to Evidence View and scroll/highlight the target section.
-function jumpToEvidence(sectionRef, quote) {
-    if (!sectionRef) return;
-    switchResultsTab('evidence');
-    var anchorId = sectionRefToAnchorId(sectionRef);
-    if (!anchorId) return;
-    // Delay to let Evidence View render on first open
-    setTimeout(function() {
-        var anchor = document.getElementById(anchorId);
-        if (!anchor) return;
-        anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        anchor.classList.add('ev-heading-flash');
-        setTimeout(function() { anchor.classList.remove('ev-heading-flash'); }, 2200);
-        if (quote && quote.length >= 10) {
-            setTimeout(function() { highlightQuoteInSection(anchor, quote); }, 100);
+function _renderEvidenceFocused(tab, coverage, cpf, focus) {
+    var html = '';
+    if (focus.origin) {
+        var backTab = focus.origin === 'contract_view' ? 'contractview' : 'keyissues';
+        html += '<div class="ev-back-bar"><button class="ev-back-btn" onclick="window.CAM._evGoBack(\'' + esc(backTab) + '\')" type="button">← Back to ' + esc(focus.origin_label || focus.origin) + '</button></div>';
+    }
+    if (focus.finding_id) {
+        var cpfItem = null;
+        for (var i = 0; i < cpf.length; i++) {
+            if (cpf[i].finding_id === focus.finding_id) { cpfItem = cpf[i]; break; }
         }
-    }, 60);
+        html += cpfItem ? _buildCpfDetail(cpfItem) : '<div class="ev-empty">Cross-provision finding ' + esc(focus.finding_id) + ' not found.</div>';
+        tab.innerHTML = html;
+        return;
+    }
+    var lp = null;
+    for (var j = 0; j < coverage.length; j++) {
+        if (coverage[j].issue_area_id === focus.issue_area_id) { lp = coverage[j]; break; }
+    }
+    var headerLabel = (focus.element_id && lp)
+        ? (_findElementLabel(lp, focus.element_id) || focus.element_id)
+        : ((lp && lp.issue_area_name) || focus.issue_area_id);
+    html += '<div class="ev-focus-header">';
+    html += '<div class="ev-focus-title">Evidence for: <strong>' + esc(headerLabel) + '</strong></div>';
+    if (focus.origin_label || focus.section_key) {
+        html += '<div class="ev-focus-source">';
+        if (focus.origin_label) html += 'Source: <span class="ev-source-origin">' + esc(focus.origin_label) + '</span>';
+        if (focus.section_key) html += ' → <span class="ev-source-section">' + esc(focus.section_key) + '</span>';
+        html += '</div>';
+    }
+    html += '<div class="ev-focus-meta">';
+    if (focus.action_bucket) html += _evBucketChip(focus.action_bucket) + ' ';
+    if (focus.issue_area_id) {
+        html += '<span class="ev-lp-chip">' + esc(focus.issue_area_id) + '</span>';
+        if (lp && lp.issue_area_name) html += ' <span class="ev-focus-lpname">' + esc(lp.issue_area_name) + '</span>';
+    }
+    html += '</div></div>';
+    if (!lp) {
+        html += '<div class="ev-fallback">Could not locate exact evidence. No LP found for ' + esc(focus.issue_area_id) + '.</div>';
+        tab.innerHTML = html;
+        return;
+    }
+    html += _buildLpBlock(lp, 0, true, focus.element_id);
+    tab.innerHTML = html;
+    if (focus.element_id) {
+        setTimeout(function() {
+            var el = tab.querySelector('.ev-elem-highlighted');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 80);
+    }
+}
+
+function _renderEvidenceStandalone(tab, coverage, cpf) {
+    var html = '';
+    html += '<div class="ev-standalone-header">';
+    html += '<div class="ev-search-bar"><input type="text" class="ev-search-input" id="ev-search-input" placeholder="Search evidence…" oninput="window.CAM._evFilter(this.value)" autocomplete="off"></div>';
+    html += '<div class="ev-filter-chips" id="ev-filter-chips">';
+    var chips = [
+        { key: '', label: 'All' },
+        { key: 'risk', label: 'Risk' },
+        { key: 'review_needed', label: 'Review Needed' },
+        { key: 'improvement', label: 'Improvement' },
+        { key: 'addressed', label: 'Addressed' },
+    ];
+    chips.forEach(function(c) {
+        html += '<button class="ev-filter-chip' + (c.key === '' ? ' ev-filter-active' : '') + '" data-bucket="' + esc(c.key) + '" onclick="window.CAM._evSetFilter(\'' + esc(c.key) + '\')" type="button">' + esc(c.label) + '</button>';
+    });
+    html += '</div></div>';
+    html += '<div class="ev-lp-list" id="ev-lp-list">';
+    var bucketOrder = { risk: 0, review_needed: 1, improvement: 2, addressed: 3 };
+    var sorted = coverage.slice().sort(function(a, b) {
+        var ao = bucketOrder[a.action_bucket] !== undefined ? bucketOrder[a.action_bucket] : 99;
+        var bo = bucketOrder[b.action_bucket] !== undefined ? bucketOrder[b.action_bucket] : 99;
+        return ao - bo;
+    });
+    sorted.forEach(function(lp, idx) {
+        html += _buildLpBlock(lp, idx, false, null);
+    });
+    if (cpf.length > 0) html += _buildCpfSection(cpf);
+    html += '</div>';
+    tab.innerHTML = html;
+}
+
+// Step 361: jumpToEvidence — raw contract text view removed; switch to evidence tab standalone.
+function jumpToEvidence(sectionRef, quote) {
+    switchResultsTab('evidence');
 }
 
 function switchResultsTab(tab) {
@@ -15513,6 +15784,14 @@ window.CAM = {
     toggleDemoTenantPicker,
     loadDemoTenants,
     jumpToEvidence,
+    // Step 361: Evidence View Proof Inspector
+    _evToggleLp,
+    _evToggleCpf,
+    _evGoBack,
+    _evFilter,
+    _evSetFilter,
+    _navGoEvidenceFromContract,
+    _navGoEvidenceFromKeyIssues,
 };
 
 // ── Step 245: Coverage & Gaps Panel ──
@@ -16765,14 +17044,15 @@ function renderContractViewPanel() {
                 var isCross = f.finding_source === 'cross_provision';
                 var lps = isCross ? (f.implicated_lps || []).join(', ') : (f.issue_area_id || '');
 
-                // Click behavior: navigate to coverage tab for LP findings, synthesis for cross-provision
-                var clickFn = '';
-                if (isCross) {
-                    clickFn = 'event.stopPropagation();window.CAM.switchResultsTab(\'synthesis\')';
-                } else if (f.issue_area_id) {
-                    var tid = typeof currentTenantIndex !== 'undefined' ? currentTenantIndex : 0;
-                    clickFn = 'event.stopPropagation();window.CAM.jumpToCoverageProvision(' + tid + ',\'' + esc(f.issue_area_id) + '\')';
-                }
+                // Step 361: click navigates to Evidence View (replaces old coverage/synthesis navigation)
+                var _evIssueAreaId = f.issue_area_id || '';
+                var _evElementId = (f.finding_source === 'coverage_element') ? (f.finding_id || '') : '';
+                var _evFindingId = (f.finding_source === 'cross_provision') ? (f.finding_id || '') : '';
+                var _evSectionKey = f.section_ref_normalized || '';
+                var _evActionBucket = f.action_bucket || '';
+                var clickFn = 'event.stopPropagation();window.CAM._navGoEvidenceFromContract(\''
+                    + esc(_evIssueAreaId) + '\',\'' + esc(_evElementId) + '\',\''
+                    + esc(_evFindingId) + '\',\'' + esc(_evSectionKey) + '\',\'' + esc(_evActionBucket) + '\')';
 
                 html += '<div class="cvi-finding" onclick="' + clickFn + '" style="padding:.4rem .25rem .4rem 0;border-bottom:1px solid var(--border-light,#f0f0f0);cursor:' + (clickFn ? 'pointer' : 'default') + '">';
                 html += '<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.2rem">';
@@ -17369,6 +17649,13 @@ function _navBuildUnifiedItem(item, tIdx) {
     var lpMetaHtml = item.pid
         ? '<div style="font-size:.7rem;color:var(--text-muted,#888);margin-top:.15rem;font-family:var(--font-mono,monospace);letter-spacing:.02em">' + esc(item.pid) + '</div>'
         : '';
+    // Step 361: "View Evidence" link (only for LP-level items with a pid)
+    var evidenceLinkHtml = (item.pid && item._item_type !== 'synthesis')
+        ? '<div style="text-align:right;margin-top:.15rem">'
+        + '<span class="nav-ev-link" onclick="event.stopPropagation();window.CAM._navGoEvidenceFromKeyIssues(\''
+        + esc(item.pid) + '\',\'' + esc(item._bucket || '') + '\')" tabindex="0" role="link">View Evidence →</span>'
+        + '</div>'
+        : '';
     return '<button class="nav-item-enriched nav-item-unified nav-item-sev-' + sevCls + '" '
          + dataAttrs + ' title="' + esc(item.tooltip || item.summary || item.name || '') + '" type="button">'
          +   '<div class="nav-item-top">'
@@ -17378,6 +17665,7 @@ function _navBuildUnifiedItem(item, tIdx) {
          +   (item.summary ? '<div class="nav-item-desc">' + esc(item.summary) + '</div>' : '')
          +   lpMetaHtml
          +   disputedHtml
+         +   evidenceLinkHtml
          + '</button>';
 }
 
