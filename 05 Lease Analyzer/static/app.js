@@ -7718,10 +7718,8 @@ function _buildLpBlock(lp, idx, expanded, highlightElementId) {
     var lpConfBadge = lp.lp_confidence
         ? '<span class="ev-lp-conf ev-lp-conf-' + esc(lp.lp_confidence) + '">' + esc(lp.lp_confidence) + '</span>'
         : '';
+    // Step 361c: vdSev used only in LP body note — NOT in the header row
     var vdSev = lp.verdict_distance && lp.verdict_distance.severity;
-    var vdBadge = (vdSev && vdSev !== 'none' && vdSev !== 'not_assessed')
-        ? '<span class="ev-vd-badge">Evaluators disagreed (' + esc(vdSev) + ' distance)</span>'
-        : '';
     var stateLabel = _evCoverageStateLabel(lp.coverage_state);
     var stateBadge = stateLabel
         ? '<span class="ev-state-badge ev-state-' + esc(lp.coverage_state || '') + '">' + esc(stateLabel) + '</span>'
@@ -7731,18 +7729,22 @@ function _buildLpBlock(lp, idx, expanded, highlightElementId) {
     var toggleFn = 'window.CAM._evToggleLp(\'' + safePid + '\')';
 
     var html = '<div class="ev-lp-group" data-pid="' + esc(pid) + '" data-bucket="' + esc(actionBucket) + '" data-search-text="' + esc(searchText) + '">';
+    // Step 361c: header is a single flex row — name (truncating), badges wrapper, arrow
     html += '<div class="ev-lp-header" onclick="' + toggleFn + '">';
-    html += '<div class="ev-lp-header-main">';
     html += '<span class="ev-lp-name">' + esc(name) + '</span>';
+    html += '<div class="ev-lp-badges">';
     html += _evBucketChip(actionBucket);
     html += stateBadge;
     if (lpConfBadge) html += lpConfBadge;
     html += '</div>';
-    if (vdBadge) html += '<div class="ev-lp-vd">' + vdBadge + '</div>';
     html += '<span class="ev-lp-arrow">' + (expanded ? '▾' : '▸') + '</span>';
     html += '</div>';
 
     html += '<div class="ev-lp-body" id="' + bodyId + '" style="' + (expanded ? '' : 'display:none') + '">';
+    // Step 361c: distance note at TOP of body — not in the header row
+    if (vdSev && (vdSev === 'moderate' || vdSev === 'severe')) {
+        html += '<div class="ev-distance-note ev-distance-' + esc(vdSev) + '">⚡ Evaluators disagreed on coverage (' + esc(vdSev) + ' distance)</div>';
+    }
     if (lp.evidence_summary) {
         html += '<div class="ev-lp-summary">' + esc(lp.evidence_summary) + '</div>';
     }
