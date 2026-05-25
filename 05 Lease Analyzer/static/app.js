@@ -7665,7 +7665,10 @@ function _buildElementRow(ev, safePid, highlighted) {
     var safeEid = (ev.element_id || label).replace(/[^a-zA-Z0-9_-]/g, '_');
     var evalPanelId = 'ev-ep-' + safePid + '-' + safeEid;
 
-    var html = '<div class="ev-elem-row' + (highlighted ? ' ev-elem-highlighted' : '') + '">';
+    // Step 361d: red border for missing/disputed, amber for unclear
+    var problemClass = (verdict === 'missing' || verdict === 'disputed') ? ' ev-problem' :
+                       (verdict === 'unclear') ? ' ev-problem-warn' : '';
+    var html = '<div class="ev-elem-row' + (highlighted ? ' ev-elem-highlighted' : '') + problemClass + '">';
     html += '<div class="ev-elem-header">';
     html += '<span class="ev-elem-label">' + esc(label) + '</span>';
     html += '<span class="ev-v-pill ' + vcfg.cls + '">' + esc(vcfg.label) + '</span>';
@@ -7715,9 +7718,14 @@ function _buildLpBlock(lp, idx, expanded, highlightElementId) {
         if (ev.citation && ev.citation.quote) searchText += ' ' + ev.citation.quote.toLowerCase();
     });
 
-    var lpConfBadge = lp.lp_confidence
-        ? '<span class="ev-lp-conf ev-lp-conf-' + esc(lp.lp_confidence) + '">' + esc(lp.lp_confidence) + '</span>'
+    // Step 361d: materiality badge (purple/neutral) replaces old lp_confidence badge
+    var matVal = (lp.use_impact && lp.use_impact.materiality) || lp.lp_confidence || '';
+    var matBadge = matVal
+        ? '<span class="ev-badge-mat ev-badge-mat-' + esc(matVal) + '">' + esc(matVal) + ' impact</span>'
         : '';
+    // Step 361d: LP identifier chip
+    var lpNum = idx + 1;
+    var lpIdChip = '<span class="ev-lp-id-chip">LP-' + (lpNum < 10 ? '0' + lpNum : lpNum) + '</span>';
     // Step 361c: vdSev used only in LP body note — NOT in the header row
     var vdSev = lp.verdict_distance && lp.verdict_distance.severity;
     var stateLabel = _evCoverageStateLabel(lp.coverage_state);
@@ -7735,7 +7743,8 @@ function _buildLpBlock(lp, idx, expanded, highlightElementId) {
     html += '<div class="ev-lp-badges">';
     html += _evBucketChip(actionBucket);
     html += stateBadge;
-    if (lpConfBadge) html += lpConfBadge;
+    if (matBadge) html += matBadge;
+    html += lpIdChip;
     html += '</div>';
     html += '<span class="ev-lp-arrow">' + (expanded ? '▾' : '▸') + '</span>';
     html += '</div>';
@@ -7748,9 +7757,16 @@ function _buildLpBlock(lp, idx, expanded, highlightElementId) {
     if (lp.evidence_summary) {
         html += '<div class="ev-lp-summary">' + esc(lp.evidence_summary) + '</div>';
     }
-    if (elements.length > 0) {
+    // Step 361d: sort elements — disputed(0) → missing(1) → unclear(2) → present variants(3)
+    var _evVOrder = { 'disputed': 0, 'missing': 1, 'unclear': 2 };
+    var sortedElements = elements.slice().sort(function(a, b) {
+        var oa = (_evVOrder[a.verdict] !== undefined) ? _evVOrder[a.verdict] : 3;
+        var ob = (_evVOrder[b.verdict] !== undefined) ? _evVOrder[b.verdict] : 3;
+        return oa - ob;
+    });
+    if (sortedElements.length > 0) {
         html += '<div class="ev-elements">';
-        elements.forEach(function(ev) {
+        sortedElements.forEach(function(ev) {
             html += _buildElementRow(ev, safePid, ev.element_id === highlightElementId);
         });
         html += '</div>';

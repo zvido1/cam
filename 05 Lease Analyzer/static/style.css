@@ -11876,6 +11876,13 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 .ev-lp-conf-high   { background: #dcfce7; color: #15803d; }
 .ev-lp-conf-medium { background: #fef9c3; color: #854d0e; }
 .ev-lp-conf-low    { background: #fee2e2; color: #b91c1c; }
+/* Step 361d: materiality badge — purple/neutral (NOT green; high = important to tenant, not positive) */
+.ev-badge-mat { font-size: .65rem; padding: 2px 6px; border-radius: 3px; white-space: nowrap; font-weight: 500; }
+.ev-badge-mat-high   { background: #ede9fe; color: #5b21b6; }
+.ev-badge-mat-medium { background: #f3f4f6; color: #6b7280; }
+.ev-badge-mat-low    { background: #f3f4f6; color: #9ca3af; }
+/* Step 361d: LP identifier chip */
+.ev-lp-id-chip { font-size: .62rem; font-family: monospace; color: var(--text-muted,#aaa); background: var(--surface-2,#f3f4f6); border-radius: 3px; padding: 1px 5px; white-space: nowrap; flex-shrink: 0; }
 /* Bucket chips */
 .ev-bucket-chip { font-size: .68rem; padding: .1rem .4rem; border-radius: 3px; font-weight: 600; white-space: nowrap; }
 .ev-bucket-risk     { background: #fee2e2; color: #b91c1c; }
@@ -11898,6 +11905,9 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 .ev-elements { display: flex; flex-direction: column; gap: .25rem; padding: .25rem 0; }
 .ev-elem-row { padding: .4rem .5rem; border: 1px solid var(--border-light,#f0f0f0); border-radius: 4px; background: var(--bg-subtle,#fafafa); }
 .ev-elem-row.ev-elem-highlighted { border-color: var(--primary,#0366d6); background: #eff6ff; }
+/* Step 361d: problem element highlights — missing/disputed = red, unclear = amber */
+.ev-elem-row.ev-problem { border-left: 3px solid #ef4444; background: #fef2f2; border-radius: 0 4px 4px 0; padding-left: 9px; }
+.ev-elem-row.ev-problem-warn { border-left: 3px solid #f59e0b; background: #fffbeb; border-radius: 0 4px 4px 0; padding-left: 9px; }
 .ev-elem-header { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-bottom: .15rem; }
 .ev-elem-label { font-size: .8rem; font-weight: 500; color: var(--text-primary,#1a1a2e); flex: 1; min-width: 0; }
 .ev-elem-citation { font-size: .72rem; color: var(--primary,#0366d6); margin-left: auto; white-space: nowrap; }
