@@ -11978,6 +11978,7 @@ details[open] .adv3-scores-summary::before { transform: rotate(90deg); }
 .cv-ev-th-dots    { width: 44px; }
 .cv-ev-th-eval    { width: 150px; }
 .cv-ev-th-citation { width: 100px; }
+tr.cv-ev-row { background: white; } /* cancel inherited #fffafa from .cv-item-problem on LP card container */
 .cv-ev-row td { padding: 0.25rem 0.5rem 0.25rem 0; vertical-align: top; border-bottom: 1px solid var(--border-light, #f1f5f9); }
 .cv-ev-row:last-child td { border-bottom: none; }
 /* Step 363: Key Issues element row problem highlights */
