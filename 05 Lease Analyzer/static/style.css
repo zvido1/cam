@@ -11983,6 +11983,10 @@ tr.elem-row-problem { background: #fef2f2; }
 tr.elem-row-problem > td:first-child { border-left: 3px solid #ef4444; padding-left: 9px; }
 tr.elem-row-warn { background: #fffbeb; }
 tr.elem-row-warn > td:first-child { border-left: 3px solid #f59e0b; padding-left: 9px; }
+/* Step 363b: 2v1 Disagreement rows (Present/Implicit with minority dissent) → amber, no border.
+   The inherited pink comes from .cv-item-problem { background: #fffafa } on the parent LP card.
+   Target via :has — fires only when cv-ev-evals-btn-disag (the disagreement button) is present. */
+tr.cv-ev-row:has(.cv-ev-evals-btn-disag) { background: #fffbeb; }
 .cv-ev-label { color: var(--text, #333); line-height: 1.3; }
 .cv-ev-status { }
 .cv-ev-citation { font-family: monospace; font-size: 0.75rem; color: var(--text-muted, #888); }
