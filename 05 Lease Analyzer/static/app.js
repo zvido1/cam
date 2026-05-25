@@ -7662,6 +7662,11 @@ function _buildElementRow(ev, safePid, highlighted) {
     var citRef = citation.section_ref || '';
     var citQuote = citation.quote || '';
     var evalVerdicts = ev.per_evaluator_verdicts || ev.evaluator_verdicts || [];
+    // Step 364: missing + unclear minority → "Missing / Unclear"
+    var hasUnclearMinority = verdict === 'missing' && evalVerdicts.some(function(evi) {
+        return evi.verdict === 'unclear';
+    });
+    var vcLabel = hasUnclearMinority ? 'Missing / Unclear' : vcfg.label;
     var safeEid = (ev.element_id || label).replace(/[^a-zA-Z0-9_-]/g, '_');
     var evalPanelId = 'ev-ep-' + safePid + '-' + safeEid;
 
@@ -7671,7 +7676,7 @@ function _buildElementRow(ev, safePid, highlighted) {
     var html = '<div class="ev-elem-row' + (highlighted ? ' ev-elem-highlighted' : '') + problemClass + '">';
     html += '<div class="ev-elem-header">';
     html += '<span class="ev-elem-label">' + esc(label) + '</span>';
-    html += '<span class="ev-v-pill ' + vcfg.cls + '">' + esc(vcfg.label) + '</span>';
+    html += '<span class="ev-v-pill ' + vcfg.cls + '">' + esc(vcLabel) + '</span>';
     if (verdict === 'disputed') html += '<span class="ev-disputed-badge">◈ Disputed</span>';
     if (citRef) html += '<span class="ev-elem-citation">' + esc(citRef) + '</span>';
     html += '</div>';
@@ -16062,6 +16067,8 @@ function renderCoveragePanel() {
                 const _dispVoteLabel = '(' + _dispPresCount + 'v' + _dispMissCount + ')';
                 // Step 308: per-evaluator expandable panel
                 const hasDisagreement = ev.disagreements && ev.disagreements.length > 0;
+                // Step 364: missing + 2v1 disagreement → "Missing / Unclear"
+                const vcLabel = (ev.verdict === 'missing' && hasDisagreement) ? 'Missing / Unclear' : vc.label;
                 const evalVerdicts = ev.evaluator_verdicts;
                 // Sanitize IDs (remove chars that break getElementById)
                 const _safeEid = (ev.element_id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -16111,7 +16118,7 @@ function renderCoveragePanel() {
                     : ev.verdict === 'unclear' ? ' elem-row-warn' : '';
                 const mainRow = '<tr class="cv-ev-row' + rowProblemClass + '">'
                     + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
-                    + '<td class="cv-ev-status">' + (ev.verdict === 'disputed' ? '<span class="element-status-disputed">Disputed</span><span class="element-vote-count">' + _dispVoteLabel + '</span>' + evalToggle : '<span class="cv-ev-pill ' + vc.cls + '">' + vc.label + '</span>' + confDots + evalToggle) + '</td>'
+                    + '<td class="cv-ev-status">' + (ev.verdict === 'disputed' ? '<span class="element-status-disputed">Disputed</span><span class="element-vote-count">' + _dispVoteLabel + '</span>' + evalToggle : '<span class="cv-ev-pill ' + vc.cls + '">' + esc(vcLabel) + '</span>' + confDots + evalToggle) + '</td>'
                     + '<td class="cv-ev-citation">' + citHtml + '</td>'
                     + '</tr>';
                 return mainRow + panelRow;
