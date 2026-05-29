@@ -17634,7 +17634,9 @@ function classifyFindingType(finding, mode, context) {
                           : dir === 'landlord_unprotected' ? 'landlord' : null;
             if (!adverseTo || !perspective || perspective === 'neutral') return 'review_needed';
             if (adverseTo !== perspective) return 'addressed'; // favorable to viewer
-            return isVerified ? 'risk' : 'addressed'; // below Verified → addressed (out of view)
+            // Step 367: unverified + adverse → Needs Review, not Addressed.
+            // Withholding an assertion is not a claim the lease handles it. Surface for human review.
+            return isVerified ? 'risk' : 'review_needed';
         }
         if (ft === 'cross_coverage_relief') return 'addressed';
         // cross_coverage_gap: HIGH/CRIT → risk; MEDIUM/LOW → improvement

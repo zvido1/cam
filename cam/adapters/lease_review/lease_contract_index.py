@@ -217,6 +217,12 @@ def classify_action_bucket(lp: dict, el: dict) -> str:
     return 'improvement'
 
 
+# TODO(368): reconcile with JS classifyFindingType directional routing.
+# This function routes directional_mismatch → 'risk' unconditionally (no perspective,
+# no govSig check). The JS classifier (after Step 367) routes adverse-unverified
+# directional → 'review_needed' and favorable → 'addressed'. The same finding can
+# therefore be Risk in Contract View and Needs Review/Addressed in Key Issues / Overview.
+# Step 368 will decide the fix: single classifier authority or port govSig logic to Python.
 def map_cpf_to_bucket(cpf: dict) -> str:
     finding_type = cpf.get('finding_type', '')
     verdict = cpf.get('verdict', '')
