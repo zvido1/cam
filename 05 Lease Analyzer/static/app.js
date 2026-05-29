@@ -7783,6 +7783,14 @@ function _buildLpBlock(lp, idx, expanded, highlightElementId) {
     return html;
 }
 
+// Step 365: CPF card heading — prefer the model-authored short title, then
+// short_summary, then the (now full) headline sentence. headline is no longer
+// used as a heading directly; it is shown as body text where it adds detail.
+function cpfTitle(f) {
+    if (!f) return '';
+    return (f.title || f.short_summary || f.headline || f.finding_id || '').trim();
+}
+
 function _buildCpfDetail(cpfItem) {
     var html = '<div class="ev-cpf-detail">';
     html += '<div class="ev-cpf-detail-meta">';
@@ -7790,8 +7798,11 @@ function _buildCpfDetail(cpfItem) {
     if (ftLabel) html += '<span class="ev-cpf-type-badge">' + esc(ftLabel) + '</span>';
     if (cpfItem.severity) html += '<span class="ev-cpf-sev-badge ev-cpf-sev-' + esc(cpfItem.severity) + '">' + esc(cpfItem.severity) + '</span>';
     html += '</div>';
-    if (cpfItem.headline) html += '<div class="ev-cpf-headline">' + esc(cpfItem.headline) + '</div>';
+    var _cpfHl = (cpfItem.headline || '').trim();
+    var _cpfHeading = cpfTitle(cpfItem);
+    if (_cpfHeading) html += '<div class="ev-cpf-headline">' + esc(_cpfHeading) + '</div>';
     var detail = cpfItem.detail || cpfItem.summary || '';
+    if (_cpfHl && _cpfHl !== _cpfHeading) html += '<div class="ev-cpf-text">' + esc(_cpfHl) + '</div>';
     if (detail) html += '<div class="ev-cpf-text">' + esc(detail) + '</div>';
     if (cpfItem.cited_sections && cpfItem.cited_sections.length > 0) {
         html += '<div class="ev-cpf-sections">Cited sections: ';
@@ -7828,7 +7839,7 @@ function _buildCpfSection(cpf) {
         html += '<div class="ev-cpf-row">';
         html += '<div class="ev-cpf-row-header" onclick="(function(el){var b=document.getElementById(\'' + bodyId + '\');var arr=el.querySelector(\'.ev-cpf-row-arrow\');if(b){var h=b.style.display===\'none\';b.style.display=h?\'\':\'none\';if(arr)arr.textContent=h?\'▾\':\'▸\'}})(this)">';
         html += '<span class="ev-cpf-row-id">' + esc(fid) + '</span>';
-        var hl = cpfItem.headline || '';
+        var hl = cpfTitle(cpfItem);
         html += '<span class="ev-cpf-row-headline">' + esc(hl.length > 80 ? hl.slice(0, 80) + '…' : hl) + '</span>';
         html += '<span class="ev-cpf-row-arrow">▸</span>';
         html += '</div>';
@@ -16843,6 +16854,7 @@ function renderSynthesisPanel() {
         const ftype    = f.finding_type || "cross_coverage_gap";
         const ftLabel  = FTYPE_LABEL[ftype] || ftype;
         const implicated = (f.implicated_lps || []);
+        const heading  = cpfTitle(f);
         const headline = (f.headline || "").trim();
         const detail   = (f.detail || "").trim();
         const cited    = (f.cited_sections || []);
@@ -16885,7 +16897,8 @@ function renderSynthesisPanel() {
                 ${agreeHtml}
             </div>
             <div class="cpf-lps">${lpPills}</div>
-            ${headline ? `<div class="cpf-headline">${esc(headline)}</div>` : ""}
+            ${heading ? `<div class="cpf-headline">${esc(heading)}</div>` : ""}
+            ${(headline && headline !== heading) ? `<div class="cpf-detail">${esc(headline)}</div>` : ""}
             ${detail   ? `<div class="cpf-detail">${esc(detail)}</div>` : ""}
             ${dirNote}
             ${reliefNote}
@@ -17197,7 +17210,7 @@ function _navBuildSynthesisItem(f, tIdx, govSig) {
     const label  = f.finding_type === 'compound_risk'        ? 'COMPOUND RISK'
                  : f.finding_type === 'cross_coverage_relief' ? 'RELIEF'
                  : "[SYNTHESIS — " + sev + "]";
-    const descText = (f.short_summary || '').trim() || _navTruncate(hl, 80);
+    const descText = _navTruncate(cpfTitle(f) || hl, 80);
     const truncHl = descText;
     const tooltipText = f.detail ? hl + " — " + f.detail : hl;
     // Step 339: confidence dots — compound items use deriveCompoundGovernanceSignal (pre-computed).
@@ -17827,9 +17840,9 @@ function renderNavSidebar() {
                 var typeLabel = f.finding_type === 'compound_risk' ? 'COMPOUND'
                               : f.finding_type === 'directional_mismatch' ? 'DIRECTIONAL'
                               : f.finding_type === 'cross_coverage_relief' ? 'RELIEF' : 'SYNTHESIS';
-                var summary = (f.short_summary || _navTruncate(f.headline || '', 80)).trim();
+                var summary = _navTruncate(cpfTitle(f), 80);
                 pushItem(bucket, { _item_type: 'synthesis', _mode: 'synthesis', pid: lps,
-                    name: f.headline || f.finding_id || '', sev: sev, typeLabel: typeLabel,
+                    name: cpfTitle(f) || f.finding_id || '', sev: sev, typeLabel: typeLabel,
                     govSig: govSig, summary: summary, cpfId: f.finding_id || '',
                     tooltip: f.headline || '' });
             });
