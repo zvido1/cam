@@ -423,6 +423,7 @@ Return a JSON object:
       "finding_id": "CPF-01",
       "finding_type": "cross_coverage_gap" | "directional_mismatch" | "compound_risk",
       "implicated_lps": ["LP-27"],
+      "title": "3-6 word noun phrase naming the finding; not a sentence; not a repeat of detail",
       "headline": "...",
       "short_summary": "...",
       "detail": "...",
@@ -441,6 +442,10 @@ Return a JSON object:
 }
 
 Rules:
+- title: a short noun phrase of 3-6 words that names the finding a lawyer would scan. It must NOT
+  repeat the headline/detail sentence and must NOT be a full sentence. Examples: "One-sided
+  enforcement structure", "No exit when systems fail", "Subordination without protection". If an
+  input finding already carries a title, keep it; otherwise author one from the finding substance.
 - short_summary: a 6-10 word punchy label naming the compound risk for sidebar display. Must be a
   complete thought, not a fragment or truncated clause. Examples: "Automatic subordination without
   non-disturbance protection", "Force majeure bars rent abatement and self-help". Never end with
@@ -929,6 +934,7 @@ For each compound candidate, return one verdict object:
   "candidate_id": "CRX-01",
   "pattern_type": "...",
   "involved_lps": ["LP-XX", "LP-YY"],
+  "title": "3-6 word noun phrase naming the risk (e.g. 'One-sided enforcement structure'). NOT a sentence.",
   "verdict": "compound_risk_present | no_compound_risk | unclear",
   "reason": "...",
   "lease_evidence": "specific section or confirmed absence from lease text",
@@ -979,6 +985,7 @@ For each directional candidate, return one verdict object:
   "candidate_type": "directional_mismatch",
   "candidate_id": "Dir-01",
   "lp_ids": ["LP-XX"],
+  "title": "3-6 word noun phrase naming the risk (e.g. 'One-sided enforcement structure'). NOT a sentence.",
   "q2a_verdict": "yes | no | unclear",
   "q2b_verdict": "proportional | disproportionate | not_applicable",
   "verdict": "mismatch_confirmed | no_mismatch | unclear",
@@ -986,6 +993,11 @@ For each directional candidate, return one verdict object:
   "disproportion_summary": "one sentence describing the imbalance if confirmed",
   "confidence": "high | medium | low"
 }
+
+TITLE RULE: For every compound and directional verdict, "title" must be a short noun phrase of
+3-6 words that names the risk a lawyer would scan. It must NOT repeat the "reason" sentence and
+must NOT be a full sentence. Example titles: "One-sided enforcement structure", "No exit when
+systems fail", "Subordination without protection".
 
 Return a JSON array containing ALL verdict objects from ALL sections. Do not skip any candidate.
 Response must start with [ and end with ]. No markdown fences."""
@@ -1154,6 +1166,27 @@ def _call_pass2_evaluator(
                 "elapsed_sec": round(time.time() - start_time, 2)}
 
 
+_PATTERN_TITLE = {
+    "directional_asymmetry": "One-sided enforcement structure",
+    "cascading_no_remedy":   "No exit when building systems fail",
+    "subordination_trap":    "Subordination without protection",
+    "foreclosure_trap":      "Foreclosure defeats tenancy",
+    "lever_elimination":     "Enforcement levers removed",
+    "operational_dead_end":  "Operational dead end",
+}
+
+
+def _short_title(model_title: str, pattern_type: str, fallback_text: str) -> str:
+    """Prefer the model-authored title; else a pattern label; else a 6-word cut."""
+    t = (model_title or "").strip()
+    if t and len(t.split()) <= 8:
+        return t
+    if pattern_type in _PATTERN_TITLE:
+        return _PATTERN_TITLE[pattern_type]
+    words = (fallback_text or "").split()
+    return " ".join(words[:6]) + ("…" if len(words) > 6 else "")
+
+
 def _build_pass2_verified_findings(
     clusters: List[dict],
     pass2_outputs: Dict[str, dict],
@@ -1213,11 +1246,7 @@ def _build_pass2_verified_findings(
         p1_any = next(iter(cluster.get("pass1_responses", {}).values()), {})
 
         _raw_headline = (best.get("reason") or p1_any.get("why_the_combination_matters") or "")
-        if len(_raw_headline) > 160:
-            _cut = _raw_headline[:160].rsplit(" ", 1)[0]
-            headline = _cut + "..."
-        else:
-            headline = _raw_headline
+        headline = _raw_headline  # full sentence — UI no longer uses headline as the card title
         detail   = best.get("lease_evidence") or p1_any.get("evidence_from_lease") or ""
         affected = best.get("affected_party") or p1_any.get("affected_party") or ""
 
@@ -1245,10 +1274,12 @@ def _build_pass2_verified_findings(
         agreement   = f"{present_count}-{3 - present_count}"
 
         _hl = headline or f"Compound risk: {pattern_type.replace('_', ' ')}"
+        title = _short_title(best.get("title"), pattern_type, _raw_headline)
         findings.append({
             "finding_id":        cid,
             "finding_type":      "compound_risk",
             "implicated_lps":    involved_lps,
+            "title":             title,
             "headline":          _hl,
             "short_summary":     _extract_short_summary(_hl),
             "detail":            detail,
@@ -1501,6 +1532,7 @@ def _build_pass2_relief_findings(
             "finding_id":        cid,
             "finding_type":      "cross_coverage_relief",
             "implicated_lps":    [lp_id],
+            "title":             f"Relief: {lp_name}",
             "headline":          f"Relief: {lp_name} substance found in {relief_section or 'another provision'}",
             "detail":            reason,
             "cited_sections":    [relief_section] if relief_section else [],
@@ -1606,7 +1638,8 @@ def _build_pass2_directional_findings(
         exposed_party = best.get("exposed_party") or candidate.get("exposed_party", "")
         disproportion = best.get("disproportion_summary") or candidate.get("why_mismatch_matters", "")
         headline      = (candidate.get("weaker_framework_summary") or
-                         f"Directional mismatch: {', '.join(lp_ids)}")[:160]
+                         f"Directional mismatch: {', '.join(lp_ids)}")  # full text — title is the card heading
+        title         = _short_title(best.get("title"), "directional_asymmetry", headline)
 
         directionality = None
         ep = (exposed_party or "").lower()
@@ -1623,6 +1656,7 @@ def _build_pass2_directional_findings(
             "finding_id":          cid,
             "finding_type":        "directional_mismatch",
             "implicated_lps":      lp_ids,
+            "title":               title,
             "headline":            headline,
             "detail":              disproportion,
             "cited_sections":      [],
@@ -1746,10 +1780,13 @@ def _normalize_findings(
             "evaluator_verdicts": ev_verd,
         }
         # Pass through relief/compound-specific fields when present
-        for _extra in ("short_summary", "relief_section", "direction_adequate", "pattern_type",
+        for _extra in ("title", "short_summary", "relief_section", "direction_adequate", "pattern_type",
                        "affected_party", "directional_false_positive_count"):
             if f.get(_extra) is not None:
                 out_f[_extra] = f[_extra]
+        # Deterministic fallback: never let a missing title revert to a chopped sentence.
+        if not out_f.get("title"):
+            out_f["title"] = _short_title(f.get("title"), f.get("pattern_type", ""), headline)
         out.append(out_f)
 
     return out

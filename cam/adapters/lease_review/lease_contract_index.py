@@ -375,7 +375,7 @@ def build_contract_section_index(pipeline: dict) -> list:
                     'finding_source': 'cross_provision',
                     'issue_area_id': None,
                     'issue_area_name': None,
-                    'element_label': cpf.get('headline', ''),
+                    'element_label': cpf.get('title') or cpf.get('short_summary') or cpf.get('headline', ''),
                     'action_bucket': bucket,
                     'verdict': cpf.get('verdict'),
                     'criticality': None,
