@@ -1138,6 +1138,18 @@ def _call_pass2_evaluator(
         verdicts = _try_call(provider, model)
         elapsed  = time.time() - start_time
         print(f"[lease_synthesis] Pass2 Eval-{role}: succeeded in {round(elapsed, 1)}s", flush=True)
+        # Step 368: diagnostic — report verdict composition so (b) vs (c) is observable in stdout
+        from collections import Counter as _Counter
+        _by_type = _Counter((v.get("candidate_type") or "(none)")
+                            for v in verdicts if isinstance(v, dict))
+        _dir_ids = [v.get("candidate_id") for v in verdicts
+                    if isinstance(v, dict) and str(v.get("candidate_id", "")).startswith("Dir-")]
+        _dir_verdicts = _Counter((v.get("verdict") or "(none)") for v in verdicts
+                                 if isinstance(v, dict) and str(v.get("candidate_id", "")).startswith("Dir-"))
+        print(f"[synth_debug] Pass2 Eval-{role}: {len(verdicts)} objects | "
+              f"by candidate_type={dict(_by_type)} | "
+              f"Dir- objects={len(_dir_ids)} | Dir- verdicts={dict(_dir_verdicts)}",
+              flush=True)
         return {"role": role, "model": model, "provider": provider, "label": ev_cfg["label"],
                 "completed": True, "verdicts": verdicts, "error": None,
                 "elapsed_sec": round(elapsed, 2)}
@@ -1153,6 +1165,17 @@ def _call_pass2_evaluator(
                 verdicts = _try_call(fb_provider, fb_model)
                 elapsed  = time.time() - start_time
                 print(f"[lease_synthesis] Pass2 Eval-{role}: fallback succeeded in {round(elapsed, 1)}s", flush=True)
+                # Step 368: diagnostic on fallback path too
+                from collections import Counter as _Counter
+                _by_type = _Counter((v.get("candidate_type") or "(none)") for v in verdicts if isinstance(v, dict))
+                _dir_ids = [v.get("candidate_id") for v in verdicts
+                            if isinstance(v, dict) and str(v.get("candidate_id", "")).startswith("Dir-")]
+                _dir_verdicts = _Counter((v.get("verdict") or "(none)") for v in verdicts
+                                         if isinstance(v, dict) and str(v.get("candidate_id","")).startswith("Dir-"))
+                print(f"[synth_debug] Pass2 Eval-{role}(fallback): {len(verdicts)} objects | "
+                      f"by candidate_type={dict(_by_type)} | "
+                      f"Dir- objects={len(_dir_ids)} | Dir- verdicts={dict(_dir_verdicts)}",
+                      flush=True)
                 return {"role": role, "model": fb_model, "provider": fb_provider, "label": fb_label,
                         "completed": True, "verdicts": verdicts, "error": None,
                         "elapsed_sec": round(elapsed, 2), "fallback_used": True}
@@ -2072,6 +2095,37 @@ def run_synthesis(
         + 1                                                    # consolidation minimum
     )
 
+    # Step 368: persist raw Pass-2 verdict lists so (b)/(c) is auditable in pipeline_results.json.
+    # Guarded — must never break the pipeline.
+    try:
+        from collections import Counter as _P2Counter
+        _pass2_raw = {}
+        for _role, _out in pass2_outputs.items():
+            _vlist = _out.get("verdicts") or []
+            _p2by_type = dict(_P2Counter(
+                (v.get("candidate_type") or "(none)")
+                for v in _vlist if isinstance(v, dict)
+            ))
+            _p2dir_verdicts = dict(_P2Counter(
+                (v.get("verdict") or "(none)")
+                for v in _vlist
+                if isinstance(v, dict) and str(v.get("candidate_id", "")).startswith("Dir-")
+            ))
+            _pass2_raw[_role] = {
+                "model":               _out.get("model", ""),
+                "completed":           _out.get("completed", False),
+                "n_objects":           len(_vlist),
+                "by_candidate_type":   _p2by_type,
+                "dir_object_count":    sum(1 for v in _vlist
+                                          if isinstance(v, dict)
+                                          and str(v.get("candidate_id", "")).startswith("Dir-")),
+                "dir_verdicts":        _p2dir_verdicts,
+                "verdicts":            _vlist,          # full raw parsed list
+            }
+    except Exception as _p2e:
+        _pass2_raw = {}
+        print(f"[lease_synthesis] Step 368 pass2_raw persistence failed: {_p2e}", flush=True)
+
     return {
         "cross_provision_findings": findings,
         "meta": {
@@ -2090,5 +2144,6 @@ def run_synthesis(
                 }
                 for role, v in evaluator_outputs.items()
             },
+            "pass2_raw": _pass2_raw,
         },
     }
