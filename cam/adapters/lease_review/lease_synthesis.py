@@ -1210,6 +1210,69 @@ def _short_title(model_title: str, pattern_type: str, fallback_text: str) -> str
     return " ".join(words[:6]) + ("…" if len(words) > 6 else "")
 
 
+# ── Step 369: robust Pass-2 matching ─────────────────────────────────────────
+# Sentinel used internally to distinguish "the model emitted no matching object"
+# from "the model explicitly returned verdict=unclear".  Never surfaces in output.
+_NO_OBJECT = "_no_object"
+
+
+def _p2_build_directional_index(output: dict) -> Dict[str, dict]:
+    """Build a two-level index for a role's Pass-2 directional verdict objects.
+
+    Primary key:  candidate_id (e.g. "Dir-03")
+    Fallback key: tuple(sorted(lp_ids from the verdict object))  — catches objects
+                  that omit candidate_id / candidate_type due to format drift.
+
+    Returns a dict keyed by candidate_id.  The fallback mapping is stored under the
+    module-level _p2_dir_fallback variable built alongside this call; callers must
+    invoke _p2_lookup_directional() for robust resolution.
+    """
+    by_id:  Dict[str, dict] = {}
+    by_lps: Dict[tuple, dict] = {}
+    for v in (output.get("verdicts") or []):
+        if not isinstance(v, dict):
+            continue
+        is_dir = (
+            v.get("candidate_type") == "directional_mismatch"
+            or (v.get("candidate_id") or "").startswith("Dir-")
+            or "q2a_verdict" in v       # SECTION 3 fields uniquely identify directional
+        )
+        if not is_dir:
+            continue
+        cid = (v.get("candidate_id") or "").strip()
+        if cid:
+            by_id[cid] = v
+        # Secondary key: sorted LPs from the verdict object itself
+        v_lps = v.get("lp_ids") or v.get("lp_id") or []
+        if isinstance(v_lps, str):
+            v_lps = [v_lps]
+        key = tuple(sorted(v_lps))
+        if key:
+            by_lps[key] = v
+    return by_id, by_lps
+
+
+def _p2_lookup_directional(
+    by_id: Dict[str, dict],
+    by_lps: Dict[tuple, dict],
+    candidate_id: str,
+    candidate_lp_ids: list,
+) -> tuple:
+    """Look up one directional candidate's verdict object, with fallback.
+
+    Returns (verdict_obj, matched: bool) where matched=False means the .get default
+    will fire — i.e. the model returned no object we can associate with this candidate.
+    """
+    v = by_id.get(candidate_id)
+    if v is not None:
+        return v, True
+    key = tuple(sorted(candidate_lp_ids))
+    v = by_lps.get(key)
+    if v is not None:
+        return v, True
+    return {}, False
+
+
 def _build_pass2_verified_findings(
     clusters: List[dict],
     pass2_outputs: Dict[str, dict],
@@ -1231,16 +1294,27 @@ def _build_pass2_verified_findings(
         "operational_dead_end":   "MEDIUM",  # real exposure but limited financial scope
     }
 
-    # Index Pass 2 verdicts by candidate_id per role
-    pass2_by_role: Dict[str, Dict[str, dict]] = {}
+    # Step 369: Index Pass 2 compound verdicts by candidate_id per role,
+    # with fallback index by sorted(involved_lps) to survive format drift.
+    pass2_by_role:     Dict[str, Dict[str, dict]] = {}
+    pass2_by_lps_role: Dict[str, Dict[tuple, dict]] = {}
     for role, output in pass2_outputs.items():
         if not output.get("completed"):
             continue
-        pass2_by_role[role] = {
-            v.get("candidate_id", ""): v
-            for v in (output.get("verdicts") or [])
-            if isinstance(v, dict) and v.get("candidate_id")
-        }
+        by_id:  Dict[str, dict] = {}
+        by_lps: Dict[tuple, dict] = {}
+        for v in (output.get("verdicts") or []):
+            if not isinstance(v, dict):
+                continue
+            cid_v = (v.get("candidate_id") or "").strip()
+            if cid_v:
+                by_id[cid_v] = v
+            lps_v = v.get("involved_lps") or v.get("implicated_lps") or []
+            key = tuple(sorted(lps_v))
+            if key:
+                by_lps[key] = v
+        pass2_by_role[role]     = by_id
+        pass2_by_lps_role[role] = by_lps
 
     findings: List[dict] = []
     for cluster in clusters:
@@ -1250,8 +1324,12 @@ def _build_pass2_verified_findings(
 
         verdicts_by_role: Dict[str, str] = {}
         ev_details:        Dict[str, dict] = {}
-        for role, by_cid in pass2_by_role.items():
-            v = by_cid.get(cid, {})
+        for role in pass2_by_role:
+            v = pass2_by_role[role].get(cid)
+            if v is None:
+                # Step 369: fallback by sorted involved_lps
+                v = pass2_by_lps_role[role].get(tuple(sorted(involved_lps)))
+            v = v or {}
             verdicts_by_role[role] = v.get("verdict", "unclear")
             ev_details[role] = v
 
@@ -1497,11 +1575,14 @@ def _build_pass2_relief_findings(
     - directional_false_positive by any evaluator → flag on finding
     """
     # Index relief verdicts by candidate_id per role
-    p2_relief: Dict[str, Dict[str, dict]] = {}
+    # Step 369: Index relief verdicts by candidate_id + fallback by lp_id.
+    p2_relief:      Dict[str, Dict[str, dict]] = {}
+    p2_relief_bylp: Dict[str, Dict[str, dict]] = {}
     for role, output in pass2_outputs.items():
         if not output.get("completed"):
             continue
-        p2_relief[role] = {}
+        p2_relief[role]      = {}
+        p2_relief_bylp[role] = {}
         for v in (output.get("verdicts") or []):
             if not isinstance(v, dict):
                 continue
@@ -1511,6 +1592,9 @@ def _build_pass2_relief_findings(
                 cid = v.get("candidate_id", "")
                 if cid:
                     p2_relief[role][cid] = v
+                lp_v = v.get("lp_id", "")
+                if lp_v:
+                    p2_relief_bylp[role][lp_v] = v
 
     findings: List[dict] = []
     for candidate in relief_candidates:
@@ -1520,8 +1604,12 @@ def _build_pass2_relief_findings(
 
         verdicts_by_role: Dict[str, str] = {}
         details_by_role:  Dict[str, dict] = {}
-        for role, by_cid in p2_relief.items():
-            v = by_cid.get(cid, {})
+        for role in p2_relief:
+            v = p2_relief[role].get(cid)
+            if v is None:
+                # Step 369: fallback by lp_id
+                v = p2_relief_bylp[role].get(lp_id)
+            v = v or {}
             verdicts_by_role[role] = v.get("verdict", "unclear")
             details_by_role[role]  = v
 
@@ -1622,22 +1710,25 @@ def _build_pass2_directional_findings(
 
     Agreement: 3/3, 2/3, 1/3 mismatch_confirmed → surface.
     0/3 → governed rejection, suppress.
+
+    Step 369: robust matching — falls back to lp_ids key when candidate_id/
+    candidate_type are absent (format drift). Fail-loud INTEGRITY WARNING when a
+    completed role returned objects but zero matched any candidate (votes lost).
     """
-    # Index directional verdicts by candidate_id per role
-    p2_dir: Dict[str, Dict[str, dict]] = {}
+    # Step 369: build per-role indexes with fallback support
+    p2_dir_by_id:  Dict[str, Dict[str, dict]] = {}
+    p2_dir_by_lps: Dict[str, Dict[tuple, dict]] = {}
     for role, output in pass2_outputs.items():
         if not output.get("completed"):
             continue
-        p2_dir[role] = {}
-        for v in (output.get("verdicts") or []):
-            if not isinstance(v, dict):
-                continue
-            if v.get("candidate_type") == "directional_mismatch" or (
-                (v.get("candidate_id") or "").startswith("Dir-")
-            ):
-                cid = v.get("candidate_id", "")
-                if cid:
-                    p2_dir[role][cid] = v
+        by_id, by_lps = _p2_build_directional_index(output)
+        p2_dir_by_id[role]  = by_id
+        p2_dir_by_lps[role] = by_lps
+
+    # Integrity check: per role, track how many candidates were matched vs defaulted
+    # This is read by run_synthesis() to build pass2_integrity.
+    _dir_match_counts:   Dict[str, int] = {r: 0 for r in p2_dir_by_id}
+    _dir_default_counts: Dict[str, int] = {r: 0 for r in p2_dir_by_id}
 
     findings: List[dict] = []
     for candidate in directional_candidates:
@@ -1646,10 +1737,17 @@ def _build_pass2_directional_findings(
 
         verdicts_by_role: Dict[str, str] = {}
         details_by_role:  Dict[str, dict] = {}
-        for role, by_cid in p2_dir.items():
-            v = by_cid.get(cid, {})
-            verdicts_by_role[role] = v.get("verdict", "unclear")
-            details_by_role[role]  = v
+        for role in p2_dir_by_id:
+            v, matched = _p2_lookup_directional(
+                p2_dir_by_id[role], p2_dir_by_lps[role], cid, lp_ids
+            )
+            if matched:
+                _dir_match_counts[role] = _dir_match_counts.get(role, 0) + 1
+                verdicts_by_role[role]  = v.get("verdict", "unclear")
+            else:
+                _dir_default_counts[role] = _dir_default_counts.get(role, 0) + 1
+                verdicts_by_role[role]    = _NO_OBJECT   # sentinel; not a real model vote
+            details_by_role[role] = v
 
         confirmed = sum(1 for v in verdicts_by_role.values() if v == "mismatch_confirmed")
         if confirmed == 0:
@@ -1671,7 +1769,11 @@ def _build_pass2_directional_findings(
         elif "landlord" in ep:
             directionality = "landlord_unprotected"
 
-        ev_verdicts = {r: verdicts_by_role.get(r, "not_reported") for r in ("A", "B", "C")}
+        # Map sentinel back to "unclear" for external output; keep counts honest.
+        ev_verdicts = {
+            r: ("unclear" if verdicts_by_role.get(r) == _NO_OBJECT else verdicts_by_role.get(r, "not_reported"))
+            for r in ("A", "B", "C")
+        }
         agreement   = f"{confirmed}-{3 - confirmed}"
         severity    = "HIGH" if confirmed == 3 else "MEDIUM" if confirmed == 2 else "LOW"
 
@@ -1689,6 +1791,31 @@ def _build_pass2_directional_findings(
             "evaluator_agreement": agreement,
             "evaluator_verdicts":  ev_verdicts,
         })
+
+    # Step 369: fail-loud INTEGRITY WARNING — fire when a completed role returned
+    # objects but none matched any candidate (votes silently lost to default=unclear).
+    n_candidates = len(directional_candidates)
+    for role in _dir_match_counts:
+        matched   = _dir_match_counts[role]
+        defaulted = _dir_default_counts[role]
+        n_returned = len(pass2_outputs.get(role, {}).get("verdicts") or [])
+        if defaulted > 0 and matched == 0 and n_returned > 0 and n_candidates > 0:
+            print(
+                f"[lease_synthesis] INTEGRITY WARNING: Pass2 Eval-{role} returned "
+                f"{n_returned} objects but 0 matched {n_candidates} directional candidates "
+                f"— all defaulted to 'unclear'. Possible format drift; votes lost.",
+                flush=True,
+            )
+
+    # Attach integrity counts as a module-level for run_synthesis() to harvest.
+    # (Cleaner than changing return signature — run_synthesis already has pass2_outputs.)
+    _build_pass2_directional_findings._integrity = {
+        role: {
+            "matched":   _dir_match_counts.get(role, 0),
+            "defaulted": _dir_default_counts.get(role, 0),
+        }
+        for role in _dir_match_counts
+    }
 
     return _normalize_directionality(findings)
 
@@ -2095,6 +2222,32 @@ def run_synthesis(
         + 1                                                    # consolidation minimum
     )
 
+    # Step 369: build pass2_integrity summary from directional builder's match counts.
+    # Guarded — must never break the pipeline.
+    try:
+        _dir_integrity = getattr(_build_pass2_directional_findings, "_integrity", {})
+        _n_dir_cands = len(directional_candidates)
+        _pass2_integrity = {}
+        for _role, _out in pass2_outputs.items():
+            _n_returned = len(_out.get("verdicts") or [])
+            _matched  = _dir_integrity.get(_role, {}).get("matched",   0) if _dir_integrity else 0
+            _defaulted = _dir_integrity.get(_role, {}).get("defaulted", 0) if _dir_integrity else 0
+            _pass2_integrity[_role] = {
+                "completed":            _out.get("completed", False),
+                "n_objects":            _n_returned,
+                "matched_directional":  _matched,
+                "unmatched_directional": _defaulted,
+                "all_lost": (
+                    _out.get("completed", False)
+                    and _n_returned > 0
+                    and _n_dir_cands > 0
+                    and _matched == 0
+                ),
+            }
+    except Exception as _pie:
+        _pass2_integrity = {}
+        print(f"[lease_synthesis] Step 369 pass2_integrity failed: {_pie}", flush=True)
+
     # Step 368: persist raw Pass-2 verdict lists so (b)/(c) is auditable in pipeline_results.json.
     # Guarded — must never break the pipeline.
     try:
@@ -2144,6 +2297,7 @@ def run_synthesis(
                 }
                 for role, v in evaluator_outputs.items()
             },
-            "pass2_raw": _pass2_raw,
+            "pass2_raw":       _pass2_raw,
+            "pass2_integrity": _pass2_integrity,
         },
     }

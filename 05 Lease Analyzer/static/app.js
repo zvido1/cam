@@ -17895,10 +17895,12 @@ function renderNavSidebar() {
                               : f.finding_type === 'directional_mismatch' ? 'DIRECTIONAL'
                               : f.finding_type === 'cross_coverage_relief' ? 'RELIEF' : 'SYNTHESIS';
                 var summary = _navTruncate(cpfTitle(f), 80);
+                // Step 369: pass evaluator_agreement for directional ranking + tag
                 pushItem(bucket, { _item_type: 'synthesis', _mode: 'synthesis', pid: lps,
                     name: cpfTitle(f) || f.finding_id || '', sev: sev, typeLabel: typeLabel,
                     govSig: govSig, summary: summary, cpfId: f.finding_id || '',
-                    tooltip: f.headline || '' });
+                    tooltip: f.headline || '',
+                    evaluator_agreement: f.evaluator_agreement || '' });
             });
         } else {
             var provs = r.provisions || [];
@@ -17937,7 +17939,50 @@ function renderNavSidebar() {
             });
         }
 
-        sortItems(risk); sortItems(reviewNeeded); sortItems(improvement); sortItems(addressed);
+        sortItems(risk); sortItems(improvement); sortItems(addressed);
+
+        // Step 369: Sort Needs Review — directionals by agreement-then-severity first,
+        // then everything else by severity. Also inject "N of 3" text tag into
+        // directional items' summary so it shows in nav-item-desc (colorblind-safe text).
+        (function() {
+            var sevRankLocal = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+            function _agreeCount(item) {
+                // e.g. "2-1" → 2; "3-0" → 3; unknown → 0
+                var ag = (item.evaluator_agreement || '').split('-')[0];
+                var n = parseInt(ag, 10);
+                return isNaN(n) ? 0 : n;
+            }
+            var dirs = reviewNeeded.filter(function(i) { return i.typeLabel === 'DIRECTIONAL'; });
+            var others = reviewNeeded.filter(function(i) { return i.typeLabel !== 'DIRECTIONAL'; });
+            dirs.sort(function(a, b) {
+                var da = _agreeCount(a), db = _agreeCount(b);
+                if (da !== db) return db - da;   // 3/3 before 2/1
+                var sa = sevRankLocal[(a.sev || 'MEDIUM').toUpperCase()] !== undefined
+                       ? sevRankLocal[(a.sev || 'MEDIUM').toUpperCase()] : 4;
+                var sb = sevRankLocal[(b.sev || 'MEDIUM').toUpperCase()] !== undefined
+                       ? sevRankLocal[(b.sev || 'MEDIUM').toUpperCase()] : 4;
+                return sa - sb;
+            });
+            // Inject agreement tag into summary for directionals
+            dirs.forEach(function(item) {
+                var n = _agreeCount(item);
+                if (n > 0 && !item._agreeTagged) {
+                    var tag = n + ' of 3';
+                    item.summary = (item.summary ? item.summary + ' — ' : '') + tag;
+                    item._agreeTagged = true;
+                }
+            });
+            others.sort(function(a, b) {
+                var sa = sevRankLocal[(a.sev || 'MEDIUM').toUpperCase()] !== undefined
+                       ? sevRankLocal[(a.sev || 'MEDIUM').toUpperCase()] : 4;
+                var sb = sevRankLocal[(b.sev || 'MEDIUM').toUpperCase()] !== undefined
+                       ? sevRankLocal[(b.sev || 'MEDIUM').toUpperCase()] : 4;
+                return sa - sb;
+            });
+            reviewNeeded.length = 0;
+            dirs.forEach(function(i) { reviewNeeded.push(i); });
+            others.forEach(function(i) { reviewNeeded.push(i); });
+        }());
 
         html += '<div class="nav-tenant-group" data-tenant-idx="' + tIdx + '">';
         if (showTenantHeaders) {
