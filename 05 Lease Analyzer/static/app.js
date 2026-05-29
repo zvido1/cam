@@ -4588,6 +4588,37 @@ function renderCrossTenantMatrix() {
     });
 }
 
+// Step 366: compute risk sub-bucket counts for a single tenant's results,
+// using the same classification logic as the sidebar. Returns:
+//   { gaps: N, crossClause: N, directional: N, total: N }
+// where total = gaps + crossClause (the "Risks to act on" number).
+function _computeRiskCounts(r, perspective) {
+    if (!r) return { gaps: 0, crossClause: 0, directional: 0, total: 0 };
+    var caByLp = {};
+    (r.coverage_assessment || []).forEach(function(a) {
+        caByLp[a.issue_area_id || a.provision_id] = a;
+    });
+    var gaps = 0, crossClause = 0, directional = 0;
+    (r.coverage_assessment || []).forEach(function(a) {
+        if ((a.coverage_state || '') === 'not_applicable') return;
+        var bucket = classifyFindingType(a, 'c', { perspective: perspective });
+        if (bucket === 'risk') gaps++;
+    });
+    (r.cross_provision_findings || []).forEach(function(f) {
+        var govSig = f.finding_type === 'compound_risk' ? deriveCompoundGovernanceSignal(f, caByLp)
+                   : f.finding_type === 'directional_mismatch' ? deriveDirectionalGovernanceSignal(f) : null;
+        var fi = { _item_type: 'synthesis', finding_type: f.finding_type,
+                   severity: f.severity, directionality: f.directionality || '' };
+        var bucket = classifyFindingType(fi, 'c', { perspective: perspective, govSig: govSig });
+        if (bucket !== 'risk') return;
+        var typeLabel = f.finding_type === 'compound_risk' ? 'COMPOUND'
+                      : f.finding_type === 'directional_mismatch' ? 'DIRECTIONAL' : '';
+        if (typeLabel === 'COMPOUND') crossClause++;
+        else if (typeLabel === 'DIRECTIONAL') directional++;
+    });
+    return { gaps: gaps, crossClause: crossClause, directional: directional, total: gaps + crossClause };
+}
+
 // Step 258: Mode C variant of the AI Summary bar. Aggregates coverage_assessment
 // across all tenants in the job and renders a four-bucket pill row that mirrors
 // the Coverage & Gaps tab's framing (covered / need attention / worth reviewing /
@@ -4642,23 +4673,42 @@ function renderModeCAISummaryBar(bar) {
         ? `<span class="ai-summary-modec-meta" style="margin-left:0.5rem;">Governed by ${esc(_mcGovLawDisplay)}</span>`
         : "";
 
+    // Step 366: risk headline — counts for the currently selected contract only.
+    const _riskTenant = tenants[currentTenantIndex] || tenants[0];
+    const _riskCounts = _computeRiskCounts(_riskTenant && _riskTenant.results, _snapPerspective);
+    const _riskParts = [];
+    if (_riskCounts.gaps > 0)       _riskParts.push(_riskCounts.gaps + (_riskCounts.gaps === 1 ? ' coverage gap' : ' coverage gaps'));
+    if (_riskCounts.crossClause > 0) _riskParts.push(_riskCounts.crossClause + ' cross-clause risk' + (_riskCounts.crossClause === 1 ? '' : 's'));
+    const _riskDetailLine = _riskParts.join(' · ');
+    const _riskHeadlineHtml = (_riskCounts.total > 0)
+        ? `<div class="overview-risk-headline">
+              <div class="overview-risk-headline-count">
+                  <span class="overview-risk-headline-label">Risks to act on</span>
+                  <span class="overview-risk-headline-number">${_riskCounts.total}</span>
+              </div>
+              ${_riskDetailLine ? `<div class="overview-risk-headline-detail">${esc(_riskDetailLine)}</div>` : ''}
+           </div>`
+        : '';
+
     bar.innerHTML = `
         <div class="ai-summary-modec">
+            ${_riskHeadlineHtml}
             <div class="ai-summary-modec-headline">
                 <strong>Coverage Snapshot</strong>
                 <span class="ai-summary-modec-meta">${esc(meta)}</span>
                 ${getPerspectiveIndicatorHtml()}
                 ${_mcGovBadge}
             </div>
+            <div class="ai-summary-snapshot-note">How each assessed area is covered — not a risk count.</div>
             <div class="ai-summary-modec-stats">
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--attention"><strong>${counts.risk}</strong> <span>Risk</span></span>
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--review"><strong>${counts.review_needed}</strong> <span>Review Needed</span></span>
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--improvement"><strong>${counts.improvement}</strong> <span>Improvement</span></span>
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--ok"><strong>${counts.addressed}</strong> <span>Addressed</span></span>
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${counts.na}</strong> <span>Not applicable</span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--attention"><strong>${counts.risk}</strong> <span>Risk<em class="ai-summary-modec-stat-gloss">Identified exposure — act to protect</em></span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--review"><strong>${counts.review_needed}</strong> <span>Review Needed<em class="ai-summary-modec-stat-gloss">CAM couldn&rsquo;t decide — you review</em></span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--improvement"><strong>${counts.improvement}</strong> <span>Improvement<em class="ai-summary-modec-stat-gloss">Protection exists — could be tightened</em></span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--ok"><strong>${counts.addressed}</strong> <span>Addressed<em class="ai-summary-modec-stat-gloss">Adequately covered — no action</em></span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${counts.na}</strong> <span>Not applicable<em class="ai-summary-modec-stat-gloss">Outside this lease&rsquo;s scope</em></span></span>
                 ${_mcConflictPill}
             </div>
-            ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Combined across ${docCount} contracts — ${areasPerDoc} issue areas per contract</div>` : ''}
+            ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Coverage Snapshot combined across ${docCount} contracts — ${areasPerDoc} issue areas per contract</div>` : ''}
             <div class="ai-summary-modec-cta">Open <strong>Coverage &amp; Gaps</strong> on any contract for the full breakdown.</div>
         </div>
     `;
@@ -17737,7 +17787,8 @@ function _navSectionToggle(sectionId, jobId) {
     localStorage.setItem('cam_sidebar_' + sectionId + (jobId ? '_' + jobId : ''), collapsing ? '1' : '0');
 }
 
-function _navSectionWrap(sectionId, icon, title, count, bodyHtml, jobId) {
+// Step 366: gloss is an optional one-line action description shown muted below the header.
+function _navSectionWrap(sectionId, icon, title, count, bodyHtml, jobId, gloss) {
     const collapsed = _navSectionCollapsed(sectionId, jobId);
     const oc = "window.CAM._navSectionToggle('" + sectionId + "','" + (jobId || '') + "')";
     return '<div class="nav-section nav-section-unified nav-section-' + sectionId.replace(/_\d+$/, '') + '">'
@@ -17748,6 +17799,7 @@ function _navSectionWrap(sectionId, icon, title, count, bodyHtml, jobId) {
          + '<button class="nav-collapse-toggle" id="nav-section-toggle-' + sectionId
          + '" onclick="' + oc + '" type="button">' + (collapsed ? '▶' : '▼') + '</button>'
          + '</div>'
+         + (gloss ? '<div class="nav-section-gloss">' + esc(gloss) + '</div>' : '')
          + '<div class="nav-section-body" id="nav-section-body-' + sectionId + '"'
          + (collapsed ? ' style="display:none"' : '') + '>'
          + bodyHtml
@@ -17904,14 +17956,17 @@ function renderNavSidebar() {
                 subHtml += _navSubGroupWrap('risk_directional_' + tIdx, 'One-sided Terms', riskDirectional.length,
                     riskDirectional.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
             // Step 360: no aggregate count on RISK header — sub-bucket counts tell the story
-            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', '', subHtml, jobId);
+            // Step 366: action gloss on each bucket
+            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', '', subHtml, jobId, 'Identified exposure — act to protect');
         }
         if (reviewNeeded.length > 0)
             html += _navSectionWrap('review_' + tIdx, '?', 'Needs Review', reviewNeeded.length,
-                reviewNeeded.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+                reviewNeeded.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId,
+                "CAM couldn’t decide — you review");
         if (improvement.length > 0)
             html += _navSectionWrap('improvement_' + tIdx, '✶', 'IMPROVEMENT', improvement.length,
-                improvement.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+                improvement.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId,
+                'Protection exists — could be tightened');
         // Dedupe addressed chips: only gap items not also in risk/reviewNeeded/improvement
         var _lpWithIssues = new Set();
         function _splitPids(pid) {
@@ -17931,7 +17986,7 @@ function renderNavSidebar() {
         });
         if (addressedChips.length > 0)
             html += _navSectionWrap('addressed_' + tIdx, '✓', 'ADDRESSED', addressedChips.length,
-                _navAddressedChips(addressedChips, tIdx), jobId);
+                _navAddressedChips(addressedChips, tIdx), jobId, 'Adequately covered — no action');
         if (!risk.length && !reviewNeeded.length && !improvement.length && !addressed.length)
             html += '<div class="nav-empty">No findings</div>';
         html += '</div>';

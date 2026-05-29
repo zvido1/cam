@@ -13312,3 +13312,62 @@ body.mode-c .card-docview-link {
 .cv-assess-method { font-size: 0.68rem; padding: 0.1rem 0.35rem; border-radius: 3px; white-space: nowrap; }
 .cv-assess-method-eval    { color: #1e40af; background: #dbeafe; }
 .cv-assess-method-preclass { color: #6b7280; background: #f3f4f6; }
+
+/* Step 366: Overview risk headline + Coverage Snapshot framing */
+.overview-risk-headline {
+    padding: 0.7rem 0.9rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+.overview-risk-headline-count {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.overview-risk-headline-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #991b1b;
+}
+.overview-risk-headline-number {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: #b91c1c;
+    line-height: 1;
+}
+.overview-risk-headline-detail {
+    font-size: 0.8rem;
+    color: #7f1d1d;
+    margin-top: 0.2rem;
+}
+.ai-summary-snapshot-note {
+    font-size: 0.75rem;
+    color: var(--text-muted, #6b7280);
+    font-style: italic;
+    margin-top: 0.1rem;
+    margin-bottom: 0.15rem;
+}
+.ai-summary-modec-stat-gloss {
+    font-size: 0.72rem;
+    color: var(--text-muted, #888);
+    font-style: italic;
+    display: block;
+    margin-top: 0.15rem;
+    font-weight: 400;
+    white-space: normal;
+    max-width: 13rem;
+    line-height: 1.3;
+}
+/* Step 366: sidebar bucket gloss line */
+.nav-section-gloss {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    padding: 0.05rem 0.55rem 0.3rem 1.5rem;
+    font-style: italic;
+    line-height: 1.3;
+}
