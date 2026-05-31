@@ -82,6 +82,16 @@ _SYNTHESIS_PASS1_B_MODEL       = "gpt-5.4"   # long prompt — gpt-5.5 fails
 _SYNTHESIS_CONSOLIDATION_MODEL = "gpt-5.4"   # long prompt — gpt-5.5 fails
 _SYNTHESIS_PASS2_B_MODEL       = "gpt-5.4"   # gpt-5.5 returns wrong format (dict not array)
 
+# ── Step 370d: Stage 7 directional Pass-2 output budget ───────────────────────
+# Measured: the largest COMPLETE Pass-2 Eval-A payload observed (370c run H2) was
+# 27,087 chars and completed right at the prior 8000-token ceiling; the truncated
+# runs (H1 29,177 / H3 28,531 chars) sat just over it. New cap = ~1.5x that ceiling,
+# applied UNIFORMLY to A/B/C for the Pass-2 call. Pass-1 (8000) and consolidation
+# (6000) budgets are intentionally UNCHANGED. PROVISIONAL: provider stop_reason /
+# output-token usage are not exposed by the cam/core adapter, so the max-token CAUSE
+# is probable, not established (Branch D2). See build_log/370d_code_status.md.
+DIRECTIONAL_PASS2_MAX_OUTPUT_TOKENS = 12000
+
 _EVALUATOR_LINEUP_PASS1: Dict[str, dict] = {
     role: (
         cfg if role != "B" else {
@@ -94,13 +104,15 @@ _EVALUATOR_LINEUP_PASS1: Dict[str, dict] = {
 }
 
 _EVALUATOR_LINEUP_PASS2: Dict[str, dict] = {
-    role: (
-        cfg if role != "B" else {
+    role: {
+        **(cfg if role != "B" else {
             **cfg,
             "model": _SYNTHESIS_PASS2_B_MODEL,
             "label": "GPT-5.4",
-        }
-    )
+        }),
+        # Step 370d: raise the directional Pass-2 output budget (uniform A/B/C).
+        "max_output_tokens": DIRECTIONAL_PASS2_MAX_OUTPUT_TOKENS,
+    }
     for role, cfg in EVALUATOR_LINEUP.items()
 }
 
@@ -1084,6 +1096,86 @@ def _build_pass2_user_prompt(
     return "\n".join(lines)
 
 
+# ── Step 370d: directional Pass-2 truncation diagnosis (Layer A) ───────────────
+class _Pass2TruncationError(Exception):
+    """Raised when a Pass-2 response is an incomplete/unclosed JSON array (output
+    truncation). Carries the diagnostic dict so the caller labels and persists it,
+    and so parser salvage is NEVER allowed to convert the fragment into a vote."""
+
+    def __init__(self, message: str, diag: dict):
+        super().__init__(message)
+        self.diag = diag
+
+
+def _scan_json_balance(s: str):
+    """String-aware bracket/brace balance scan. Returns (depth, in_string).
+    depth > 0 or in_string True at end => the JSON structure never validly closed
+    (the signature of a truncated/incomplete response)."""
+    depth = 0
+    in_str = False
+    esc = False
+    for ch in s:
+        if in_str:
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+        else:
+            if ch == '"':
+                in_str = True
+            elif ch in "[{":
+                depth += 1
+            elif ch in "]}":
+                depth -= 1
+    return depth, in_str
+
+
+def _diagnose_pass2_output(raw: str, configured_max_output_tokens: int) -> dict:
+    """Step 370d Layer A: diagnose a Pass-2 raw response for output-budget truncation.
+
+    Operates on the RAW string only. Provider stop_reason / output-token usage are NOT
+    exposed by the cam/core adapter (locked), so this establishes the truncation SHAPE
+    (unclosed top-level array), not the CAUSE. Pure; no I/O.
+    """
+    stripped = (raw or "").strip()
+    # Mirror _safe_parse_synthesis fence handling so the diagnosis sees the same text.
+    if stripped.startswith("```"):
+        _ls = stripped.split("\n")
+        stripped = "\n".join(_ls[1:-1] if _ls and _ls[-1].strip() == "```" else _ls[1:]).strip()
+
+    json_parse_success = False
+    try:
+        json.loads(stripped)
+        json_parse_success = True
+    except (json.JSONDecodeError, ValueError):
+        json_parse_success = False
+
+    starts_as_array = stripped.startswith("[")
+    depth, in_str = _scan_json_balance(stripped)
+    structure_closed = (depth == 0 and not in_str)
+    top_level_array_closed = starts_as_array and structure_closed and json_parse_success
+
+    # Truncation signature (370b-established shape): began emitting an array but the
+    # structure did not validly close (unbalanced brackets or ended mid-string) AND it
+    # does not parse. Salvage on this yields a stray fragment — never a real vote.
+    truncation_detected = bool(starts_as_array and not structure_closed and not json_parse_success)
+
+    return {
+        "raw_response_length": len(raw or ""),
+        "json_parse_success": json_parse_success,
+        "top_level_array_closed": top_level_array_closed,
+        "starts_as_array": starts_as_array,
+        "bracket_depth_at_end": depth,
+        "ended_inside_string": in_str,
+        "stop_reason": None,          # not exposed by cam/core adapter (Branch D2)
+        "output_token_count": None,   # not exposed by cam/core adapter (Branch D2)
+        "configured_max_output_tokens": configured_max_output_tokens,
+        "truncation_detected": truncation_detected,
+    }
+
+
 def _call_pass2_evaluator(
     role: str,
     ev_cfg: dict,
@@ -1101,6 +1193,7 @@ def _call_pass2_evaluator(
     provider   = ev_cfg["provider"]
     model      = ev_cfg["model"]
     fallback   = ev_cfg.get("fallback")
+    _diag_holder: dict = {}   # Step 370d: diagnostics from the most recent _try_call
 
     def _try_call(p: str, m: str) -> list:
         if not health.is_available(p):
@@ -1130,6 +1223,19 @@ def _call_pass2_evaluator(
             f"raw_preview={_raw_preview}",
             flush=True,
         )
+        # Step 370d Layer A: diagnose output-budget truncation BEFORE salvage can turn
+        # an incomplete array into a stray fragment "vote". A truncated response is a
+        # failure, not a malformed-but-complete one — fail loud and exclude it.
+        _diag = _diagnose_pass2_output(raw, ev_cfg["max_output_tokens"])
+        _diag_holder.clear()
+        _diag_holder.update(_diag)
+        if _diag["truncation_detected"]:
+            raise _Pass2TruncationError(
+                f"Pass2 Eval-{role}: incomplete/truncated output "
+                f"(raw_len={_diag['raw_response_length']}, depth={_diag['bracket_depth_at_end']}, "
+                f"ended_in_string={_diag['ended_inside_string']}) — refusing salvage.",
+                _diag,
+            )
         parsed  = _safe_parse_synthesis(raw)
         if parsed is None:
             preview = raw[:200].replace('\n', ' ') if raw else '(empty)'
@@ -1166,7 +1272,21 @@ def _call_pass2_evaluator(
               flush=True)
         return {"role": role, "model": model, "provider": provider, "label": ev_cfg["label"],
                 "completed": True, "verdicts": verdicts, "error": None,
-                "elapsed_sec": round(elapsed, 2)}
+                "elapsed_sec": round(elapsed, 2),
+                "status": "complete", "pass2_diag": dict(_diag_holder)}
+    except _Pass2TruncationError as te:
+        # Step 370d Layer C: output-budget truncation — fail loud, exclude, NO fallback
+        # retry, NO salvage-to-vote. B/C carry; nothing fabricated.
+        print(f"[lease_synthesis] TRUNCATION: Pass2 Eval-{role} ({model}) output truncated "
+              f"— excluded (failed_truncated_output_budget). "
+              f"raw_len={te.diag.get('raw_response_length')} "
+              f"cap={te.diag.get('configured_max_output_tokens')} "
+              f"depth={te.diag.get('bracket_depth_at_end')}.", flush=True)
+        return {"role": role, "model": model, "provider": provider, "label": ev_cfg["label"],
+                "completed": False, "verdicts": [], "error": str(te),
+                "status": "truncated", "reason_code": "failed_truncated_output_budget",
+                "pass2_diag": te.diag,
+                "elapsed_sec": round(time.time() - start_time, 2)}
     except Exception as e:
         err_str = str(e).lower()
         if any(k in err_str for k in ["503", "connection", "refused", "unavailable", "resource_exhausted"]):
@@ -1192,14 +1312,21 @@ def _call_pass2_evaluator(
                       flush=True)
                 return {"role": role, "model": fb_model, "provider": fb_provider, "label": fb_label,
                         "completed": True, "verdicts": verdicts, "error": None,
-                        "elapsed_sec": round(elapsed, 2), "fallback_used": True}
+                        "elapsed_sec": round(elapsed, 2), "fallback_used": True,
+                        "status": "complete", "pass2_diag": dict(_diag_holder)}
             except Exception as e2:
                 print(f"[lease_synthesis] Pass2 Eval-{role}: fallback FAILED ({type(e2).__name__})", flush=True)
+                _fb_trunc = isinstance(e2, _Pass2TruncationError)
                 return {"role": role, "model": model, "completed": False,
                         "verdicts": [], "error": str(e2),
+                        "status": "truncated" if _fb_trunc else "malformed",
+                        "reason_code": "failed_truncated_output_budget" if _fb_trunc else "evaluator_call_failed",
+                        "pass2_diag": (e2.diag if _fb_trunc else dict(_diag_holder)),
                         "elapsed_sec": round(time.time() - start_time, 2)}
         return {"role": role, "model": model, "completed": False,
                 "verdicts": [], "error": str(e),
+                "status": "malformed", "reason_code": "evaluator_call_failed",
+                "pass2_diag": dict(_diag_holder),
                 "elapsed_sec": round(time.time() - start_time, 2)}
 
 
@@ -2308,17 +2435,44 @@ def run_synthesis(
             _n_returned = len(_out.get("verdicts") or [])
             _matched  = _dir_integrity.get(_role, {}).get("matched",   0) if _dir_integrity else 0
             _defaulted = _dir_integrity.get(_role, {}).get("defaulted", 0) if _dir_integrity else 0
+            _diag = _out.get("pass2_diag") or {}
+            _is_trunc = (_out.get("status") == "truncated") or bool(_diag.get("truncation_detected"))
+            # Legacy all_lost: a COMPLETED evaluator that returned objects but matched
+            # zero candidates (genuine format drift, not truncation).
+            _all_lost_legacy = (
+                _out.get("completed", False)
+                and _n_returned > 0
+                and _n_dir_cands > 0
+                and _matched == 0
+            )
+            # Step 370d: four-state classification — complete | truncated | malformed | excluded.
+            if _is_trunc:
+                _status, _reason, _contributing = "truncated", "failed_truncated_output_budget", False
+            elif not _out.get("completed", False):
+                _status = "excluded"
+                _reason = _out.get("reason_code") or "evaluator_call_failed"
+                _contributing = False
+            elif _all_lost_legacy:
+                _status, _reason, _contributing = "malformed", "format_drift_zero_match", False
+            else:
+                _status, _reason, _contributing = "complete", None, True
             _pass2_integrity[_role] = {
                 "completed":            _out.get("completed", False),
                 "n_objects":            _n_returned,
                 "matched_directional":  _matched,
                 "unmatched_directional": _defaulted,
-                "all_lost": (
-                    _out.get("completed", False)
-                    and _n_returned > 0
-                    and _n_dir_cands > 0
-                    and _matched == 0
-                ),
+                "all_lost": _all_lost_legacy,
+                # Step 370d — diagnosis + four-state status (the key deliverable):
+                "status":               _status,
+                "reason_code":          _reason,
+                "contributing":         _contributing,
+                "truncation_detected":  _is_trunc,
+                "raw_response_length":  _diag.get("raw_response_length"),
+                "json_parse_success":   _diag.get("json_parse_success"),
+                "top_level_array_closed": _diag.get("top_level_array_closed"),
+                "stop_reason":          _diag.get("stop_reason"),            # None (D2: not exposed)
+                "output_token_count":   _diag.get("output_token_count"),    # None (D2: not exposed)
+                "configured_max_output_tokens": _diag.get("configured_max_output_tokens"),
             }
     except Exception as _pie:
         _pass2_integrity = {}
