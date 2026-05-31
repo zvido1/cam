@@ -1116,6 +1116,20 @@ def _call_pass2_evaluator(
         router  = ProviderRouter([target], RouterConfig())
         adapter = router._get_adapter(p)
         raw     = adapter.call(_PASS2_EVALUATOR_SYSTEM, user_prompt, target).strip()
+        # Step 370c: logging-only raw response dump for Eval-A malformation analysis.
+        # NO behavior change — print only. First 3000 chars covers full short responses
+        # and enough of long ones to characterise structure/wrapping.
+        import hashlib as _hl
+        _raw_hash = _hl.md5(raw.encode("utf-8", errors="replace")).hexdigest()[:8]
+        _raw_type = type(raw).__name__
+        _raw_len  = len(raw)
+        _raw_preview = raw[:3000].replace("\n", "\\n") if raw else "(empty)"
+        print(
+            f"[pass2_raw_dump] Eval-{role} model={m} provider={p} "
+            f"raw_len={_raw_len} md5={_raw_hash} "
+            f"raw_preview={_raw_preview}",
+            flush=True,
+        )
         parsed  = _safe_parse_synthesis(raw)
         if parsed is None:
             preview = raw[:200].replace('\n', ' ') if raw else '(empty)'
@@ -2046,6 +2060,10 @@ def run_synthesis(
 
     # ── Build user prompt (same for all evaluators) ──
     user_prompt = _build_evaluator_user_prompt(flagged_lps, full_tenant_text, perspective, coverage_assessment)
+    # Step 370c: log Pass-1 prompt hash so runs on identical input can be confirmed identical.
+    import hashlib as _hl370c
+    _p1_hash = _hl370c.md5(user_prompt.encode("utf-8", errors="replace")).hexdigest()
+    print(f"[pass1_prompt_hash] md5={_p1_hash} len={len(user_prompt)}", flush=True)
 
     # ── Run three evaluators in parallel (Pass 1) ──
     # Eval-B uses gpt-5.4 — gpt-5.5 fails on long Pass 1 prompt.
