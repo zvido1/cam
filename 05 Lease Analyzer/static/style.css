@@ -13269,6 +13269,31 @@ body.mode-c .card-docview-link {
     border-top: 1px solid var(--border-light, #f1f5f9);
 }
 
+/* Step 370a: Directional Synthesis Completeness Guard — incomplete-state banner.
+   Grayscale-legible: meaning is carried by the glyph + bold tag + body text, not by
+   hue alone, so it survives monochrome printing / colorblind viewing. */
+.cpf-dir-incomplete {
+    border: 1px solid var(--border, #cbd5e1);
+    border-left: 4px solid var(--text-muted, #6b7280);
+    background: var(--surface-muted, #f8fafc);
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.6rem;
+}
+.cpf-dir-incomplete-tag {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text, #111827);
+    margin-bottom: 0.2rem;
+}
+.cpf-dir-incomplete-msg {
+    font-size: 0.8rem;
+    color: var(--text-muted, #374151);
+    line-height: 1.4;
+}
+
 /* Step 315: "Confidence:" label preceding the four-dot badge on coverage cards */
 .cov-conf-label {
     font-size: 0.7rem;

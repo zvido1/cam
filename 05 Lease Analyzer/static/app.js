@@ -16971,8 +16971,23 @@ function renderSynthesisPanel() {
         reliefs.forEach(function(f) { html += buildCpfCard(f); });
         html += '</div>';
     }
-    if (mismatches.length > 0) {
-        html += '<div class="cpf-group"><div class="cpf-group-header">Directional Mismatches <span class="nav-section-count">' + mismatches.length + '</span></div>';
+    // Step 370a: Directional Synthesis Completeness Guard. When synthesis flagged the
+    // directional pass as incomplete (large flagged-LP set + near-empty Pass-1 candidate
+    // set), do NOT let an empty/thin directional section read as a clean all-clear.
+    // Surface a Needs Review banner at the top of the directional area and still show
+    // whatever directional findings were returned.
+    const _synMeta = (pr && pr._stage_data && pr._stage_data.synthesis_meta)
+                  || (pr && pr.synthesis_meta) || {};
+    const _dirIncomplete = _synMeta.directional_synthesis_status === 'incomplete_low_candidate_anomaly';
+    if (_dirIncomplete || mismatches.length > 0) {
+        html += '<div class="cpf-group">';
+        if (_dirIncomplete) {
+            html += '<div class="cpf-dir-incomplete" role="alert">'
+                 +    '<div class="cpf-dir-incomplete-tag">⚠ Needs Review</div>'
+                 +    '<div class="cpf-dir-incomplete-msg">Directional synthesis produced an unusually low candidate set relative to the analyzed issue volume. One-sided-term review may be incomplete.</div>'
+                 +  '</div>';
+        }
+        html += '<div class="cpf-group-header">Directional Mismatches <span class="nav-section-count">' + mismatches.length + '</span></div>';
         mismatches.forEach(f => { html += buildCpfCard(f); });
         html += '</div>';
     }

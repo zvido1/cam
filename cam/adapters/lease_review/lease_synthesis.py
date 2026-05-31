@@ -1942,6 +1942,61 @@ def _normalize_findings(
     return out
 
 
+# ── Directional Synthesis Completeness Guard (Step 370a) ──────────────────────
+# Conservative circuit breaker for the catastrophic signature Step 370 found: a
+# large upstream flagged-LP set paired with a near-empty Pass-1 directional
+# candidate set. On the same lease / same code / same config, Pass-1 produced ~28
+# directional candidates on most runs but collapsed to 3 on one — and the collapsed
+# run presented as a clean "no one-sided terms found" all-clear, i.e. reassuring
+# silence from an instrument that may have gone deaf. This guard refuses to let that
+# masquerade as a clean directional conclusion.
+#
+# It does NOT fix the collapse (root cause is Step 370c) and does NOT claim that a
+# lease with many flagged LPs must have one-sided terms. The claim is narrower: for a
+# run with a large upstream issue set, a near-empty directional candidate set is
+# anomalous enough that CAM will not assert a clean directional result without review.
+#
+# Thresholds are PROVISIONAL — eyeballed from a small run set on a single lease
+# (Atlas), an emergency floor, not a calibrated model. Recalibrate once Step 370c
+# yields a defensible baseline. candidate_density is recorded to inform that
+# calibration but is NOT itself a trigger.
+DIRECTIONAL_GUARD_HIGH_FLAGGED_LP_THRESHOLD = 20   # provisional
+DIRECTIONAL_GUARD_LOW_CANDIDATE_THRESHOLD = 5      # provisional; uses <= (no reason to trust 5 over 4 when normal ≈ 28)
+
+
+def _evaluate_directional_completeness_guard(
+    flagged_lp_count: int,
+    pass1_dir_candidate_count: int,
+) -> tuple:
+    """Pure decision for the Directional Synthesis Completeness Guard (Step 370a).
+
+    No side effects and no I/O, so it can be exercised directly in validation. The
+    caller augments the returned guard dict with best-effort artifact pointers.
+
+    Returns (directional_synthesis_status, directional_guard_dict).
+    """
+    high_thr = DIRECTIONAL_GUARD_HIGH_FLAGGED_LP_THRESHOLD
+    low_thr = DIRECTIONAL_GUARD_LOW_CANDIDATE_THRESHOLD
+    candidate_density = (
+        pass1_dir_candidate_count / flagged_lp_count if flagged_lp_count else None
+    )
+    guard = {
+        "triggered": False,
+        "reason_code": None,
+        "flagged_lp_count": flagged_lp_count,
+        "pass1_directional_candidate_count": pass1_dir_candidate_count,
+        "candidate_density": candidate_density,   # recorded, NOT a trigger
+        "high_flagged_lp_threshold": high_thr,
+        "low_candidate_threshold": low_thr,
+    }
+    status = "complete"
+    if flagged_lp_count >= high_thr and pass1_dir_candidate_count <= low_thr:
+        status = "incomplete_low_candidate_anomaly"
+        guard["triggered"] = True
+        guard["reason_code"] = "low_pass1_candidate_count_with_high_flagged_lp_volume"
+    return status, guard
+
+
 def run_synthesis(
     full_tenant_text: str,
     coverage_assessment: List[dict],
@@ -1971,11 +2026,14 @@ def run_synthesis(
 
     if not flagged_lps:
         print("[lease_synthesis] No flagged LPs — Stage 7 skipped", flush=True)
+        _skip_status, _skip_guard = _evaluate_directional_completeness_guard(0, 0)
         return {
             "cross_provision_findings": [],
             "meta": {
                 "skipped": True,
                 "skip_reason": "no_flagged_lps",
+                "directional_synthesis_status": _skip_status,
+                "directional_guard": _skip_guard,
                 "elapsed_sec": round(time.time() - start_time, 2),
             },
         }
@@ -2279,11 +2337,45 @@ def run_synthesis(
         _pass2_raw = {}
         print(f"[lease_synthesis] Step 368 pass2_raw persistence failed: {_p2e}", flush=True)
 
+    # ── Directional Synthesis Completeness Guard (Step 370a) ──────────────
+    # Safety circuit breaker only — does not alter findings, does not rerun Pass-1.
+    directional_synthesis_status, directional_guard = _evaluate_directional_completeness_guard(
+        len(flagged_lps), len(directional_candidates)
+    )
+    if directional_guard["triggered"]:
+        print(
+            f"[lease_synthesis] DIRECTIONAL COMPLETENESS GUARD TRIGGERED: "
+            f"flagged_lp={directional_guard['flagged_lp_count']} "
+            f"pass1_dir_candidates={directional_guard['pass1_directional_candidate_count']} "
+            f"— directional synthesis marked INCOMPLETE; will not present clean directional result.",
+            flush=True,
+        )
+    # Best-effort artifact pointers for later path/variance analysis. Never invent
+    # values; never break the pipeline. Pass-1 raw responses / request hashes are not
+    # persisted to disk today, so those stay empty until 370c adds them.
+    directional_guard["execution_path"] = "unknown"
+    directional_guard["raw_response_paths"] = []
+    directional_guard["request_hashes"] = []
+    try:
+        directional_guard["parse_status"] = [
+            {
+                "role": _r,
+                "completed": bool(_o.get("completed")),
+                "fallback_used": bool(_o.get("fallback_used")),
+                "error": _o.get("error"),
+            }
+            for _r, _o in evaluator_outputs.items()
+        ]
+    except Exception:
+        directional_guard["parse_status"] = []
+
     return {
         "cross_provision_findings": findings,
         "meta": {
             "skipped": False,
             "flagged_lp_count": len(flagged_lps),
+            "directional_synthesis_status": directional_synthesis_status,
+            "directional_guard": directional_guard,
             "finding_count": len(findings),
             "evaluators_completed": completed_count,
             "elapsed_sec": round(elapsed, 2),
