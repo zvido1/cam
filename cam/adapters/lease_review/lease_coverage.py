@@ -303,6 +303,12 @@ def assess_coverage(
                 _a["coverage_method"] = _result_305.get("coverage_method", "step_305_per_element")
                 _a["element_verdicts"] = _result_305.get("element_verdicts", [])
                 _a["coverage_state_baseline"] = _result_305["coverage_state_baseline"]
+                # Step 372a: persist evaluator identity + token-utilization meta and the
+                # LP-level fallback flag so the audit trail records the REAL answering
+                # model. fallback_used drives a quiet audit-surface-only confidence tick.
+                _a["evaluator_meta"] = _result_305.get("evaluator_meta", {})
+                _a["lp_meta"] = _result_305.get("lp_meta", {})
+                _a["fallback_used"] = _result_305.get("lp_meta", {}).get("fallback_used", False)
                 _a["_coverage_api_calls"] = _result_305.get("api_calls", 0)  # Step 335
                 # Step 351: Architecture A Phase 2 — verdict distance at LP layer
                 _a["verdict_distance"] = _result_305.get("verdict_distance")

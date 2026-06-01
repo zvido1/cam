@@ -276,8 +276,14 @@ def _call_single_evaluator_305(
         with claimed_lock:
             claimed_providers.discard(provider)
 
-    def _try_call(provider: str, model: str, label: str) -> list:
-        """Attempt one model call. Returns parsed list of verdict dicts."""
+    def _try_call(provider: str, model: str, label: str) -> tuple:
+        """Attempt one model call. Returns (parsed list of verdict dicts, call_meta dict).
+
+        call_meta carries admin-side token-utilization observability (Step 372a):
+        max_output_tokens (the budget actually requested), truncated (inferred from an
+        unclosed JSON structure), and finish_reason/output_tokens_used/output_utilization
+        (None — adapter.call returns text only; surfacing real usage is a follow-up).
+        """
         if not health.is_available(provider):
             raise RuntimeError(f"provider {provider} degraded")
         if not _try_claim(provider):
@@ -299,10 +305,25 @@ def _call_single_evaluator_305(
             router = ProviderRouter([target], RouterConfig())
             adapter = router._get_adapter(provider)
             raw = adapter.call(_SYSTEM_PROMPT, user_prompt, target).strip()
+            _raw_char_len = len(raw)
             # Strip markdown code fences (Gemini and some models wrap in ```json ... ```)
             if raw.startswith("```"):
                 raw = re.sub(r"^```(?:json)?\s*", "", raw)
                 raw = re.sub(r"\s*```\s*$", "", raw)
+                raw = raw.strip()
+            # Step 372a: infer truncation from an unclosed JSON structure. A complete
+            # array/object ends with ] or }; if it doesn't, the response was cut off
+            # (hit the token cap). This is the minimal truncation signal available when
+            # the adapter exposes only text, not usage counts.
+            _truncated = not (raw.endswith("]") or raw.endswith("}"))
+            _call_meta = {
+                "max_output_tokens": _tokens,
+                "output_tokens_used": None,   # adapter.call returns text only; usage not surfaced
+                "output_utilization": None,
+                "finish_reason": None,
+                "truncated": _truncated,
+                "raw_char_len": _raw_char_len,
+            }
             # Try json.loads first: safe_json_extract extracts the last JSON object
             # it finds, which mangles a bare array by returning only the final element.
             # json.loads correctly parses arrays; fall back to safe_json_extract only
@@ -340,7 +361,7 @@ def _call_single_evaluator_305(
                     parsed = _unwrapped
             if not isinstance(parsed, list):
                 raise ValueError(f"Response is not a list (got {type(parsed).__name__})")
-            return parsed
+            return parsed, _call_meta
         except Exception:
             _release_claim(provider)
             raise
@@ -352,13 +373,14 @@ def _call_single_evaluator_305(
 
     for provider, model, label in own_candidates:
         try:
-            verdicts = _try_call(provider, model, label)
+            verdicts, call_meta = _try_call(provider, model, label)
             elapsed = time.time() - start_time
             logger.info(f"[lease_coverage_305] Eval-{role} ({pid}, {label}) succeeded in {elapsed:.1f}s")
             return {
                 "role": role, "model": model, "provider": provider, "label": label,
                 "completed": True, "elapsed_sec": round(elapsed, 2),
                 "element_verdicts": verdicts, "error": None,
+                **call_meta,
             }
         except Exception as e:
             errors.append(f"{model}: {e}")
@@ -378,12 +400,13 @@ def _call_single_evaluator_305(
             break
         provider, model, label = pool_entry
         try:
-            verdicts = _try_call(provider, model, label)
+            verdicts, call_meta = _try_call(provider, model, label)
             elapsed = time.time() - start_time
             return {
                 "role": role, "model": model, "provider": provider, "label": label,
                 "completed": True, "elapsed_sec": round(elapsed, 2),
                 "element_verdicts": verdicts, "error": None,
+                **call_meta,
             }
         except Exception as e:
             errors.append(f"pool/{model}: {e}")
@@ -396,6 +419,12 @@ def _call_single_evaluator_305(
         "label": evaluator_cfg["label"],
         "completed": False, "elapsed_sec": round(elapsed, 2),
         "element_verdicts": None, "error": "; ".join(errors),
+        # Step 372a: no successful call — record the budget that would have been used,
+        # truncated=False (nothing was produced to truncate), usage fields None.
+        "max_output_tokens": max(evaluator_cfg.get("max_output_tokens", 3000),
+                                 len(elements_305) * 300 + 500),
+        "output_tokens_used": None, "output_utilization": None,
+        "finish_reason": None, "truncated": False,
     }
 
 
@@ -490,10 +519,25 @@ def _extract_verdicts_for_element(
     """Extract and normalize each evaluator's verdict for one element."""
     verdicts = []
     for role, result in evaluator_results.items():
+        # Step 372a: carry the REAL answering model/label onto every per-evaluator
+        # verdict. `role` (A/B/C) is the stable SLOT; `actual_model`/`actual_label`
+        # are what actually answered (a fallback returns the fallback's model/label).
+        # The displayed `label` is now the real one, not the static lineup label —
+        # this is the line that was previously laundering a fallback's verdict under
+        # the primary's name ("GPT-5.5").
+        _primary_model = EVALUATOR_LINEUP_305.get(role, {}).get("model")
+        _actual_model = result.get("model")
+        _actual_label = result.get("label")
+        _is_fallback = bool(_actual_model) and _actual_model != _primary_model
+        _real_label = _actual_label or EVALUATOR_LINEUP_305.get(role, {}).get("label", f"Evaluator {role}")
+
         if not result.get("completed") or not result.get("element_verdicts"):
             verdicts.append({
                 "role": role,
-                "label": EVALUATOR_LINEUP_305.get(role, {}).get("label", f"Evaluator {role}"),
+                "label": _real_label,
+                "actual_model": _actual_model,
+                "actual_label": _actual_label,
+                "is_fallback": _is_fallback,
                 "verdict": "unclear",
                 "citation": None,
                 "reasoning": f"Evaluator {role} did not complete",
@@ -512,7 +556,10 @@ def _extract_verdicts_for_element(
         if match is None:
             verdicts.append({
                 "role": role,
-                "label": EVALUATOR_LINEUP_305.get(role, {}).get("label", f"Evaluator {role}"),
+                "label": _real_label,
+                "actual_model": _actual_model,
+                "actual_label": _actual_label,
+                "is_fallback": _is_fallback,
                 "verdict": "unclear",
                 "citation": None,
                 "reasoning": f"Evaluator {role} did not include verdict for this element",
@@ -538,7 +585,10 @@ def _extract_verdicts_for_element(
 
         verdicts.append({
             "role": role,
-            "label": EVALUATOR_LINEUP_305.get(role, {}).get("label", f"Evaluator {role}"),
+            "label": _real_label,
+            "actual_model": _actual_model,
+            "actual_label": _actual_label,
+            "is_fallback": _is_fallback,
             "verdict": normalized,
             "citation": citation,
             "reasoning": match.get("reasoning", ""),
@@ -748,6 +798,7 @@ def assess_coverage_305(
             "elements_missing": [e.get("element_label", e.get("element_id", "")) for e in elements_305],
             "negative_space_candidates_reviewed": negative_space_candidates,
             "evaluator_meta": {r: {"completed": False} for r in evaluator_results},
+            "lp_meta": {"fallback_used": False, "fallbacks": None},  # Step 372a
         }
 
     # ── 2. Merge per-element verdicts ─────────────────────────────────────────
@@ -848,14 +899,38 @@ def assess_coverage_305(
         f"{succeeded}/3 evaluators; {elapsed}s)"
     )
 
+    # Step 372a: evaluator_meta now records the REAL answering model, an explicit
+    # fallback flag, and admin-side token-utilization fields. `model`/`actual_model`
+    # are the real answering model; the static slot model lives in EVALUATOR_LINEUP_305.
     evaluator_meta = {
         role: {
             "completed": r["completed"],
             "model": r["model"],
+            "actual_model": r.get("model"),
+            "actual_label": r.get("label"),
+            "is_fallback": bool(r.get("model")) and r.get("model") != EVALUATOR_LINEUP_305.get(role, {}).get("model"),
             "elapsed_sec": r["elapsed_sec"],
             "error": r.get("error"),
+            # Token-utilization observability (admin-side only — never lawyer-facing)
+            "max_output_tokens": r.get("max_output_tokens"),
+            "output_tokens_used": r.get("output_tokens_used"),
+            "output_utilization": r.get("output_utilization"),
+            "finish_reason": r.get("finish_reason"),
+            "truncated": r.get("truncated"),
         }
         for role, r in evaluator_results.items()
+    }
+
+    # Step 372a: LP-level fallback flag for a quiet, audit-surface-only confidence
+    # tick. Records which slot(s) fell back and to what — NOT a lawyer-facing alarm.
+    _fallbacks = [
+        {"role": role, "actual_model": r.get("model"), "actual_label": r.get("label")}
+        for role, r in evaluator_results.items()
+        if bool(r.get("model")) and r.get("model") != EVALUATOR_LINEUP_305.get(role, {}).get("model")
+    ]
+    lp_meta = {
+        "fallback_used": bool(_fallbacks),
+        "fallbacks": _fallbacks or None,
     }
 
     logger.info(
@@ -875,6 +950,7 @@ def assess_coverage_305(
         "elements_disputed_important": elements_disputed_important, # Step 355 Phase 2
         "negative_space_candidates_reviewed": negative_space_candidates,
         "evaluator_meta": evaluator_meta,
+        "lp_meta": lp_meta,  # Step 372a: LP-level fallback_used flag (audit surface only)
         "api_calls": succeeded,  # Step 335: number of evaluator API calls made for this LP
         # Step 351: Architecture A Phase 2 — verdict distance at LP layer
         "verdict_distance": verdict_distance,

@@ -16154,9 +16154,16 @@ function renderCoveragePanel() {
                         const reasoning = (evi.reasoning || '').trim();
                         const reasoningShort = reasoning.length > 300 ? reasoning.slice(0, 297) + '…' : reasoning;
                         const isDissent = evi.verdict !== ev.verdict;
+                        // Step 372a: quiet audit-surface-only fallback tick. When a slot's
+                        // primary model was unavailable and a fallback answered, mark it so
+                        // the auditor knows the real model — not a lawyer-facing alarm.
+                        const fallbackTick = evi.is_fallback
+                            ? ' <span class="cv-eval-fallback" title="Primary model unavailable — answered by fallback ' + esc(evLabel) + '">↩ fallback</span>'
+                            : '';
                         return '<div class="cv-eval-row' + (isDissent ? ' cv-eval-row-dissent' : '') + '">'
                             + '<span class="' + roleCls + '">' + esc(evi.role || '?') + '</span>'
                             + '<span class="cv-eval-name">' + esc(evLabel) + '</span>'
+                            + fallbackTick
                             + '<span class="cv-ev-pill ' + evc.cls + ' cv-eval-verdict-pill">' + esc(evc.label) + '</span>'
                             + evCitRef
                             + (reasoningShort ? '<div class="cv-eval-reasoning">' + esc(reasoningShort) + '</div>' : '')

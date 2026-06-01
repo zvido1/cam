@@ -12213,6 +12213,16 @@ tr.cv-ev-row:has(.cv-ev-evals-btn-disag) { background: #fffbeb; }
     white-space: nowrap;
 }
 
+/* Step 372a: quiet audit-surface-only fallback tick (not a lawyer-facing alarm) */
+.cv-eval-fallback {
+    font-size: 0.625rem;
+    color: #94a3b8;
+    font-weight: 500;
+    font-style: italic;
+    white-space: nowrap;
+    cursor: help;
+}
+
 /* Verdict pill inside the panel (slightly smaller than row-level pill) */
 .cv-eval-verdict-pill {
     font-size: 0.625rem !important;
