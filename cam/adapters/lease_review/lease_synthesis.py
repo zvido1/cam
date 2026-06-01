@@ -44,13 +44,22 @@ from cam.adapters.lease_review.model_config import (  # noqa: E402
     EVALUATOR_A_FALLBACK_LABEL, EVALUATOR_B_FALLBACK_LABEL, EVALUATOR_C_FALLBACK_LABEL,
 )
 
+# ── Step 372c: Stage 7 Pass-1 output budget computed from output need ──────────
+# Pass-1 (Q1+Q2) emits one cross_coverage_findings entry per flagged LP
+# (~300 tokens/entry). The prior 8000 sat just UNDER the in-code stated need
+# ("28 LPs x ~300 tokens/entry ~= 8.4K") and risked truncating the tail on contracts
+# with many flagged LPs. Worst case ~32 flagged LPs x 300 + Q2 directional entries
+# + overhead -> raise with margin (prevention-only; does not change a completion that
+# already fit). Pass-2 (12000, Step 370d) and consolidation (6000) are unchanged.
+SYNTHESIS_PASS1_MAX_OUTPUT_TOKENS = 12000
+
 EVALUATOR_LINEUP: Dict[str, dict] = {
     "A": {
         "provider": EVALUATOR_A_PRIMARY[0],
         "model":    EVALUATOR_A_PRIMARY[1],
         "label":    EVALUATOR_A_LABEL,
         "fallback": (EVALUATOR_A_FALLBACK[0], EVALUATOR_A_FALLBACK[1], EVALUATOR_A_FALLBACK_LABEL),
-        "max_output_tokens": 8000,  # raised from 6K — 28 LPs × ~300 tokens/entry ≈ 8.4K needed
+        "max_output_tokens": SYNTHESIS_PASS1_MAX_OUTPUT_TOKENS,  # Step 372c: was 8000, under the ~8.4K stated need
         "temperature": 0.0,
         "timeout_sec": 300.0,
     },
@@ -59,7 +68,7 @@ EVALUATOR_LINEUP: Dict[str, dict] = {
         "model":    EVALUATOR_B_PRIMARY[1],
         "label":    EVALUATOR_B_LABEL,
         "fallback": (EVALUATOR_B_FALLBACK[0], EVALUATOR_B_FALLBACK[1], EVALUATOR_B_FALLBACK_LABEL),
-        "max_output_tokens": 8000,  # raised from 6K — 28 LPs × ~300 tokens/entry ≈ 8.4K needed
+        "max_output_tokens": SYNTHESIS_PASS1_MAX_OUTPUT_TOKENS,  # Step 372c: was 8000, under the ~8.4K stated need
         "temperature": 0.0,
         "timeout_sec": 300.0,
     },
@@ -68,7 +77,7 @@ EVALUATOR_LINEUP: Dict[str, dict] = {
         "model":    EVALUATOR_C_PRIMARY[1],
         "label":    EVALUATOR_C_LABEL,
         "fallback": None,  # grok-3 retired 2026-05-15; no same-provider fallback
-        "max_output_tokens": 8000,  # raised from 6K — 28 LPs × ~300 tokens/entry ≈ 8.4K needed
+        "max_output_tokens": SYNTHESIS_PASS1_MAX_OUTPUT_TOKENS,  # Step 372c: was 8000, under the ~8.4K stated need
         "temperature": 0.0,
         "timeout_sec": 300.0,
     },
@@ -91,6 +100,14 @@ _SYNTHESIS_PASS2_B_MODEL       = "gpt-5.4"   # gpt-5.5 returns wrong format (dic
 # output-token usage are not exposed by the cam/core adapter, so the max-token CAUSE
 # is probable, not established (Branch D2). See build_log/370d_code_status.md.
 DIRECTIONAL_PASS2_MAX_OUTPUT_TOKENS = 12000
+
+# ── Step 372c: Stage 7 compound (Q3) budget computed from output need ──────────
+# The dedicated 5-candidate compound call runs on gpt-5.4 (a reasoning model) for
+# Eval-B, whose max_completion_tokens budget must also cover reasoning tokens BEFORE
+# it reaches candidates[]. The prior 4000 was tight under reasoning load (the same
+# Step 333 candidates[] truncation mechanism). Output is bounded at 5 objects, so
+# the per-mechanism fix here is headroom, not a prompt split. Raised with margin.
+SYNTHESIS_COMPOUND_MAX_OUTPUT_TOKENS = 8000
 
 _EVALUATOR_LINEUP_PASS1: Dict[str, dict] = {
     role: (
@@ -744,7 +761,7 @@ def _call_compound_evaluator(
             name=f"{p}:{m}-stage7-compound-{role}",
             provider=p,
             model=m,
-            max_output_tokens=4000,  # 2K was too tight for verbose Claude responses
+            max_output_tokens=SYNTHESIS_COMPOUND_MAX_OUTPUT_TOKENS,  # Step 372c: was 4000, tight under gpt-5.4 reasoning load
             temperature=0.0,
             timeout_sec=120.0,
         )

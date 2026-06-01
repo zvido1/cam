@@ -151,7 +151,39 @@ def _safe_json_extract(text: str) -> Dict[str, Any]:
 # -----------------------------
 # Provider adapters
 # -----------------------------
+def _extract_usage(resp) -> Optional[dict]:
+    """Best-effort extraction of token usage from a provider response object.
+
+    Step 372c (permitted observability utility — Step 211 precedent): pure
+    side-channel read; NEVER affects the returned text or any verdict. Returns
+    {output_tokens, input_tokens, reasoning_tokens} or None when usage is absent.
+    Adapters stash this on ``self.last_usage`` so callers can surface real budget
+    utilization. Supports both OpenAI-style (completion/prompt_tokens) and
+    Anthropic-style (output/input_tokens) usage shapes.
+    """
+    try:
+        u = getattr(resp, "usage", None)
+        if u is None:
+            return None
+        out = getattr(u, "completion_tokens", None)
+        if out is None:
+            out = getattr(u, "output_tokens", None)
+        inp = getattr(u, "prompt_tokens", None)
+        if inp is None:
+            inp = getattr(u, "input_tokens", None)
+        reasoning = None
+        details = getattr(u, "completion_tokens_details", None)
+        if details is not None:
+            reasoning = getattr(details, "reasoning_tokens", None)
+        return {"output_tokens": out, "input_tokens": inp, "reasoning_tokens": reasoning}
+    except Exception:
+        return None
+
+
 class BaseAdapter:
+    # Step 372c: most recent call's token usage (None until a call populates it).
+    last_usage: Optional[dict] = None
+
     def call(self, system_prompt: str, user_prompt: str, target: ModelTarget) -> str:
         raise NotImplementedError
 
@@ -210,6 +242,8 @@ class OpenAIAdapter(BaseAdapter):
         # Use Chat Completions API (supports reasoning_effort)
         # Pass per-request timeout for long-running reasoning models
         resp = self.client.chat.completions.create(**params, timeout=target.timeout_sec)
+        # Step 372c: stash real token usage (side-channel; does not alter output)
+        self.last_usage = _extract_usage(resp)
         # Extract content from response
         if resp.choices and len(resp.choices) > 0:
             return resp.choices[0].message.content or ""
@@ -286,6 +320,8 @@ class AnthropicAdapter(BaseAdapter):
                 params["temperature"] = target.temperature
             
             resp = self.client.messages.create(**params, timeout=target.timeout_sec)
+            # Step 372c: stash real token usage (side-channel; does not alter output)
+            self.last_usage = _extract_usage(resp)
             # content is list of blocks
             chunks = []
             for block in resp.content:
@@ -580,6 +616,8 @@ class XAIAdapter(BaseAdapter):
                 temperature=target.temperature,
                 max_tokens=target.max_output_tokens,
             )
+            # Step 372c: stash real token usage (side-channel; does not alter output)
+            self.last_usage = _extract_usage(resp)
             return (resp.choices[0].message.content or "").strip()
         except Exception as e:
             msg = f"xai_error: {type(e).__name__}: {e}"

@@ -100,6 +100,61 @@ _SHARED_FALLBACK_POOL = [
     ("mistral", "mistral-large-latest", "Mistral Large"),
 ]
 
+# ── Step 372c: budget sizing + B-prompt-split constants ───────────────────────
+# Per-mechanism budget fix (NOT one-size). A (Sonnet) truncates because its verbose
+# reasoning + section_ref + quote per element needs ~500–700 output tokens/element;
+# the old 300/elem floor was too low. Raise the per-element output rate so A's full
+# output fits (compute-from-output-need principle).
+PER_ELEMENT_OUTPUT_TOKENS = 600
+BASE_OUTPUT_OVERHEAD = 1000
+# B (gpt-5.x) does NOT fail on output size — it reasoning-token-exhausts on INPUT
+# complexity (many elements → more thinking before output). More max_output_tokens
+# does not help; the prompt must be split into smaller element batches so each
+# sub-call's reasoning load fits. Split is B-specific (gated on gpt-5.x); A and C
+# never split. Shape-preserving: one verdict per element, merged by element_id.
+B_SPLIT_BATCH_SIZE = 8
+
+
+def _compute_output_budget(evaluator_cfg: dict, n_elements: int) -> int:
+    """Output-token budget computed from output need (Step 372c).
+
+    Floored at the evaluator's configured default so we never shrink below the
+    prior baseline. Raising the ceiling is prevention-only and (at temperature 0)
+    does not change a completion that already fit — verdicts stay byte-identical
+    on a clean no-truncation run.
+    """
+    return max(evaluator_cfg.get("max_output_tokens", 3000),
+               n_elements * PER_ELEMENT_OUTPUT_TOKENS + BASE_OUTPUT_OVERHEAD)
+
+
+def _is_split_model(model: str) -> bool:
+    """B-split gate: only gpt-5.x evaluators batch their prompt (Step 372c)."""
+    return (model or "").lower().startswith("gpt-5")
+
+
+def _classify_failure(error_msg: str, model: str) -> str:
+    """Classify why a primary evaluator call failed (Step 372c observability).
+
+    Mapping (per spec): empty content → reasoning_exhaustion for gpt-5.x; unclosed
+    array → truncation; HTTP/timeout/rate → api_error. Recorded where the fallback
+    fires so budget pressure is queryable from run metadata, not a future probe.
+    """
+    m = (error_msg or "").lower()
+    if "degraded" in m or "already claimed" in m:
+        return "provider_unavailable"
+    if ("_error:" in m or "timeout" in m or "timed out" in m or "rate" in m
+            or "429" in m or "connection" in m or "unauthorized" in m
+            or "401" in m or " 500" in m or " 502" in m or " 503" in m):
+        return "api_error"
+    if "empty_content" in m or "empty content" in m:
+        return "reasoning_exhaustion" if _is_split_model(model) else "empty_response"
+    if "truncation" in m:
+        return "truncation"
+    if "malformed" in m or "not a list" in m or "nonetype" in m:
+        return "reasoning_exhaustion" if _is_split_model(model) else "malformed_response"
+    return "unknown"
+
+
 # ── Prompts ────────────────────────────────────────────────────────────────────
 # Locked design paragraph reproduced verbatim from architecture spec §3.
 _LOCKED_DESIGN = (
@@ -262,6 +317,9 @@ def _call_single_evaluator_305(
     health = get_health_tracker()
     start_time = time.time()
     errors: list[str] = []
+    # Step 372c: per-attempt failure classifications, so a fallback can record WHY
+    # the primary failed (reasoning_exhaustion / truncation / api_error / ...).
+    attempt_failures: list[dict] = []
 
     user_prompt = _build_user_prompt(pid, lp_name, tenant_text, elements_305, ns_candidates, governing_law, cross_lp_texts=cfg.get("_cross_lp_texts"))
 
@@ -276,13 +334,96 @@ def _call_single_evaluator_305(
         with claimed_lock:
             claimed_providers.discard(provider)
 
-    def _try_call(provider: str, model: str, label: str) -> tuple:
-        """Attempt one model call. Returns (parsed list of verdict dicts, call_meta dict).
+    def _parse_verdict_list(raw: str, truncated: bool, model: str) -> list:
+        """Parse one adapter response into a verdict list (shared by all sub-calls)."""
+        if raw == "":
+            # gpt-5.x returns empty when reasoning-token-exhausted; others = empty_response.
+            raise ValueError("empty_content: model returned no output")
+        # Try json.loads first: safe_json_extract extracts the last JSON object it finds,
+        # which mangles a bare array by returning only the final element. json.loads
+        # correctly parses arrays; fall back to safe_json_extract only for responses that
+        # need object-hunting (malformed/prefixed responses).
+        try:
+            parsed = json.loads(raw)
+        except (json.JSONDecodeError, ValueError):
+            parsed = safe_json_extract(raw)
+        # All major model families sometimes wrap the verdict array in an outer object.
+        #   Pattern 1: {"verdicts": [...]} — dict with a list value; extract that list.
+        #   Pattern 2: {"LP-09.elem1": {...}, ...} — dict-of-dicts; convert to list.
+        if isinstance(parsed, dict):
+            _unwrapped = None
+            for _val in parsed.values():
+                if isinstance(_val, list) and _val and isinstance(_val[0], dict):
+                    _unwrapped = _val
+                    break
+            if _unwrapped is None:
+                for _val in parsed.values():
+                    if isinstance(_val, list):
+                        _unwrapped = _val
+                        break
+            if _unwrapped is None:
+                _dict_vals = list(parsed.values())
+                if _dict_vals and all(isinstance(v, dict) for v in _dict_vals):
+                    _unwrapped = _dict_vals
+            if _unwrapped is not None:
+                parsed = _unwrapped
+        if not isinstance(parsed, list):
+            # Distinguish truncation (unclosed structure) from reasoning exhaustion so
+            # _classify_failure can attribute the fallback correctly (Step 372c).
+            if truncated:
+                raise ValueError(f"truncation: response not a list (unclosed, got {type(parsed).__name__})")
+            raise ValueError(f"malformed: response not a list (got {type(parsed).__name__})")
+        return parsed
 
-        call_meta carries admin-side token-utilization observability (Step 372a):
-        max_output_tokens (the budget actually requested), truncated (inferred from an
-        unclosed JSON structure), and finish_reason/output_tokens_used/output_utilization
-        (None — adapter.call returns text only; surfacing real usage is a follow-up).
+    def _do_single_call(provider: str, model: str, batch_elements: list, prompt: str) -> tuple:
+        """One adapter call + parse for one element batch. Returns (parsed_list, sub_meta).
+
+        sub_meta carries per-call observability: requested_budget, raw_char_len,
+        truncated, and real usage from the adapter (Step 372c) when available.
+        """
+        budget = _compute_output_budget(evaluator_cfg, len(batch_elements))
+        target = ModelTarget(
+            name=f"{provider}:{model}-305-{role}-{pid}",
+            provider=provider,
+            model=model,
+            max_output_tokens=budget,
+            temperature=evaluator_cfg.get("temperature", 0.0),
+            timeout_sec=evaluator_cfg.get("timeout_sec", 300.0),
+        )
+        router = ProviderRouter([target], RouterConfig())
+        adapter = router._get_adapter(provider)
+        raw = (adapter.call(_SYSTEM_PROMPT, prompt, target) or "").strip()
+        raw_char_len = len(raw)
+        # Step 372c: real token usage if the adapter surfaced it (None → estimate later)
+        usage = getattr(adapter, "last_usage", None)
+        # Strip markdown code fences (Gemini and some models wrap in ```json ... ```)
+        if raw.startswith("```"):
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```\s*$", "", raw)
+            raw = raw.strip()
+        empty = (raw == "")
+        # Truncation: a complete array/object ends with ] or }; if not, it was cut off.
+        truncated = (not empty) and not (raw.endswith("]") or raw.endswith("}"))
+        parsed = _parse_verdict_list(raw, truncated, model)
+        sub_meta = {
+            "requested_budget": budget,
+            "raw_char_len": raw_char_len,
+            "truncated": truncated,
+            "usage": usage,
+        }
+        return parsed, sub_meta
+
+    def _try_call(provider: str, model: str, label: str) -> tuple:
+        """Attempt one evaluator call (possibly split into element batches for gpt-5.x).
+
+        Returns (merged parsed verdict list, call_meta dict). The B-split is invisible
+        to the merge layer: sub-call verdict arrays are concatenated by element_id, so
+        the result is shape-identical to an unsplit call (one verdict per element).
+
+        call_meta carries admin-side budget observability (Step 372a/372c):
+        requested_budget, actual_output_tokens (real when the adapter surfaces usage,
+        else a char/4 estimate flagged by usage_source), budget_utilization_pct,
+        truncated, n_subcalls, split_applied.
         """
         if not health.is_available(provider):
             raise RuntimeError(f"provider {provider} degraded")
@@ -290,80 +431,70 @@ def _call_single_evaluator_305(
             raise RuntimeError(f"provider {provider} already claimed by another evaluator")
         print(f"[lease_coverage_305] Eval-{role} ({pid}): calling {model} ({provider})...", flush=True)
         try:
-            # Scale token budget with element count: ~300 tokens per verdict + 500 overhead.
-            # LP-11 has 17 elements; 3000 tokens was too small and caused truncation.
-            _tokens = max(evaluator_cfg.get("max_output_tokens", 3000),
-                         len(elements_305) * 300 + 500)
-            target = ModelTarget(
-                name=f"{provider}:{model}-305-{role}-{pid}",
-                provider=provider,
-                model=model,
-                max_output_tokens=_tokens,
-                temperature=evaluator_cfg.get("temperature", 0.0),
-                timeout_sec=evaluator_cfg.get("timeout_sec", 300.0),
-            )
-            router = ProviderRouter([target], RouterConfig())
-            adapter = router._get_adapter(provider)
-            raw = adapter.call(_SYSTEM_PROMPT, user_prompt, target).strip()
-            _raw_char_len = len(raw)
-            # Strip markdown code fences (Gemini and some models wrap in ```json ... ```)
-            if raw.startswith("```"):
-                raw = re.sub(r"^```(?:json)?\s*", "", raw)
-                raw = re.sub(r"\s*```\s*$", "", raw)
-                raw = raw.strip()
-            # Step 372a: infer truncation from an unclosed JSON structure. A complete
-            # array/object ends with ] or }; if it doesn't, the response was cut off
-            # (hit the token cap). This is the minimal truncation signal available when
-            # the adapter exposes only text, not usage counts.
-            _truncated = not (raw.endswith("]") or raw.endswith("}"))
-            _call_meta = {
-                "max_output_tokens": _tokens,
-                "output_tokens_used": None,   # adapter.call returns text only; usage not surfaced
-                "output_utilization": None,
+            # Step 372c: B (gpt-5.x) splits long element lists into ≤ B_SPLIT_BATCH_SIZE
+            # batches to bound reasoning load. A and C never split. Each sub-call shares
+            # the SAME system prompt + lease text; only the element subset differs.
+            split_applied = _is_split_model(model) and len(elements_305) > B_SPLIT_BATCH_SIZE
+            if split_applied:
+                batches = [elements_305[i:i + B_SPLIT_BATCH_SIZE]
+                           for i in range(0, len(elements_305), B_SPLIT_BATCH_SIZE)]
+                print(f"[lease_coverage_305] Eval-{role} ({pid}): splitting {len(elements_305)} "
+                      f"elements into {len(batches)} batches of <={B_SPLIT_BATCH_SIZE} for {model}", flush=True)
+            else:
+                batches = [elements_305]
+
+            all_verdicts: list = []
+            agg_raw_char = 0
+            agg_truncated = False
+            agg_requested = 0
+            agg_out_tokens = 0
+            any_real_usage = False
+            for batch in batches:
+                sub_prompt = (user_prompt if not split_applied
+                              else _build_user_prompt(pid, lp_name, tenant_text, batch,
+                                                      ns_candidates, governing_law,
+                                                      cross_lp_texts=cfg.get("_cross_lp_texts")))
+                parsed, sub_meta = _do_single_call(provider, model, batch, sub_prompt)
+                all_verdicts.extend(parsed)
+                agg_raw_char += sub_meta["raw_char_len"]
+                agg_truncated = agg_truncated or sub_meta["truncated"]
+                agg_requested += sub_meta["requested_budget"]
+                _u = sub_meta["usage"]
+                if _u and _u.get("output_tokens") is not None:
+                    any_real_usage = True
+                    agg_out_tokens += _u["output_tokens"]
+
+            # Budget utilization: real usage when surfaced, else a char/4 token estimate.
+            if any_real_usage:
+                actual_out = agg_out_tokens
+                usage_source = "adapter"
+            else:
+                actual_out = max(1, round(agg_raw_char / 4))  # ~4 chars/token heuristic
+                usage_source = "estimate_char4"
+            util_pct = round(100.0 * actual_out / agg_requested, 1) if agg_requested else None
+            call_meta = {
+                "requested_budget": agg_requested,
+                "max_output_tokens": agg_requested,           # 372a-compatible alias
+                "actual_output_tokens": actual_out,
+                "budget_utilization_pct": util_pct,
+                # 372a fields: only populate the "used"/"utilization" pair from REAL usage
+                "output_tokens_used": agg_out_tokens if any_real_usage else None,
+                "output_utilization": (round(agg_out_tokens / agg_requested, 4)
+                                       if (any_real_usage and agg_requested) else None),
+                "usage_source": usage_source,
                 "finish_reason": None,
-                "truncated": _truncated,
-                "raw_char_len": _raw_char_len,
+                "truncated": agg_truncated,
+                "raw_char_len": agg_raw_char,
+                "n_subcalls": len(batches),
+                "split_applied": split_applied,
             }
-            # Try json.loads first: safe_json_extract extracts the last JSON object
-            # it finds, which mangles a bare array by returning only the final element.
-            # json.loads correctly parses arrays; fall back to safe_json_extract only
-            # for responses that need object-hunting (malformed/prefixed responses).
-            try:
-                parsed = json.loads(raw)
-            except (json.JSONDecodeError, ValueError):
-                parsed = safe_json_extract(raw)
-            # All major model families wrap the verdict array in an outer object.
-            # Handle two observed patterns:
-            #   Pattern 1: {"verdicts": [...], "element_verdicts": [...]}
-            #              — dict with a list value; extract that list.
-            #   Pattern 2: {"LP-09.elem1": {verdict_dict}, "LP-09.elem2": {...}}
-            #              — dict-of-dicts where every value is a verdict object;
-            #                convert to list of values.
-            if isinstance(parsed, dict):
-                _unwrapped = None
-                # Pattern 1a: find the first value that is a non-empty list of dicts
-                for _val in parsed.values():
-                    if isinstance(_val, list) and _val and isinstance(_val[0], dict):
-                        _unwrapped = _val
-                        break
-                # Pattern 1b: any list value (even empty)
-                if _unwrapped is None:
-                    for _val in parsed.values():
-                        if isinstance(_val, list):
-                            _unwrapped = _val
-                            break
-                # Pattern 2: dict-of-dicts — every value is a verdict object
-                if _unwrapped is None:
-                    _dict_vals = list(parsed.values())
-                    if _dict_vals and all(isinstance(v, dict) for v in _dict_vals):
-                        _unwrapped = _dict_vals
-                if _unwrapped is not None:
-                    parsed = _unwrapped
-            if not isinstance(parsed, list):
-                raise ValueError(f"Response is not a list (got {type(parsed).__name__})")
-            return parsed, _call_meta
-        except Exception:
+            return all_verdicts, call_meta
+        except Exception as e:
             _release_claim(provider)
+            attempt_failures.append({
+                "provider": provider, "model": model,
+                "reason": _classify_failure(str(e), model), "error": str(e),
+            })
             raise
 
     # Phase 1: own-provider chain (primary + fallback)
@@ -371,15 +502,19 @@ def _call_single_evaluator_305(
     for entry in evaluator_cfg.get("own_chain", []):
         own_candidates.append(entry)
 
-    for provider, model, label in own_candidates:
+    for _idx, (provider, model, label) in enumerate(own_candidates):
         try:
             verdicts, call_meta = _try_call(provider, model, label)
             elapsed = time.time() - start_time
             logger.info(f"[lease_coverage_305] Eval-{role} ({pid}, {label}) succeeded in {elapsed:.1f}s")
+            # Step 372c: if this was NOT the primary, record why the primary fell back.
+            _fb_reason = attempt_failures[0]["reason"] if (_idx > 0 and attempt_failures) else None
+            _fb_stage = "305" if _idx > 0 else None
             return {
                 "role": role, "model": model, "provider": provider, "label": label,
                 "completed": True, "elapsed_sec": round(elapsed, 2),
                 "element_verdicts": verdicts, "error": None,
+                "fallback_reason": _fb_reason, "fallback_trigger_stage": _fb_stage,
                 **call_meta,
             }
         except Exception as e:
@@ -402,10 +537,12 @@ def _call_single_evaluator_305(
         try:
             verdicts, call_meta = _try_call(provider, model, label)
             elapsed = time.time() - start_time
+            _fb_reason = attempt_failures[0]["reason"] if attempt_failures else None
             return {
                 "role": role, "model": model, "provider": provider, "label": label,
                 "completed": True, "elapsed_sec": round(elapsed, 2),
                 "element_verdicts": verdicts, "error": None,
+                "fallback_reason": _fb_reason, "fallback_trigger_stage": "305",
                 **call_meta,
             }
         except Exception as e:
@@ -419,12 +556,15 @@ def _call_single_evaluator_305(
         "label": evaluator_cfg["label"],
         "completed": False, "elapsed_sec": round(elapsed, 2),
         "element_verdicts": None, "error": "; ".join(errors),
-        # Step 372a: no successful call — record the budget that would have been used,
-        # truncated=False (nothing was produced to truncate), usage fields None.
-        "max_output_tokens": max(evaluator_cfg.get("max_output_tokens", 3000),
-                                 len(elements_305) * 300 + 500),
+        # Step 372a/372c: no successful call — record the budget that would have been used.
+        "requested_budget": _compute_output_budget(evaluator_cfg, len(elements_305)),
+        "max_output_tokens": _compute_output_budget(evaluator_cfg, len(elements_305)),
+        "actual_output_tokens": None, "budget_utilization_pct": None,
         "output_tokens_used": None, "output_utilization": None,
+        "usage_source": None, "n_subcalls": 0, "split_applied": False,
         "finish_reason": None, "truncated": False,
+        "fallback_reason": attempt_failures[0]["reason"] if attempt_failures else None,
+        "fallback_trigger_stage": "305",
     }
 
 
@@ -917,6 +1057,15 @@ def assess_coverage_305(
             "output_utilization": r.get("output_utilization"),
             "finish_reason": r.get("finish_reason"),
             "truncated": r.get("truncated"),
+            # Step 372c: budget-pressure + fallback-cause fields (queryable from data)
+            "requested_budget": r.get("requested_budget"),
+            "actual_output_tokens": r.get("actual_output_tokens"),
+            "budget_utilization_pct": r.get("budget_utilization_pct"),
+            "usage_source": r.get("usage_source"),
+            "n_subcalls": r.get("n_subcalls"),
+            "split_applied": r.get("split_applied"),
+            "fallback_reason": r.get("fallback_reason"),
+            "fallback_trigger_stage": r.get("fallback_trigger_stage"),
         }
         for role, r in evaluator_results.items()
     }
