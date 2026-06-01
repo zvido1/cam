@@ -12146,6 +12146,23 @@ tr.cv-ev-row:has(.cv-ev-evals-btn-disag) { background: #fffbeb; }
 .cv-section-link:hover { text-decoration: underline solid; }
 .cv-elem-lp-jump { font-size: 0.75rem; color: var(--primary, #0366d6); margin-left: 0.5rem; white-space: nowrap; }
 
+/* Step 372D2-fix: contested-but-cited section marker — visually distinct from a clean
+   consensus citation (amber, dashed, ⚠). Evaluators cited the section but disagreed on
+   whether it satisfies the element; NOT presented as a chosen/consensus citation. */
+.cam-contested-cit {
+    cursor: pointer;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #b45309;                 /* amber-700 */
+    background: rgba(245, 158, 11, 0.10);
+    border: 1px dashed rgba(180, 83, 9, 0.55);
+    border-radius: 3px;
+    padding: 0 0.3rem;
+    white-space: nowrap;
+}
+.cam-contested-cit:hover { background: rgba(245, 158, 11, 0.18); }
+.cam-contested-cit-block { display: inline-block; margin-top: 0.25rem; }
+
 /* Step 308 — per-evaluator expandable panel */
 
 /* Toggle button in element row status cell */

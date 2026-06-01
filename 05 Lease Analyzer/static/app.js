@@ -7704,6 +7704,38 @@ function _navGoEvidenceFromKeyIssues(issueAreaId, actionBucket) {
     switchResultsTab('evidence');
 }
 
+// Step 372D2-fix: shared render helper for CONTESTED citations. On a disputed /
+// no-consensus element the merged citation is intentionally null (the merge declines
+// to pick one), but the per-evaluator citations exist in disagreement_citations.
+// Surface the cited section(s) framed honestly as CONTESTED — visually distinct from
+// a clean consensus citation. Used by Key Issues + Evidence. Returns '' if nothing cited.
+function contestedCitationHtml(disagreementCitations, opts) {
+    opts = opts || {};
+    if (!disagreementCitations || !disagreementCitations.length) return '';
+    var secs = [];
+    disagreementCitations.forEach(function(d) {
+        var ref = d && d.citation && d.citation.section_ref;
+        if (ref && secs.indexOf(ref) === -1) secs.push(ref);
+    });
+    if (!secs.length) return '';
+    var firstQuote = (disagreementCitations[0].citation && disagreementCitations[0].citation.quote) || '';
+    var secList = secs.join(', ');
+    var perEval = disagreementCitations.map(function(d) {
+        return (d.actual_label || d.role || '?') + ': ' + (d.verdict || '?')
+             + ' (' + ((d.citation && d.citation.section_ref) || '—') + ')';
+    }).join(' · ');
+    var tip = 'Contested — evaluators cited ' + secList
+            + ' but disagreed on whether it satisfies this element. ' + perEval;
+    var label = secs.length === 1 ? ('Contested · ' + secs[0])
+                                   : ('Contested · ' + secs.length + ' sections cited');
+    var cls = 'cam-contested-cit' + (opts.style === 'block' ? ' cam-contested-cit-block' : '');
+    return '<span class="' + cls + '" data-ref="' + esc(secs[0]) + '" data-quote="' + esc(firstQuote)
+         + '" onclick="event.stopPropagation();window.CAM.jumpToEvidence(this.dataset.ref,this.dataset.quote)" title="'
+         + esc(tip) + '">⚠ ' + esc(label) + '</span>';
+}
+window.CAM = window.CAM || {};
+window.CAM.contestedCitationHtml = contestedCitationHtml;
+
 function _buildElementRow(ev, safePid, highlighted) {
     var verdict = ev.verdict || 'unclear';
     var vcfg = _EV_VERDICT_CFG[verdict] || { cls: 'ev-v-unclear', label: verdict };
@@ -7728,7 +7760,12 @@ function _buildElementRow(ev, safePid, highlighted) {
     html += '<span class="ev-elem-label">' + esc(label) + '</span>';
     html += '<span class="ev-v-pill ' + vcfg.cls + '">' + esc(vcLabel) + '</span>';
     if (verdict === 'disputed') html += '<span class="ev-disputed-badge">◈ Disputed</span>';
-    if (citRef) html += '<span class="ev-elem-citation">' + esc(citRef) + '</span>';
+    if (citRef) {
+        html += '<span class="ev-elem-citation">' + esc(citRef) + '</span>';
+    } else if (ev.disagreement_citations) {
+        // Step 372D2-fix: merged citation null on disagreement — surface the contested grounding.
+        html += contestedCitationHtml(ev.disagreement_citations, { style: 'inline' });
+    }
     html += '</div>';
     if (verdict === 'missing') {
         html += '<div class="ev-elem-missing">✗ Missing — not found in lease</div>';
@@ -16113,9 +16150,13 @@ function renderCoveragePanel() {
                 const vc = VERDICT_CFG[ev.verdict] || { cls: 'cv-ev-unclear', label: ev.verdict || '?' };
                 // Step 306c: clickable citation
                 const hasCit = ev.citation && ev.citation.section_ref;
+                // Step 372D2-fix: on disagreement the merged citation is null; surface the
+                // contested-but-cited section(s) instead of a bare "—".
+                const _contestedCit = (!hasCit && ev.disagreement_citations)
+                    ? contestedCitationHtml(ev.disagreement_citations, { style: 'inline' }) : '';
                 const citHtml = hasCit
                     ? '<span class="cv-section-link" data-ref="' + esc(ev.citation.section_ref) + '" data-quote="' + esc(ev.citation.quote || '') + '" onclick="window.CAM.jumpToEvidence(this.dataset.ref,this.dataset.quote)">' + esc(ev.citation.section_ref) + '</span>'
-                    : '—';
+                    : (_contestedCit || '—');
                 // Step 307b: confidence dots
                 const confDots = ev.confidence === 'high'   ? '<span class="ev-conf-dots ev-conf-high" title="3/3 consensus">●●●</span>'
                                : ev.confidence === 'medium' ? '<span class="ev-conf-dots ev-conf-medium" title="2/3 consensus">●●○</span>'

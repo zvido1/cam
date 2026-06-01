@@ -744,6 +744,21 @@ def merge_element_verdicts(verdicts: list[dict], element: dict) -> dict:
 
     Returns merged verdict dict with confidence and disagreement trail.
     """
+    # Step 372D2-fix: derived, NON-authoritative display aid. On disagreement paths the
+    # authoritative merged `citation` STAYS None (correct epistemic behavior — the merge
+    # declines to pick one citation when there's no consensus). But the per-evaluator
+    # citations already exist in `verdicts`; collect the cited (section_ref-bearing) ones
+    # so the UI can show "the section was CITED but the element is CONTESTED" instead of
+    # nothing. Pure surfacing — does NOT change verdict/confidence/coverage_state.
+    def _collect_disagreement_citations(vs: list[dict]):
+        out = [
+            {"role": v.get("role"), "actual_label": v.get("actual_label"),
+             "verdict": v.get("verdict"), "citation": v.get("citation")}
+            for v in vs
+            if isinstance(v.get("citation"), dict) and v["citation"].get("section_ref")
+        ]
+        return out or None
+
     # Filter out unclear for consensus calculation (unclear = abstain from consensus)
     active = [v for v in verdicts if v["verdict"] != "unclear"]
 
@@ -767,6 +782,7 @@ def merge_element_verdicts(verdicts: list[dict], element: dict) -> dict:
             "citation": None,
             "reason": "no_consensus",
             "disagreements": verdicts,
+            "disagreement_citations": _collect_disagreement_citations(verdicts),  # Step 372D2-fix
         }
 
     # ── Disputed gate (Supplement #21 Phase 1) ───────────────────────────────
@@ -783,6 +799,7 @@ def merge_element_verdicts(verdicts: list[dict], element: dict) -> dict:
             "citation": None,
             "reason": "distant_split_presence_missing",
             "disagreements": verdicts,  # preserve ALL evaluators (not just dissents)
+            "disagreement_citations": _collect_disagreement_citations(verdicts),  # Step 372D2-fix
         }
 
     # 2-of-3 or 3-of-3 consensus
@@ -806,6 +823,7 @@ def merge_element_verdicts(verdicts: list[dict], element: dict) -> dict:
                 "citation": None,
                 "reason": "citation_required_but_absent",
                 "disagreements": verdicts,
+                "disagreement_citations": _collect_disagreement_citations(verdicts),  # Step 372D2-fix
             }
         chosen_citation = valid_citations[0]
     else:
@@ -967,6 +985,9 @@ def assess_coverage_305(
             "reason": merged.get("reason"),
             "evaluator_verdicts": per_evaluator,
             "disagreements": merged.get("disagreements"),
+            # Step 372D2-fix: derived, non-authoritative cited-but-contested sections
+            # (None on consensus paths). Merged `citation` above stays None on disagreement.
+            "disagreement_citations": merged.get("disagreement_citations"),
         }
         element_verdicts_merged.append(verdict_record)
 
