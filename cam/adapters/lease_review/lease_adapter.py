@@ -975,11 +975,12 @@ def run_lease_analysis(
             print(f"[lease_adapter] Stage 5d failed (non-fatal): {e}", flush=True)
 
     # ── Stage 5e: Use-Aware Provision Impact Assessment (Step 341b) ──
+    use_impact_governance = None  # Step 372b: stage-level fallback meta
     from cam.adapters.lease_review.lease_use_impact import USE_IMPACT_ENABLED
     if USE_IMPACT_ENABLED and use_profile_data:
         try:
             from cam.adapters.lease_review.lease_use_impact import assess_use_impact
-            coverage_assessment = assess_use_impact(
+            coverage_assessment, use_impact_governance = assess_use_impact(
                 coverage_assessment,
                 use_profile=use_profile_data,
                 perspective=cfg.get("perspective", "tenant"),
@@ -1121,6 +1122,7 @@ def run_lease_analysis(
         "use_profile": use_profile_data,
         "use_analysis_status": use_analysis_status,
         "use_aware_governance": use_aware_governance,
+        "use_impact_governance": use_impact_governance,  # Step 372b: 5e fallback meta
         # Raw stage data for auditability
         "_stage_data": {
             "extraction_meta": extraction["meta"],
@@ -1428,11 +1430,12 @@ def run_lease_coverage_only(
             print(f"[lease_adapter:analyze] Stage 5d failed (non-fatal): {e}", flush=True)
 
     # ── Stage 5e: Use-Aware Provision Impact Assessment (Step 341b) ──
+    use_impact_governance_c = None  # Step 372b: stage-level fallback meta
     from cam.adapters.lease_review.lease_use_impact import USE_IMPACT_ENABLED
     if USE_IMPACT_ENABLED and use_profile_data_c:
         try:
             from cam.adapters.lease_review.lease_use_impact import assess_use_impact
-            coverage_assessment = assess_use_impact(
+            coverage_assessment, use_impact_governance_c = assess_use_impact(
                 coverage_assessment,
                 use_profile=use_profile_data_c,
                 perspective=cfg.get("perspective", "tenant"),
@@ -1554,6 +1557,7 @@ def run_lease_coverage_only(
         "use_profile": use_profile_data_c,
         "use_analysis_status": use_analysis_status_c,
         "use_aware_governance": use_aware_governance_c,
+        "use_impact_governance": use_impact_governance_c,  # Step 372b: 5e fallback meta
         "cross_provision_findings": [],
         "_stage_data": {
             "extraction_meta": extraction["meta"],

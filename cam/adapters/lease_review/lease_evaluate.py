@@ -40,9 +40,9 @@ EVALUATOR_ATTEMPT_TIMEOUT = 300.0
 # Each evaluator has a primary model and a same-provider fallback.
 # When all own-provider models fail, draws from shared fallback pool.
 #
-# Own-provider chains:
-#   A: claude-sonnet-4-6  → claude-sonnet-4
-#   B: gpt-5.2            → gpt-4o
+# Own-provider chains (authoritative source is model_config.py; comment is descriptive):
+#   A: claude-sonnet-4-6  → claude-haiku-4-5
+#   B: gpt-5.5            → gpt-5.4   (Step 372b: corrected stale gpt-5.2 comment)
 #   C: grok-4.3           (no same-provider fallback; grok-3 retired 2026-05-15)
 #
 # Shared fallback pool: [gemini-3.1-pro-preview, mistral-large-latest]
@@ -534,6 +534,19 @@ def evaluate_provisions(
     )
 
     stage_elapsed = time.time() - stage_start
+
+    # Step 372b: stage-level fallback visibility (admin observability; metadata only).
+    # Compare each evaluator's ACTUAL answering model to its lineup primary — this
+    # catches own-chain fallbacks (e.g. gpt-5.5 → gpt-5.4) that the per-evaluator
+    # `fallback_used` flag (pool-only) does not. The merged/aggregated output records
+    # no model identity, so this rollup is the only place a fallback is visible here.
+    _stage3_fallbacks = [
+        {"role": k, "model": r.get("model"), "label": r.get("label")}
+        for k, r in evaluator_results.items()
+        if "error" not in r and r.get("model")
+        and r.get("model") != EVALUATORS.get(k, {}).get("model")
+    ]
+
     return {
         "evaluators": evaluator_results,
         "aggregated": aggregated,
@@ -546,6 +559,9 @@ def evaluate_provisions(
             "api_calls": succeeded,
             "evaluator_count": succeeded,
             "degraded": succeeded < 3,
+            # Step 372b: did any evaluator answer with a non-primary (fallback) model?
+            "fallback_used": bool(_stage3_fallbacks),
+            "fallbacks": _stage3_fallbacks or None,
         },
     }
 

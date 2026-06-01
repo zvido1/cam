@@ -348,14 +348,20 @@ def assess_use_impact(
 
     Flags: coverage_state = "missing" (applicable) OR "partial" with >= 50% missing elements.
     If use_profile is None / empty, marks all flagged LPs as context_dependent without API calls.
-    Returns the same coverage_assessment list with use_impact added where applicable.
+
+    Returns:
+        (coverage_assessment, use_impact_meta) — the same list with use_impact added where
+        applicable, plus a Step 372b stage-meta dict carrying fallback_used / fallbacks
+        (admin observability; mirrors Stage 5d's governance_record). Metadata only — the
+        merged use_impact verdicts are unchanged.
     """
     cfg = cfg or {}
 
     flagged = [a for a in coverage_assessment if _should_assess(a)]
     if not flagged:
         logger.info("[lease_use_impact] No flagged LPs — skipping use_impact stage")
-        return coverage_assessment
+        # Step 372b: no evaluators ran → no fallback.
+        return coverage_assessment, {"fallback_used": False, "fallbacks": None, "status": "no_flagged_lps"}
 
     # No use_profile → can't assess; mark context_dependent without API calls
     if not use_profile:
@@ -367,7 +373,8 @@ def assess_use_impact(
                 "use_reasoning": "No use profile available — cannot assess tenant-specific impact.",
                 "confidence": "no_evaluators", "evaluator_agreement": None,
             }
-        return coverage_assessment
+        # Step 372b: no evaluators ran → no fallback.
+        return coverage_assessment, {"fallback_used": False, "fallbacks": None, "status": "no_use_profile"}
 
     print(
         f"[lease_use_impact] Stage 5e: assessing {len(flagged)} flagged LP(s) via 3 evaluators...",
@@ -405,13 +412,30 @@ def assess_use_impact(
         if pid in merged:
             a["use_impact"] = merged[pid]
 
+    # Step 372b: stage-level fallback visibility (admin observability; metadata only).
+    # 5e collapses 3 evaluators into one use_impact per LP with no model identity; this
+    # records whether any evaluator answered with a non-primary (fallback) model. The
+    # result dict carries the real answering `label`; flag when it differs from the primary.
+    _stage5e_fallbacks = [
+        {"role": r.get("role"), "label": r.get("label")}
+        for r in results
+        if r.get("completed") and r.get("label")
+        and r.get("label") != _EVALUATOR_LINEUP.get(r.get("role"), {}).get("label")
+    ]
+    use_impact_meta = {
+        "fallback_used": bool(_stage5e_fallbacks),
+        "fallbacks": _stage5e_fallbacks or None,
+        "status": "applied",
+    }
+
     n_favorable = sum(1 for v in merged.values() if v["gap_impact"] == "favorable")
     n_adverse   = sum(1 for v in merged.values() if v["gap_impact"] == "adverse")
     n_neutral   = sum(1 for v in merged.values() if v["gap_impact"] == "neutral")
     n_ctx       = sum(1 for v in merged.values() if v["gap_impact"] == "context_dependent")
+    _fb_note = " (FALLBACK fired)" if _stage5e_fallbacks else ""
     print(
         f"[lease_use_impact] Stage 5e complete: "
-        f"{n_favorable} favorable, {n_adverse} adverse, {n_neutral} neutral, {n_ctx} context_dependent",
+        f"{n_favorable} favorable, {n_adverse} adverse, {n_neutral} neutral, {n_ctx} context_dependent{_fb_note}",
         flush=True,
     )
-    return coverage_assessment
+    return coverage_assessment, use_impact_meta

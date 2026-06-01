@@ -1140,8 +1140,20 @@ def _merge_evaluator_verdicts(
     n_total = len(coverage_assessment)
     n_rejected = n_total - n_assert_strong - n_assert_weak - n_abstained
 
+    # Step 372b: stage-level fallback visibility (admin observability; metadata only).
+    # The merged governance output records no per-LP model identity; this flags whether
+    # any evaluator answered with a non-primary (fallback) model for this stage.
+    _stage5d_fallbacks = [
+        {"role": r, "model": evaluator_results[r].get("model"), "label": evaluator_results[r].get("label")}
+        for r in ["A", "B", "C"]
+        if evaluator_results[r].get("model")
+        and evaluator_results[r].get("model") != EVALUATOR_LINEUP.get(r, {}).get("model")
+    ]
+
     governance_record = {
         "status": "applied",
+        "fallback_used": bool(_stage5d_fallbacks),   # Step 372b
+        "fallbacks": _stage5d_fallbacks or None,      # Step 372b
         "evaluators": [
             {
                 "role": r,
@@ -1196,6 +1208,8 @@ def assess_use_aware_coverage(
         logger.warning("[lease_use_aware] All three evaluators failed — skipping Stage 5d")
         return coverage_assessment, {
             "status": "skipped_all_evaluators_failed",
+            "fallback_used": False,   # Step 372b: all failed → no model answered
+            "fallbacks": None,        # Step 372b
             "evaluators": [
                 {"role": r, **{k: evaluator_results[r][k]
                                for k in ("model", "provider", "label", "completed", "elapsed_sec")}}
