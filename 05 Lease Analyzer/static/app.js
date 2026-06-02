@@ -4598,11 +4598,15 @@ function _computeRiskCounts(r, perspective) {
     (r.coverage_assessment || []).forEach(function(a) {
         caByLp[a.issue_area_id || a.provision_id] = a;
     });
-    var gaps = 0, crossClause = 0, directional = 0;
+    var gaps = 0, crossClause = 0, directional = 0, priorityReview = 0;
     (r.coverage_assessment || []).forEach(function(a) {
         if ((a.coverage_state || '') === 'not_applicable') return;
         var bucket = classifyFindingType(a, 'c', { perspective: perspective });
-        if (bucket === 'risk') gaps++;
+        if (bucket === 'risk') {
+            gaps++;
+            // Step 373: same isPriorityReview rule the sidebar uses — within-Risk triage.
+            if (isPriorityReview(a)) priorityReview++;
+        }
     });
     (r.cross_provision_findings || []).forEach(function(f) {
         var govSig = f.finding_type === 'compound_risk' ? deriveCompoundGovernanceSignal(f, caByLp)
@@ -4615,8 +4619,11 @@ function _computeRiskCounts(r, perspective) {
                       : f.finding_type === 'directional_mismatch' ? 'DIRECTIONAL' : '';
         if (typeLabel === 'COMPOUND') crossClause++;
         else if (typeLabel === 'DIRECTIONAL') directional++;
+        // Step 373: same rule again on the synthesis side (severity === HIGH).
+        if (isPriorityReview(f)) priorityReview++;
     });
-    return { gaps: gaps, crossClause: crossClause, directional: directional, total: gaps + crossClause };
+    return { gaps: gaps, crossClause: crossClause, directional: directional,
+             priorityReview: priorityReview, total: gaps + crossClause };
 }
 
 // Step 258: Mode C variant of the AI Summary bar. Aggregates coverage_assessment
@@ -4680,6 +4687,10 @@ function renderModeCAISummaryBar(bar) {
     if (_riskCounts.gaps > 0)       _riskParts.push(_riskCounts.gaps + (_riskCounts.gaps === 1 ? ' coverage gap' : ' coverage gaps'));
     if (_riskCounts.crossClause > 0) _riskParts.push(_riskCounts.crossClause + ' cross-clause risk' + (_riskCounts.crossClause === 1 ? '' : 's'));
     const _riskDetailLine = _riskParts.join(' · ');
+    // Step 373: Priority Review count — SAME isPriorityReview rule as the sidebar.
+    const _priorityReviewHtml = (_riskCounts.priorityReview > 0)
+        ? `<div class="overview-priority-review" title="CAM flags these Risk items for first-pass review (coverage hard_flag + Stage 7 HIGH)">&#9888; ${_riskCounts.priorityReview} Priority Review</div>`
+        : '';
     const _riskHeadlineHtml = (_riskCounts.total > 0)
         ? `<div class="overview-risk-headline">
               <div class="overview-risk-headline-count">
@@ -4687,6 +4698,7 @@ function renderModeCAISummaryBar(bar) {
                   <span class="overview-risk-headline-number">${_riskCounts.total}</span>
               </div>
               ${_riskDetailLine ? `<div class="overview-risk-headline-detail">${esc(_riskDetailLine)}</div>` : ''}
+              ${_priorityReviewHtml}
            </div>`
         : '';
 
@@ -17680,6 +17692,34 @@ function updateNavActive(tenantIdx, focusPid) {
 
 // context: { perspective, govSig }
 // Step 347e: Risk = HIGH/CRIT only. MEDIUM → Improvement everywhere.
+// Step 373: Priority Review — a UI triage tier, NOT a severity theory.
+// It means "CAM flags this for first-pass lawyer attention." This is the SINGLE
+// source of truth for the triage tier, used by BOTH the Key Issues sidebar and
+// the Overview risk summary (same single-source-of-truth pattern as
+// classifyFindingType). Do NOT inline the rule anywhere else.
+//
+//   Coverage card  → Priority Review IFF review_priority_distance_signal.hard_flag === true
+//                    (Stage 5f: verdict distance × tenant consequence)
+//   Stage 7 card   → Priority Review IFF severity === "HIGH"
+//
+// These are DIFFERENT source metrics mapped into ONE lawyer-facing tier — same
+// review tier, different source logic. We do NOT represent them as the same
+// underlying computation, and we do NOT synthesize a HIGH/MED/LOW severity for
+// coverage LPs. hard_flag is a GATE, not a merged score; both underlying axes
+// (confidence via lp_confidence + consequence via use_impact) stay visible in
+// the card detail, which keeps this doctrine-safe under Architecture A
+// Guardrail #3 (confidence and consequence are orthogonal, never merged).
+function isPriorityReview(finding) {
+    if (!finding) return false;
+    // Stage 7 synthesis cards (cross_provision_findings): HIGH severity.
+    if (finding._item_type === 'synthesis' || finding.finding_type) {
+        return String(finding.severity || '').toUpperCase() === 'HIGH';
+    }
+    // Coverage LP cards: Stage 5f hard_flag.
+    var rpds = finding.review_priority_distance_signal;
+    return !!(rpds && rpds.hard_flag === true);
+}
+
 function classifyFindingType(finding, mode, context) {
     var perspective = (context && context.perspective) || null;
     var ctxGovSig   = (context && context.govSig)   || null;
@@ -17793,6 +17833,36 @@ function _navSubGroupWrap(sectionId, title, count, bodyHtml, jobId) {
          + bodyHtml + '</div></div>';
 }
 
+// Step 373: triage detail fields for a coverage LP Risk card. Consequence comes
+// ONLY from use_impact.materiality — if use_impact / use_impact.materiality is
+// absent the consequence line is OMITTED (we never fall back to the plain
+// `materiality` field; same visual slot, different meaning = semantic fraud).
+function _navCoverageTriageFields(a) {
+    var rpds = a.review_priority_distance_signal;
+    var ui   = a.use_impact;
+    var m    = ui && ui.materiality;
+    var consequence = (m === 'high') ? 'High' : (m === 'medium') ? 'Medium' : (m === 'low') ? 'Low' : null;
+    var conf = (a.lp_confidence === 'high' || a.lp_confidence === 'low') ? a.lp_confidence : null;
+    var vd   = a.verdict_distance;
+    var disag = (vd && (vd.severity === 'moderate' || vd.severity === 'severe')) ? vd.severity : null;
+    return {
+        priority:     isPriorityReview(a),
+        consequence:  consequence,
+        confidence:   conf,
+        disagreement: disag,
+        reason:       (rpds && rpds.hard_flag && rpds.reason) ? rpds.reason : null
+    };
+}
+
+// Step 373: triage detail fields for a Stage 7 synthesis Risk card.
+function _navSynthTriageFields(f) {
+    return {
+        priority:  isPriorityReview(f),
+        severity:  (f.severity || '').toUpperCase() || null,
+        agreement: f.evaluator_agreement || null
+    };
+}
+
 // Step 360: provision name leads, action chip replaces severity badge + typeLabel + confidence dots.
 function _navBuildUnifiedItem(item, tIdx) {
     const sev = (item.sev || 'MEDIUM').toUpperCase();
@@ -17825,13 +17895,30 @@ function _navBuildUnifiedItem(item, tIdx) {
         + esc(item.pid) + '\',\'' + esc(item._bucket || '') + '\')" tabindex="0" role="link">View Evidence →</span>'
         + '</div>'
         : '';
+    // Step 373: Priority Review triage chip + detail line (Risk-bucket cards only).
+    var priorityChipHtml = item._priority
+        ? '<div class="nav-priority-row"><span class="nav-priority-chip" title="CAM flags this for first-pass review">&#9888; Priority Review</span></div>'
+        : '';
+    var _triParts = [];
+    if (item._consequence)  _triParts.push('Consequence: ' + item._consequence);
+    if (item._confidence)   _triParts.push('Confidence: ' + item._confidence);
+    if (item._disagreement) _triParts.push('Disagreement: ' + item._disagreement);
+    if (item._severity)     _triParts.push('Severity: ' + item._severity);
+    if (item._agreement)    _triParts.push('Agreement: ' + item._agreement);
+    var triageMetaHtml = _triParts.length
+        ? '<div class="nav-triage-meta">' + esc(_triParts.join(' · ')) + '</div>'
+        : '';
+    var _title = item.tooltip || item.summary || item.name || '';
+    if (item._reason) _title = (_title ? _title + ' — ' : '') + 'Priority reason: ' + item._reason;
     return '<button class="nav-item-enriched nav-item-unified nav-item-sev-' + sevCls + '" '
-         + dataAttrs + ' title="' + esc(item.tooltip || item.summary || item.name || '') + '" type="button">'
+         + dataAttrs + ' title="' + esc(_title) + '" type="button">'
          +   '<div class="nav-item-top">'
          +     '<span class="nav-item-name">' + esc(item.name || item.pid || '') + '</span>'
          +     actionChipHtml
          +   '</div>'
+         +   priorityChipHtml
          +   (item.summary ? '<div class="nav-item-desc">' + esc(item.summary) + '</div>' : '')
+         +   triageMetaHtml
          +   lpMetaHtml
          +   disputedHtml
          +   evidenceLinkHtml
@@ -17895,6 +17982,10 @@ function renderNavSidebar() {
     const sevRank = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
     function sortItems(arr) {
         return arr.sort(function(a, b) {
+            // Step 373: Priority Review floats to the TOP within the bucket
+            // (only Risk-bucket items carry _priority, so other buckets are unaffected).
+            var pa = a._priority ? 0 : 1, pb = b._priority ? 0 : 1;
+            if (pa !== pb) return pa - pb;
             var sa = sevRank[a.sev] !== undefined ? sevRank[a.sev] : 4;
             var sb = sevRank[b.sev] !== undefined ? sevRank[b.sev] : 4;
             if (sa !== sb) return sa - sb;
@@ -17938,10 +18029,15 @@ function renderNavSidebar() {
                 var evs = a.element_verdicts || [];
                 var govSig = evs.length > 0 ? deriveCoverageGovernanceSignal(evs) : null;
                 var summary = (a.exposure_headline || _deriveHeadlineFromExposure(a.exposure_statement || '')).trim();
+                // Step 373: triage fields only on Risk-bucket cards (within-bucket triage).
+                var _tri = (bucket === 'risk') ? _navCoverageTriageFields(a) : null;
                 pushItem(bucket, { _item_type: 'gap', _mode: 'c', pid: pid, name: name,
                     sev: sev, typeLabel: typeLabel, govSig: govSig, summary: summary,
                     elements_disputed: a.elements_disputed || 0,
                     elements_disputed_critical: a.elements_disputed_critical || 0,
+                    _priority: !!(_tri && _tri.priority),
+                    _consequence: _tri && _tri.consequence, _confidence: _tri && _tri.confidence,
+                    _disagreement: _tri && _tri.disagreement, _reason: _tri && _tri.reason,
                     tooltip: (a.exposure_statement || '').slice(0, 200) || name });
             });
 
@@ -17958,11 +18054,15 @@ function renderNavSidebar() {
                               : f.finding_type === 'directional_mismatch' ? 'DIRECTIONAL'
                               : f.finding_type === 'cross_coverage_relief' ? 'RELIEF' : 'SYNTHESIS';
                 var summary = _navTruncate(cpfTitle(f), 80);
+                // Step 373: triage fields only on Risk-bucket cards.
+                var _tris = (bucket === 'risk') ? _navSynthTriageFields(f) : null;
                 // Step 369: pass evaluator_agreement for directional ranking + tag
                 pushItem(bucket, { _item_type: 'synthesis', _mode: 'synthesis', pid: lps,
                     name: cpfTitle(f) || f.finding_id || '', sev: sev, typeLabel: typeLabel,
                     govSig: govSig, summary: summary, cpfId: f.finding_id || '',
                     tooltip: f.headline || '',
+                    _priority: !!(_tris && _tris.priority),
+                    _severity: _tris && _tris.severity, _agreement: _tris && _tris.agreement,
                     evaluator_agreement: f.evaluator_agreement || '' });
             });
         } else {
@@ -17993,11 +18093,16 @@ function renderNavSidebar() {
                 var evs = a.element_verdicts || [];
                 var govSig = evs.length > 0 ? deriveCoverageGovernanceSignal(evs) : null;
                 var summary = (a.exposure_headline || _deriveHeadlineFromExposure(a.exposure_statement || '')).trim();
+                // Step 373: triage fields only on Risk-bucket cards (same rule as Mode C).
+                var _triA = (bucket === 'risk') ? _navCoverageTriageFields(a) : null;
                 pushItem(bucket, { _item_type: 'gap', _mode: 'c', pid: pid,
                     name: a.issue_area_name || a.provision_name || pid, sev: sev,
                     typeLabel: typeLabel, govSig: govSig, summary: summary,
                     elements_disputed: a.elements_disputed || 0,
                     elements_disputed_critical: a.elements_disputed_critical || 0,
+                    _priority: !!(_triA && _triA.priority),
+                    _consequence: _triA && _triA.consequence, _confidence: _triA && _triA.confidence,
+                    _disagreement: _triA && _triA.disagreement, _reason: _triA && _triA.reason,
                     tooltip: (a.exposure_statement || '').slice(0, 200) || pid });
             });
         }
@@ -18168,6 +18273,7 @@ function renderNavSidebar() {
 }
 window.CAM._navSectionToggle = _navSectionToggle;
 window.CAM.classifyFindingType = classifyFindingType;
+window.CAM.isPriorityReview = isPriorityReview; // Step 373: shared triage tier
 
 // ── Boot ──
 document.addEventListener("DOMContentLoaded", init);
