@@ -4598,12 +4598,98 @@ function renderCrossTenantMatrix() {
 //   'conflicting_reading' — coverage LP floored to review by the Step 373C hard_flag (a disputed
 //                           critical element preventing a clean assertion; state !== 'review_needed').
 //   'coverage_question'   — coverage LP with no verdict (coverage_state === 'review_needed').
+// Step 374Q (PROVISIONAL relabel-only containment — pending calibration across more contracts):
+// derive DISPLAY-ONLY provenance flags for an LP-level coverage finding, mirroring the 374P
+// recompute (build_log/_374p_recompute.py) EXACTLY — same RANK, pessimistic/optimistic plurality
+// rollup with tie-break, and severity bands. Two flags:
+//   tieDerivedSevere   — the "severe" LP-level disagreement is an ARTIFACT of the pessimistic
+//                        tie-break (production severity is severe but the SAME verdicts rolled
+//                        optimistically are NOT severe). Per 374P: the disagreement only looks
+//                        severe because a tie broke pessimistically — not a supported conflict.
+//   consequenceDefaulted — the consequence was DEFAULTED (use_impact absent) or not assessed
+//                        (materiality empty), i.e. NOT an assessed consequence (374P Stage-5e gap).
+// These change NO count, routing, bucket, hard_flag, escalation, or how confidence is computed.
+// They ONLY decide which truthful Needs-Review subtype label a finding carries and whether the
+// unsupported "conflicting reading" / "confidence capped at low" executive wording is withheld.
+var _CAM_VERDICT_RANK_374Q = {
+    explicitly_present: 0, implicitly_present: 1,
+    covered_in_other_lp: 2, covered_in_other_LP: 2, covered_by_default_law: 2,
+    unclear: 3, missing: 5
+};
+function _camRoll374Q(elems, pess) {
+    if (!elems || !elems.length) return { verdict: 'unclear', tie: false };
+    var counts = {};
+    elems.forEach(function(v) { counts[v] = (counts[v] || 0) + 1; });
+    var mx = 0;
+    Object.keys(counts).forEach(function(k) { if (counts[k] > mx) mx = counts[k]; });
+    var cand = Object.keys(counts).filter(function(k) { return counts[k] === mx; });
+    if (cand.length <= 1) return { verdict: cand[0], tie: false };
+    var best = cand[0];
+    var br = (_CAM_VERDICT_RANK_374Q[best] !== undefined) ? _CAM_VERDICT_RANK_374Q[best] : 3;
+    for (var i = 1; i < cand.length; i++) {
+        var r = (_CAM_VERDICT_RANK_374Q[cand[i]] !== undefined) ? _CAM_VERDICT_RANK_374Q[cand[i]] : 3;
+        if ((pess && r > br) || (!pess && r < br)) { best = cand[i]; br = r; }
+    }
+    return { verdict: best, tie: true };
+}
+function _camSeverity374Q(vs) {
+    var md = 0;
+    for (var i = 0; i < vs.length; i++) {
+        for (var j = i + 1; j < vs.length; j++) {
+            var a = _CAM_VERDICT_RANK_374Q[vs[i]], b = _CAM_VERDICT_RANK_374Q[vs[j]];
+            if (a === undefined || b === undefined) continue;
+            var d = Math.abs(a - b);
+            if (d > md) md = d;
+        }
+    }
+    return md >= 4 ? 'severe' : md >= 2 ? 'moderate' : md >= 1 ? 'minor' : 'none';
+}
+function _lpProvenanceFlags374Q(finding) {
+    var out = { tieDerivedSevere: false, consequenceDefaulted: false };
+    if (!finding) return out;
+    var byRole = {};
+    (finding.element_verdicts || []).forEach(function(e) {
+        (e.evaluator_verdicts || []).forEach(function(ev) {
+            var role = (ev && ev.role != null) ? ev.role : null;
+            if (role === null) return;
+            (byRole[role] = byRole[role] || []).push(ev.verdict);
+        });
+    });
+    var roles = Object.keys(byRole);
+    if (roles.length) {
+        var prodList = [], optList = [], anyTie = false;
+        roles.forEach(function(role) {
+            var p = _camRoll374Q(byRole[role], true);
+            var o = _camRoll374Q(byRole[role], false);
+            prodList.push(p.verdict); optList.push(o.verdict);
+            if (p.tie) anyTie = true;
+        });
+        out.tieDerivedSevere = anyTie
+            && _camSeverity374Q(prodList) === 'severe'
+            && _camSeverity374Q(optList) !== 'severe';
+    }
+    var ui = finding.use_impact;
+    if (ui === null || ui === undefined) out.consequenceDefaulted = true;
+    else { var mat = ui.materiality; if (mat === null || mat === undefined || mat === '') out.consequenceDefaulted = true; }
+    return out;
+}
 function _reviewSubtypeOf(finding) {
     if (!finding) return 'coverage_question';
     if (finding.finding_type) return 'possible_one_sided'; // synthesis (cross_provision_findings)
     var state = finding.coverage_state || '';
     var rpds  = finding.review_priority_distance_signal;
-    if (rpds && rpds.hard_flag === true && state !== 'review_needed') return 'conflicting_reading';
+    if (rpds && rpds.hard_flag === true && state !== 'review_needed') {
+        // Step 374Q: the finding STAYS in Needs Review (bucket/count untouched) — but withhold the
+        // "conflicting reading" executive characterization when its basis is a tie-break artifact
+        // and/or a defaulted consequence (374P provenance), routing it to its TRUTHFUL subtype:
+        //   defaulted consequence  → 'consequence_not_assessed' (transparent, no implied assessment)
+        //   tie-derived (assessed) → 'coverage_question' (real coverage basis, not a supported conflict)
+        // Only a genuine, non-artifactual disagreement keeps 'conflicting_reading' (e.g. LP-02/LP-20).
+        var _pf = _lpProvenanceFlags374Q(finding);
+        if (_pf.consequenceDefaulted) return 'consequence_not_assessed';
+        if (_pf.tieDerivedSevere)     return 'coverage_question';
+        return 'conflicting_reading';
+    }
     return 'coverage_question';
 }
 
@@ -4627,7 +4713,7 @@ function _computeRiskCounts(r, perspective) {
     if (!r) return { gaps: 0, crossClause: 0, directional: 0, otherRisks: 0, priorityReview: 0, total: 0,
                      coverage: { risk: 0, review_needed: 0, improvement: 0, addressed: 0, na: 0 },
                      action: { risk: 0, reviewNeeded: 0, improvement: 0, addressed: 0 },
-                     reviewSub: { unresolvedCoverage: 0, disputedProtection: 0, unverifiedOneSided: 0 } };
+                     reviewSub: { unresolvedCoverage: 0, disputedProtection: 0, unverifiedOneSided: 0, consequenceNotAssessed: 0 } };
     var caByLp = {};
     (r.coverage_assessment || []).forEach(function(a) {
         caByLp[a.issue_area_id || a.provision_id] = a;
@@ -4647,7 +4733,7 @@ function _computeRiskCounts(r, perspective) {
     // improvement count coverage + synthesis findings (not 1-per-LP); addressed is the suppressed
     // residual computed after the loops (see suppression comment below).
     var reviewNeeded = 0, improvement = 0;
-    var unresolvedCoverage = 0, disputedProtection = 0, unverifiedOneSided = 0;
+    var unresolvedCoverage = 0, disputedProtection = 0, unverifiedOneSided = 0, consequenceNotAssessed = 0;
     var lpWithIssues = {};         // issue-area ids implicated in a Risk/Needs Review/Improvement finding
     var coverageAddressedIds = []; // coverage LPs routed to 'addressed' (Addressed action = coverage-only, per sidebar)
     function _markImplicated(pidStr) {
@@ -4677,6 +4763,7 @@ function _computeRiskCounts(r, perspective) {
             var _sub = _reviewSubtypeOf(a);
             if (_sub === 'conflicting_reading') disputedProtection++;
             else if (_sub === 'possible_one_sided') unverifiedOneSided++;
+            else if (_sub === 'consequence_not_assessed') consequenceNotAssessed++; // Step 374Q: defaulted-consequence subtype (total unchanged)
             else unresolvedCoverage++;
         } else if (bucket === 'improvement') {
             improvement++;
@@ -4750,7 +4837,7 @@ function _computeRiskCounts(r, perspective) {
              // Step 374: findings-first action-bucket counts (== sidebar arrays by construction).
              action: { risk: riskTotal, reviewNeeded: reviewNeeded, improvement: improvement, addressed: addressedAction },
              reviewSub: { unresolvedCoverage: unresolvedCoverage, disputedProtection: disputedProtection,
-                          unverifiedOneSided: unverifiedOneSided } };
+                          unverifiedOneSided: unverifiedOneSided, consequenceNotAssessed: consequenceNotAssessed } };
 }
 
 // Step 374E: canonical Risk-bucket gloss — ONE shared string read by BOTH the Overview
@@ -4779,7 +4866,7 @@ function renderModeCAISummaryBar(bar) {
     const _riskTenant = tenants[currentTenantIndex] || tenants[0];
     const _riskCounts = _computeRiskCounts(_riskTenant && _riskTenant.results, _snapPerspective);
     const _action = _riskCounts.action || { risk: 0, reviewNeeded: 0, improvement: 0, addressed: 0 };
-    const _reviewSub = _riskCounts.reviewSub || { unresolvedCoverage: 0, disputedProtection: 0, unverifiedOneSided: 0 };
+    const _reviewSub = _riskCounts.reviewSub || { unresolvedCoverage: 0, disputedProtection: 0, unverifiedOneSided: 0, consequenceNotAssessed: 0 };
     const docCount = tenants.length;
 
     // The Action Summary presents lawyer-facing ACTION ITEMS. It is NOT a partition of the 32 assessed
@@ -4818,6 +4905,9 @@ function renderModeCAISummaryBar(bar) {
     // "conflicting reading" (the disagreement signal named only where it is true — do not generalize).
     const _reviewParts = [];
     if (_reviewSub.unresolvedCoverage > 0) _reviewParts.push(_reviewSub.unresolvedCoverage + ' coverage question' + (_reviewSub.unresolvedCoverage === 1 ? '' : 's'));
+    // Step 374Q: defaulted/unassessed-consequence findings surface as "consequence not assessed" — a
+    // transparent line, not an implied assessed consequence and not an unsupported "conflicting reading".
+    if (_reviewSub.consequenceNotAssessed > 0) _reviewParts.push(_reviewSub.consequenceNotAssessed + ' consequence not assessed');
     if (_reviewSub.unverifiedOneSided > 0) _reviewParts.push(_reviewSub.unverifiedOneSided + ' possible one-sided term' + (_reviewSub.unverifiedOneSided === 1 ? '' : 's'));
     if (_reviewSub.disputedProtection > 0) _reviewParts.push(_reviewSub.disputedProtection + ' conflicting reading' + (_reviewSub.disputedProtection === 1 ? '' : 's'));
     const _reviewDetailLine = _reviewParts.join(' · ');
@@ -16422,7 +16512,13 @@ function renderCoveragePanel() {
             // rendering "<v1> vs <v2> … Full evaluator reasoning below" (objectively false on-screen).
             // Wording only — no logic/routing/taxonomy change. See build_log/374K_governance_finding.md.
             if (_lpSev === 'severe') {
-                const _capNote = _lpConf ? ' Confidence capped at ' + esc(_lpConf) + '.' : '';
+                // Step 374Q (PROVISIONAL): drop "Confidence capped at low" when the severe signal is a
+                // tie-break artifact (tie_derived_severe). 374P confirmed the confidence cap rode in on
+                // the SAME pessimistic tie-break as the disagreement — it is a consequence of the
+                // artifact, not a substantive low-confidence finding. For genuine low-confidence severe
+                // signals (not tie-derived) the cap note is kept. Wording only — confidence is NOT recomputed.
+                const _tieDerivedSevere374Q = _lpProvenanceFlags374Q(a).tieDerivedSevere;
+                const _capNote = (_lpConf && !_tieDerivedSevere374Q) ? ' Confidence capped at ' + esc(_lpConf) + '.' : '';
                 _sevHeaderHtml = '<div class="cv-lp-sev-header cv-lp-sev-header-severe">&#x26A0; Review escalation triggered from derived coverage signals.' + _capNote + ' Element-level evidence shown below.</div>';
             } else if (_lpSev === 'moderate') {
                 const _capNote = _lpConf ? ' Confidence capped.' : '';
@@ -18373,13 +18469,19 @@ function renderNavSidebar() {
             // typeLabel re-derivation. Counts == _computeRiskCounts.reviewSub by construction (both call
             // _reviewSubtypeOf). Order matches the Action Summary subtype line (coverage · one-sided ·
             // conflicting). Items with no subtype (e.g. Mode-A deviations) default to Coverage Questions.
-            var reviewCoverage    = reviewNeeded.filter(function(i) { return i._reviewSubtype === 'possible_one_sided' ? false : i._reviewSubtype !== 'conflicting_reading'; });
+            // Step 374Q: 'consequence_not_assessed' is its own truthful sub-header (defaulted consequence),
+            // split out from Coverage Questions and from the withheld "Conflicting Reading" label.
+            var reviewConsNotAssessed = reviewNeeded.filter(function(i) { return i._reviewSubtype === 'consequence_not_assessed'; });
+            var reviewCoverage    = reviewNeeded.filter(function(i) { return i._reviewSubtype !== 'possible_one_sided' && i._reviewSubtype !== 'conflicting_reading' && i._reviewSubtype !== 'consequence_not_assessed'; });
             var reviewOneSided    = reviewNeeded.filter(function(i) { return i._reviewSubtype === 'possible_one_sided'; });
             var reviewConflicting = reviewNeeded.filter(function(i) { return i._reviewSubtype === 'conflicting_reading'; });
             var reviewSubHtml = '';
             if (reviewCoverage.length > 0)
                 reviewSubHtml += _navSubGroupWrap('review_coverage_' + tIdx, 'Coverage Questions', reviewCoverage.length,
                     reviewCoverage.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+            if (reviewConsNotAssessed.length > 0)
+                reviewSubHtml += _navSubGroupWrap('review_consnotassessed_' + tIdx, 'Consequence Not Assessed', reviewConsNotAssessed.length,
+                    reviewConsNotAssessed.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
             if (reviewOneSided.length > 0)
                 reviewSubHtml += _navSubGroupWrap('review_onesided_' + tIdx, 'Possible One-Sided Terms', reviewOneSided.length,
                     reviewOneSided.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
