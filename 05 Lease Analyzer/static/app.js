@@ -17768,43 +17768,59 @@ function classifyFindingType(finding, mode, context) {
     var mat      = ui && ui.materiality;
     var uiActive = ui && ui.confidence !== 'no_evaluators';
 
-    if (state === 'covered' || state === 'covered_typical' || state === 'not_applicable') return 'addressed';
-    if (state === 'potentially_unenforceable') return 'risk';
+    // Consequence tier (UNCHANGED — use_impact.materiality + partial_class + gap_impact).
+    // Wrapped so the hard_flag floor below can run as the genuine LAST step (promote-only).
+    var _consequenceBucket = (function() {
+        if (state === 'covered' || state === 'covered_typical' || state === 'not_applicable') return 'addressed';
+        if (state === 'potentially_unenforceable') return 'risk';
 
-    // Severity tier: HIGH when materiality is high or unknown; else MEDIUM/LOW
-    var matTier = (pcls === 'partial_material') ? 'HIGH'
-                : mat === 'high' ? 'HIGH'
-                : mat === 'low'  ? 'LOW'
-                : 'MEDIUM';
-    var isHighSev = (matTier === 'HIGH');
+        // Severity tier: HIGH when materiality is high or unknown; else MEDIUM/LOW
+        var matTier = (pcls === 'partial_material') ? 'HIGH'
+                    : mat === 'high' ? 'HIGH'
+                    : mat === 'low'  ? 'LOW'
+                    : 'MEDIUM';
+        var isHighSev = (matTier === 'HIGH');
 
-    if (state === 'covered_unfavorable') {
-        var advTo = finding.covered_unfavorable_adverse_to || null;
-        if (advTo && perspective && perspective !== 'neutral' && advTo !== perspective) return 'addressed';
-        // Adverse or unknown direction: triage by severity
-        return isHighSev ? 'risk' : 'improvement';
+        if (state === 'covered_unfavorable') {
+            var advTo = finding.covered_unfavorable_adverse_to || null;
+            if (advTo && perspective && perspective !== 'neutral' && advTo !== perspective) return 'addressed';
+            // Adverse or unknown direction: triage by severity
+            return isHighSev ? 'risk' : 'improvement';
+        }
+
+        // For missing / partial: severity-first
+        function sevTriage() {
+            if (isHighSev) return 'risk';
+            return 'improvement'; // MEDIUM and LOW → improvement
+        }
+
+        if (state === 'missing') {
+            if (uiActive && gap === 'favorable') return 'addressed';
+            if (uiActive && mat === 'not_applicable') return 'improvement';
+            return sevTriage();
+        }
+        if (state === 'partial') {
+            if (pcls === 'partial_review') return 'improvement';
+            if (pcls === 'partial_material') return sevTriage();
+            return sevTriage();
+        }
+        if (state === 'review_needed') return 'review_needed'; // CAM has no coverage verdict; use_impact is downstream
+
+        console.warn('[CAM classifyFindingType] Unclassifiable finding — state:', state, 'pcls:', pcls);
+        return 'review_needed';
+    })();
+
+    // Step 373C: hard_flag (Stage 5f: severe verdict distance x meaningful consequence) floors at Needs Review.
+    // Epistemic disagreement is an independent routing signal from consequence (Architecture A,
+    // two independent signals). A hard-flagged finding must never fall to Improvement/Addressed.
+    // Floor PROMOTES ONLY (Improvement/Addressed → Needs Review); it never demotes Risk/Needs Review,
+    // and never elevates to Risk — consequence still sets the ceiling, hard_flag sets the floor.
+    var _rpds = finding.review_priority_distance_signal;
+    if (_rpds && _rpds.hard_flag === true
+        && (_consequenceBucket === 'improvement' || _consequenceBucket === 'addressed')) {
+        return 'review_needed';
     }
-
-    // For missing / partial: severity-first
-    function sevTriage() {
-        if (isHighSev) return 'risk';
-        return 'improvement'; // MEDIUM and LOW → improvement
-    }
-
-    if (state === 'missing') {
-        if (uiActive && gap === 'favorable') return 'addressed';
-        if (uiActive && mat === 'not_applicable') return 'improvement';
-        return sevTriage();
-    }
-    if (state === 'partial') {
-        if (pcls === 'partial_review') return 'improvement';
-        if (pcls === 'partial_material') return sevTriage();
-        return sevTriage();
-    }
-    if (state === 'review_needed') return 'review_needed'; // CAM has no coverage verdict; use_impact is downstream
-
-    console.warn('[CAM classifyFindingType] Unclassifiable finding — state:', state, 'pcls:', pcls);
-    return 'review_needed';
+    return _consequenceBucket;
 }
 
 var _RISK_SUBGROUP_DEFAULT_COLLAPSED = { risk_gaps: false, risk_compound: false, risk_directional: true };
