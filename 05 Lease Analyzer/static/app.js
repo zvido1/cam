@@ -4605,16 +4605,27 @@ function renderCrossTenantMatrix() {
 // coverage + synthesis only — Mode-A deviation Risk items are NOT counted here (separate
 // unmeasured path, tracked as a 373F follow-up; do not fold in).
 function _computeRiskCounts(r, perspective) {
-    if (!r) return { gaps: 0, crossClause: 0, directional: 0, otherRisks: 0, priorityReview: 0, total: 0 };
+    if (!r) return { gaps: 0, crossClause: 0, directional: 0, otherRisks: 0, priorityReview: 0, total: 0,
+                     coverage: { risk: 0, review_needed: 0, improvement: 0, addressed: 0, na: 0 } };
     var caByLp = {};
     (r.coverage_assessment || []).forEach(function(a) {
         caByLp[a.issue_area_id || a.provision_id] = a;
     });
     var riskTotal = 0; // direct count of classifyFindingType()==='risk' — the authoritative total
     var gaps = 0, crossClause = 0, directional = 0, priorityReview = 0;
+    // Step 373G: full 5-bucket coverage tally for THIS tenant, so the Coverage-by-Issue-Area
+    // panel pills and the headline read from ONE per-tenant computation (single source — they
+    // cannot desync). `coverage.risk` IS `gaps` (same loop iteration). The panel pills consume
+    // _riskCounts.coverage in renderModeCAISummaryBar — keep these in sync; do not reintroduce a
+    // separate panel-side loop over coverage_assessment.
+    var coverage = { risk: 0, review_needed: 0, improvement: 0, addressed: 0, na: 0 };
     (r.coverage_assessment || []).forEach(function(a) {
-        if ((a.coverage_state || '') === 'not_applicable') return;
+        if ((a.coverage_state || '') === 'not_applicable') { coverage.na++; return; }
         var bucket = classifyFindingType(a, 'c', { perspective: perspective });
+        if (bucket === 'risk') coverage.risk++;
+        else if (bucket === 'review_needed') coverage.review_needed++;
+        else if (bucket === 'improvement') coverage.improvement++;
+        else coverage.addressed++;
         if (bucket === 'risk') {
             riskTotal++;
             gaps++;
@@ -4649,7 +4660,8 @@ function _computeRiskCounts(r, perspective) {
             { total: riskTotal, gaps: gaps, crossClause: crossClause, directional: directional });
     }
     return { gaps: gaps, crossClause: crossClause, directional: directional,
-             otherRisks: otherRisks, priorityReview: priorityReview, total: riskTotal };
+             otherRisks: otherRisks, priorityReview: priorityReview, total: riskTotal,
+             coverage: coverage };
 }
 
 // Step 258: Mode C variant of the AI Summary bar. Aggregates coverage_assessment
@@ -4661,32 +4673,25 @@ function renderModeCAISummaryBar(bar) {
     if (!bar) return;
     const tenants = (currentResults && currentResults.tenants) || [];
 
-    let totalAreas = 0;
-    // Step 350: five-bucket tally using classifyFindingType (same as sidebar)
-    const counts = { risk: 0, review_needed: 0, improvement: 0, addressed: 0, na: 0 };
     const _snapPerspective = getJobPerspective();
 
-    tenants.forEach(function(t) {
-        const ca = (t && t.results && t.results.coverage_assessment) || [];
-        ca.forEach(function(item) {
-            totalAreas++;
-            if (item.coverage_state === 'not_applicable') {
-                counts.na++;
-                return;
-            }
-            const bucket = classifyFindingType(item, 'c', { perspective: _snapPerspective });
-            if (bucket === 'risk') counts.risk++;
-            else if (bucket === 'review_needed') counts.review_needed++;
-            else if (bucket === 'improvement') counts.improvement++;
-            else counts.addressed++;
-        });
-    });
+    // Step 366/373G: the Overview describes the CURRENTLY SELECTED contract only — no job-wide
+    // sum across documents (Tzvi product decision). Both the Risk headline AND the
+    // Coverage-by-Issue-Area pills read from ONE per-tenant tally (_computeRiskCounts), so they
+    // cannot desync (373G-Q drift fix). Selecting a different contract re-renders this bar with
+    // that contract's numbers.
+    const _riskTenant = tenants[currentTenantIndex] || tenants[0];
+    const _riskCounts = _computeRiskCounts(_riskTenant && _riskTenant.results, _snapPerspective);
+
+    // Step 373G: panel pills = the selected contract's 5-bucket coverage tally (single source,
+    // from _riskCounts.coverage). counts.risk IS the headline's `gaps` — same loop, can't diverge.
+    const counts = _riskCounts.coverage || { risk: 0, review_needed: 0, improvement: 0, addressed: 0, na: 0 };
+    const totalAreas = counts.risk + counts.review_needed + counts.improvement + counts.addressed + counts.na;
 
     const docCount = tenants.length;
-    const areasPerDoc = docCount > 1 ? Math.round(totalAreas / docCount) : totalAreas;
     const meta = docCount === 1
         ? `${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed`
-        : `${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed across ${docCount} contracts`;
+        : `${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed in this contract`;
 
     // Step 297c.2: collect conflicts + jurisdiction across all tenants
     const _mc_STATE_FULL_NAMES = {"NY": "New York", "CA": "California", "TX": "Texas", "FL": "Florida", "IL": "Illinois"};
@@ -4707,8 +4712,8 @@ function renderModeCAISummaryBar(bar) {
         : "";
 
     // Step 366: risk headline — counts for the currently selected contract only.
-    const _riskTenant = tenants[currentTenantIndex] || tenants[0];
-    const _riskCounts = _computeRiskCounts(_riskTenant && _riskTenant.results, _snapPerspective);
+    // Step 373G: _riskTenant / _riskCounts are computed once near the top of this function and
+    // shared with the Coverage-by-Issue-Area pills (single source — see above).
     const _riskParts = [];
     if (_riskCounts.gaps > 0)       _riskParts.push(_riskCounts.gaps + (_riskCounts.gaps === 1 ? ' coverage gap' : ' coverage gaps'));
     if (_riskCounts.crossClause > 0) _riskParts.push(_riskCounts.crossClause + ' cross-clause risk' + (_riskCounts.crossClause === 1 ? '' : 's'));
@@ -4751,7 +4756,7 @@ function renderModeCAISummaryBar(bar) {
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${counts.na}</strong> <span>Not applicable<em class="ai-summary-modec-stat-gloss">Outside this lease&rsquo;s scope</em></span></span>
                 ${_mcConflictPill}
             </div>
-            ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Coverage by Issue Area combined across ${docCount} contracts — ${areasPerDoc} issue areas per contract</div>` : ''}
+            ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Numbers describe the selected contract only — ${docCount} contracts in this job. Switch contracts to view each one&rsquo;s coverage.</div>` : ''}
             <div class="ai-summary-modec-cta">Open <strong>Coverage &amp; Gaps</strong> on any contract for the full breakdown.</div>
         </div>
     `;
