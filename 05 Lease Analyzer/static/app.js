@@ -4820,6 +4820,7 @@ function renderModeCAISummaryBar(bar) {
                     <span class="action-bucket-count">${_action.reviewNeeded}</span>
                 </div>
                 ${_reviewDetailLine ? `<div class="action-bucket-sub">${esc(_reviewDetailLine)}</div>` : ''}
+                <div class="action-bucket-gloss">Unresolved or disputed — inspect evidence</div>
             </div>
 
             <div class="action-bucket action-bucket--improvement">
@@ -4827,7 +4828,7 @@ function renderModeCAISummaryBar(bar) {
                     <span class="action-bucket-label">Improvement</span>
                     <span class="action-bucket-count">${_action.improvement}</span>
                 </div>
-                <div class="action-bucket-gloss">Protection exists; drafting could be tightened.</div>
+                <div class="action-bucket-gloss">Protection exists — could be tightened</div>
             </div>
 
             <div class="action-bucket action-bucket--addressed">
@@ -4835,7 +4836,7 @@ function renderModeCAISummaryBar(bar) {
                     <span class="action-bucket-label">Addressed</span>
                     <span class="action-bucket-count">${_action.addressed}</span>
                 </div>
-                <div class="action-bucket-gloss" title="Counted Addressed only when an issue area has no associated Risk, Needs Review, or Improvement finding. Coverage-positive provisions implicated in an open finding are shown in that finding, not here.">No action recommended.</div>
+                <div class="action-bucket-gloss" title="Counted Addressed only when an issue area has no associated Risk, Needs Review, or Improvement finding. Coverage-positive provisions implicated in an open finding are shown in that finding, not here.">No action recommended</div>
             </div>
 
             ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Showing the selected contract only — ${docCount} contracts in this job. Switch contracts to view each one&rsquo;s action summary.</div>` : ''}
@@ -18312,7 +18313,7 @@ function renderNavSidebar() {
         if (reviewNeeded.length > 0)
             html += _navSectionWrap('review_' + tIdx, '?', 'Needs Review', reviewNeeded.length,
                 reviewNeeded.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId,
-                "CAM couldn’t decide — you review");
+                "Unresolved or disputed — inspect evidence");
         if (improvement.length > 0)
             html += _navSectionWrap('improvement_' + tIdx, '✶', 'IMPROVEMENT', improvement.length,
                 improvement.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId,
@@ -18336,7 +18337,7 @@ function renderNavSidebar() {
         });
         if (addressedChips.length > 0)
             html += _navSectionWrap('addressed_' + tIdx, '✓', 'ADDRESSED', addressedChips.length,
-                _navAddressedChips(addressedChips, tIdx), jobId, 'Adequately covered — no action');
+                _navAddressedChips(addressedChips, tIdx), jobId, 'No action recommended');
         if (!risk.length && !reviewNeeded.length && !improvement.length && !addressed.length)
             html += '<div class="nav-empty">No findings</div>';
         html += '</div>';
