@@ -4588,6 +4588,25 @@ function renderCrossTenantMatrix() {
     });
 }
 
+// Step 374G: Needs Review subtype classifier — the SINGLE source for the subtype split shown by
+// BOTH the Overview Action Summary (_computeRiskCounts.reviewSub) and the Key Issues sidebar
+// sub-headers. Operates on the RAW finding (a coverage_assessment LP or a cross_provision_finding)
+// so both surfaces classify identically — never re-derive from typeLabel (374G-Q: typeLabel is a
+// different signal that can drift on the unclassifiable-fallthrough edge). Only meaningful for a
+// finding classifyFindingType() routes to 'review_needed'.
+//   'possible_one_sided'  — synthesis finding (directional_mismatch) routed to review (unverified).
+//   'conflicting_reading' — coverage LP floored to review by the Step 373C hard_flag (a disputed
+//                           critical element preventing a clean assertion; state !== 'review_needed').
+//   'coverage_question'   — coverage LP with no verdict (coverage_state === 'review_needed').
+function _reviewSubtypeOf(finding) {
+    if (!finding) return 'coverage_question';
+    if (finding.finding_type) return 'possible_one_sided'; // synthesis (cross_provision_findings)
+    var state = finding.coverage_state || '';
+    var rpds  = finding.review_priority_distance_signal;
+    if (rpds && rpds.hard_flag === true && state !== 'review_needed') return 'conflicting_reading';
+    return 'coverage_question';
+}
+
 // Step 366: compute risk sub-bucket counts for a single tenant's results,
 // using the same classification logic as the sidebar. Returns:
 //   { gaps: N, crossClause: N, directional: N, otherRisks: N, total: N }
@@ -4652,13 +4671,12 @@ function _computeRiskCounts(r, perspective) {
         } else if (bucket === 'review_needed') {
             reviewNeeded++;
             _markImplicated(lpId);
-            // Step 374 (374-Q B2): two genuine coverage subtypes of Needs Review.
-            // Disputed-protection = a coverage LP floored to review by the Step 373C hard_flag
-            // (severe verdict distance × consequence — a disputed critical element preventing a
-            // clean assertion), i.e. it was NOT a no-verdict coverage_state. Everything else is
-            // unresolved coverage (coverage_state === 'review_needed': CAM produced no verdict).
-            var _rpds = a.review_priority_distance_signal;
-            if (_rpds && _rpds.hard_flag === true && state !== 'review_needed') disputedProtection++;
+            // Step 374G: subtype from the shared classifier _reviewSubtypeOf (single source with the
+            // sidebar sub-headers). Coverage LPs yield 'conflicting_reading' (hard_flag-floored,
+            // 374-Q B2) or 'coverage_question' (no-verdict review_needed state).
+            var _sub = _reviewSubtypeOf(a);
+            if (_sub === 'conflicting_reading') disputedProtection++;
+            else if (_sub === 'possible_one_sided') unverifiedOneSided++;
             else unresolvedCoverage++;
         } else if (bucket === 'improvement') {
             improvement++;
@@ -4678,7 +4696,12 @@ function _computeRiskCounts(r, perspective) {
             // Step 374: synthesis findings also populate the Needs Review / Improvement action buckets.
             if (bucket === 'review_needed') {
                 reviewNeeded++;
-                unverifiedOneSided++; // synthesis routed to review = unverified directional/one-sided terms
+                // Step 374G: subtype from the shared classifier (single source with the sidebar).
+                // A synthesis finding routed to review is 'possible_one_sided' (directional, unverified).
+                var _sub = _reviewSubtypeOf(f);
+                if (_sub === 'possible_one_sided') unverifiedOneSided++;
+                else if (_sub === 'conflicting_reading') disputedProtection++;
+                else unresolvedCoverage++;
                 _markImplicated(implicated);
             } else if (bucket === 'improvement') {
                 improvement++;
@@ -17952,7 +17975,13 @@ function classifyFindingType(finding, mode, context) {
     return _consequenceBucket;
 }
 
-var _RISK_SUBGROUP_DEFAULT_COLLAPSED = { risk_gaps: false, risk_compound: false, risk_directional: true };
+// Step 374G: default-collapsed state per sub-group base (sectionId minus trailing _<tenantIdx>).
+// Shared by Risk and Needs Review sub-headers. Mirror Risk's pattern: the large directional /
+// one-sided group defaults collapsed; the smaller groups default open.
+var _NAV_SUBGROUP_DEFAULT_COLLAPSED = {
+    risk_gaps: false, risk_compound: false, risk_directional: true,
+    review_coverage: false, review_onesided: true, review_conflicting: false
+};
 
 function _navSubGroupCollapsed(sectionId, jobId) {
     var key = 'cam_sidebar_' + sectionId + (jobId ? '_' + jobId : '');
@@ -17960,7 +17989,7 @@ function _navSubGroupCollapsed(sectionId, jobId) {
     if (stored !== null) return stored === '1';
     // Strip trailing _N (tenant index) to get the base sub-group name
     var base = sectionId.replace(/_\d+$/, '');
-    return _RISK_SUBGROUP_DEFAULT_COLLAPSED[base] || false;
+    return _NAV_SUBGROUP_DEFAULT_COLLAPSED[base] || false;
 }
 
 function _navSubGroupWrap(sectionId, title, count, bodyHtml, jobId) {
@@ -18183,6 +18212,8 @@ function renderNavSidebar() {
                     _priority: !!(_tri && _tri.priority),
                     _consequence: _tri && _tri.consequence, _confidence: _tri && _tri.confidence,
                     _disagreement: _tri && _tri.disagreement, _reason: _tri && _tri.reason,
+                    // Step 374G: Needs Review sub-header grouping — same shared classifier as the Action Summary.
+                    _reviewSubtype: (bucket === 'review_needed') ? _reviewSubtypeOf(a) : null,
                     tooltip: (a.exposure_statement || '').slice(0, 200) || name });
             });
 
@@ -18208,6 +18239,8 @@ function renderNavSidebar() {
                     tooltip: f.headline || '',
                     _priority: !!(_tris && _tris.priority),
                     _severity: _tris && _tris.severity, _agreement: _tris && _tris.agreement,
+                    // Step 374G: Needs Review sub-header grouping — same shared classifier as the Action Summary.
+                    _reviewSubtype: (bucket === 'review_needed') ? _reviewSubtypeOf(f) : null,
                     evaluator_agreement: f.evaluator_agreement || '' });
             });
         } else {
@@ -18223,6 +18256,8 @@ function renderNavSidebar() {
                 pushItem(bucket, { _item_type: 'deviation', _mode: 'a',
                     pid: d.provision_id || '', name: d.provision_name || d.provision_id || '',
                     sev: (d.severity || 'MEDIUM').toUpperCase(), typeLabel: 'DEVIATION',
+                    // Step 374G: Needs Review sub-header grouping — same shared classifier (Mode-A deviations → coverage_question).
+                    _reviewSubtype: (bucket === 'review_needed') ? _reviewSubtypeOf(d) : null,
                     govSig: govSig, summary: _navTruncate(desc, 80), tooltip: desc || d.provision_name || '' });
             });
             var ca2 = r.coverage_assessment || [];
@@ -18248,6 +18283,8 @@ function renderNavSidebar() {
                     _priority: !!(_triA && _triA.priority),
                     _consequence: _triA && _triA.consequence, _confidence: _triA && _triA.confidence,
                     _disagreement: _triA && _triA.disagreement, _reason: _triA && _triA.reason,
+                    // Step 374G: Needs Review sub-header grouping — same shared classifier as the Action Summary.
+                    _reviewSubtype: (bucket === 'review_needed') ? _reviewSubtypeOf(a) : null,
                     tooltip: (a.exposure_statement || '').slice(0, 200) || pid });
             });
         }
@@ -18320,10 +18357,29 @@ function renderNavSidebar() {
             // _computeRiskCounts.action.risk by construction — same routing). Sub-group counts remain.
             html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', risk.length, subHtml, jobId, CAM_RISK_GLOSS);
         }
-        if (reviewNeeded.length > 0)
+        if (reviewNeeded.length > 0) {
+            // Step 374G: Needs Review sub-headers, mirroring Risk's grouping — but partitioned by the
+            // SHARED _reviewSubtypeOf classifier (stamped as item._reviewSubtype at push), NOT a
+            // typeLabel re-derivation. Counts == _computeRiskCounts.reviewSub by construction (both call
+            // _reviewSubtypeOf). Order matches the Action Summary subtype line (coverage · one-sided ·
+            // conflicting). Items with no subtype (e.g. Mode-A deviations) default to Coverage Questions.
+            var reviewCoverage    = reviewNeeded.filter(function(i) { return i._reviewSubtype === 'possible_one_sided' ? false : i._reviewSubtype !== 'conflicting_reading'; });
+            var reviewOneSided    = reviewNeeded.filter(function(i) { return i._reviewSubtype === 'possible_one_sided'; });
+            var reviewConflicting = reviewNeeded.filter(function(i) { return i._reviewSubtype === 'conflicting_reading'; });
+            var reviewSubHtml = '';
+            if (reviewCoverage.length > 0)
+                reviewSubHtml += _navSubGroupWrap('review_coverage_' + tIdx, 'Coverage Questions', reviewCoverage.length,
+                    reviewCoverage.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+            if (reviewOneSided.length > 0)
+                reviewSubHtml += _navSubGroupWrap('review_onesided_' + tIdx, 'Possible One-Sided Terms', reviewOneSided.length,
+                    reviewOneSided.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
+            if (reviewConflicting.length > 0)
+                reviewSubHtml += _navSubGroupWrap('review_conflicting_' + tIdx, 'Conflicting Reading', reviewConflicting.length,
+                    reviewConflicting.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
             html += _navSectionWrap('review_' + tIdx, '?', 'Needs Review', reviewNeeded.length,
-                reviewNeeded.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId,
+                reviewSubHtml, jobId,
                 "Potential exposure: protections may be incomplete or missing, terms may be one-sided, or readings may conflict. Attorney review recommended.");
+        }
         if (improvement.length > 0)
             html += _navSectionWrap('improvement_' + tIdx, '✶', 'IMPROVEMENT', improvement.length,
                 improvement.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId,
