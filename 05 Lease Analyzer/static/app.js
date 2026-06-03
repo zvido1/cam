@@ -4730,6 +4730,13 @@ function _computeRiskCounts(r, perspective) {
                           unverifiedOneSided: unverifiedOneSided } };
 }
 
+// Step 374E: canonical Risk-bucket gloss — ONE shared string read by BOTH the Overview
+// Action Summary (renderModeCAISummaryBar) and the Key Issues sidebar (renderNavSidebar),
+// so the two surfaces cannot drift (374D had two separate inline strings). States the
+// substantive status + the lawyer action without repeating the subtype line; does not say
+// "confirmed" (doctrine: action-type, not a confidence tier).
+const CAM_RISK_GLOSS = "Identified exposure — protective action recommended.";
+
 // Step 258: Mode C variant of the AI Summary bar. Aggregates coverage_assessment
 // across all tenants in the job and renders a four-bucket pill row that mirrors
 // the Coverage & Gaps tab's framing (covered / need attention / worth reviewing /
@@ -4814,7 +4821,7 @@ function renderModeCAISummaryBar(bar) {
                     ${_priorityRisksHtml}
                 </div>
                 ${_riskDetailLine ? `<div class="action-bucket-sub">${esc(_riskDetailLine)}</div>` : ''}
-                <div class="action-bucket-gloss">Protective action recommended.</div>
+                <div class="action-bucket-gloss">${CAM_RISK_GLOSS}</div>
             </div>
 
             <div class="action-bucket action-bucket--review">
@@ -18311,7 +18318,7 @@ function renderNavSidebar() {
             // Step 374: show the Risk count on the header (was intentionally blank since Step 360) so
             // RISK matches the other three buckets and the Overview Action Summary (risk.length ==
             // _computeRiskCounts.action.risk by construction — same routing). Sub-group counts remain.
-            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', risk.length, subHtml, jobId, 'Identified exposure — act to protect');
+            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', risk.length, subHtml, jobId, CAM_RISK_GLOSS);
         }
         if (reviewNeeded.length > 0)
             html += _navSectionWrap('review_' + tIdx, '?', 'Needs Review', reviewNeeded.length,
