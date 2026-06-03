@@ -4606,7 +4606,9 @@ function renderCrossTenantMatrix() {
 // unmeasured path, tracked as a 373F follow-up; do not fold in).
 function _computeRiskCounts(r, perspective) {
     if (!r) return { gaps: 0, crossClause: 0, directional: 0, otherRisks: 0, priorityReview: 0, total: 0,
-                     coverage: { risk: 0, review_needed: 0, improvement: 0, addressed: 0, na: 0 } };
+                     coverage: { risk: 0, review_needed: 0, improvement: 0, addressed: 0, na: 0 },
+                     action: { risk: 0, reviewNeeded: 0, improvement: 0, addressed: 0 },
+                     reviewSub: { unresolvedCoverage: 0, disputedProtection: 0, unverifiedOneSided: 0 } };
     var caByLp = {};
     (r.coverage_assessment || []).forEach(function(a) {
         caByLp[a.issue_area_id || a.provision_id] = a;
@@ -4619,8 +4621,23 @@ function _computeRiskCounts(r, perspective) {
     // _riskCounts.coverage in renderModeCAISummaryBar — keep these in sync; do not reintroduce a
     // separate panel-side loop over coverage_assessment.
     var coverage = { risk: 0, review_needed: 0, improvement: 0, addressed: 0, na: 0 };
+    // Step 374: findings-first ACTION buckets + Needs Review subtypes, the single source for BOTH
+    // the Overview Action Summary AND the sidebar bucket counts. This replicates the exact routing
+    // the sidebar (renderNavSidebar ~18049-18256) uses to build its risk[]/reviewNeeded[]/
+    // improvement[]/addressed[] arrays — MUST stay in sync with that routing. reviewNeeded /
+    // improvement count coverage + synthesis findings (not 1-per-LP); addressed is the suppressed
+    // residual computed after the loops (see suppression comment below).
+    var reviewNeeded = 0, improvement = 0;
+    var unresolvedCoverage = 0, disputedProtection = 0, unverifiedOneSided = 0;
+    var lpWithIssues = {};         // issue-area ids implicated in a Risk/Needs Review/Improvement finding
+    var coverageAddressedIds = []; // coverage LPs routed to 'addressed' (Addressed action = coverage-only, per sidebar)
+    function _markImplicated(pidStr) {
+        String(pidStr || '').split(/[\s,]+/).forEach(function(s) { s = s.trim(); if (s) lpWithIssues[s] = true; });
+    }
     (r.coverage_assessment || []).forEach(function(a) {
-        if ((a.coverage_state || '') === 'not_applicable') { coverage.na++; return; }
+        var state = a.coverage_state || '';
+        var lpId  = a.issue_area_id || a.provision_id || '';
+        if (state === 'not_applicable') { coverage.na++; return; }
         var bucket = classifyFindingType(a, 'c', { perspective: perspective });
         if (bucket === 'risk') coverage.risk++;
         else if (bucket === 'review_needed') coverage.review_needed++;
@@ -4629,8 +4646,25 @@ function _computeRiskCounts(r, perspective) {
         if (bucket === 'risk') {
             riskTotal++;
             gaps++;
+            _markImplicated(lpId);
             // Step 373: same isPriorityReview rule the sidebar uses — within-Risk triage.
             if (isPriorityReview(a)) priorityReview++;
+        } else if (bucket === 'review_needed') {
+            reviewNeeded++;
+            _markImplicated(lpId);
+            // Step 374 (374-Q B2): two genuine coverage subtypes of Needs Review.
+            // Disputed-protection = a coverage LP floored to review by the Step 373C hard_flag
+            // (severe verdict distance × consequence — a disputed critical element preventing a
+            // clean assertion), i.e. it was NOT a no-verdict coverage_state. Everything else is
+            // unresolved coverage (coverage_state === 'review_needed': CAM produced no verdict).
+            var _rpds = a.review_priority_distance_signal;
+            if (_rpds && _rpds.hard_flag === true && state !== 'review_needed') disputedProtection++;
+            else unresolvedCoverage++;
+        } else if (bucket === 'improvement') {
+            improvement++;
+            _markImplicated(lpId);
+        } else {
+            coverageAddressedIds.push(lpId);
         }
     });
     (r.cross_provision_findings || []).forEach(function(f) {
@@ -4639,11 +4673,26 @@ function _computeRiskCounts(r, perspective) {
         var fi = { _item_type: 'synthesis', finding_type: f.finding_type,
                    severity: f.severity, directionality: f.directionality || '' };
         var bucket = classifyFindingType(fi, 'c', { perspective: perspective, govSig: govSig });
-        if (bucket !== 'risk') return;
+        var implicated = (f.implicated_lps || []).join(', ');
+        if (bucket !== 'risk') {
+            // Step 374: synthesis findings also populate the Needs Review / Improvement action buckets.
+            if (bucket === 'review_needed') {
+                reviewNeeded++;
+                unverifiedOneSided++; // synthesis routed to review = unverified directional/one-sided terms
+                _markImplicated(implicated);
+            } else if (bucket === 'improvement') {
+                improvement++;
+                _markImplicated(implicated);
+            }
+            // synthesis 'addressed' (favorable directional / relief) does NOT create an Addressed
+            // action count — the sidebar Addressed chips are coverage-only.
+            return;
+        }
         // Step 373F: count the Risk-routed finding FIRST (authoritative), then sub-classify
         // for display. A finding_type other than compound/directional (e.g. a HIGH
         // cross_coverage_gap) stays in the total via riskTotal and surfaces as Other Risks.
         riskTotal++;
+        _markImplicated(implicated);
         var typeLabel = f.finding_type === 'compound_risk' ? 'COMPOUND'
                       : f.finding_type === 'directional_mismatch' ? 'DIRECTIONAL' : '';
         if (typeLabel === 'COMPOUND') crossClause++;
@@ -4659,9 +4708,26 @@ function _computeRiskCounts(r, perspective) {
         console.warn('[CAM _computeRiskCounts] otherRisks negative — subtype overcount vs Risk bucket:',
             { total: riskTotal, gaps: gaps, crossClause: crossClause, directional: directional });
     }
+    // Addressed (action layer) = an issue area is counted Addressed ONLY when it has NO associated
+    // Risk, Needs Review, or Improvement finding. A coverage-positive LP implicated in another open
+    // finding (e.g. LP-05: favorably covered but implicated in Dir-05 + CRX-05 Risk) is NOT counted as
+    // Addressed — "Addressed" means no action, and you cannot tell the lawyer "no action" about a
+    // provision you are also flagging in a Risk. Raw positive coverage evidence is preserved in the
+    // coverage/evidence layer; it does not create an Addressed action count when another finding acts
+    // on the same issue area. Matches the sidebar's existing suppression: Addressed = 1, not raw 2.
+    var _seen = {}, addressedAction = 0;
+    coverageAddressedIds.forEach(function(id) {
+        if (!id || _seen[id] || lpWithIssues[id]) return;
+        _seen[id] = true;
+        addressedAction++;
+    });
     return { gaps: gaps, crossClause: crossClause, directional: directional,
              otherRisks: otherRisks, priorityReview: priorityReview, total: riskTotal,
-             coverage: coverage };
+             coverage: coverage,
+             // Step 374: findings-first action-bucket counts (== sidebar arrays by construction).
+             action: { risk: riskTotal, reviewNeeded: reviewNeeded, improvement: improvement, addressed: addressedAction },
+             reviewSub: { unresolvedCoverage: unresolvedCoverage, disputedProtection: disputedProtection,
+                          unverifiedOneSided: unverifiedOneSided } };
 }
 
 // Step 258: Mode C variant of the AI Summary bar. Aggregates coverage_assessment
@@ -4675,34 +4741,29 @@ function renderModeCAISummaryBar(bar) {
 
     const _snapPerspective = getJobPerspective();
 
-    // Step 366/373G: the Overview describes the CURRENTLY SELECTED contract only — no job-wide
-    // sum across documents (Tzvi product decision). Both the Risk headline AND the
-    // Coverage-by-Issue-Area pills read from ONE per-tenant tally (_computeRiskCounts), so they
-    // cannot desync (373G-Q drift fix). Selecting a different contract re-renders this bar with
-    // that contract's numbers.
+    // Step 374: the Overview is the ACTION SUMMARY — findings-first, current-contract scope. All
+    // four action buckets AND the sidebar bucket counts derive from ONE per-tenant computation
+    // (_computeRiskCounts) so they cannot desync (373F/373G single-source lesson). The raw per-LP
+    // coverage-state census moved off the Overview (still inspectable in Coverage & Gaps / heatmap /
+    // evidence); the Overview must not render it (avoids the two-ontologies-one-screen trust problem).
     const _riskTenant = tenants[currentTenantIndex] || tenants[0];
     const _riskCounts = _computeRiskCounts(_riskTenant && _riskTenant.results, _snapPerspective);
-
-    // Step 373G: panel pills = the selected contract's 5-bucket coverage tally (single source,
-    // from _riskCounts.coverage). counts.risk IS the headline's `gaps` — same loop, can't diverge.
-    const counts = _riskCounts.coverage || { risk: 0, review_needed: 0, improvement: 0, addressed: 0, na: 0 };
-    const totalAreas = counts.risk + counts.review_needed + counts.improvement + counts.addressed + counts.na;
-
+    const _action = _riskCounts.action || { risk: 0, reviewNeeded: 0, improvement: 0, addressed: 0 };
+    const _reviewSub = _riskCounts.reviewSub || { unresolvedCoverage: 0, disputedProtection: 0, unverifiedOneSided: 0 };
     const docCount = tenants.length;
-    const meta = docCount === 1
-        ? `${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed`
-        : `${totalAreas} issue area${totalAreas === 1 ? "" : "s"} assessed in this contract`;
 
-    // Step 297c.2: collect conflicts + jurisdiction across all tenants
+    // The Action Summary presents lawyer-facing ACTION ITEMS. It is NOT a partition of the 32 assessed
+    // issue areas and must not be compared numerically to raw coverage-state totals. Risk and Needs
+    // Review include synthesized/directional findings (not 1-per-LP); Addressed is a residual no-action
+    // count after suppression. Do not render these four numbers as "32 split four ways."
+
+    // Step 297c.2 / Step 374: conflicts + governing law scoped to the SELECTED contract (was job-wide,
+    // which showed the first contract's law and a cross-document conflict sum — false on a mixed-law /
+    // mixed-conflict multi-doc job; 374-Q flagged). Current-contract only, same scope as the buckets.
     const _mc_STATE_FULL_NAMES = {"NY": "New York", "CA": "California", "TX": "Texas", "FL": "Florida", "IL": "Illinois"};
-    let _mcConflicts = [];
-    let _mcGovLaw = null;
-    tenants.forEach(function(t) {
-        const res = t && t.results;
-        if (!res) return;
-        if (res.conflicts && res.conflicts.length) _mcConflicts = _mcConflicts.concat(res.conflicts);
-        if (!_mcGovLaw && res.jurisdiction && res.jurisdiction.governing_law) _mcGovLaw = res.jurisdiction.governing_law;
-    });
+    const _selRes = (_riskTenant && _riskTenant.results) || null;
+    const _mcConflicts = (_selRes && _selRes.conflicts) || [];
+    const _mcGovLaw = (_selRes && _selRes.jurisdiction && _selRes.jurisdiction.governing_law) || null;
     const _mcGovLawDisplay = _mcGovLaw ? (_mc_STATE_FULL_NAMES[_mcGovLaw] || _mcGovLaw) : null;
     const _mcConflictPill = _mcConflicts.length > 0
         ? `<span class="ai-summary-pill ai-summary-pill--conflict">${_mcConflicts.length} provision conflict${_mcConflicts.length === 1 ? "" : "s"}</span>`
@@ -4711,53 +4772,74 @@ function renderModeCAISummaryBar(bar) {
         ? `<span class="ai-summary-modec-meta" style="margin-left:0.5rem;">Governed by ${esc(_mcGovLawDisplay)}</span>`
         : "";
 
-    // Step 366: risk headline — counts for the currently selected contract only.
-    // Step 373G: _riskTenant / _riskCounts are computed once near the top of this function and
-    // shared with the Coverage-by-Issue-Area pills (single source — see above).
+    // RISK subtype line (display-only; total stays the authoritative 'risk' count — 373F).
     const _riskParts = [];
-    if (_riskCounts.gaps > 0)       _riskParts.push(_riskCounts.gaps + (_riskCounts.gaps === 1 ? ' coverage gap' : ' coverage gaps'));
+    if (_riskCounts.gaps > 0)        _riskParts.push(_riskCounts.gaps + (_riskCounts.gaps === 1 ? ' coverage gap' : ' coverage gaps'));
     if (_riskCounts.crossClause > 0) _riskParts.push(_riskCounts.crossClause + ' cross-clause risk' + (_riskCounts.crossClause === 1 ? '' : 's'));
-    // Step 373D: one-sided terms (directional sub-group) is part of the Risk bucket — surface it so the sub-line sums to the total.
     if (_riskCounts.directional > 0) _riskParts.push(_riskCounts.directional + ' one-sided term' + (_riskCounts.directional === 1 ? '' : 's'));
-    // Step 373F: any Risk-bucket finding not matching a displayed subtype (e.g. a HIGH cross_coverage_gap)
-    // surfaces here so the sub-line always sums to the total — never silently dropped. Rendered only when > 0.
-    if (_riskCounts.otherRisks > 0) _riskParts.push(_riskCounts.otherRisks + ' Other Risks');
+    if (_riskCounts.otherRisks > 0)  _riskParts.push(_riskCounts.otherRisks + ' Other Risks'); // 373F: never silently dropped
     const _riskDetailLine = _riskParts.join(' · ');
-    // Step 373: Priority Review count — SAME isPriorityReview rule as the sidebar.
-    const _priorityReviewHtml = (_riskCounts.priorityReview > 0)
-        ? `<div class="overview-priority-review" title="CAM flags these Risk items for first-pass review (coverage hard_flag + Stage 7 HIGH)">&#9888; ${_riskCounts.priorityReview} Priority Review</div>`
-        : '';
-    const _riskHeadlineHtml = (_riskCounts.total > 0)
-        ? `<div class="overview-risk-headline">
-              <div class="overview-risk-headline-count">
-                  <span class="overview-risk-headline-label">Risks to act on</span>
-                  <span class="overview-risk-headline-number">${_riskCounts.total}</span>
-              </div>
-              ${_riskDetailLine ? `<div class="overview-risk-headline-detail">${esc(_riskDetailLine)}</div>` : ''}
-              ${_priorityReviewHtml}
-           </div>`
+
+    // NEEDS REVIEW subtype line — THREE genuine subtypes (374-Q B2); sums to the Needs Review total.
+    // The "disputed protection" subtype is NOT folded into unresolved coverage: it is the visible
+    // consequence of CAM's deliberate-non-deliberation governance (a disputed critical element), a
+    // distinct governed reason for human review.
+    const _reviewParts = [];
+    if (_reviewSub.unresolvedCoverage > 0) _reviewParts.push(_reviewSub.unresolvedCoverage + ' unresolved coverage');
+    if (_reviewSub.disputedProtection > 0) _reviewParts.push(_reviewSub.disputedProtection + ' disputed protection issue' + (_reviewSub.disputedProtection === 1 ? '' : 's'));
+    if (_reviewSub.unverifiedOneSided > 0) _reviewParts.push(_reviewSub.unverifiedOneSided + ' unverified one-sided term' + (_reviewSub.unverifiedOneSided === 1 ? '' : 's'));
+    const _reviewDetailLine = _reviewParts.join(' · ');
+
+    // Step 374: "Priority Risks" (NOT "Priority Review" — that label collides with the Needs Review
+    // bucket). Display string only; isPriorityReview LOGIC is unchanged.
+    const _priorityRisksHtml = (_riskCounts.priorityReview > 0)
+        ? `<span class="overview-priority-review" title="CAM flags these Risk items for first-pass review (coverage hard_flag + Stage 7 HIGH)">&#9888; ${_riskCounts.priorityReview} Priority Risks</span>`
         : '';
 
     bar.innerHTML = `
-        <div class="ai-summary-modec">
-            ${_riskHeadlineHtml}
-            <div class="ai-summary-modec-headline">
-                <strong>Coverage by Issue Area</strong>
-                <span class="ai-summary-modec-meta">${esc(meta)}</span>
+        <div class="ai-summary-modec action-summary">
+            <div class="action-summary-head">
+                <strong>Action Summary</strong>
                 ${getPerspectiveIndicatorHtml()}
                 ${_mcGovBadge}
-            </div>
-            <div class="ai-summary-snapshot-note">How each assessed area is covered — not a risk count.</div>
-            <div class="ai-summary-modec-stats">
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--attention"><strong>${counts.risk}</strong> <span>Coverage Gaps<em class="ai-summary-modec-stat-gloss">Coverage gap — act to protect</em></span></span>
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--review"><strong>${counts.review_needed}</strong> <span>Review Needed<em class="ai-summary-modec-stat-gloss">CAM couldn&rsquo;t decide — you review</em></span></span>
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--improvement"><strong>${counts.improvement}</strong> <span>Improvement<em class="ai-summary-modec-stat-gloss">Protection exists — could be tightened</em></span></span>
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--ok"><strong>${counts.addressed}</strong> <span>Addressed<em class="ai-summary-modec-stat-gloss">Adequately covered — no action</em></span></span>
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${counts.na}</strong> <span>Not applicable<em class="ai-summary-modec-stat-gloss">Outside this lease&rsquo;s scope</em></span></span>
                 ${_mcConflictPill}
             </div>
-            ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Numbers describe the selected contract only — ${docCount} contracts in this job. Switch contracts to view each one&rsquo;s coverage.</div>` : ''}
-            <div class="ai-summary-modec-cta">Open <strong>Coverage &amp; Gaps</strong> on any contract for the full breakdown.</div>
+
+            <div class="action-bucket action-bucket--risk">
+                <div class="action-bucket-top">
+                    <span class="action-bucket-label">Risk</span>
+                    <span class="action-bucket-count">${_action.risk}</span>
+                    ${_priorityRisksHtml}
+                </div>
+                ${_riskDetailLine ? `<div class="action-bucket-sub">${esc(_riskDetailLine)}</div>` : ''}
+            </div>
+
+            <div class="action-bucket action-bucket--review">
+                <div class="action-bucket-top">
+                    <span class="action-bucket-label">Needs Review</span>
+                    <span class="action-bucket-count">${_action.reviewNeeded}</span>
+                </div>
+                ${_reviewDetailLine ? `<div class="action-bucket-sub">${esc(_reviewDetailLine)}</div>` : ''}
+            </div>
+
+            <div class="action-bucket action-bucket--improvement">
+                <div class="action-bucket-top">
+                    <span class="action-bucket-label">Improvement</span>
+                    <span class="action-bucket-count">${_action.improvement}</span>
+                </div>
+                <div class="action-bucket-gloss">Protection exists; drafting could be tightened.</div>
+            </div>
+
+            <div class="action-bucket action-bucket--addressed">
+                <div class="action-bucket-top">
+                    <span class="action-bucket-label">Addressed</span>
+                    <span class="action-bucket-count">${_action.addressed}</span>
+                </div>
+                <div class="action-bucket-gloss" title="Counted Addressed only when an issue area has no associated Risk, Needs Review, or Improvement finding. Coverage-positive provisions implicated in an open finding are shown in that finding, not here.">No action recommended.</div>
+            </div>
+
+            ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Showing the selected contract only — ${docCount} contracts in this job. Switch contracts to view each one&rsquo;s action summary.</div>` : ''}
+            <div class="ai-summary-modec-cta">Open <strong>Coverage &amp; Gaps</strong> for the full per-issue coverage map.</div>
         </div>
     `;
 }
@@ -18222,9 +18304,10 @@ function renderNavSidebar() {
             if (riskDirectional.length > 0)
                 subHtml += _navSubGroupWrap('risk_directional_' + tIdx, 'One-sided Terms', riskDirectional.length,
                     riskDirectional.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId);
-            // Step 360: no aggregate count on RISK header — sub-bucket counts tell the story
-            // Step 366: action gloss on each bucket
-            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', '', subHtml, jobId, 'Identified exposure — act to protect');
+            // Step 374: show the Risk count on the header (was intentionally blank since Step 360) so
+            // RISK matches the other three buckets and the Overview Action Summary (risk.length ==
+            // _computeRiskCounts.action.risk by construction — same routing). Sub-group counts remain.
+            html += _navSectionWrap('risk_' + tIdx, '⚠', 'RISK', risk.length, subHtml, jobId, 'Identified exposure — act to protect');
         }
         if (reviewNeeded.length > 0)
             html += _navSectionWrap('review_' + tIdx, '?', 'Needs Review', reviewNeeded.length,

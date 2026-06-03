@@ -13396,6 +13396,25 @@ body.mode-c .card-docview-link {
 .cv-assess-method-preclass { color: #6b7280; background: #f3f4f6; }
 
 /* Step 366: Overview risk headline + Coverage Snapshot framing */
+/* Step 374: Overview Action Summary — four findings-first action buckets, current-contract scope. */
+.action-summary { display: flex; flex-direction: column; gap: 0.4rem; }
+.action-summary-head { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.15rem; }
+.action-summary-head strong { font-size: 0.95rem; }
+.action-bucket { padding: 0.55rem 0.8rem; border: 1px solid transparent; border-radius: 6px; }
+.action-bucket-top { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.action-bucket-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.action-bucket-count { font-size: 1.5rem; font-weight: 700; line-height: 1; }
+.action-bucket-sub { font-size: 0.8rem; margin-top: 0.2rem; }
+.action-bucket-gloss { font-size: 0.76rem; font-style: italic; margin-top: 0.15rem; opacity: 0.85; }
+.action-bucket--risk        { background: #fef2f2; border-color: #fecaca; }
+.action-bucket--risk .action-bucket-label, .action-bucket--risk .action-bucket-count, .action-bucket--risk .action-bucket-sub { color: #b91c1c; }
+.action-bucket--review      { background: #fffbeb; border-color: #fde68a; }
+.action-bucket--review .action-bucket-label, .action-bucket--review .action-bucket-count, .action-bucket--review .action-bucket-sub { color: #92400e; }
+.action-bucket--improvement { background: #dbeafe; border-color: #60a5fa; }
+.action-bucket--improvement .action-bucket-label, .action-bucket--improvement .action-bucket-count, .action-bucket--improvement .action-bucket-gloss { color: #1e40af; }
+.action-bucket--addressed   { background: #ecfdf5; border-color: #a7f3d0; }
+.action-bucket--addressed .action-bucket-label, .action-bucket--addressed .action-bucket-count, .action-bucket--addressed .action-bucket-gloss { color: #047857; }
+
 .overview-risk-headline {
     padding: 0.7rem 0.9rem;
     background: #fef2f2;
