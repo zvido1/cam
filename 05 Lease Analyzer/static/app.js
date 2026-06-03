@@ -4590,22 +4590,33 @@ function renderCrossTenantMatrix() {
 
 // Step 366: compute risk sub-bucket counts for a single tenant's results,
 // using the same classification logic as the sidebar. Returns:
-//   { gaps: N, crossClause: N, directional: N, total: N }
-// Step 373D: "Risks to Act On" = the full Risk bucket. Per action-type doctrine, Coverage Gaps,
-// Cross-Clause/Compound Risks, AND Directional/One-Sided Terms are all Risk subtypes that
-// imply protective lawyer action. The headline total must equal the Risk bucket (= sidebar
-// Risk card count), never a subset. Priority Review (HIGH/hard_flag) is a subset OF this total.
+//   { gaps: N, crossClause: N, directional: N, otherRisks: N, total: N }
+// Step 373F: "Risks to Act On" total = COUNT OF EVERY FINDING classifyFindingType() ROUTES TO 'risk'.
+// The classifier is the authoritative source of truth for bucket membership. The subtype
+// breakdown (Coverage Gaps / Cross-Clause / One-Sided Terms) is DISPLAY-ONLY and must never
+// define the total. Any Risk-routed finding not matching a displayed subtype falls into
+// "Other Risks" so it can never be silently dropped from the headline.
+//
+// This re-runs the SAME bucket-first routing the sidebar uses in renderUnifiedKeyIssues
+// (classifyFindingType over coverage_assessment + cross_provision_findings, same govSig
+// derivation), so `total` here equals the sidebar's local risk[].length by construction.
+// The sidebar's risk[] is a render-local not exported, so we replicate the routing rule here;
+// this MUST stay in sync with the sidebar routing (app.js ~18039-18090). Scope: Mode-C
+// coverage + synthesis only — Mode-A deviation Risk items are NOT counted here (separate
+// unmeasured path, tracked as a 373F follow-up; do not fold in).
 function _computeRiskCounts(r, perspective) {
-    if (!r) return { gaps: 0, crossClause: 0, directional: 0, total: 0 };
+    if (!r) return { gaps: 0, crossClause: 0, directional: 0, otherRisks: 0, priorityReview: 0, total: 0 };
     var caByLp = {};
     (r.coverage_assessment || []).forEach(function(a) {
         caByLp[a.issue_area_id || a.provision_id] = a;
     });
+    var riskTotal = 0; // direct count of classifyFindingType()==='risk' — the authoritative total
     var gaps = 0, crossClause = 0, directional = 0, priorityReview = 0;
     (r.coverage_assessment || []).forEach(function(a) {
         if ((a.coverage_state || '') === 'not_applicable') return;
         var bucket = classifyFindingType(a, 'c', { perspective: perspective });
         if (bucket === 'risk') {
+            riskTotal++;
             gaps++;
             // Step 373: same isPriorityReview rule the sidebar uses — within-Risk triage.
             if (isPriorityReview(a)) priorityReview++;
@@ -4618,6 +4629,10 @@ function _computeRiskCounts(r, perspective) {
                    severity: f.severity, directionality: f.directionality || '' };
         var bucket = classifyFindingType(fi, 'c', { perspective: perspective, govSig: govSig });
         if (bucket !== 'risk') return;
+        // Step 373F: count the Risk-routed finding FIRST (authoritative), then sub-classify
+        // for display. A finding_type other than compound/directional (e.g. a HIGH
+        // cross_coverage_gap) stays in the total via riskTotal and surfaces as Other Risks.
+        riskTotal++;
         var typeLabel = f.finding_type === 'compound_risk' ? 'COMPOUND'
                       : f.finding_type === 'directional_mismatch' ? 'DIRECTIONAL' : '';
         if (typeLabel === 'COMPOUND') crossClause++;
@@ -4625,10 +4640,16 @@ function _computeRiskCounts(r, perspective) {
         // Step 373: same rule again on the synthesis side (severity === HIGH).
         if (isPriorityReview(f)) priorityReview++;
     });
-    // Step 373D: total = the FULL Risk bucket (gaps + cross-clause + one-sided/directional),
-    // the same three sub-groups the sidebar renders under RISK — equal by construction.
+    // Step 373F: Other Risks = Risk-bucket findings not matched by a displayed subtype.
+    // Self-consistency invariant: gaps + crossClause + directional + otherRisks === total.
+    var otherRisks = riskTotal - (gaps + crossClause + directional);
+    if (otherRisks < 0) {
+        // A subtype counted something not in the Risk bucket — logic error, surface it (no silent clamp).
+        console.warn('[CAM _computeRiskCounts] otherRisks negative — subtype overcount vs Risk bucket:',
+            { total: riskTotal, gaps: gaps, crossClause: crossClause, directional: directional });
+    }
     return { gaps: gaps, crossClause: crossClause, directional: directional,
-             priorityReview: priorityReview, total: gaps + crossClause + directional };
+             otherRisks: otherRisks, priorityReview: priorityReview, total: riskTotal };
 }
 
 // Step 258: Mode C variant of the AI Summary bar. Aggregates coverage_assessment
@@ -4693,6 +4714,9 @@ function renderModeCAISummaryBar(bar) {
     if (_riskCounts.crossClause > 0) _riskParts.push(_riskCounts.crossClause + ' cross-clause risk' + (_riskCounts.crossClause === 1 ? '' : 's'));
     // Step 373D: one-sided terms (directional sub-group) is part of the Risk bucket — surface it so the sub-line sums to the total.
     if (_riskCounts.directional > 0) _riskParts.push(_riskCounts.directional + ' one-sided term' + (_riskCounts.directional === 1 ? '' : 's'));
+    // Step 373F: any Risk-bucket finding not matching a displayed subtype (e.g. a HIGH cross_coverage_gap)
+    // surfaces here so the sub-line always sums to the total — never silently dropped. Rendered only when > 0.
+    if (_riskCounts.otherRisks > 0) _riskParts.push(_riskCounts.otherRisks + ' Other Risks');
     const _riskDetailLine = _riskParts.join(' · ');
     // Step 373: Priority Review count — SAME isPriorityReview rule as the sidebar.
     const _priorityReviewHtml = (_riskCounts.priorityReview > 0)
