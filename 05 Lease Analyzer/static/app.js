@@ -4713,21 +4713,21 @@ function renderModeCAISummaryBar(bar) {
         <div class="ai-summary-modec">
             ${_riskHeadlineHtml}
             <div class="ai-summary-modec-headline">
-                <strong>Coverage Snapshot</strong>
+                <strong>Coverage by Issue Area</strong>
                 <span class="ai-summary-modec-meta">${esc(meta)}</span>
                 ${getPerspectiveIndicatorHtml()}
                 ${_mcGovBadge}
             </div>
             <div class="ai-summary-snapshot-note">How each assessed area is covered — not a risk count.</div>
             <div class="ai-summary-modec-stats">
-                <span class="ai-summary-modec-stat ai-summary-modec-stat--attention"><strong>${counts.risk}</strong> <span>Risk<em class="ai-summary-modec-stat-gloss">Identified exposure — act to protect</em></span></span>
+                <span class="ai-summary-modec-stat ai-summary-modec-stat--attention"><strong>${counts.risk}</strong> <span>Coverage Gaps<em class="ai-summary-modec-stat-gloss">Coverage gap — act to protect</em></span></span>
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--review"><strong>${counts.review_needed}</strong> <span>Review Needed<em class="ai-summary-modec-stat-gloss">CAM couldn&rsquo;t decide — you review</em></span></span>
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--improvement"><strong>${counts.improvement}</strong> <span>Improvement<em class="ai-summary-modec-stat-gloss">Protection exists — could be tightened</em></span></span>
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--ok"><strong>${counts.addressed}</strong> <span>Addressed<em class="ai-summary-modec-stat-gloss">Adequately covered — no action</em></span></span>
                 <span class="ai-summary-modec-stat ai-summary-modec-stat--na"><strong>${counts.na}</strong> <span>Not applicable<em class="ai-summary-modec-stat-gloss">Outside this lease&rsquo;s scope</em></span></span>
                 ${_mcConflictPill}
             </div>
-            ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Coverage Snapshot combined across ${docCount} contracts — ${areasPerDoc} issue areas per contract</div>` : ''}
+            ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Coverage by Issue Area combined across ${docCount} contracts — ${areasPerDoc} issue areas per contract</div>` : ''}
             <div class="ai-summary-modec-cta">Open <strong>Coverage &amp; Gaps</strong> on any contract for the full breakdown.</div>
         </div>
     `;
