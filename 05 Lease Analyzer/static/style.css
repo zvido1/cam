@@ -13231,18 +13231,32 @@ body.mode-c .card-docview-link {
    card tokens (.action-bucket--*). Bodies (finding rows) and sub-group headers (.nav-subgroup-header)
    stay neutral. The per-section colored TEXT lives on `.nav-section-{bucket} .nav-section-header`
    (the header div also carries .nav-section-header-collapsible — same element), so we tint that same
-   element; text color above is unchanged. Banded header: vertical padding + bottom border in the card
-   border token + top-rounded corners. */
-.nav-section-risk        .nav-section-header { background: #fef2f2; border-bottom: 1px solid #fecaca; }
-.nav-section-review      .nav-section-header { background: #fffbeb; border-bottom: 1px solid #fde68a; }
-.nav-section-improvement .nav-section-header { background: #dbeafe; border-bottom: 1px solid #60a5fa; }
-.nav-section-addressed   .nav-section-header { background: #ecfdf5; border-bottom: 1px solid #a7f3d0; }
+   element; text color above is unchanged. Top-rounded; the gloss (374I) closes the bottom of the block. */
+.nav-section-risk        .nav-section-header { background: #fef2f2; }
+.nav-section-review      .nav-section-header { background: #fffbeb; }
+.nav-section-improvement .nav-section-header { background: #dbeafe; }
+.nav-section-addressed   .nav-section-header { background: #ecfdf5; }
 .nav-section-risk        .nav-section-header,
 .nav-section-review      .nav-section-header,
 .nav-section-improvement .nav-section-header,
 .nav-section-addressed   .nav-section-header { padding: 0.3rem 0.5rem; border-radius: 5px 5px 0 0; }
 /* Separation between the four buckets so collapsed sections read as distinct — spacing only, no dividers. */
 .nav-section-risk, .nav-section-review, .nav-section-improvement, .nav-section-addressed { margin-bottom: 0.5rem; }
+
+/* Step 374I: pull the bucket gloss INTO the colored band — same bg token as the header so header +
+   gloss read as ONE continuous colored block (header rounds the top; gloss closes + rounds the bottom
+   and carries the border, so there's no internal hairline). Gloss text uses the bucket's dark color
+   (readable on the tint; italic keeps it subtle — no opacity<1). Finding rows + sub-group headers below
+   stay neutral. CSS-only — no markup change (the gloss is already the header's immediate sibling, so
+   the two tints stack flush). All four sidebar buckets always render a gloss, so it reliably closes the block. */
+.nav-section-risk        .nav-section-gloss { background: #fef2f2; border-bottom: 1px solid #fecaca; color: #991b1b; }
+.nav-section-review      .nav-section-gloss { background: #fffbeb; border-bottom: 1px solid #fde68a; color: #92400e; }
+.nav-section-improvement .nav-section-gloss { background: #dbeafe; border-bottom: 1px solid #60a5fa; color: #1e40af; }
+.nav-section-addressed   .nav-section-gloss { background: #ecfdf5; border-bottom: 1px solid #a7f3d0; color: #047857; }
+.nav-section-risk        .nav-section-gloss,
+.nav-section-review      .nav-section-gloss,
+.nav-section-improvement .nav-section-gloss,
+.nav-section-addressed   .nav-section-gloss { padding: 0.1rem 0.55rem 0.35rem 1.5rem; border-radius: 0 0 5px 5px; }
 
 /* Unified items */
 .nav-item-unified {
@@ -13315,12 +13329,12 @@ body.mode-c .card-docview-link {
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #6b7280;
+    color: #374151; /* Step 374I: was #6b7280 — too light to read on near-white */
 }
 .nav-subgroup-count {
     font-size: 0.65rem;
-    color: #9ca3af;
-    background: #e5e7eb;
+    color: #374151; /* Step 374I: was #9ca3af */
+    background: #d1d5db; /* Step 374I: was #e5e7eb — darker chip for contrast */
     border-radius: 8px;
     padding: 0 0.3rem;
     margin-left: 0.15rem;
