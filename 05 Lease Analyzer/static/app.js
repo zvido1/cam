@@ -4781,13 +4781,15 @@ function renderModeCAISummaryBar(bar) {
     const _riskDetailLine = _riskParts.join(' · ');
 
     // NEEDS REVIEW subtype line — THREE genuine subtypes (374-Q B2); sums to the Needs Review total.
-    // The "disputed protection" subtype is NOT folded into unresolved coverage: it is the visible
-    // consequence of CAM's deliberate-non-deliberation governance (a disputed critical element), a
-    // distinct governed reason for human review.
+    // Step 374C: lawyer-facing wording + order (coverage · one-sided · conflicting). Internal
+    // governance vocabulary (unresolved/unverified/disputed) stays in Evidence/Audit, not the
+    // executive surface. COUNTS are unchanged (same 374-Q computation): unresolvedCoverage →
+    // "coverage questions", unverifiedOneSided → "possible one-sided terms", disputedProtection →
+    // "conflicting reading" (the disagreement signal named only where it is true — do not generalize).
     const _reviewParts = [];
-    if (_reviewSub.unresolvedCoverage > 0) _reviewParts.push(_reviewSub.unresolvedCoverage + ' unresolved coverage');
-    if (_reviewSub.disputedProtection > 0) _reviewParts.push(_reviewSub.disputedProtection + ' disputed protection issue' + (_reviewSub.disputedProtection === 1 ? '' : 's'));
-    if (_reviewSub.unverifiedOneSided > 0) _reviewParts.push(_reviewSub.unverifiedOneSided + ' unverified one-sided term' + (_reviewSub.unverifiedOneSided === 1 ? '' : 's'));
+    if (_reviewSub.unresolvedCoverage > 0) _reviewParts.push(_reviewSub.unresolvedCoverage + ' coverage question' + (_reviewSub.unresolvedCoverage === 1 ? '' : 's'));
+    if (_reviewSub.unverifiedOneSided > 0) _reviewParts.push(_reviewSub.unverifiedOneSided + ' possible one-sided term' + (_reviewSub.unverifiedOneSided === 1 ? '' : 's'));
+    if (_reviewSub.disputedProtection > 0) _reviewParts.push(_reviewSub.disputedProtection + ' conflicting reading' + (_reviewSub.disputedProtection === 1 ? '' : 's'));
     const _reviewDetailLine = _reviewParts.join(' · ');
 
     // Step 374: "Priority Risks" (NOT "Priority Review" — that label collides with the Needs Review
@@ -4820,7 +4822,7 @@ function renderModeCAISummaryBar(bar) {
                     <span class="action-bucket-count">${_action.reviewNeeded}</span>
                 </div>
                 ${_reviewDetailLine ? `<div class="action-bucket-sub">${esc(_reviewDetailLine)}</div>` : ''}
-                <div class="action-bucket-gloss">Unresolved or disputed — inspect evidence</div>
+                <div class="action-bucket-gloss">Potential exposure: protections may be incomplete or missing, terms may be one-sided, or readings may conflict. Attorney review recommended.</div>
             </div>
 
             <div class="action-bucket action-bucket--improvement">
@@ -18313,7 +18315,7 @@ function renderNavSidebar() {
         if (reviewNeeded.length > 0)
             html += _navSectionWrap('review_' + tIdx, '?', 'Needs Review', reviewNeeded.length,
                 reviewNeeded.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId,
-                "Unresolved or disputed — inspect evidence");
+                "Potential exposure: protections may be incomplete or missing, terms may be one-sided, or readings may conflict. Attorney review recommended.");
         if (improvement.length > 0)
             html += _navSectionWrap('improvement_' + tIdx, '✶', 'IMPROVEMENT', improvement.length,
                 improvement.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId,
