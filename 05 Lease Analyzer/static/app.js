@@ -4591,7 +4591,10 @@ function renderCrossTenantMatrix() {
 // Step 366: compute risk sub-bucket counts for a single tenant's results,
 // using the same classification logic as the sidebar. Returns:
 //   { gaps: N, crossClause: N, directional: N, total: N }
-// where total = gaps + crossClause (the "Risks to act on" number).
+// Step 373D: "Risks to Act On" = the full Risk bucket. Per action-type doctrine, Coverage Gaps,
+// Cross-Clause/Compound Risks, AND Directional/One-Sided Terms are all Risk subtypes that
+// imply protective lawyer action. The headline total must equal the Risk bucket (= sidebar
+// Risk card count), never a subset. Priority Review (HIGH/hard_flag) is a subset OF this total.
 function _computeRiskCounts(r, perspective) {
     if (!r) return { gaps: 0, crossClause: 0, directional: 0, total: 0 };
     var caByLp = {};
@@ -4622,8 +4625,10 @@ function _computeRiskCounts(r, perspective) {
         // Step 373: same rule again on the synthesis side (severity === HIGH).
         if (isPriorityReview(f)) priorityReview++;
     });
+    // Step 373D: total = the FULL Risk bucket (gaps + cross-clause + one-sided/directional),
+    // the same three sub-groups the sidebar renders under RISK — equal by construction.
     return { gaps: gaps, crossClause: crossClause, directional: directional,
-             priorityReview: priorityReview, total: gaps + crossClause };
+             priorityReview: priorityReview, total: gaps + crossClause + directional };
 }
 
 // Step 258: Mode C variant of the AI Summary bar. Aggregates coverage_assessment
@@ -4686,6 +4691,8 @@ function renderModeCAISummaryBar(bar) {
     const _riskParts = [];
     if (_riskCounts.gaps > 0)       _riskParts.push(_riskCounts.gaps + (_riskCounts.gaps === 1 ? ' coverage gap' : ' coverage gaps'));
     if (_riskCounts.crossClause > 0) _riskParts.push(_riskCounts.crossClause + ' cross-clause risk' + (_riskCounts.crossClause === 1 ? '' : 's'));
+    // Step 373D: one-sided terms (directional sub-group) is part of the Risk bucket — surface it so the sub-line sums to the total.
+    if (_riskCounts.directional > 0) _riskParts.push(_riskCounts.directional + ' one-sided term' + (_riskCounts.directional === 1 ? '' : 's'));
     const _riskDetailLine = _riskParts.join(' · ');
     // Step 373: Priority Review count — SAME isPriorityReview rule as the sidebar.
     const _priorityReviewHtml = (_riskCounts.priorityReview > 0)
