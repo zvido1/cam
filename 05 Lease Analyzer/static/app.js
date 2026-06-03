@@ -4838,7 +4838,7 @@ function renderModeCAISummaryBar(bar) {
                     <span class="action-bucket-label">Improvement</span>
                     <span class="action-bucket-count">${_action.improvement}</span>
                 </div>
-                <div class="action-bucket-gloss">Protection exists — could be tightened</div>
+                <div class="action-bucket-gloss">Protection exists — could be tightened.</div>
             </div>
 
             <div class="action-bucket action-bucket--addressed">
@@ -4846,7 +4846,7 @@ function renderModeCAISummaryBar(bar) {
                     <span class="action-bucket-label">Addressed</span>
                     <span class="action-bucket-count">${_action.addressed}</span>
                 </div>
-                <div class="action-bucket-gloss" title="Counted Addressed only when an issue area has no associated Risk, Needs Review, or Improvement finding. Coverage-positive provisions implicated in an open finding are shown in that finding, not here.">No action recommended</div>
+                <div class="action-bucket-gloss" title="Counted Addressed only when an issue area has no associated Risk, Needs Review, or Improvement finding. Coverage-positive provisions implicated in an open finding are shown in that finding, not here.">No action recommended.</div>
             </div>
 
             ${docCount > 1 ? `<div class="ai-summary-modec-combined-note">Showing the selected contract only — ${docCount} contracts in this job. Switch contracts to view each one&rsquo;s action summary.</div>` : ''}
@@ -18327,7 +18327,7 @@ function renderNavSidebar() {
         if (improvement.length > 0)
             html += _navSectionWrap('improvement_' + tIdx, '✶', 'IMPROVEMENT', improvement.length,
                 improvement.map(function(i) { return _navBuildUnifiedItem(i, tIdx); }).join(''), jobId,
-                'Protection exists — could be tightened');
+                'Protection exists — could be tightened.');
         // Dedupe addressed chips: only gap items not also in risk/reviewNeeded/improvement
         var _lpWithIssues = new Set();
         function _splitPids(pid) {
@@ -18347,7 +18347,7 @@ function renderNavSidebar() {
         });
         if (addressedChips.length > 0)
             html += _navSectionWrap('addressed_' + tIdx, '✓', 'ADDRESSED', addressedChips.length,
-                _navAddressedChips(addressedChips, tIdx), jobId, 'No action recommended');
+                _navAddressedChips(addressedChips, tIdx), jobId, 'No action recommended.');
         if (!risk.length && !reviewNeeded.length && !improvement.length && !addressed.length)
             html += '<div class="nav-empty">No findings</div>';
         html += '</div>';
