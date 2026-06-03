@@ -16451,8 +16451,14 @@ function renderCoveragePanel() {
                         const evc = VERDICT_CFG[evi.verdict] || { cls: 'cv-ev-unclear', label: evi.verdict || '?' };
                         const roleCls = EVALUATOR_COLORS[evi.role] ? 'cv-eval-badge eval-badge-' + evi.role + ' ' + EVALUATOR_COLORS[evi.role] : 'cv-eval-badge';
                         const evCitRef = evi.citation && evi.citation.section_ref ? ' <span class="cv-eval-ref">' + esc(evi.citation.section_ref) + '</span>' : '';
+                        // Step 374U: show the FULL evaluator reasoning (display fix). This is already
+                        // gated behind the per-element "2v1 Disagreement" expand toggle — the user has
+                        // opted into the evidence — so clipping WITHIN that view hid the conclusion (the
+                        // 300-char slice cut LP-06's Claude reasoning mid-sentence). Data was complete;
+                        // 374T-Q confirmed display-only truncation. Max observed reasoning = 795 chars
+                        // (well under the ~1500 scroll threshold), so plain full flow is fine. Escaping
+                        // via esc() is preserved at the render site. No logic/count/routing change.
                         const reasoning = (evi.reasoning || '').trim();
-                        const reasoningShort = reasoning.length > 300 ? reasoning.slice(0, 297) + '…' : reasoning;
                         const isDissent = evi.verdict !== ev.verdict;
                         // Step 372a: quiet audit-surface-only fallback tick. When a slot's
                         // primary model was unavailable and a fallback answered, mark it so
@@ -16466,7 +16472,7 @@ function renderCoveragePanel() {
                             + fallbackTick
                             + '<span class="cv-ev-pill ' + evc.cls + ' cv-eval-verdict-pill">' + esc(evc.label) + '</span>'
                             + evCitRef
-                            + (reasoningShort ? '<div class="cv-eval-reasoning">' + esc(reasoningShort) + '</div>' : '')
+                            + (reasoning ? '<div class="cv-eval-reasoning">' + esc(reasoning) + '</div>' : '')
                             + '</div>';
                     }).join('');
                     panelRow = '<tr class="cv-ev-panel-row" id="' + evalPanelId + '" style="display:none">'
