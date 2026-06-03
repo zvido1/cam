@@ -8008,7 +8008,8 @@ function _buildLpBlock(lp, idx, expanded, highlightElementId) {
     html += '<div class="ev-lp-body" id="' + bodyId + '" style="' + (expanded ? '' : 'display:none') + '">';
     // Step 361c: distance note at TOP of body — not in the header row
     if (vdSev && (vdSev === 'moderate' || vdSev === 'severe')) {
-        html += '<div class="ev-distance-note ev-distance-' + esc(vdSev) + '">⚡ Evaluators disagreed on coverage (' + esc(vdSev) + ' distance)</div>';
+        // Step 374K: derived LP rollup, not direct evaluator disagreement.
+        html += '<div class="ev-distance-note ev-distance-' + esc(vdSev) + '">⚡ Review signal derived from aggregated element verdicts (' + esc(vdSev) + ' distance) — see element evidence</div>';
     }
     if (lp.evidence_summary) {
         html += '<div class="ev-lp-summary">' + esc(lp.evidence_summary) + '</div>';
@@ -12010,15 +12011,19 @@ function buildCoverageAuditSection(items) {
         var _auditVd = a.verdict_distance;
         var _auditSev = _auditVd && _auditVd.severity;
         var _auditSevNote = '';
+        // Step 374K: audit-provenance honesty. The LP-level verdict_distance is DERIVED from each
+        // evaluator's element-verdict plurality (pessimistic tie-break — lease_verdict_distance.py),
+        // NOT standalone LP-level evaluator conclusions. The X↔Y pair is the derived rollup; it must
+        // not be described as "one evaluator found X, another found Y." Wording only.
         if (_auditSev === 'minor') {
-            _auditSevNote = '<div class="audit-cov-sev-note audit-cov-sev-minor">Evaluator mechanism disagreement — minor (drafting nuance only)</div>';
+            _auditSevNote = '<div class="audit-cov-sev-note audit-cov-sev-minor">LP-level review trigger derived from aggregated element verdicts — minor distance (drafting nuance only).</div>';
         } else if (_auditSev === 'moderate') {
-            _auditSevNote = '<div class="audit-cov-sev-note audit-cov-sev-moderate">Evaluator disagreement — moderate (inference confidence gap)</div>';
+            _auditSevNote = '<div class="audit-cov-sev-note audit-cov-sev-moderate">LP-level review trigger derived from aggregated element verdicts — moderate distance; not a standalone evaluator conclusion.</div>';
         } else if (_auditSev === 'severe') {
             var _pair = (_auditVd.pair || []);
             var _v1 = esc(_pair[0] || '');
             var _v2 = esc(_pair[1] || '');
-            _auditSevNote = '<div class="audit-cov-sev-note audit-cov-sev-severe">&#x26A0; Evaluator disagreement — severe: one evaluator found <strong>' + _v1 + '</strong>, another found <strong>' + _v2 + '</strong>. Epistemic conflict — one evaluator asserts clear presence, another asserts confident absence. Full evaluator reasoning preserved below.</div>';
+            _auditSevNote = '<div class="audit-cov-sev-note audit-cov-sev-severe">&#x26A0; LP-level review trigger derived from aggregated element verdicts; not a standalone evaluator conclusion. Derived ordinal distance is maximal (<strong>' + _v1 + '</strong> &#8596; <strong>' + _v2 + '</strong>), produced from per-evaluator element-verdict pluralities. See per-element evaluator verdicts below.</div>';
         }
         // Step 356 Phase 3: dispute_signal note
         var _ds = a.dispute_signal || {};
@@ -16410,14 +16415,18 @@ function renderCoveragePanel() {
             const _lpSev = _lpVd && _lpVd.severity;
             const _lpConf = a.lp_confidence || a.lp_confidence_base || '';
             let _sevHeaderHtml = '';
+            // Step 374K: HONEST CONTAINMENT. verdict_distance.pair is a DERIVED LP-level rollup
+            // (plurality of each evaluator's element verdicts, pessimistic tie-break —
+            // lease_verdict_distance.py:derive_per_evaluator_lp_verdict), NOT a standalone evaluator
+            // conclusion, and the element rows below do NOT show that LP-level pair. So we stop
+            // rendering "<v1> vs <v2> … Full evaluator reasoning below" (objectively false on-screen).
+            // Wording only — no logic/routing/taxonomy change. See build_log/374K_governance_finding.md.
             if (_lpSev === 'severe') {
-                const _pair = (_lpVd.pair || []).join(' vs ');
                 const _capNote = _lpConf ? ' Confidence capped at ' + esc(_lpConf) + '.' : '';
-                _sevHeaderHtml = '<div class="cv-lp-sev-header cv-lp-sev-header-severe">&#x26A0; Severe disagreement: ' + esc(_pair) + _capNote + ' Full evaluator reasoning below.</div>';
+                _sevHeaderHtml = '<div class="cv-lp-sev-header cv-lp-sev-header-severe">&#x26A0; Review escalation triggered from derived coverage signals.' + _capNote + ' Element-level evidence shown below.</div>';
             } else if (_lpSev === 'moderate') {
-                const _pair = (_lpVd.pair || []).join(' vs ');
                 const _capNote = _lpConf ? ' Confidence capped.' : '';
-                _sevHeaderHtml = '<div class="cv-lp-sev-header cv-lp-sev-header-moderate">〜 Moderate disagreement: ' + esc(_pair) + _capNote + ' Full evaluator reasoning below.</div>';
+                _sevHeaderHtml = '<div class="cv-lp-sev-header cv-lp-sev-header-moderate">〜 Coverage-signal divergence derived from element verdicts.' + _capNote + ' Element-level evidence shown below.</div>';
             }
             elementDetailHtml = '<div class="cv-elem-summary-row" onclick="(function(row){var body=document.getElementById(\'' + elemTableId + '\');var opening=body.style.display===\'none\';body.style.display=opening?\'block\':\'none\';row.querySelector(\'.cv-elem-chevron\').textContent=opening?\'▾\':\'▸\';})(this)">'
                 + '<span class="cv-elem-chevron">▸</span>'
@@ -16470,10 +16479,11 @@ function renderCoveragePanel() {
         // Step 351: disagreement severity label beneath STATUS badge
         const _vd = a.verdict_distance;
         const _vdSev = _vd && _vd.severity;
+        // Step 374K: honest containment — derived LP rollup, not a standalone evaluator conclusion.
         const disagSeverityHtml = (_vdSev === 'moderate')
-            ? '<span class="cv-disag-severity cv-disag-severity-moderate" title="Evaluator disagreement — moderate (inference confidence gap)">〜 moderate disagreement</span>'
+            ? '<span class="cv-disag-severity cv-disag-severity-moderate" title="Review signal derived from aggregated element verdicts (moderate distance) — not a standalone evaluator conclusion">〜 derived review signal</span>'
             : (_vdSev === 'severe')
-            ? '<span class="cv-disag-severity cv-disag-severity-severe" title="Evaluator disagreement — severe: ' + esc((_vd.pair || []).join(' vs ')) + '">&#x26A0; severe disagreement</span>'
+            ? '<span class="cv-disag-severity cv-disag-severity-severe" title="Review signal derived from aggregated element verdicts — not a standalone evaluator conclusion; see element evidence">&#x26A0; derived review signal</span>'
             : '';
 
         // Step 356 Phase 3: dispute_signal badge
