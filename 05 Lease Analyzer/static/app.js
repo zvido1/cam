@@ -4814,6 +4814,7 @@ function renderModeCAISummaryBar(bar) {
                     ${_priorityRisksHtml}
                 </div>
                 ${_riskDetailLine ? `<div class="action-bucket-sub">${esc(_riskDetailLine)}</div>` : ''}
+                <div class="action-bucket-gloss">Protective action recommended.</div>
             </div>
 
             <div class="action-bucket action-bucket--review">
