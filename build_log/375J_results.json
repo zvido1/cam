@@ -1,0 +1,1139 @@
+{
+  "harness": "375J_routing_boundary_counterfactual",
+  "step": "375J",
+  "frozen_run": "lease_review_20260604_033046_52adbf",
+  "keyless": true,
+  "policy_E_note": "Policy E is NOT a proposed production policy. It is a diagnostic control used to measure whether the adverse-direction gate is load-bearing on this artifact.",
+  "inputs": {
+    "materiality_samples_source": "build_log/375I_q3_results.json (10 samples per eligible LP)",
+    "stage7_directional_source": "05 Lease Analyzer/results/lease_review_20260604_033046_52adbf/tenant_0/pipeline_results.json (cross_provision_findings)",
+    "current_bucket_derivation": "Python port of classifyFindingType() from app.js:18032 (synthesis mode, perspective=tenant). deriveDirectionalGovernanceSignal: evaluator_agreement 3-x -> ASSERT_SIGNAL -> isVerified=True -> risk. All 26 directional_mismatch findings: 3-0, tenant_unprotected, perspective=tenant -> current_bucket=risk. All 6 compound_risk findings -> current_bucket=risk (guardrail #1).",
+    "materiality_source_derivation": "assessed: LP has use_impact in frozen artifact with confidence in {assert, assert_weak, context_dependent}. not_eligible: LP gated out of Stage 5e by _should_assess (covered / not_applicable / partial <50% missing). not_directional: compound_risk finding (no single-LP direction)."
+  },
+  "findings": [
+    {
+      "lp_id": "LP-01",
+      "all_implicated_lps": [
+        "LP-01"
+      ],
+      "finding_id": "Dir-01",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Missing payment method protections",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-02",
+      "all_implicated_lps": [
+        "LP-02"
+      ],
+      "finding_id": "Dir-02",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Uncapped annual rent escalation",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-03",
+      "all_implicated_lps": [
+        "LP-03"
+      ],
+      "finding_id": "Dir-03",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Conditional renewal without termination right",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [
+        "high",
+        "high",
+        "high",
+        "high",
+        "high",
+        "high",
+        "high",
+        "high",
+        "high",
+        "medium"
+      ],
+      "materiality_distribution": {
+        "high": 9,
+        "medium": 1,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "adjacent_high_medium",
+      "materiality_source": "assessed",
+      "current_bucket": "risk",
+      "bucket_policy_A": "VARIES:needs_review/risk",
+      "bucket_policy_B": "actionable_material_risk",
+      "bucket_policy_C": "actionable_material_risk",
+      "bucket_policy_D": "risk",
+      "bucket_policy_E": "actionable_material",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-04",
+      "all_implicated_lps": [
+        "LP-04"
+      ],
+      "finding_id": "Dir-04",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Delayed deposit draw after notice",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-05",
+      "all_implicated_lps": [
+        "LP-05"
+      ],
+      "finding_id": "Dir-05",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "No co-tenancy or operation protections",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium"
+      ],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 10,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "stable_tier",
+      "materiality_source": "assessed",
+      "current_bucket": "risk",
+      "bucket_policy_A": "needs_review",
+      "bucket_policy_B": "actionable_material_risk",
+      "bucket_policy_C": "actionable_material_risk",
+      "bucket_policy_D": "risk",
+      "bucket_policy_E": "actionable_material",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-06",
+      "all_implicated_lps": [
+        "LP-06"
+      ],
+      "finding_id": "Dir-06",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "No landlord repair response timelines",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-07",
+      "all_implicated_lps": [
+        "LP-07"
+      ],
+      "finding_id": "Dir-07",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Single annual CAM audit limit",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-10",
+      "all_implicated_lps": [
+        "LP-10"
+      ],
+      "finding_id": "Dir-08",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Conditional improvement ownership rights",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [
+        "high",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium"
+      ],
+      "materiality_distribution": {
+        "high": 1,
+        "medium": 9,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "adjacent_high_medium",
+      "materiality_source": "assessed",
+      "current_bucket": "risk",
+      "bucket_policy_A": "VARIES:needs_review/risk",
+      "bucket_policy_B": "actionable_material_risk",
+      "bucket_policy_C": "actionable_material_risk",
+      "bucket_policy_D": "risk",
+      "bucket_policy_E": "actionable_material",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-11",
+      "all_implicated_lps": [
+        "LP-11"
+      ],
+      "finding_id": "Dir-09",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "One-sided default framework",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-14",
+      "all_implicated_lps": [
+        "LP-14"
+      ],
+      "finding_id": "Dir-10",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Ongoing rent during force majeure",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [
+        "medium",
+        "high",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium"
+      ],
+      "materiality_distribution": {
+        "high": 1,
+        "medium": 9,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "adjacent_high_medium",
+      "materiality_source": "assessed",
+      "current_bucket": "risk",
+      "bucket_policy_A": "VARIES:needs_review/risk",
+      "bucket_policy_B": "actionable_material_risk",
+      "bucket_policy_C": "actionable_material_risk",
+      "bucket_policy_D": "risk",
+      "bucket_policy_E": "actionable_material",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-15",
+      "all_implicated_lps": [
+        "LP-15"
+      ],
+      "finding_id": "Dir-11",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Approval-dependent signage rights",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-16",
+      "all_implicated_lps": [
+        "LP-16"
+      ],
+      "finding_id": "Dir-12",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Parking subject to landlord changes",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [
+        "high",
+        "medium",
+        "high",
+        "high",
+        "medium",
+        "medium",
+        "medium",
+        "high",
+        "medium",
+        "medium"
+      ],
+      "materiality_distribution": {
+        "high": 4,
+        "medium": 6,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "adjacent_high_medium",
+      "materiality_source": "assessed",
+      "current_bucket": "risk",
+      "bucket_policy_A": "VARIES:needs_review/risk",
+      "bucket_policy_B": "actionable_material_risk",
+      "bucket_policy_C": "actionable_material_risk",
+      "bucket_policy_D": "risk",
+      "bucket_policy_E": "actionable_material",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-17",
+      "all_implicated_lps": [
+        "LP-17"
+      ],
+      "finding_id": "Dir-13",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Multi-step tenant dispute path",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-18",
+      "all_implicated_lps": [
+        "LP-18"
+      ],
+      "finding_id": "Dir-14",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Open-ended holdover exposure",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-19",
+      "all_implicated_lps": [
+        "LP-19"
+      ],
+      "finding_id": "Dir-15",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Unallocated utility upgrade costs",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-20",
+      "all_implicated_lps": [
+        "LP-20"
+      ],
+      "finding_id": "Dir-16",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Exclusivity lacking enforcement mechanism",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [
+        "low",
+        "low",
+        "low",
+        "low",
+        "low",
+        "low",
+        "low",
+        "low",
+        "low",
+        "low"
+      ],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 10,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "stable_tier",
+      "materiality_source": "assessed",
+      "current_bucket": "risk",
+      "bucket_policy_A": "low_materiality",
+      "bucket_policy_B": "low_materiality",
+      "bucket_policy_C": "low_materiality",
+      "bucket_policy_D": "low_materiality",
+      "bucket_policy_E": "low_materiality",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false,
+      "LP20_direction_instability_note": "LP-20 is materiality-stable (all low) but direction-unstable: gap_impact wobbled ['adverse', 'context_dependent', 'neutral'] across Q3 replays. Do not use as a clean stability control."
+    },
+    {
+      "lp_id": "LP-21",
+      "all_implicated_lps": [
+        "LP-21"
+      ],
+      "finding_id": "Dir-17",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Uncapped guarantor liability",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-22",
+      "all_implicated_lps": [
+        "LP-22"
+      ],
+      "finding_id": "Dir-18",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "SNDA rights dependent on efforts",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-24",
+      "all_implicated_lps": [
+        "LP-24"
+      ],
+      "finding_id": "Dir-19",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "No proceeds allocation on termination",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-25",
+      "all_implicated_lps": [
+        "LP-25"
+      ],
+      "finding_id": "Dir-20",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Condemnation limited to abatement",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-26",
+      "all_implicated_lps": [
+        "LP-26"
+      ],
+      "finding_id": "Dir-21",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Conditional quiet enjoyment covenant",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [
+        "high",
+        "high",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium"
+      ],
+      "materiality_distribution": {
+        "high": 2,
+        "medium": 8,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "adjacent_high_medium",
+      "materiality_source": "assessed",
+      "current_bucket": "risk",
+      "bucket_policy_A": "VARIES:needs_review/risk",
+      "bucket_policy_B": "actionable_material_risk",
+      "bucket_policy_C": "actionable_material_risk",
+      "bucket_policy_D": "risk",
+      "bucket_policy_E": "actionable_material",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-27",
+      "all_implicated_lps": [
+        "LP-27"
+      ],
+      "finding_id": "Dir-22",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Narrow deposit setoff only",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-28",
+      "all_implicated_lps": [
+        "LP-28"
+      ],
+      "finding_id": "Dir-23",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Unallocated ADA compliance burden",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-29",
+      "all_implicated_lps": [
+        "LP-29"
+      ],
+      "finding_id": "Dir-24",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "No representative presence right",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-30",
+      "all_implicated_lps": [
+        "LP-30"
+      ],
+      "finding_id": "Dir-25",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "Unlimited estoppel obligations",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_eligible",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "needs_review",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-32",
+      "all_implicated_lps": [
+        "LP-32"
+      ],
+      "finding_id": "Dir-26",
+      "finding_type": "directional_mismatch",
+      "directional_finding": "No baseline contamination protections",
+      "verification_strength": "3-0",
+      "direction": "adverse",
+      "materiality_samples": [
+        "medium",
+        "high",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium",
+        "medium"
+      ],
+      "materiality_distribution": {
+        "high": 1,
+        "medium": 9,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "adjacent_high_medium",
+      "materiality_source": "assessed",
+      "current_bucket": "risk",
+      "bucket_policy_A": "VARIES:needs_review/risk",
+      "bucket_policy_B": "actionable_material_risk",
+      "bucket_policy_C": "actionable_material_risk",
+      "bucket_policy_D": "risk",
+      "bucket_policy_E": "actionable_material",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-22",
+      "all_implicated_lps": [
+        "LP-22"
+      ],
+      "finding_id": "CRX-01",
+      "finding_type": "compound_risk",
+      "directional_finding": "Subordination without guaranteed non-disturbance",
+      "verification_strength": "3-0 (compound_risk)",
+      "direction": "not_directional",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_directional",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "consequence_unassessed",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-11+LP-27+LP-01",
+      "all_implicated_lps": [
+        "LP-11",
+        "LP-27",
+        "LP-01"
+      ],
+      "finding_id": "CRX-02",
+      "finding_type": "compound_risk",
+      "directional_finding": "One-sided default remedy structure",
+      "verification_strength": "3-0 (compound_risk)",
+      "direction": "not_directional",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_directional",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "consequence_unassessed",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-07+LP-17+LP-20",
+      "all_implicated_lps": [
+        "LP-07",
+        "LP-17",
+        "LP-20"
+      ],
+      "finding_id": "CRX-03",
+      "finding_type": "compound_risk",
+      "directional_finding": "Exclusivity without enforcement levers",
+      "verification_strength": "3-0 (compound_risk)",
+      "direction": "not_directional",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_directional",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "consequence_unassessed",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false,
+      "LP20_direction_instability_note": "LP-20 is materiality-stable (all low) but direction-unstable: gap_impact wobbled ['adverse', 'context_dependent', 'neutral'] across Q3 replays. Do not use as a clean stability control."
+    },
+    {
+      "lp_id": "LP-22+LP-26",
+      "all_implicated_lps": [
+        "LP-22",
+        "LP-26"
+      ],
+      "finding_id": "CRX-04",
+      "finding_type": "compound_risk",
+      "directional_finding": "Future mortgage subordination trap",
+      "verification_strength": "3-0 (compound_risk)",
+      "direction": "not_directional",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_directional",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "consequence_unassessed",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-01+LP-06+LP-14+LP-24+LP-27",
+      "all_implicated_lps": [
+        "LP-01",
+        "LP-06",
+        "LP-14",
+        "LP-24",
+        "LP-27"
+      ],
+      "finding_id": "CRX-05",
+      "finding_type": "compound_risk",
+      "directional_finding": "Cascading maintenance remedy gaps",
+      "verification_strength": "3-0 (compound_risk)",
+      "direction": "not_directional",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_directional",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "consequence_unassessed",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    },
+    {
+      "lp_id": "LP-01+LP-14+LP-06+LP-19",
+      "all_implicated_lps": [
+        "LP-01",
+        "LP-14",
+        "LP-06",
+        "LP-19"
+      ],
+      "finding_id": "CRX-06",
+      "finding_type": "compound_risk",
+      "directional_finding": "Force majeure operational dead end",
+      "verification_strength": "3-0 (compound_risk)",
+      "direction": "not_directional",
+      "materiality_samples": [],
+      "materiality_distribution": {
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "not_applicable": 0
+      },
+      "materiality_boundary_class": "no_samples",
+      "materiality_source": "not_directional",
+      "current_bucket": "risk",
+      "bucket_policy_A": "consequence_unassessed",
+      "bucket_policy_B": "consequence_unassessed",
+      "bucket_policy_C": "consequence_unassessed_strict",
+      "bucket_policy_D": "consequence_unassessed",
+      "bucket_policy_E": "consequence_unassessed",
+      "bucket_stable_under_high_medium_collapse": true,
+      "policy_E_diverges_from_B": false
+    }
+  ],
+  "Q1": {
+    "question": "Under high+medium collapse (Policy B), do any of the 6 wobbling LPs change action bucket?",
+    "wobbling_lps": [
+      "LP-03",
+      "LP-10",
+      "LP-14",
+      "LP-16",
+      "LP-26",
+      "LP-32"
+    ],
+    "unstable_under_B": [],
+    "result": "PASS \u2014 0 bucket changes under Policy B",
+    "proven_claim": "All 6 wobbling LPs (LP-03/10/14/16/26/32) have direction=adverse and materiality values in {high, medium} only. Under Policy B (high+medium+adverse -> actionable_material_risk), every sample from every wobbling LP maps to actionable_material_risk. 0 routing-relevant bucket changes across 60 sample-slots (6 LPs x 10 samples). The high/medium boundary does not matter for routing if Policy B is adopted.",
+    "caveat": "n=1 lease, 8 eligible LPs. 'PASS' is provisional-on-n=1. All 6 wobbling LPs happen to be adverse; a lease with favorable-high and favorable-medium findings could produce different results. This lease's one-sidedness means the adverse gate was never stressed by high-materiality favorable findings that straddle the high/medium boundary.",
+    "still_unmeasured": "Whether the boundary matters on a second lease where high-materiality favorable findings exist. Keyed 5e stabilization is NOT needed for this lease under Policy B; re-evaluate when lease #2 exists.",
+    "decision_trigger": "Q1=PASS => keyed 5e stabilization NOT justified. Record CANDIDATE direction: assessed high/medium + adverse = actionable_material tier; low = lower tier; defaulted/absent = source-labeled unassessed. Provisional on n=1."
+  },
+  "Q2": {
+    "question": "Do any findings route on defaulted/floor consequence while presenting as assessed?",
+    "n_masquerade_in_assessed_records": 0,
+    "n_implicit_floor_in_current_routing": 18,
+    "result": "No masqueraders among the 8 assessed records. 18 findings use an implicit routing floor.",
+    "proven_claim": "The 8 assessed use_impact records (LP-03/05/10/14/16/20/26/32) have confidence in {assert, assert_weak} \u2014 all genuine model assessments. Policy C does not flag any masqueraders among assessed records. However, 18 directional findings for gated-out LPs (not_eligible source) currently route to risk via the implicit 'or moderate' floor in lease_adapter.py:1006+1461, presenting as if they have assessed materiality when they do not. Under Policy C/D these would correctly label their consequence as unassessed/not_eligible.",
+    "caveat": "The 18 implicit-floor cases are not 'masqueraders' in the sense of fabricating confidence \u2014 the floor is a routing artifact, not a provenance claim. The artifact is honest: those LPs simply have no use_impact key. The problem is that the routing layer silently promotes them to Risk without disclosing the unassessed source.",
+    "still_unmeasured": "Whether the no_evaluators path (all-fail or no-use_profile) could produce a record with confidence=no_evaluators that is then incorrectly treated as assessed downstream. Not triggered in this run."
+  },
+  "Q3": {
+    "question": "How many directional findings lack assessed materiality entirely?",
+    "n_directional_total": 26,
+    "n_with_assessed_mat": 8,
+    "n_without_assessed_mat": 18,
+    "lps_without_mat": [
+      "LP-01",
+      "LP-02",
+      "LP-04",
+      "LP-06",
+      "LP-07",
+      "LP-11",
+      "LP-15",
+      "LP-17",
+      "LP-18",
+      "LP-19",
+      "LP-21",
+      "LP-22",
+      "LP-24",
+      "LP-25",
+      "LP-27",
+      "LP-28",
+      "LP-29",
+      "LP-30"
+    ],
+    "result": "18/26 directional findings have source=not_eligible",
+    "proven_claim": "18 of 26 directional findings cover LPs that never reached Stage 5e (coverage_state = partial with <50% missing, or covered, or not_applicable). Those 18 findings have no assessed materiality. Additionally LP-20 has assessed materiality but it is low (routes to low_materiality tier, not Risk, under all policies). Only 7 findings (LP-03/05/10/14/16/26/32) have assessed materiality in the {medium, high} range that would support actionable_material risk routing under Policy B.",
+    "caveat": "n=1 lease, 8/32 eligible LPs. The 18/26 no-materiality rate is a structural gap from the 50% eligibility threshold.",
+    "still_unmeasured": "How many LPs would gain assessed materiality if the 50% partial threshold were lowered or covered_adverse were added (375E-COV scope)."
+  },
+  "Q4": {
+    "question": "Does Policy A manufacture artificial instability from adjacent high/medium wobble?",
+    "wobbling_lps_unstable_under_A": [
+      "LP-03",
+      "LP-10",
+      "LP-14",
+      "LP-16",
+      "LP-26",
+      "LP-32"
+    ],
+    "wobbling_lps_stable_under_B": [
+      "LP-03",
+      "LP-10",
+      "LP-14",
+      "LP-16",
+      "LP-26",
+      "LP-32"
+    ],
+    "result": "YES \u2014 Policy A's instability is an artifact of the high/medium boundary that B erases.",
+    "proven_claim": "All 6 wobbling LPs show bucket variation under Policy A: LP-03 (9x risk / 1x needs_review under A), LP-10 (1x risk / 9x needs_review), LP-14 (1x risk / 9x needs_review), LP-16 (4x risk / 6x needs_review), LP-26 (2x risk / 8x needs_review), LP-32 (1x risk / 9x needs_review). Under Policy B, ALL 6 are stable at actionable_material_risk across all 10 samples. Policy A's instability is entirely an artifact of a boundary that high+medium collapse eliminates.",
+    "caveat": "The Policy A instability is only an artifact if all wobble is high<->medium. There are 0 full swings (low<->high) in this run.",
+    "still_unmeasured": "Whether any future run would produce a full swing (low<->high) that Policy B would not erase."
+  },
+  "Q5": {
+    "question": "Does Policy C (source-strict) flood Needs Review because 5e coverage is sparse?",
+    "n_dir_not_risk_C": 19,
+    "n_dir_total": 26,
+    "lps_not_risk_under_C": [
+      "LP-01",
+      "LP-02",
+      "LP-04",
+      "LP-06",
+      "LP-07",
+      "LP-11",
+      "LP-15",
+      "LP-17",
+      "LP-18",
+      "LP-19",
+      "LP-20",
+      "LP-21",
+      "LP-22",
+      "LP-24",
+      "LP-25",
+      "LP-27",
+      "LP-28",
+      "LP-29",
+      "LP-30"
+    ],
+    "result": "19/26 directional findings would NOT route to Risk under Policy C.",
+    "proven_claim": "19 of 26 directional findings would not reach actionable_material_risk under Policy C: 18 have source=not_eligible (consequence_unassessed_strict) + LP-20 has assessed-low (low_materiality tier). Only 7 findings have assessed materiality in the actionable tier. Source-strict routing correctly reflects that 5e covers only 8/32 LPs. But the practical result is a 73% reduction in Risk-routed directional findings vs current. 375E-COV (widening Stage 5e) must precede any production 375E-DIR release.",
+    "caveat": "The 18 not_eligible LPs include many significant provisions (payments, maintenance, alterations, SNDA, etc). Their absence from 5e is a gate-design decision, not evidence they are low-consequence.",
+    "still_unmeasured": "Post-375E-COV fill rate. If 375E-COV lowers the partial threshold and adds covered_adverse, the number of assessed findings could increase substantially."
+  },
+  "Q6": {
+    "question": "Policy E vs B/D divergence (asymmetric decision rule)",
+    "n_diverge_under_stage7_direction": 0,
+    "lp05_discordance": {
+      "stage7_direction": "adverse (tenant_unprotected)",
+      "5e_gap_impact": [
+        "favorable"
+      ],
+      "note": "LP-05 is the only eligible LP where Stage 7 direction (adverse) and 5e gap_impact (favorable) disagree. Under Stage 7 direction, B and E both route LP-05 to actionable_material/risk (adverse + medium assessed). Under 5e gap_impact as direction, B would block LP-05 from Risk (favorable) while E would route it to actionable_material -- producing a divergence. 375E-DIR must resolve which axis drives the adverse gate."
+    },
+    "result_verbatim": "Using Stage 7 direction as the primary direction axis: Policy E does not diverge from Policy B for any eligible LP on this artifact. All 8 eligible LPs have direction=adverse (tenant_unprotected) in the frozen Stage 7 findings; since B and E both route adverse + medium/high to the actionable_material tier, the direction gate is never exercised. Record verbatim: 'direction gate not exercised by this n=1 artifact. Non-divergence proves the lease was too one-sided to stress the sign axis, NOT that direction is decorative.'",
+    "proven_claim": "Using Stage 7 direction as the primary axis: 0 divergences between Policy E and B across all eligible LP findings. The Atlas Meridian lease has all directional findings adverse to the tenant -- there are no high- or medium-materiality favorable findings that could exercise the adverse gate.",
+    "caveat": "LP-05 exposes a design question: Stage 7 says adverse (tenant_unprotected) but 5e says gap_impact=favorable (absence benefits this tenant). If the 375E-DIR design uses 5e gap_impact rather than Stage 7 direction as the sign axis, LP-05 WOULD create a divergence (E routes to actionable_material; B blocks as favorable). 375E-DIR must specify which axis governs the adverse gate before the policy is implemented.",
+    "still_unmeasured": "Whether a second lease with high/medium-materiality favorable-direction findings would produce E/B divergence and thus exercise the direction gate. The absence of divergence is a property of this lease's one-sidedness, not of the policy design."
+  },
+  "LP20_note": "LP-20 materiality-stable (all 10 samples: low) / direction-unstable: 5e gap_impact wobbled across neutral x8, adverse x1, context_dependent x1 in Q3 replays. 375E has four output axes; stability on materiality does not launder instability on gap_impact. LP-20 is NOT a clean stability control.",
+  "ui_design_constraint": "DOWNSTREAM DESIGN NOTE (not implemented in 375J): high+medium collapse, if adopted, is a ROUTING simplification, not a data deletion. The raw assessed label ('Materiality: Medium'), the source ('assessed' vs 'defaulted floor'), the replay distribution, and verification strength must all remain separately displayable. Bucket answers 'what should the lawyer do'; the card/audit answers 'how strongly and by what path.'"
+}
