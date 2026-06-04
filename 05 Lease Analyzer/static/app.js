@@ -16630,6 +16630,26 @@ function renderCoveragePanel() {
                 ? '<span class="cv-dispute-signal cv-dispute-signal-important" title="Evaluator disagreement on ' + _dispImp + ' important element(s) — LP classification unaffected">Disputed</span>'
                 : '');
 
+        // Step 375G: CLIENT IMPACT block. PROMOTE existing fields only — no new prose, no model call.
+        // Leads with use_impact.use_reasoning (the tenant-specific reason it matters, when present),
+        // paired with the existing exposure_statement (consequence-of-inaction prose). Rendered at the
+        // TOP of the card (under the title/badges, above the element evidence table) so judgment — why it
+        // matters to THIS client — leads, instead of being a buried bottom footnote. When use_reasoning is
+        // absent (the 72% with no Stage-5e use_impact) it shows ONLY the generic exposure_statement — NO
+        // fabricated tenant-specific sentence. The element table + lease text stay fully visible below.
+        // Pure layout/IA + footnote relocation — no count/routing/classifier/computed-value change.
+        const _ciUi = a.use_impact;
+        const _ciReason = (_ciUi && _ciUi.use_reasoning) ? String(_ciUi.use_reasoning).trim() : '';
+        const _ciGap = (_ciUi && _ciUi.gap_impact) || '';
+        const _ciReasonCls = _ciGap === 'favorable' ? 'cv-ci-reason-favorable'
+                           : (_ciGap === 'adverse' ? 'cv-ci-reason-adverse' : 'cv-ci-reason-neutral');
+        const _ciParts = [];
+        if (_ciReason) _ciParts.push('<div class="cv-ci-reason ' + _ciReasonCls + '">' + esc(_ciReason) + '</div>');
+        if (stmt) _ciParts.push('<div class="cv-ci-exposure">' + esc(stmt) + (srcNote ? ' ' + srcNote : '') + '</div>');
+        const clientImpactHtml = _ciParts.length
+            ? '<div class="cv-client-impact"><div class="cv-client-impact-label">Client Impact</div>' + _ciParts.join('') + '</div>'
+            : '';
+
         return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
             <div class="cv-item-header">
                 <span class="cv-item-id">${esc(pid)}</span>
@@ -16644,22 +16664,14 @@ function renderCoveragePanel() {
                 ${reliefBadgeHtml}
             </div>
             ${escalationHtml}
+            ${clientImpactHtml}
             ${leaseTextHtml}
             ${elementDetailHtml}
-            ${stmt ? `<div class="cv-item-stmt">${esc(stmt)} ${srcNote}</div>` : ""}
             ${state === 'missing'
               ? (tenantText
                   ? '<div class="cv-missing-provision-note cv-missing-gaps-note">⚠ This provision has significant gaps — key protections are missing.</div>'
                   : '<div class="cv-missing-provision-note">⚠ This provision is absent from the lease. Use <strong>Draft Missing Clause</strong> to request language from the landlord.</div>')
               : ''}
-            ${(function() {
-                const ui = a.use_impact;
-                if (!ui || !ui.use_reasoning) return '';
-                if (ui.gap_impact === 'favorable') return '<div class="cv-use-impact-note cv-use-impact-favorable">&#x2713; Favorable for this tenant&#x27;s use — ' + esc(ui.use_reasoning) + '</div>';
-                if (ui.gap_impact === 'neutral' && ui.materiality === 'low') return '<div class="cv-use-impact-note cv-use-impact-neutral">Low impact for this tenant&#x27;s use — ' + esc(ui.use_reasoning) + '</div>';
-                if (ui.gap_impact === 'adverse') return '<div class="cv-use-impact-note cv-use-impact-adverse">&#x26A0; Tenant-specific concern — ' + esc(ui.use_reasoning) + '</div>';
-                return '';
-              })()}
             ${missingHtml}
             ${nsHtml}
             ${toolbarHtml}

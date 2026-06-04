@@ -12484,6 +12484,41 @@ body.mode-c .card-docview-link {
     border-left: 3px solid #ea580c;
 }
 
+/* Step 375G — Client Impact block: judgment-first, PROMOTED to the top of the card (above the
+   element evidence table). Prominent (not footnote-sized). Promotes existing fields only —
+   use_impact.use_reasoning (the tenant-specific reason it matters) + exposure_statement. */
+.cv-client-impact {
+    margin: 0.5rem 0 0.65rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 6px;
+    background: var(--surface-2, #f8fafc);
+    border: 1px solid var(--border, #e2e8f0);
+    border-left: 4px solid #6366f1;   /* indigo "insight/judgment" accent — prominent, not an alarm */
+}
+.cv-client-impact-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #4338ca;
+    margin-bottom: 0.3rem;
+}
+.cv-ci-reason {            /* the tenant-specific "why it matters" — the commercially valuable line */
+    font-size: 0.92rem;
+    line-height: 1.45;
+    font-weight: 500;
+    color: var(--text, #1f2937);
+}
+.cv-ci-reason-favorable { color: #166534; }
+.cv-ci-reason-adverse   { color: #9a3412; }
+.cv-ci-reason-neutral   { color: #374151; }
+.cv-ci-exposure {         /* the practical consequence-of-inaction prose (exposure_statement) */
+    font-size: 0.85rem;
+    line-height: 1.4;
+    color: var(--text-muted, #4b5563);
+    margin-top: 0.3rem;
+}
+
 /* ══════════════════════════════════════════════════════
    STEP 342 — AUDIT TRAIL REASONING (per-evaluator in table + merge trace)
    ══════════════════════════════════════════════════════ */
