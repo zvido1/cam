@@ -16365,8 +16365,20 @@ function renderCoveragePanel() {
         // Step 307b: derive governance signal and confidence badge (same infrastructure as Mode A)
         const _covGovSig = elementVerdicts.length > 0 ? deriveCoverageGovernanceSignal(elementVerdicts) : null;
         const _covBadgeData = (_covGovSig && window.CAMAuditShared) ? window.CAMAuditShared.getConfidenceBadgeData(_covGovSig) : null;
+        // Step 374V: CONDITIONAL lawyer-facing copy for the consequence-not-assessed provenance state.
+        // Keys off the EXACT 374Q surfacing of the consequence_source provenance flag — the
+        // 'consequence_not_assessed' Needs-Review subtype (_reviewSubtypeOf), which 374Q already routes a
+        // card to ONLY when it is a hard_flag-floored signal AND the consequence was defaulted/not assessed.
+        // This is the critical anti-blanket guard: the raw consequenceDefaulted flag is true for ~17 cards
+        // (most LPs lack use_impact), but the subtype gate isolates exactly the LP-06-style card (n=1 per run).
+        // Doctrine: "Impact Unclear" falsely implies CAM assessed impact and reached uncertainty; here CAM
+        // declined to assert an ungrounded consequence (constrained assertion) and routes it to the attorney.
+        // Cards with genuinely-assessed impact keep their real label. Display/copy only — no logic change.
+        const _consNotAssessed374V = (_reviewSubtypeOf(a) === 'consequence_not_assessed');
+        const _covImpactLabel374V = _consNotAssessed374V ? 'Impact: attorney judgment required'
+                                  : (_covBadgeData ? _covBadgeData.label : '');
         const confidenceBadgeHtml = _covBadgeData
-            ? '<span class="cov-conf-label">Confidence:</span><span class="cam-confidence-badge cam-conf-' + _covBadgeData.cssClass + '" title="' + esc(_covBadgeData.label) + '">' + _covBadgeData.dots + ' ' + esc(_covBadgeData.label) + '</span>'
+            ? '<span class="cov-conf-label">Confidence:</span><span class="cam-confidence-badge cam-conf-' + _covBadgeData.cssClass + '" title="' + esc(_covImpactLabel374V) + '">' + _covBadgeData.dots + ' ' + esc(_covImpactLabel374V) + '</span>'
             : '';
         const _covEvidSumm = a.evidence_summary || '';
         const _evalCountMatch = _covEvidSumm.match(/(\d+\/\d+)\s+evaluator/);
@@ -16525,7 +16537,12 @@ function renderCoveragePanel() {
                 // signals (not tie-derived) the cap note is kept. Wording only — confidence is NOT recomputed.
                 const _tieDerivedSevere374Q = _lpProvenanceFlags374Q(a).tieDerivedSevere;
                 const _capNote = (_lpConf && !_tieDerivedSevere374Q) ? ' Confidence capped at ' + esc(_lpConf) + '.' : '';
-                _sevHeaderHtml = '<div class="cv-lp-sev-header cv-lp-sev-header-severe">&#x26A0; Review escalation triggered from derived coverage signals.' + _capNote + ' Element-level evidence shown below.</div>';
+                // Step 374V: on the consequence-not-assessed provenance state, frame the escalation as
+                // deliberate restraint routed to the attorney (constrained assertion), not a CAM shortfall.
+                // Conditional on the same provenance flag; other severe cards keep the derived-signal banner.
+                _sevHeaderHtml = _consNotAssessed374V
+                    ? '<div class="cv-lp-sev-header cv-lp-sev-header-severe">&#x26A0; Attorney review recommended: potential exposure was identified; consequence requires your judgment. Element-level evidence appears below.</div>'
+                    : '<div class="cv-lp-sev-header cv-lp-sev-header-severe">&#x26A0; Review escalation triggered from derived coverage signals.' + _capNote + ' Element-level evidence shown below.</div>';
             } else if (_lpSev === 'moderate') {
                 const _capNote = _lpConf ? ' Confidence capped.' : '';
                 _sevHeaderHtml = '<div class="cv-lp-sev-header cv-lp-sev-header-moderate">〜 Coverage-signal divergence derived from element verdicts.' + _capNote + ' Element-level evidence shown below.</div>';
@@ -16582,10 +16599,14 @@ function renderCoveragePanel() {
         const _vd = a.verdict_distance;
         const _vdSev = _vd && _vd.severity;
         // Step 374K: honest containment — derived LP rollup, not a standalone evaluator conclusion.
+        // Step 374V: on the consequence-not-assessed provenance state, name the badge for what the lawyer
+        // must do (the consequence needs their judgment) rather than the generic "derived review signal".
+        // Conditional on the same 374Q provenance flag; assessed cards keep "derived review signal". Copy only.
+        const _disagBadgeText374V = _consNotAssessed374V ? 'Consequence requires attorney judgment' : 'derived review signal';
         const disagSeverityHtml = (_vdSev === 'moderate')
-            ? '<span class="cv-disag-severity cv-disag-severity-moderate" title="Review signal derived from aggregated element verdicts (moderate distance) — not a standalone evaluator conclusion">〜 derived review signal</span>'
+            ? '<span class="cv-disag-severity cv-disag-severity-moderate" title="Review signal derived from aggregated element verdicts (moderate distance) — not a standalone evaluator conclusion">〜 ' + _disagBadgeText374V + '</span>'
             : (_vdSev === 'severe')
-            ? '<span class="cv-disag-severity cv-disag-severity-severe" title="Review signal derived from aggregated element verdicts — not a standalone evaluator conclusion; see element evidence">&#x26A0; derived review signal</span>'
+            ? '<span class="cv-disag-severity cv-disag-severity-severe" title="Review signal derived from aggregated element verdicts — not a standalone evaluator conclusion; see element evidence">&#x26A0; ' + _disagBadgeText374V + '</span>'
             : '';
 
         // Step 356 Phase 3: dispute_signal badge
