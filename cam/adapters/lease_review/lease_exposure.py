@@ -84,10 +84,35 @@ _REASON_CODES = {
 }
 
 
-def _classify_materiality(assessment: dict) -> str:
+_OPPOSITE_PARTY = {"tenant": "landlord", "landlord": "tenant"}
+
+
+def _perspective_adverse_missing(assessment: dict, perspective: str = "tenant") -> list:
+    """Step 374Z: missing element labels whose absence is adverse to the selected perspective —
+    i.e. ``absence_adverse_to`` is the perspective, ``both``, or null/unknown (conservative). Clearly
+    OPPOSITE-polarity (favorable) absences are excluded so they cannot amplify materiality.
+
+    This is the materiality LANDMINE guard: high/medium materiality may amplify the importance of an
+    adverse absence, but must never REVERSE perspective polarity. A missing landlord-favorable remedy
+    (e.g. rent acceleration) is high-materiality TO THE LANDLORD, never a tenant Risk — even if its
+    label is later normalized to match a ``_HIGH_MATERIALITY_ELEMENTS`` string. (``elements_missing`` is
+    already opposite-polarity-stripped at the coverage stage post-374Z; this is the explicit, directly
+    testable guard so correct string alignment can never activate an incorrect result.)
+    """
+    missing = list(assessment.get("elements_missing", []))
+    opposite = _OPPOSITE_PARTY.get((perspective or "tenant").lower())
+    if not opposite:
+        return missing
+    pol = _absence_polarity_by_label(assessment.get("issue_area_id", ""))
+    return [m for m in missing if pol.get(m) != opposite]
+
+
+def _classify_materiality(assessment: dict, perspective: str = "tenant") -> str:
     state = assessment.get("coverage_state", "")
-    missing = assessment.get("elements_missing", [])
     pid = assessment.get("issue_area_id", "")
+    # Step 374Z landmine guard: only perspective-adverse missing elements may drive the materiality
+    # string-match (opposite-polarity/favorable absences are filtered out — they never reverse polarity).
+    missing = _perspective_adverse_missing(assessment, perspective)
 
     if state in _MODEL_STATES:
         return "high"
@@ -146,7 +171,10 @@ def _build_schema_exposure(assessment: dict, perspective: str = "tenant") -> dic
     from cam.adapters.lease_review.lease_display import extract_headline
 
     state = assessment.get("coverage_state", "")
-    missing = assessment.get("elements_missing", [])
+    # Step 374Z (374X residual): the schema-path `missing[0]` fallback must not narrate a favorable
+    # (opposite-polarity) absence as a gap. Use perspective-adverse missing only (elements_missing is
+    # already stripped at the coverage stage; this is the explicit guard for the schema path).
+    missing = _perspective_adverse_missing(assessment, perspective)
     schema_statement = _get_exposure_statement(assessment, perspective)
     pid = assessment.get("issue_area_id", "")
     name = assessment.get("issue_area_name", pid)
@@ -484,7 +512,7 @@ def generate_exposure(coverage_assessment: list, cfg: dict) -> list:
     for assessment in coverage_assessment:
         state = assessment.get("coverage_state", "")
 
-        materiality = _classify_materiality(assessment)
+        materiality = _classify_materiality(assessment, perspective)
         partial_class = _classify_partial(assessment, materiality)
         assessment["materiality"] = materiality
         assessment["partial_class"] = partial_class

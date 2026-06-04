@@ -840,14 +840,39 @@ def merge_element_verdicts(verdicts: list[dict], element: dict) -> dict:
 
 # ── LP-state derivation from element verdicts ─────────────────────────────────
 
-def derive_lp_state(element_results: list[dict], elements_305: list[dict]) -> str:
+_OPPOSITE_PARTY = {"tenant": "landlord", "landlord": "tenant"}
+
+
+def derive_lp_state(element_results: list[dict], elements_305: list[dict],
+                    perspective: str = "tenant") -> str:
     """Derive LP-level coverage_state from merged element verdicts per architecture spec §7.
 
     Does NOT apply covered_unfavorable or potentially_unenforceable — those are
     applied by the caller (lease_coverage.py routing) using the existing pattern checks.
+
+    Step 374Z (C3 polarity correction): a missing element whose absence is adverse to the
+    OPPOSITE party (``absence_adverse_to == opposite_party``) is NOT a gap for the selected
+    perspective — a missing *burden* on the perspective party is favorable/non-adverse, not a
+    missing protection. Such absences are excluded from adverse-missing scoring (so they cannot,
+    on their own, push the LP to partial/missing or flag a high-severity gap). Elements whose
+    absence is adverse to the selected perspective, ``both``, ``null``, or context-dependent stay
+    ADVERSE/reviewable (conservative — only clear opposite-polarity flips; this is why C3 beat C2
+    on the null-polarity LP-01 case). This consumes the schema's ``absence_adverse_to`` field as
+    designed (374W found it was dead data). NOT a numeric offset — favorable absences are simply
+    not counted as gaps; they are retained separately by the caller.
     """
     if not element_results:
         return "review_needed"
+
+    opposite = _OPPOSITE_PARTY.get((perspective or "tenant").lower())
+    polarity_by_id = {e.get("element_id"): e.get("absence_adverse_to") for e in elements_305}
+
+    def _is_favorable_absence(r: dict) -> bool:
+        # Only a clearly-missing, clearly-opposite-polarity element is non-adverse for this
+        # perspective. Disputed (evaluators disagree) and null/both stay adverse/reviewable.
+        return (opposite is not None
+                and r["verdict"] == "missing"
+                and polarity_by_id.get(r["element_id"]) == opposite)
 
     high_severity_ids = {
         e["element_id"] for e in elements_305
@@ -855,16 +880,26 @@ def derive_lp_state(element_results: list[dict], elements_305: list[dict]) -> st
     }
 
     any_unclear = any(r["verdict"] == "unclear" for r in element_results)
-    all_positive = all(r["verdict"] in PRESENCE_VERDICTS for r in element_results)
+    # Step 374Z: a favorable (opposite-polarity) absence counts as satisfied/non-adverse for the
+    # selected perspective, so an LP whose only non-present elements are favorable absences is
+    # "covered" for this perspective (not a gap).
+    all_non_adverse = all(
+        r["verdict"] in PRESENCE_VERDICTS or _is_favorable_absence(r)
+        for r in element_results
+    )
     # Supplement #21 Phase 1: treat disputed as missing for LP-state derivation
     # (conservative; Phase 3 will add criticality-gated propagation to Review Needed).
-    missing_or_disputed = [r for r in element_results if r["verdict"] in ("missing", "disputed")]
+    # Step 374Z: exclude favorable (opposite-polarity) absences from the adverse-missing set.
+    missing_or_disputed = [
+        r for r in element_results
+        if r["verdict"] in ("missing", "disputed") and not _is_favorable_absence(r)
+    ]
     high_severity_missing = any(r["element_id"] in high_severity_ids for r in missing_or_disputed)
 
     if any_unclear:
         return "review_needed"
 
-    if all_positive:
+    if all_non_adverse:
         return "covered"
 
     total = len(element_results)
@@ -959,10 +994,18 @@ def assess_coverage_305(
             "lp_meta": {"fallback_used": False, "fallbacks": None},  # Step 372a
         }
 
+    # Step 374Z (C3 polarity correction): selected perspective + opposite party. A missing element
+    # whose absence is adverse to the OPPOSITE party is a favorable/non-adverse absence for this
+    # perspective (a missing burden, not a missing protection) — it is kept OUT of elements_missing
+    # (so it is never narrated/scored as a gap) and retained separately as a favorable candidate.
+    _perspective = ((cfg or {}).get("perspective") or "tenant").lower()
+    _opposite_party = _OPPOSITE_PARTY.get(_perspective)
+
     # ── 2. Merge per-element verdicts ─────────────────────────────────────────
     element_verdicts_merged = []
     elements_present = []
     elements_missing = []
+    favorable_absences = []  # Step 374Z: opposite-polarity missing — candidate favorable/non-adverse context
     elements_disputed = []   # Supplement #21 Phase 1
     elements_disputed_critical = 0   # Step 355: Phase 2 criticality counters
     elements_disputed_important = 0  # Step 355: Phase 2 criticality counters
@@ -994,7 +1037,21 @@ def assess_coverage_305(
         if merged["verdict"] in PRESENCE_VERDICTS:
             elements_present.append(element_label)
         elif merged["verdict"] == "missing":
-            elements_missing.append(element_label)
+            # Step 374Z (C3): clear opposite-polarity absence → favorable/non-adverse candidate, NOT a
+            # gap. Only the perspective-adverse / both / null missing elements stay in elements_missing
+            # (which feeds coverage_state, materiality, exposure prose, and the "Missing:" display).
+            if _opposite_party and element.get("absence_adverse_to") == _opposite_party:
+                favorable_absences.append({
+                    "element_id": element_id,
+                    "element_label": element_label,
+                    "absence_adverse_to": element.get("absence_adverse_to"),
+                    "absence_severity": element.get("absence_severity"),
+                    # Step 374Z: cross-document dependency caveat (e.g. LP-27 lender-cure → SNDA/LP-22)
+                    # so a later favorable-position surface can qualify the advantage, not assert it.
+                    "cross_LP_coverage": element.get("cross_LP_coverage") or None,
+                })
+            else:
+                elements_missing.append(element_label)
         elif merged["verdict"] == "disputed":
             elements_disputed.append(element_label)
             if criticality == "critical":        # Step 355: track criticality of disputed elements
@@ -1003,7 +1060,7 @@ def assess_coverage_305(
                 elements_disputed_important += 1
 
     # ── 3. Derive LP-level coverage state ─────────────────────────────────────
-    coverage_state_baseline = derive_lp_state(element_verdicts_merged, elements_305)
+    coverage_state_baseline = derive_lp_state(element_verdicts_merged, elements_305, _perspective)
 
     # ── 3a. Compute LP-level verdict distance (Architecture A Phase 2) ────────
     verdict_distance = None
@@ -1115,6 +1172,9 @@ def assess_coverage_305(
         "element_verdicts": element_verdicts_merged,
         "elements_present": elements_present,
         "elements_missing": elements_missing,
+        # Step 374Z (C3): opposite-polarity absences — retained as candidate favorable/non-adverse
+        # context (data slot only; NOT surfaced as a UI bucket and NEVER offsets Risk numerically).
+        "favorable_or_non_adverse_absences": favorable_absences,
         "elements_disputed": elements_disputed,          # Supplement #21 Phase 1
         "elements_disputed_critical": elements_disputed_critical,   # Step 355 Phase 2
         "elements_disputed_important": elements_disputed_important, # Step 355 Phase 2

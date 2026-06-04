@@ -303,6 +303,10 @@ def assess_coverage(
                 _a["coverage_method"] = _result_305.get("coverage_method", "step_305_per_element")
                 _a["element_verdicts"] = _result_305.get("element_verdicts", [])
                 _a["coverage_state_baseline"] = _result_305["coverage_state_baseline"]
+                # Step 374Z (C3): retain opposite-polarity absences as candidate favorable/non-adverse
+                # context (data slot only — no UI bucket, never offsets Risk). Coverage runs perspective-
+                # blind (tenant default); perspective threading into the coverage stage is a follow-up.
+                _a["favorable_or_non_adverse_absences"] = _result_305.get("favorable_or_non_adverse_absences", [])
                 # Step 372a: persist evaluator identity + token-utilization meta and the
                 # LP-level fallback flag so the audit trail records the REAL answering
                 # model. fallback_used drives a quiet audit-surface-only confidence tick.
