@@ -1888,6 +1888,24 @@ def _build_pass2_directional_findings(
     _dir_match_counts:   Dict[str, int] = {r: 0 for r in p2_dir_by_id}
     _dir_default_counts: Dict[str, int] = {r: 0 for r in p2_dir_by_id}
 
+    # Step 375C (PROVISIONAL): per-role Pass-2 usability summary — the RAW CAUSE preserved for
+    # Audit when the integrity tripwire fires. The historical failure mode (375-R) was a role that
+    # returned EMPTY directional output (dir_object_count == 0), silently defaulting every vote to
+    # _NO_OBJECT. This summary is cause-only; the per-finding tripwire detects via the _NO_OBJECT
+    # sentinel below (which subsumes empty/unmatched/truncated output at finding granularity).
+    _role_usability: Dict[str, dict] = {}
+    for _role, _out in pass2_outputs.items():
+        _vlist = _out.get("verdicts") or []
+        _dir_objs = sum(1 for v in _vlist
+                        if isinstance(v, dict) and str(v.get("candidate_id", "")).startswith("Dir-"))
+        _role_usability[_role] = {
+            "completed":               _out.get("completed", False),
+            "model":                   _out.get("model", ""),
+            "n_objects":               len(_vlist),
+            "dir_object_count":        _dir_objs,
+            "empty_directional_output": _dir_objs == 0,
+        }
+
     findings: List[dict] = []
     for candidate in directional_candidates:
         cid    = candidate["candidate_id"]
@@ -1927,15 +1945,39 @@ def _build_pass2_directional_findings(
         elif "landlord" in ep:
             directionality = "landlord_unprotected"
 
-        # Map sentinel back to "unclear" for external output; keep counts honest.
+        # Step 375C (PROVISIONAL) — Pass-2 integrity tripwire. A role whose Pass-2 output was UNUSABLE
+        # for this candidate (the _NO_OBJECT sentinel: missing / empty / truncated / unmatched) is NOT
+        # a negative vote and must not silently function as non-confirmation. When any role is unusable
+        # the finding is marked `verification_incomplete` — a DISTINCT state, not a vote and not a
+        # severity — so it is surfaced rather than silently demoted to a deflated "2-1 MEDIUM / not-Risk"
+        # tally as if an evaluator substantively disagreed (375-R: Role A's empty output silently
+        # suppressed directional Risk to 0). SCOPE: fires ONLY on the unusable-output mode; it never
+        # fires when all three roles returned usable output, does NOT change the HIGH/MED/LOW vote-count
+        # map, clean valid splits (the current GPT-5.4 semantic-flip question, out of scope), or compound
+        # findings. The raw cause is preserved for Audit/Evidence.
+        incomplete_roles = [r for r in ("A", "B", "C") if verdicts_by_role.get(r) == _NO_OBJECT]
+        verification_incomplete = len(incomplete_roles) > 0
+        usable_roles = [r for r in ("A", "B", "C") if r not in incomplete_roles]
+        usable_confirmed = sum(1 for r in usable_roles if verdicts_by_role.get(r) == "mismatch_confirmed")
+
+        # An unusable role is reported as "not_assessed" (distinct from a genuine "unclear" verdict).
         ev_verdicts = {
-            r: ("unclear" if verdicts_by_role.get(r) == _NO_OBJECT else verdicts_by_role.get(r, "not_reported"))
+            r: ("not_assessed" if r in incomplete_roles
+                else ("unclear" if verdicts_by_role.get(r) == _NO_OBJECT else verdicts_by_role.get(r, "not_reported")))
             for r in ("A", "B", "C")
         }
-        agreement   = f"{confirmed}-{3 - confirmed}"
+        # Severity by the EXISTING vote-count map (line untouched); OVERRIDDEN to the distinct
+        # verification-incomplete state when a role's output was unusable.
         severity    = "HIGH" if confirmed == 3 else "MEDIUM" if confirmed == 2 else "LOW"
+        if verification_incomplete:
+            severity  = "VERIFICATION_INCOMPLETE"
+            # Honest tally among USABLE roles only — never implies the incomplete role "disagreed"
+            # (so it cannot read as a "2-1 disagreement"; the incomplete count is carried separately).
+            agreement = f"{usable_confirmed}-{len(usable_roles) - usable_confirmed}"
+        else:
+            agreement = f"{confirmed}-{3 - confirmed}"
 
-        findings.append({
+        _finding = {
             "finding_id":          cid,
             "finding_type":        "directional_mismatch",
             "implicated_lps":      lp_ids,
@@ -1948,7 +1990,14 @@ def _build_pass2_directional_findings(
             "severity":            severity,
             "evaluator_agreement": agreement,
             "evaluator_verdicts":  ev_verdicts,
-        })
+            # Step 375C provenance (Audit/Evidence) — distinct verification-incompleteness + raw cause.
+            "verification_incomplete":       verification_incomplete,
+            "verification_incomplete_roles": incomplete_roles or None,
+            "verification_incomplete_cause": (
+                {r: _role_usability.get(r, {}) for r in incomplete_roles} if verification_incomplete else None
+            ),
+        }
+        findings.append(_finding)
 
     # Step 369: fail-loud INTEGRITY WARNING — fire when a completed role returned
     # objects but none matched any candidate (votes silently lost to default=unclear).

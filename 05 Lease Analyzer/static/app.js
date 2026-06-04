@@ -8138,7 +8138,19 @@ function _buildCpfDetail(cpfItem) {
     html += '<div class="ev-cpf-detail-meta">';
     var ftLabel = cpfItem.finding_type ? cpfItem.finding_type.replace(/_/g, ' ') : '';
     if (ftLabel) html += '<span class="ev-cpf-type-badge">' + esc(ftLabel) + '</span>';
-    if (cpfItem.severity) html += '<span class="ev-cpf-sev-badge ev-cpf-sev-' + esc(cpfItem.severity) + '">' + esc(cpfItem.severity) + '</span>';
+    // Step 375C: a Pass-2 integrity-incomplete directional finding is NOT a legal severity and NOT a
+    // genuine evaluator disagreement — render the distinct "verification incomplete" state, not a raw
+    // severity label or a deflated tally. (Backend marks verification_incomplete + the role not_assessed
+    // + raw cause; current-code findings never carry this, so no current display changes.)
+    if (cpfItem.verification_incomplete || cpfItem.severity === 'VERIFICATION_INCOMPLETE') {
+        var _incRoles = (cpfItem.verification_incomplete_roles || []).join(', ');
+        html += '<span class="ev-cpf-sev-badge ev-cpf-sev-incomplete" title="Pass-2 verification incomplete'
+              + (_incRoles ? ' (evaluator ' + esc(_incRoles) + ' returned no usable output)' : '')
+              + ' — confirmation strength could not be established; not a severity and not a disagreement">'
+              + '&#9888; Verification incomplete</span>';
+    } else if (cpfItem.severity) {
+        html += '<span class="ev-cpf-sev-badge ev-cpf-sev-' + esc(cpfItem.severity) + '">' + esc(cpfItem.severity) + '</span>';
+    }
     html += '</div>';
     var _cpfHl = (cpfItem.headline || '').trim();
     var _cpfHeading = cpfTitle(cpfItem);
