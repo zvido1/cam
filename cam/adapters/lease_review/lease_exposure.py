@@ -245,8 +245,11 @@ _EXPOSURE_USER_TEMPLATE_TAIL = {
 _EXPOSURE_USER_TEMPLATE = """Provision: {name}
 Coverage state: {state}
 Missing or unfavorable elements: {elements}
+Favorable or non-adverse absences (context only — do NOT describe as a gap or exposure): {favorable_absences}
 Evidence note: {evidence}
 Fallback schema statement: {fallback}
+
+{polarity_note}
 
 {tail}
 
@@ -258,6 +261,26 @@ Step 278: respond as a JSON object with two fields:
 - "full": the 1-2 sentence exposure prose described above.
 
 Return only the JSON object, no surrounding markdown or commentary."""
+
+
+def _absence_polarity_by_label(pid: str) -> dict:
+    """Step 374X: map expected-element label -> ``absence_adverse_to`` for an LP, from the schema.
+
+    Used ONLY to partition the exposure-PROSE model input by perspective polarity so that a
+    missing *burden on the selected perspective* is not narrated as that perspective's exposure
+    (374W finding: ``absence_adverse_to`` was dead data; the model was fed every missing element).
+
+    PROSE-ONLY: coverage_state / materiality / partial_class / hard_flag are computed upstream in
+    ``generate_exposure`` from ``elements_missing`` and are NOT affected by this map. Returns ``{}``
+    for LPs that have no Step-305 schema (older LPs), so the caller falls back to current handling.
+    """
+    from cam.adapters.lease_review.lease_knowledge import get_issue_area
+    ia = get_issue_area(pid) or {}
+    out = {}
+    for e in (ia.get("expected_elements_305") or []):
+        if isinstance(e, dict) and e.get("element_label"):
+            out[e["element_label"]] = e.get("absence_adverse_to")
+    return out
 
 
 def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict:
@@ -282,6 +305,7 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
     # static string for any perspective.
     fallback = _get_exposure_statement(assessment, perspective)
 
+    favorable_absences: list = []
     if state == "covered_unfavorable":
         elements_used = found[:3]
         if perspective == "landlord":
@@ -292,15 +316,44 @@ def _build_model_exposure(assessment: dict, cfg: dict, reason_code: str) -> dict
         else:
             elements_str = f"Provision present but unfavorable: {', '.join(elements_used)}"
     else:
-        elements_used = missing[:4]
+        # Step 374X: partition missing elements by perspective polarity (absence_adverse_to).
+        # ONLY elements whose absence is adverse to the OPPOSITE party move out of the adverse-gap
+        # input into a separate context-only slot — a missing burden on the selected perspective
+        # must not be narrated as that perspective's exposure ("lender cure delay" on LP-27). Every
+        # other case (absence_adverse_to == selected perspective, "both", null, contextual, or an LP
+        # with no 305 schema) stays in CURRENT adverse-eligible handling — no reinterpretation here
+        # (the measured 374Y-Q step wires polarity into state/materiality). PROSE-ONLY: we read a
+        # LOCAL partition of a copy; assessment["elements_missing"] is NOT mutated, so coverage_state,
+        # materiality, partial_class, routing, and hard_flag (all computed upstream) are unchanged.
+        opposite = {"tenant": "landlord", "landlord": "tenant"}.get(perspective)
+        polarity_by_label = _absence_polarity_by_label(pid)
+        adverse_missing: list = []
+        for label in missing:
+            if opposite and polarity_by_label.get(label) == opposite:
+                favorable_absences.append(label)
+            else:
+                adverse_missing.append(label)
+        elements_used = adverse_missing[:4]
         elements_str = ", ".join(elements_used) if elements_used else "see evidence note"
+
+    # Step 374X: favorable/non-adverse absences are passed as context only (never as a gap), and the
+    # generator is told not to frame a missing perspective-burden as exposure.
+    favorable_str = ", ".join(favorable_absences[:4]) if favorable_absences else "none"
+    polarity_note = (
+        f"Describe {perspective} exposure ONLY from {perspective}-adverse or contextually-adverse "
+        f"elements. Do NOT describe the absence of a burden on the {perspective} as a gap or exposure. "
+        f"Favorable/non-adverse absences may be mentioned only as offsetting context, or omitted from "
+        f"an adverse headline."
+    )
 
     user_prompt = _EXPOSURE_USER_TEMPLATE.format(
         name=name,
         state=state,
         elements=elements_str,
+        favorable_absences=favorable_str,
         evidence=evidence[:200] if evidence else "none",
         fallback=fallback[:200] if fallback else "none",
+        polarity_note=polarity_note,
         tail=user_tail,
     )
 
