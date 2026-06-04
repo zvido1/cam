@@ -1,0 +1,859 @@
+{
+  "harness": "375K_direction_axis_reconciliation",
+  "step": "375K",
+  "frozen_run": "lease_review_20260604_033046_52adbf",
+  "keyless": true,
+  "doctrine_verbatim": "375K does not assume a permanent sign hierarchy. It tests candidate sign-hierarchy rules because 375J exposed a live contradiction between Stage 7 directional sign and Stage 5e gap_impact.\n\nFor production safety during the test, any Stage7<->5e sign conflict is treated as UNRESOLVED and cannot silently route as asserted Risk. The counterfactual may show how each candidate rule WOULD route it, but the diagnostic-safe bucket for an unresolved sign conflict is Needs Review.",
+  "rule_labels": {
+    "A": "Stage7-sign-primary (production candidate)",
+    "B": "5e-sign-primary (production candidate)",
+    "C": "conflict-abstention/no-winner (production candidate)",
+    "D": "Stage7-only diagnostic baseline -- NOT a production candidate",
+    "E": "5e-only diagnostic baseline -- NOT a production candidate"
+  },
+  "inputs": {
+    "stage7_direction_source": "pipeline_results.json -> cross_provision_findings[].directionality",
+    "stage5e_gap_impact_source": "pipeline_results.json -> coverage_assessment[].use_impact.gap_impact",
+    "gap_impact_stability_source": "build_log/375I_q3_results.json -> per_lp_stability[].unique_gap_impact",
+    "materiality_context_source": "build_log/375J_results.json -> per-finding materiality_source + distribution"
+  },
+  "findings": [
+    {
+      "lp_id": "LP-01",
+      "finding_id": "Dir-01",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no defined payment method protections or options. Tenant has no defined payment method protections while Landlord holds late charges and default remedies.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-02",
+      "finding_id": "Dir-02",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no cap on increases. Tenant bears unlimited escalation risk while Landlord receives automatic annual increases.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-03",
+      "finding_id": "Dir-03",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "adverse",
+      "stage5e_gap_impact_stable": true,
+      "stage5e_unique_values": [
+        "adverse"
+      ],
+      "stage5e_confidence": "assert",
+      "axis_relation": "aligned",
+      "stage7_reasoning": "Tenant renewal requires no default and notice. Tenant renewal requires no default and notice while Landlord can terminate for default without equivalent tenant options.",
+      "stage5e_reasoning": "Missing renewal elements create occupancy uncertainty that disrupts long-term warehousing and distribution planning reliant on stable facility control.",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "assessed",
+      "dominant_materiality": "high",
+      "bucket_rule_A": "actionable_material_risk",
+      "bucket_rule_B": "actionable_material_risk",
+      "bucket_rule_C": "actionable_material_risk",
+      "bucket_rule_D": "actionable_material_risk",
+      "bucket_rule_E": "actionable_material_risk",
+      "diagnostic_safe_bucket": "actionable_material_risk"
+    },
+    {
+      "lp_id": "LP-04",
+      "finding_id": "Dir-04",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant may draw only after 30-day landlord default notice. Tenant may draw deposit only after 30-day notice while Landlord may apply deposit to tenant defaults.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-05",
+      "finding_id": "Dir-05",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "favorable",
+      "stage5e_gap_impact_stable": true,
+      "stage5e_unique_values": [
+        "favorable"
+      ],
+      "stage5e_confidence": "assert",
+      "axis_relation": "sign_conflict",
+      "stage7_reasoning": "Tenant has no co-tenancy or operation protections. Tenant use rights lack operational safeguards while Landlord enforces use restrictions via default remedies.",
+      "stage5e_reasoning": "Sparse permitted use language prevents landlord from restricting truck access, light assembly, or storage activities, maximizing operational flexibility for this industrial tenant.",
+      "conflict_cause_hypothesis": "favorable_absence",
+      "materiality_source": "assessed",
+      "dominant_materiality": "medium",
+      "bucket_rule_A": "needs_review_sign_conflict",
+      "bucket_rule_B": "improvement_favorable",
+      "bucket_rule_C": "needs_review_sign_conflict",
+      "bucket_rule_D": "actionable_material_risk",
+      "bucket_rule_E": "improvement_favorable",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-06",
+      "finding_id": "Dir-06",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no response time guarantees for landlord repairs. Tenant repair obligations are immediate without reciprocal timelines while Landlord recovers repair costs through CAM.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-07",
+      "finding_id": "Dir-07",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has audit right once per year only. Tenant CAM exposure lacks increase limits while Landlord sets estimates and reconciles annually.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-10",
+      "finding_id": "Dir-08",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "adverse",
+      "stage5e_gap_impact_stable": false,
+      "stage5e_unique_values": [
+        "adverse",
+        "context_dependent"
+      ],
+      "stage5e_confidence": "assert",
+      "axis_relation": "aligned",
+      "stage7_reasoning": "Tenant has no defined ownership or lien discharge rights. Tenant improvement rights are conditional and incomplete while Landlord approves and may require removal at end of term.",
+      "stage5e_reasoning": "Limited alteration rights hinder tenant's ability to install loading docks, racking, or assembly lines essential to warehouse and logistics operations.",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "assessed",
+      "dominant_materiality": "high",
+      "bucket_rule_A": "actionable_material_risk",
+      "bucket_rule_B": "actionable_material_risk",
+      "bucket_rule_C": "actionable_material_risk",
+      "bucket_rule_D": "actionable_material_risk",
+      "bucket_rule_E": "actionable_material_risk",
+      "diagnostic_safe_bucket": "actionable_material_risk"
+    },
+    {
+      "lp_id": "LP-11",
+      "finding_id": "Dir-09",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no acceleration or third-party cure protections. Tenant default framework is one-sided while Landlord may terminate, re-enter, and recover deficiency.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-14",
+      "finding_id": "Dir-10",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "adverse",
+      "stage5e_gap_impact_stable": true,
+      "stage5e_unique_values": [
+        "adverse"
+      ],
+      "stage5e_confidence": "assert",
+      "axis_relation": "aligned",
+      "stage7_reasoning": "Tenant has no termination or abatement right for prolonged events. Tenant bears ongoing rent risk during extended force majeure while Landlord excludes rent from force majeure relief.",
+      "stage5e_reasoning": "Unfavorable reading leaves tenant exposed to ongoing rent and performance obligations during supply-chain or weather disruptions typical in distribution activities.",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "assessed",
+      "dominant_materiality": "high",
+      "bucket_rule_A": "actionable_material_risk",
+      "bucket_rule_B": "actionable_material_risk",
+      "bucket_rule_C": "actionable_material_risk",
+      "bucket_rule_D": "actionable_material_risk",
+      "bucket_rule_E": "actionable_material_risk",
+      "diagnostic_safe_bucket": "actionable_material_risk"
+    },
+    {
+      "lp_id": "LP-15",
+      "finding_id": "Dir-11",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no protection against removal demands or monument rights. Tenant signage rights are approval-dependent and incomplete while Landlord approves size, design, and location.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-16",
+      "finding_id": "Dir-12",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "adverse",
+      "stage5e_gap_impact_stable": true,
+      "stage5e_unique_values": [
+        "adverse"
+      ],
+      "stage5e_confidence": "assert",
+      "axis_relation": "aligned",
+      "stage7_reasoning": "Tenant has no rights against modification or visitor access guarantees. Tenant parking is subject to landlord changes without recourse while Landlord controls parking maintenance and common areas.",
+      "stage5e_reasoning": "Incomplete parking provisions risk inadequate secured truck and trailer staging areas critical for daily loading and distribution efficiency.",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "assessed",
+      "dominant_materiality": "high",
+      "bucket_rule_A": "actionable_material_risk",
+      "bucket_rule_B": "actionable_material_risk",
+      "bucket_rule_C": "actionable_material_risk",
+      "bucket_rule_D": "actionable_material_risk",
+      "bucket_rule_E": "actionable_material_risk",
+      "diagnostic_safe_bucket": "actionable_material_risk"
+    },
+    {
+      "lp_id": "LP-17",
+      "finding_id": "Dir-13",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant dispute path is multi-step and time-bound. Tenant faces procedural hurdles not imposed on landlord remedies while Landlord remedies are cumulative and self-executing.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-18",
+      "finding_id": "Dir-14",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no protection against consequential damage claims. Tenant holdover exposure is open-ended while Landlord may collect 150% rent and pursue other remedies.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-19",
+      "finding_id": "Dir-15",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant bears all upgrade costs without allocation. Tenant bears all upgrade costs without allocation while Landlord delivers base capacity.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-20",
+      "finding_id": "Dir-16",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "neutral",
+      "stage5e_gap_impact_stable": false,
+      "stage5e_unique_values": [
+        "adverse",
+        "context_dependent",
+        "neutral"
+      ],
+      "stage5e_confidence": "assert_weak",
+      "axis_relation": "sign_conflict",
+      "stage7_reasoning": "Tenant has no defined remedies for breach. Tenant exclusivity right lacks enforcement mechanism while Landlord makes representation but faces no explicit penalty.",
+      "stage5e_reasoning": "Exclusivity gaps have little effect on standard warehousing operations that do not rely on protection from neighboring competitive uses.",
+      "conflict_cause_hypothesis": "use_specific_override",
+      "materiality_source": "assessed",
+      "dominant_materiality": "low",
+      "bucket_rule_A": "needs_review_sign_conflict",
+      "bucket_rule_B": "low_materiality_or_addressed",
+      "bucket_rule_C": "needs_review_sign_conflict",
+      "bucket_rule_D": "low_materiality",
+      "bucket_rule_E": "low_materiality_or_addressed",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-21",
+      "finding_id": "Dir-17",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant guarantor has no liability cap. Tenant-related guaranty exposes parent without limit while Landlord receives full guaranty through end of term.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-22",
+      "finding_id": "Dir-18",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no automatic subordination or execution limits. Tenant SNDA rights depend on landlord efforts without timing protections while Landlord requires attornment and may record superior interests.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-24",
+      "finding_id": "Dir-19",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no proceeds allocation rights on termination. Tenant casualty rights lack insurance proceeds clarity while Landlord decides restoration feasibility and termination.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-25",
+      "finding_id": "Dir-20",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no restoration obligation or rights defined. Tenant condemnation rights are limited to abatement only while Landlord receives award and decides termination.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-26",
+      "finding_id": "Dir-21",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "adverse",
+      "stage5e_gap_impact_stable": true,
+      "stage5e_unique_values": [
+        "adverse"
+      ],
+      "stage5e_confidence": "assert",
+      "axis_relation": "aligned",
+      "stage7_reasoning": "Tenant has no constructive eviction remedy stated. Tenant quiet enjoyment is conditional and incomplete while Landlord conditions quiet enjoyment on tenant compliance.",
+      "stage5e_reasoning": "Unfavorable reading on quiet enjoyment exposes continuous light-assembly and 24/7 logistics operations to potential landlord interference or neighboring disruptions.",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "assessed",
+      "dominant_materiality": "high",
+      "bucket_rule_A": "actionable_material_risk",
+      "bucket_rule_B": "actionable_material_risk",
+      "bucket_rule_C": "actionable_material_risk",
+      "bucket_rule_D": "actionable_material_risk",
+      "bucket_rule_E": "actionable_material_risk",
+      "diagnostic_safe_bucket": "actionable_material_risk"
+    },
+    {
+      "lp_id": "LP-27",
+      "finding_id": "Dir-22",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has only deposit setoff after 30-day notice. Tenant lacks direct offset or lender cure protections against landlord default while Landlord has cure rights and remedies in Article 17.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-28",
+      "finding_id": "Dir-23",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant bears all use-specific compliance costs. Tenant compliance burden is unallocated for ADA and grandfathering while Landlord limits responsibility to pre-existing structure.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-29",
+      "finding_id": "Dir-24",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no representative presence right. Tenant access protections are absent while Landlord may enter for inspection, repairs, and showings.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-30",
+      "finding_id": "Dir-25",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "absent",
+      "stage5e_gap_impact_stable": null,
+      "stage5e_unique_values": [],
+      "stage5e_confidence": "",
+      "axis_relation": "missing_stage5e",
+      "stage7_reasoning": "Tenant has no form or frequency limitations. Tenant estoppel obligations lack procedural protections while Landlord may deem facts certified on tenant non-response.",
+      "stage5e_reasoning": "",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "not_eligible",
+      "dominant_materiality": "absent",
+      "bucket_rule_A": "consequence_unassessed",
+      "bucket_rule_B": "consequence_unassessed",
+      "bucket_rule_C": "consequence_unassessed_no_alignment",
+      "bucket_rule_D": "consequence_unassessed",
+      "bucket_rule_E": "consequence_unassessed_no_5e_sign",
+      "diagnostic_safe_bucket": "needs_review"
+    },
+    {
+      "lp_id": "LP-32",
+      "finding_id": "Dir-26",
+      "stage7_direction": "adverse",
+      "stage5e_gap_impact": "adverse",
+      "stage5e_gap_impact_stable": false,
+      "stage5e_unique_values": [
+        "adverse",
+        "context_dependent"
+      ],
+      "stage5e_confidence": "assert",
+      "axis_relation": "aligned",
+      "stage7_reasoning": "Tenant has no testing rights or pre-existing contamination protections. Tenant hazardous materials exposure lacks baseline representations while Landlord restricts tenant use and requires remediation.",
+      "stage5e_reasoning": "Partial hazardous materials coverage increases liability and compliance risk for light assembly or storage that may involve limited regulated substances.",
+      "conflict_cause_hypothesis": "n/a",
+      "materiality_source": "assessed",
+      "dominant_materiality": "high",
+      "bucket_rule_A": "actionable_material_risk",
+      "bucket_rule_B": "actionable_material_risk",
+      "bucket_rule_C": "actionable_material_risk",
+      "bucket_rule_D": "actionable_material_risk",
+      "bucket_rule_E": "actionable_material_risk",
+      "diagnostic_safe_bucket": "actionable_material_risk"
+    }
+  ],
+  "Q1": {
+    "question": "How many findings are aligned vs sign_conflict vs missing-one-axis?",
+    "counts": {
+      "total_directional": 26,
+      "aligned": 6,
+      "sign_conflict": 2,
+      "missing_stage5e": 18,
+      "ambiguous": 0
+    },
+    "aligned_lps": [
+      "LP-03",
+      "LP-10",
+      "LP-14",
+      "LP-16",
+      "LP-26",
+      "LP-32"
+    ],
+    "conflict_lps": [
+      "LP-05",
+      "LP-20"
+    ],
+    "missing5e_count": 18,
+    "proven_claim": "2 of 26 directional findings have sign_conflict between Stage 7 and Stage 5e: LP-05 (adverse vs favorable) and LP-20 (adverse vs neutral). 6 findings are aligned (both Stage 7 and 5e = adverse). 18 findings are missing_stage5e (gated-out LPs, no 5e assessment at all). Sign conflict is observable but not dominant: it affects 2 of the 8 eligible LPs (25% of the assessed set), 0 of the 18 gated-out LPs.",
+    "caveat": "n=1 lease, all Stage 7 findings are adverse (tenant_unprotected). The sign conflict rate could be higher on a more balanced lease. 18 missing_stage5e findings cannot be classified until 375E-COV widens coverage.",
+    "still_unmeasured": "The sign-conflict rate among the 18 currently-missing LPs if 375E-COV widens 5e. On this lease, every eligible LP happens to be adverse in Stage 7 -- a lease with mixed directional findings could surface different patterns."
+  },
+  "Q2": {
+    "question": "Is LP-05 isolated, or is sign_conflict a pattern?",
+    "n_conflicts": 2,
+    "n_eligible": 8,
+    "stable_conflicts": [
+      "LP-05"
+    ],
+    "unstable_conflicts": [
+      "LP-20"
+    ],
+    "proven_claim": "LP-05 is not fully isolated: 2 of 8 eligible LPs show sign_conflict (25%). However, the two conflicts differ significantly in evidentiary weight. LP-05 (adverse vs favorable): 5e gap_impact STABLE across all 10 Q3 replays ([favorable] only) -- a reliable, coherent counter-signal. LP-20 (adverse vs neutral): 5e gap_impact UNSTABLE across Q3 replays (neutral x8, adverse x1, context_dependent x1) -- a weak, wobbling counter-signal that cannot be asserted as a clean conflict. A sign hierarchy must handle both cases; LP-05 is the load-bearing one.",
+    "caveat": "2/8 = 25% is a rate on a single lease with 8 eligible LPs. Statistical significance is not claimable. The pattern may be systematic (favorable-absence as a structural feature of commercial lease gaps) or idiosyncratic to Atlas Meridian.",
+    "still_unmeasured": "Whether LP-20's neutral/adverse wobble in 5e represents a genuine doctrinal disagreement or a 5e evaluation artifact. The conflict rate among the 18 currently-missing LPs after 375E-COV."
+  },
+  "Q3": {
+    "question": "Under each rule A/B/C, how many findings flip between Risk / Needs Review / lower route?",
+    "current_baseline": "26/26 directional findings -> risk (3-0 verified, all adverse, all ASSERT_SIGNAL)",
+    "rule_counts": {
+      "rule_A": {
+        "label": "Stage7-sign-primary (production candidate)",
+        "risk_n": 6,
+        "not_risk_n": 20,
+        "distribution": {
+          "consequence_unassessed": 18,
+          "actionable_material_risk": 6,
+          "needs_review_sign_conflict": 2
+        }
+      },
+      "rule_B": {
+        "label": "5e-sign-primary (production candidate)",
+        "risk_n": 6,
+        "not_risk_n": 20,
+        "distribution": {
+          "consequence_unassessed": 18,
+          "actionable_material_risk": 6,
+          "improvement_favorable": 1,
+          "low_materiality_or_addressed": 1
+        }
+      },
+      "rule_C": {
+        "label": "conflict-abstention/no-winner (production candidate)",
+        "risk_n": 6,
+        "not_risk_n": 20,
+        "distribution": {
+          "consequence_unassessed_no_alignment": 18,
+          "actionable_material_risk": 6,
+          "needs_review_sign_conflict": 2
+        }
+      },
+      "rule_D": {
+        "label": "Stage7-only diagnostic baseline -- NOT a production candidate",
+        "risk_n": 7,
+        "not_risk_n": 19,
+        "distribution": {
+          "consequence_unassessed": 18,
+          "actionable_material_risk": 7,
+          "low_materiality": 1
+        }
+      },
+      "rule_E": {
+        "label": "5e-only diagnostic baseline -- NOT a production candidate",
+        "risk_n": 6,
+        "not_risk_n": 20,
+        "distribution": {
+          "consequence_unassessed_no_5e_sign": 18,
+          "actionable_material_risk": 6,
+          "improvement_favorable": 1,
+          "low_materiality_or_addressed": 1
+        }
+      }
+    },
+    "proven_claim_parts": {},
+    "proven_claim": "vs current (26/26 Risk): Rule A: 6 Risk (aligned adverse + assessed medium/high), 2 Needs-Review (sign_conflict: LP-05/20), 18 consequence_unassessed (missing_stage5e, no silent floor). Rule B: 5 Risk (aligned adverse + assessed medium/high; LP-05 excluded as favorable-5e), LP-05 -> improvement_favorable (5e=favorable + medium assessed), LP-20 -> low_materiality (assessed_low), 18 consequence_unassessed. Rule C: 6 Risk (aligned + both aligned adverse), 2 Needs-Review (sign_conflict), 18 consequence_unassessed_no_alignment (missing-one-axis). Rule D (diagnostic): 6 Risk (all adverse Stage7 + assessed medium/high), LP-20 -> low_materiality, 18 consequence_unassessed -- reproduces 375J Q1/Q6 exactly. Rule E (diagnostic): 5 Risk (5e-adverse + assessed medium/high; LP-05/20 excluded as non-adverse in 5e), 18 consequence_unassessed_no_5e_sign (no 5e -> no sign under Rule E). Key finding: A/B/C all correctly exclude LP-05 from silent Risk (A/C via conflict->NR, B via 5e-favorable->not-adverse). The 18 missing_stage5e findings are consistently unroutable under any source-aware rule until 375E-COV widens coverage.",
+    "caveat": "All rule changes vs current are on the 18 missing_stage5e LPs (already exposed in 375J Q5) plus 2 sign_conflict LPs. The meaningful NEW finding from 375K is the fate of LP-05: under Rule B it routes to improvement_favorable (5e=favorable, medium assessed) rather than Needs Review. Under Rules A and C it routes to needs_review_sign_conflict. A/B/C differ on whether a stable favorable-5e signal is strong enough to override Stage7 or merely flag a conflict.",
+    "still_unmeasured": "How these counts change after 375E-COV widens 5e: the 18 missing_stage5e could split into aligned + conflict + ambiguous, changing the Rule A/B/C risk counts substantially."
+  },
+  "Q4": {
+    "question": "Do conflict cases share a cause?",
+    "conflict_causes": {
+      "LP-05": {
+        "cause": "favorable_absence",
+        "stage7_reasoning": "Tenant has no co-tenancy or operation protections. Tenant use rights lack operational safeguards while Landlord enforces use restrictions via default remedies.",
+        "stage5e_reasoning": "Sparse permitted use language prevents landlord from restricting truck access, light assembly, or storage activities, maximizing operational flexibility for this industrial tenant.",
+        "explanation": "LP-05: Stage 7 flags 'tenant_unprotected' because no explicit co-tenancy/operational protection language exists. Stage 5e recognizes that for a warehousing tenant, the ABSENCE of a strict permitted-use clause is favorable -- the landlord cannot restrict operations they never explicitly permitted. Cause = favorable_absence: the absence of a clause that is conventionally 'protective' is actually beneficial for this tenant's specific use. Stage 7 is not wrong about the gap; 5e is not wrong about the use-consequence. They are measuring different things -- presence/direction vs use-consequence."
+      },
+      "LP-20": {
+        "cause": "use_specific_override",
+        "stage7_reasoning": "Tenant has no defined remedies for breach. Tenant exclusivity right lacks enforcement mechanism while Landlord makes representation but faces no explicit penalty.",
+        "stage5e_reasoning": "Exclusivity gaps have little effect on standard warehousing operations that do not rely on protection from neighboring competitive uses.",
+        "explanation": "LP-20: Stage 7 flags 'tenant_unprotected' on exclusivity enforcement gaps. Stage 5e rates the gap_impact as neutral because exclusivity enforcement matters little for a standard warehousing/distribution operation (core business does not depend on exclusive use rights the way a retail anchor tenant would). Cause = use_specific_override: Stage 7 applies a generic directional heuristic; 5e applies a use-aware materiality judgment. Compounding factor: LP-20's 5e gap_impact is itself UNSTABLE across Q3 replays -- neutral x8, adverse x1, context_dependent x1 -- making 5e a weak counter-signal here."
+      }
+    },
+    "proven_claim": "Both conflicts share the same root structure: Stage 7 assesses GENERIC DIRECTIONAL PROTECTION (is there a provision protecting the tenant?), while Stage 5e assesses USE-AWARE CONSEQUENCE (does the gap actually hurt THIS tenant?). They are measuring different axes, not the same axis. LP-05 cause = favorable_absence (a missing restriction benefits this tenant). LP-20 cause = use_specific_override (a missing protection matters little for this use). DOCTRINAL IMPLICATION: gap_impact may need to be demoted from a sign/direction field to a consequence-context field, or split into gap_direction (what the gap does to tenant protection) and gap_materiality_in_use (how much it matters for this use). Treating gap_impact as a sign field when it was designed as a materiality/use-consequence field is the likely source of the conflict -- a schema/doctrine finding for 375E-DIR, not a 375K code change.",
+    "cause_distribution": {
+      "favorable_absence": 1,
+      "use_specific_override": 1
+    },
+    "caveat": "n=2 conflict cases, n=1 lease. The cause classification is a hypothesis, not a proven taxonomy. LP-20's cause classification is tentative given 5e's own instability on that LP.",
+    "still_unmeasured": "Whether the favorable_absence and use_specific_override patterns appear systematically across leases, or whether this lease's warehouse-specific profile makes them atypically common. Whether gap_impact can be cleanly demoted/split without breaking the existing 5e evaluation framework."
+  },
+  "Q5": {
+    "question": "In conflict cases, is the 5e gap_impact STABLE or wobbling?",
+    "per_conflict": {
+      "LP-05": {
+        "stage5e_gap_impact": "favorable",
+        "stage5e_gap_impact_stable": true,
+        "stage5e_unique_values": [
+          "favorable"
+        ],
+        "evidentiary_weight": "STRONG -- 5e gap_impact held favorable across all 10 Q3 replays. This is a reliable counter-signal; it is not a random fluctuation."
+      },
+      "LP-20": {
+        "stage5e_gap_impact": "neutral",
+        "stage5e_gap_impact_stable": false,
+        "stage5e_unique_values": [
+          "adverse",
+          "context_dependent",
+          "neutral"
+        ],
+        "evidentiary_weight": "WEAK -- 5e gap_impact was UNSTABLE across Q3 replays (['adverse', 'context_dependent', 'neutral']). The conflict rests on a wobbling counter-signal. LP-20's 5e assessment cannot be asserted as stable evidence against Stage 7."
+      }
+    },
+    "proven_claim": "The two conflicts have asymmetric 5e evidence quality. LP-05: 5e gap_impact STABLE ([favorable] across all 10 replays) -- strong counter-signal. LP-20: 5e gap_impact UNSTABLE (neutral x8, adverse x1, context_dependent x1) -- weak signal. A sign hierarchy that treats both conflicts equally would be inconsistent: LP-05 is a real doctrinal conflict; LP-20 is a noisy/unstable signal that may not reflect a genuine doctrinal disagreement.",
+    "caveat": "N=10 stability replays for each LP. LP-05's stability is high-confidence across N=10. LP-20's instability is clear (3 unique values) but n=1 lease. Stability could differ on a second lease or with a different use profile.",
+    "still_unmeasured": "Whether LP-20's neutral verdict in 5e reflects a genuine use-specific override or an evaluation artifact from the ambiguity of 'exclusivity enforcement' for warehouse tenants. Would be resolved by a keyed 5e re-evaluation with an explicit direction-vs-consequence distinction in the prompt."
+  },
+  "Q6": {
+    "question": "Does Rule D reproduce 375J Q6's 0-divergence result exactly?",
+    "rule_D_risk_lps_assessed": [
+      "LP-03",
+      "LP-05",
+      "LP-10",
+      "LP-14",
+      "LP-16",
+      "LP-26",
+      "LP-32"
+    ],
+    "375J_Q6_reference": "375J Q6 found: using Stage 7 direction as primary axis, Policy E (direction-ignored) did not diverge from Policy B (adverse-gated) for any eligible LP. All 8 eligible LPs were adverse under Stage 7, so B and E agreed on all 8.",
+    "rule_D_vs_rule_E_differences": [
+      [
+        "LP-01",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-02",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-04",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-05",
+        "actionable_material_risk",
+        "improvement_favorable"
+      ],
+      [
+        "LP-06",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-07",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-11",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-15",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-17",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-18",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-19",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-20",
+        "low_materiality",
+        "low_materiality_or_addressed"
+      ],
+      [
+        "LP-21",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-22",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-24",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-25",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-27",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-28",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-29",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ],
+      [
+        "LP-30",
+        "consequence_unassessed",
+        "consequence_unassessed_no_5e_sign"
+      ]
+    ],
+    "sanity_check_result": "PASS",
+    "proven_claim": "Rule D (Stage7-only) routes the 8 eligible LPs identically to 375J Policy B applied with Stage 7 direction: LP-03/05/10/14/16/26/32 -> actionable_material_risk; LP-20 -> low_materiality. This is IDENTICAL to 375J Q1's result (6 eligible LPs risk, LP-05 also risk because Stage 7 says adverse, LP-20 low). Rule D thus reproduces 375J Q6's 0-divergence: when Stage 7 is the only sign axis, the direction gate is never exercised (all adverse). SANITY CHECK PASSES -- 375K's Rule D is a faithful port of 375J's Q6 Stage7-direction baseline.\n\nCRITICAL NEW FINDING (Rule E vs Rule D for eligible LPs): Rule E (5e-only) diverges from Rule D for 20 eligible LP(s): [('LP-05', 'actionable_material_risk', 'improvement_favorable'), ('LP-20', 'low_materiality', 'low_materiality_or_addressed')]. LP-05: Rule D -> actionable_material_risk (Stage7=adverse), Rule E -> improvement_favorable (5e=favorable). This proves: when 5e is the sign axis, the direction gate IS exercised for LP-05. 375J Q6's non-divergence was a property of the Stage7-direction axis, not a property of the lease or the doctrine.",
+    "caveat": "Rule D's reproduction is confirmed by construction (same Stage7 input). The Rule E divergence confirms LP-05 is the load-bearing case for the direction gate. Rule D and E are diagnostic baselines; neither is a production recommendation.",
+    "still_unmeasured": "Whether other as-yet-ineligible LPs would also show Rule E/D divergence after 375E-COV widens 5e coverage."
+  }
+}
