@@ -1,0 +1,508 @@
+{
+  "harness": "375I_part1_keyless_static",
+  "step": "375I",
+  "frozen_run": "lease_review_20260604_033046_52adbf",
+  "Q3_status": "NOT_RUN \u2014 keyed; see _375i_part2.py",
+  "Q1_populated": {
+    "total_lps": 32,
+    "eligible": 8,
+    "populated": 8,
+    "eligible_unpopulated": 0,
+    "gated_out": 24,
+    "fill_rate": "8/8 = 100%",
+    "eligibility_rule": "missing \u2192 always eligible; review_needed \u2192 always eligible; partial \u2192 eligible iff (n_missing/n_total) \u2265 0.50; covered / not_applicable \u2192 never eligible",
+    "lp_table": [
+      {
+        "lp": "LP-01",
+        "state": "partial",
+        "n_total": 6,
+        "n_present": 5,
+        "n_missing": 1,
+        "pct_missing": 0.167,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 17% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-02",
+        "state": "partial",
+        "n_total": 4,
+        "n_present": 3,
+        "n_missing": 1,
+        "pct_missing": 0.25,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 25% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-03",
+        "state": "partial",
+        "n_total": 6,
+        "n_present": 3,
+        "n_missing": 3,
+        "pct_missing": 0.5,
+        "eligible": true,
+        "populated": true,
+        "gate_reason": null
+      },
+      {
+        "lp": "LP-04",
+        "state": "partial",
+        "n_total": 5,
+        "n_present": 3,
+        "n_missing": 2,
+        "pct_missing": 0.4,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 40% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-05",
+        "state": "missing",
+        "n_total": 4,
+        "n_present": 1,
+        "n_missing": 3,
+        "pct_missing": 0.75,
+        "eligible": true,
+        "populated": true,
+        "gate_reason": null
+      },
+      {
+        "lp": "LP-06",
+        "state": "partial",
+        "n_total": 5,
+        "n_present": 3,
+        "n_missing": 2,
+        "pct_missing": 0.4,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 40% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-07",
+        "state": "partial",
+        "n_total": 6,
+        "n_present": 4,
+        "n_missing": 2,
+        "pct_missing": 0.333,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 33% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-08",
+        "state": "covered",
+        "n_total": 6,
+        "n_present": 5,
+        "n_missing": 1,
+        "pct_missing": 0.167,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "covered \u2192 _should_assess returns False"
+      },
+      {
+        "lp": "LP-09",
+        "state": "covered",
+        "n_total": 12,
+        "n_present": 8,
+        "n_missing": 4,
+        "pct_missing": 0.333,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "covered \u2192 _should_assess returns False"
+      },
+      {
+        "lp": "LP-10",
+        "state": "partial",
+        "n_total": 5,
+        "n_present": 1,
+        "n_missing": 4,
+        "pct_missing": 0.8,
+        "eligible": true,
+        "populated": true,
+        "gate_reason": null
+      },
+      {
+        "lp": "LP-11",
+        "state": "partial",
+        "n_total": 17,
+        "n_present": 15,
+        "n_missing": 2,
+        "pct_missing": 0.118,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 12% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-12",
+        "state": "not_applicable",
+        "n_total": 0,
+        "n_present": 0,
+        "n_missing": 0,
+        "pct_missing": null,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "not_applicable \u2192 _should_assess returns False"
+      },
+      {
+        "lp": "LP-13",
+        "state": "covered",
+        "n_total": 6,
+        "n_present": 6,
+        "n_missing": 0,
+        "pct_missing": 0.0,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "covered \u2192 _should_assess returns False"
+      },
+      {
+        "lp": "LP-14",
+        "state": "review_needed",
+        "n_total": 6,
+        "n_present": 3,
+        "n_missing": 3,
+        "pct_missing": 0.5,
+        "eligible": true,
+        "populated": true,
+        "gate_reason": null
+      },
+      {
+        "lp": "LP-15",
+        "state": "partial",
+        "n_total": 6,
+        "n_present": 4,
+        "n_missing": 2,
+        "pct_missing": 0.333,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 33% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-16",
+        "state": "partial",
+        "n_total": 6,
+        "n_present": 3,
+        "n_missing": 3,
+        "pct_missing": 0.5,
+        "eligible": true,
+        "populated": true,
+        "gate_reason": null
+      },
+      {
+        "lp": "LP-17",
+        "state": "partial",
+        "n_total": 6,
+        "n_present": 4,
+        "n_missing": 2,
+        "pct_missing": 0.333,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 33% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-18",
+        "state": "partial",
+        "n_total": 5,
+        "n_present": 4,
+        "n_missing": 1,
+        "pct_missing": 0.2,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 20% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-19",
+        "state": "partial",
+        "n_total": 6,
+        "n_present": 4,
+        "n_missing": 2,
+        "pct_missing": 0.333,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 33% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-20",
+        "state": "missing",
+        "n_total": 7,
+        "n_present": 3,
+        "n_missing": 4,
+        "pct_missing": 0.571,
+        "eligible": true,
+        "populated": true,
+        "gate_reason": null
+      },
+      {
+        "lp": "LP-21",
+        "state": "partial",
+        "n_total": 5,
+        "n_present": 3,
+        "n_missing": 2,
+        "pct_missing": 0.4,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 40% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-22",
+        "state": "partial",
+        "n_total": 11,
+        "n_present": 6,
+        "n_missing": 5,
+        "pct_missing": 0.455,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 45% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-23",
+        "state": "not_applicable",
+        "n_total": 0,
+        "n_present": 0,
+        "n_missing": 0,
+        "pct_missing": null,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "not_applicable \u2192 _should_assess returns False"
+      },
+      {
+        "lp": "LP-24",
+        "state": "partial",
+        "n_total": 7,
+        "n_present": 6,
+        "n_missing": 1,
+        "pct_missing": 0.143,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 14% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-25",
+        "state": "partial",
+        "n_total": 7,
+        "n_present": 6,
+        "n_missing": 1,
+        "pct_missing": 0.143,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 14% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-26",
+        "state": "review_needed",
+        "n_total": 7,
+        "n_present": 5,
+        "n_missing": 2,
+        "pct_missing": 0.286,
+        "eligible": true,
+        "populated": true,
+        "gate_reason": null
+      },
+      {
+        "lp": "LP-27",
+        "state": "partial",
+        "n_total": 10,
+        "n_present": 8,
+        "n_missing": 2,
+        "pct_missing": 0.2,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 20% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-28",
+        "state": "partial",
+        "n_total": 6,
+        "n_present": 4,
+        "n_missing": 2,
+        "pct_missing": 0.333,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 33% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-29",
+        "state": "partial",
+        "n_total": 6,
+        "n_present": 4,
+        "n_missing": 2,
+        "pct_missing": 0.333,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 33% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-30",
+        "state": "partial",
+        "n_total": 6,
+        "n_present": 4,
+        "n_missing": 2,
+        "pct_missing": 0.333,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "partial but 33% missing (threshold: \u226550%)"
+      },
+      {
+        "lp": "LP-31",
+        "state": "not_applicable",
+        "n_total": 0,
+        "n_present": 0,
+        "n_missing": 0,
+        "pct_missing": null,
+        "eligible": false,
+        "populated": false,
+        "gate_reason": "not_applicable \u2192 _should_assess returns False"
+      },
+      {
+        "lp": "LP-32",
+        "state": "partial",
+        "n_total": 8,
+        "n_present": 4,
+        "n_missing": 4,
+        "pct_missing": 0.5,
+        "eligible": true,
+        "populated": true,
+        "gate_reason": null
+      }
+    ],
+    "gated_out_breakdown": {
+      "partial but 17% missing (threshold: \u226550%)": 1,
+      "partial but 25% missing (threshold: \u226550%)": 1,
+      "partial but 40% missing (threshold: \u226550%)": 3,
+      "partial but 33% missing (threshold: \u226550%)": 7,
+      "covered \u2192 _should_assess returns False": 3,
+      "partial but 12% missing (threshold: \u226550%)": 1,
+      "not_applicable \u2192 _should_assess returns False": 3,
+      "partial but 20% missing (threshold: \u226550%)": 2,
+      "partial but 45% missing (threshold: \u226550%)": 1,
+      "partial but 14% missing (threshold: \u226550%)": 2
+    },
+    "proven_claim": "8/8 eligible LPs are populated (100% fill rate on this run). Eligibility is sparse: only 8 of 32 LPs reach 5e. 18 partials are gated out by the <50% threshold.",
+    "caveat": "n=1 lease. The 8 eligible LPs all have use_impact, but the threshold rule (50%) means many 'partial' LPs \u2014 including some with 40-45% missing \u2014 never get a materiality assessment. Sparsity is a structural property of the gate, not a reliability failure.",
+    "still_unmeasured": "Whether the 50% threshold is correctly calibrated (too strict / too loose)."
+  },
+  "Q2_assessed": {
+    "n_populated": 8,
+    "n_assessed_genuine": 8,
+    "n_floor_default": 0,
+    "n_unknown_confidence": 0,
+    "provenance_field": "use_impact.confidence",
+    "provenance_encoding": {
+      "assert": "3/3 evaluators agreed \u2014 genuine assessment",
+      "assert_weak": "2/3 majority \u2014 genuine assessment",
+      "context_dependent": "1-1-1 split \u2014 genuine assessment (no consensus)",
+      "no_evaluators": "FLOOR DEFAULT \u2014 all evaluators failed or no use_profile"
+    },
+    "lp_table": [
+      {
+        "lp": "LP-03",
+        "state": "partial",
+        "gap_impact": "adverse",
+        "materiality": "high",
+        "confidence": "assert",
+        "ev_agreement": "3-0",
+        "classification": "assessed"
+      },
+      {
+        "lp": "LP-05",
+        "state": "missing",
+        "gap_impact": "favorable",
+        "materiality": "medium",
+        "confidence": "assert",
+        "ev_agreement": "3-0",
+        "classification": "assessed"
+      },
+      {
+        "lp": "LP-10",
+        "state": "partial",
+        "gap_impact": "adverse",
+        "materiality": "high",
+        "confidence": "assert",
+        "ev_agreement": "3-0",
+        "classification": "assessed"
+      },
+      {
+        "lp": "LP-14",
+        "state": "review_needed",
+        "gap_impact": "adverse",
+        "materiality": "medium",
+        "confidence": "assert",
+        "ev_agreement": "3-0",
+        "classification": "assessed"
+      },
+      {
+        "lp": "LP-16",
+        "state": "partial",
+        "gap_impact": "adverse",
+        "materiality": "high",
+        "confidence": "assert",
+        "ev_agreement": "3-0",
+        "classification": "assessed"
+      },
+      {
+        "lp": "LP-20",
+        "state": "missing",
+        "gap_impact": "neutral",
+        "materiality": "low",
+        "confidence": "assert_weak",
+        "ev_agreement": "2-1",
+        "classification": "assessed"
+      },
+      {
+        "lp": "LP-26",
+        "state": "review_needed",
+        "gap_impact": "adverse",
+        "materiality": "high",
+        "confidence": "assert",
+        "ev_agreement": "3-0",
+        "classification": "assessed"
+      },
+      {
+        "lp": "LP-32",
+        "state": "partial",
+        "gap_impact": "adverse",
+        "materiality": "medium",
+        "confidence": "assert",
+        "ev_agreement": "3-0",
+        "classification": "assessed"
+      }
+    ],
+    "or_moderate_floor": {
+      "location": "cam/adapters/lease_review/lease_adapter.py:1006 and :1461",
+      "code": "_consequence = _ui.get('materiality') or 'moderate'",
+      "applies_to": "24 LPs that never reached 5e (no use_impact key)",
+      "effect": "These LPs receive consequence='moderate' (\u2261 'medium') in verdict_distance routing",
+      "recorded_in_artifact": false,
+      "missing_field": "use_impact.materiality_source (or routing_consequence_source on the coverage_assessment dict) \u2014 no field currently marks that consequence was floor-defaulted rather than assessed"
+    },
+    "proven_claim": "All 8 populated use_impact records are genuine model assessments (confidence \u2208 {assert, assert_weak}). Zero floor defaults (no_evaluators) in this run.",
+    "caveat": "The or-'moderate' floor in lease_adapter.py applies to the 24 gated-out LPs in routing. This floor is NOT recorded in the artifact \u2014 absence of the use_impact key is the only signal. A reader of the artifact cannot distinguish 'never reached 5e' from 'evaluated but low'.",
+    "still_unmeasured": "Whether a no-use_profile run or all-evaluator-fail scenario would produce no_evaluators records (the code path exists; it was not exercised in this run). Q3 (stability) will reveal if re-runs ever trigger the no_evaluators path via timeouts."
+  },
+  "Q4_available": {
+    "gating_map": {
+      "missing": "IN (always eligible)",
+      "review_needed": "IN (always eligible)",
+      "partial": "IN if \u226550% of elements missing, else OUT",
+      "covered": "OUT (returns False \u2014 _should_assess hardcoded)",
+      "not_applicable": "OUT (returns False \u2014 _should_assess falls to default return False)"
+    },
+    "state_counts": {
+      "partial": 22,
+      "missing": 2,
+      "covered": 3,
+      "not_applicable": 3,
+      "review_needed": 2
+    },
+    "covered_lps": [
+      "LP-08",
+      "LP-09",
+      "LP-13"
+    ],
+    "structural_finding": "'covered' LPs are STRUCTURALLY GATED OUT of 5e. _should_assess returns False for coverage_state='covered'. Present-hostile-term findings from 375H repair that land on currently-'covered' LPs will have NO materiality in the 5e artifact under the current gate rule.",
+    "widening_needed": "375E-COV must either: (a) add a new coverage state (e.g. 'covered_adverse') that _should_assess recognises, or (b) widen _should_assess to accept 'covered' LPs that carry a directional-adverse signal. Without this, the recovered findings have no materiality anchor for the 375E routing formula.",
+    "proven_claim": "covered \u2192 OUT is a hard structural gate, not a data sparsity issue. LP-08, LP-09, LP-13 (covered in this run) would never receive 5e assessment under the current code regardless of how many times the pipeline is re-run.",
+    "caveat": "Q4 is a static structural read; it is not a measurement of whether those 3 LPs are actually adverse.",
+    "still_unmeasured": "How many additional LPs would qualify for 5e if the 50% partial threshold were lowered, or if 'covered_adverse' were added as a new state."
+  }
+}
