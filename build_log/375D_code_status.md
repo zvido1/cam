@@ -27,23 +27,24 @@ Both call the REAL functions (no reimplementation): `run_synthesis`, `_collect_f
 ## ▶ HOW TZVI RUNS THEM (keyed machine — has OPENAI/XAI/ANTHROPIC/GEMINI keys)
 Keys are loaded by the scripts from `C:\Users\Owner\OneDrive\DoubleCheck\doublecheck-api\api_keys\.env`
 (same pattern as `_step370c_headless.py`; sets `DISABLE_OPENROUTER=1`, `OPENROUTER_DRY_RUN=1`, pops
-`OPENROUTER_API_KEY`). Run from the CAM repo root:
+`OPENROUTER_API_KEY`).
 
-```bat
+**PowerShell note:** paste ONE command per line with NO trailing comments — PowerShell parses inline
+`REM`/`(...)` text and the whole line fails (a `# comment` on its own line is fine). Run from the repo root:
+
+```powershell
 cd "C:\Users\Owner\OneDrive\CAM"
 git pull
 
-REM Harness A — full Stage-7 replay (default 5 passes; pass an int to change N)
+# Harness A — full Stage-7 replay. Default 5 passes; optional int arg changes N (e.g. ... 8)
 python "build_log\_375d_full_replay.py"
-REM   e.g. python "build_log\_375d_full_replay.py" 8
 
-REM Harness B — role-B reproducibility (default 10 calls/candidate; pass an int to change K)
+# Harness B — role-B reproducibility. Default 10 calls/candidate; optional int arg changes K (e.g. ... 12)
 python "build_log\_375d_roleB.py"
-REM   e.g. python "build_log\_375d_roleB.py" 12
 ```
 
-Then commit the emitted JSON:
-```bat
+Then commit the emitted JSON (targeted add — leaves unrelated working-tree edits out):
+```powershell
 git add -f "build_log\375D_full_replay.json" "build_log\375D_roleB.json"
 git commit -m "Step 375D: emitted GPT-5.4 Pass-2 reproducibility replay artifacts"
 git push origin main
