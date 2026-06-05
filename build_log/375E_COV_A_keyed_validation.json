@@ -1,0 +1,584 @@
+{
+  "schema": "375E-COV-A-keyed-validation-v1",
+  "date": "2026-06-05",
+  "run_id": "lease_review_20260604_033046_52adbf",
+  "artifact_path": "C:\\Users\\Owner\\OneDrive\\CAM\\05 Lease Analyzer\\results\\lease_review_20260604_033046_52adbf\\tenant_0\\pipeline_results.json",
+  "mode": "baseline_pre_cova",
+  "verdict": "HOLD",
+  "checks": {
+    "a": {
+      "mode": "baseline_pre375M",
+      "lps_with_use_impact": 8,
+      "has_gap_impact_key": 8,
+      "has_use_consequence_key": 0,
+      "note": "EXPECTED: frozen 52adbf artifact pre-dates a939b01 (375M deploy). gap_impact present is correct for this artifact. Fresh post-a939b01 artifact should have use_consequence only.",
+      "pass": null
+    },
+    "b": {
+      "total_directional": 26,
+      "total_compound": 6,
+      "directional_populated": 0,
+      "compound_correct": 0,
+      "directional_records": [
+        {
+          "finding_id": "Dir-01",
+          "lp_id": "LP-01",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-02",
+          "lp_id": "LP-02",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-03",
+          "lp_id": "LP-03",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-04",
+          "lp_id": "LP-04",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-05",
+          "lp_id": "LP-05",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-06",
+          "lp_id": "LP-06",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-07",
+          "lp_id": "LP-07",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-08",
+          "lp_id": "LP-10",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-09",
+          "lp_id": "LP-11",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-10",
+          "lp_id": "LP-14",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-11",
+          "lp_id": "LP-15",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-12",
+          "lp_id": "LP-16",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-13",
+          "lp_id": "LP-17",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-14",
+          "lp_id": "LP-18",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-15",
+          "lp_id": "LP-19",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-16",
+          "lp_id": "LP-20",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-17",
+          "lp_id": "LP-21",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-18",
+          "lp_id": "LP-22",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-19",
+          "lp_id": "LP-24",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-20",
+          "lp_id": "LP-25",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-21",
+          "lp_id": "LP-26",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-22",
+          "lp_id": "LP-27",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-23",
+          "lp_id": "LP-28",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-24",
+          "lp_id": "LP-29",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-25",
+          "lp_id": "LP-30",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        },
+        {
+          "finding_id": "Dir-26",
+          "lp_id": "LP-32",
+          "has_cova_fields": false,
+          "missing_fields": [
+            "stage7_direction",
+            "use_consequence",
+            "materiality",
+            "use_consequence_source",
+            "materiality_source",
+            "assessment_scope"
+          ],
+          "note": "pre-COV-A artifact"
+        }
+      ],
+      "compound_records": [
+        {
+          "finding_id": "CRX-01",
+          "compound_consequence_source": null,
+          "has_cova_field": false,
+          "has_lp_consequence_wrongly": false
+        },
+        {
+          "finding_id": "CRX-02",
+          "compound_consequence_source": null,
+          "has_cova_field": false,
+          "has_lp_consequence_wrongly": false
+        },
+        {
+          "finding_id": "CRX-03",
+          "compound_consequence_source": null,
+          "has_cova_field": false,
+          "has_lp_consequence_wrongly": false
+        },
+        {
+          "finding_id": "CRX-04",
+          "compound_consequence_source": null,
+          "has_cova_field": false,
+          "has_lp_consequence_wrongly": false
+        },
+        {
+          "finding_id": "CRX-05",
+          "compound_consequence_source": null,
+          "has_cova_field": false,
+          "has_lp_consequence_wrongly": false
+        },
+        {
+          "finding_id": "CRX-06",
+          "compound_consequence_source": null,
+          "has_cova_field": false,
+          "has_lp_consequence_wrongly": false
+        }
+      ],
+      "pass": false
+    },
+    "c": {
+      "mode": "baseline_self_comparison",
+      "note": "Baseline artifact -- no drift check applicable (comparing artifact to itself).",
+      "drift_count": 0,
+      "pass": null
+    },
+    "d": {
+      "mode": "baseline_lp_scope_only",
+      "note": "Pre-COV-A artifact -- no finding-scope COV-A fields. Showing LP-scope use_impact for 8 already-assessed LPs only.",
+      "group1_already_assessed_8": [
+        {
+          "finding_id": "Dir-03",
+          "lp_id": "LP-03",
+          "use_consequence": "harmful",
+          "materiality": "high",
+          "confidence": "assert",
+          "source": "lp_scope_pre_cova"
+        },
+        {
+          "finding_id": "Dir-05",
+          "lp_id": "LP-05",
+          "use_consequence": "beneficial",
+          "materiality": "medium",
+          "confidence": "assert",
+          "source": "lp_scope_pre_cova"
+        },
+        {
+          "finding_id": "Dir-08",
+          "lp_id": "LP-10",
+          "use_consequence": "harmful",
+          "materiality": "high",
+          "confidence": "assert",
+          "source": "lp_scope_pre_cova"
+        },
+        {
+          "finding_id": "Dir-10",
+          "lp_id": "LP-14",
+          "use_consequence": "harmful",
+          "materiality": "medium",
+          "confidence": "assert",
+          "source": "lp_scope_pre_cova"
+        },
+        {
+          "finding_id": "Dir-12",
+          "lp_id": "LP-16",
+          "use_consequence": "harmful",
+          "materiality": "high",
+          "confidence": "assert",
+          "source": "lp_scope_pre_cova"
+        },
+        {
+          "finding_id": "Dir-16",
+          "lp_id": "LP-20",
+          "use_consequence": "neutral",
+          "materiality": "low",
+          "confidence": "assert_weak",
+          "source": "lp_scope_pre_cova"
+        },
+        {
+          "finding_id": "Dir-21",
+          "lp_id": "LP-26",
+          "use_consequence": "harmful",
+          "materiality": "high",
+          "confidence": "assert",
+          "source": "lp_scope_pre_cova"
+        },
+        {
+          "finding_id": "Dir-26",
+          "lp_id": "LP-32",
+          "use_consequence": "harmful",
+          "materiality": "medium",
+          "confidence": "assert",
+          "source": "lp_scope_pre_cova"
+        }
+      ],
+      "group2_newly_admitted_18": "PENDING -- keyed run required",
+      "group3_thin_gap_subset": "PENDING -- keyed run required",
+      "group4_compound_6": [
+        {
+          "finding_id": "CRX-01",
+          "compound_consequence_source": "ABSENT-pre-COV-A"
+        },
+        {
+          "finding_id": "CRX-02",
+          "compound_consequence_source": "ABSENT-pre-COV-A"
+        },
+        {
+          "finding_id": "CRX-03",
+          "compound_consequence_source": "ABSENT-pre-COV-A"
+        },
+        {
+          "finding_id": "CRX-04",
+          "compound_consequence_source": "ABSENT-pre-COV-A"
+        },
+        {
+          "finding_id": "CRX-05",
+          "compound_consequence_source": "ABSENT-pre-COV-A"
+        },
+        {
+          "finding_id": "CRX-06",
+          "compound_consequence_source": "ABSENT-pre-COV-A"
+        }
+      ]
+    },
+    "e": {
+      "mode": "baseline",
+      "note": "PENDING -- keyed run required. Thin-gap LPs are LP-01/11/24/25 (<20% missing). Decisive = design signal that G-cand works on mostly-complete LPs. Abstain = evidence base for shelved A-rail and COV-B Needs-Review landing."
+    },
+    "f": {
+      "mode": "baseline",
+      "lp05_use_impact": {
+        "materiality": "medium",
+        "use_reasoning": "Sparse permitted use language prevents landlord from restricting truck access, light assembly, or storage activities, maximizing operational flexibility for this industrial tenant.",
+        "confidence": "assert",
+        "evaluator_agreement": "3-0",
+        "use_consequence": "beneficial"
+      },
+      "dir05_directionality": "tenant_unprotected",
+      "note": "Pre-COV-A: no finding-level use_consequence on Dir-05. LP-05 use_impact shows beneficial from LP-scope 5e. Fresh keyed artifact should show Dir-05 use_consequence=beneficial, stage7_direction=tenant_unprotected, no sign_conflict field."
+    },
+    "g": {
+      "lp_id": "LP-20",
+      "finding_id": "Dir-16",
+      "lp_scope_use_impact": {
+        "materiality": "low",
+        "use_reasoning": "Exclusivity gaps have little effect on standard warehousing operations that do not rely on protection from neighboring competitive uses.",
+        "confidence": "assert_weak",
+        "evaluator_agreement": "2-1",
+        "use_consequence": "neutral"
+      },
+      "lp_scope_raw_keys": [
+        "gap_impact",
+        "materiality",
+        "use_reasoning",
+        "confidence",
+        "evaluator_agreement"
+      ],
+      "note": "LP-20 is a WATCH item, not a pass/fail gate. Known: 2-1 assert_weak in frozen 52adbf. Record this run's value without resolving stability -- single keyed result does not prove stability.",
+      "mode": "baseline",
+      "baseline_value": "neutral",
+      "baseline_confidence": "assert_weak"
+    },
+    "h": {
+      "verdict": "HOLD",
+      "note": "Baseline mode: running against pre-COV-A frozen artifact (52adbf). COV-A fields are absent by design -- this artifact predates commit 771f1ef. HOLD PUSH until fresh post-771f1ef keyed artifact is validated.",
+      "criteria_results": {
+        "(1) use_consequence write-path correct (new LP use_impact has use_consequence key)": "N/A (baseline artifact)",
+        "(2) gap_impact absent from new LP use_impact records": "N/A (baseline artifact)",
+        "(3) COV-A fields populated on all directional findings (use_consequence_source present)": "N/A (baseline artifact)",
+        "(4) routing/buckets do not empirically drift (routing fields unchanged on all 32 findings)": "N/A (baseline artifact)",
+        "(5) no major parse/no_evaluators failure across the 18 newly-admitted findings (>= 14/18 decisive)": "N/A (baseline artifact)",
+        "(6) CRX not falsely treated as LP-level assessed (compound_consequence_source = not_assessed only)": "N/A (baseline artifact)"
+      },
+      "failed_criteria": []
+    }
+  }
+}
