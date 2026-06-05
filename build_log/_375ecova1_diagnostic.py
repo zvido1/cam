@@ -40,6 +40,36 @@ import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
+# ── Load API keys before any provider client initializes ─────────────────────
+# The harness runs in a standalone shell that does NOT inherit the server's env.
+# Load from the canonical keys file first; fall back to a .env in the repo root.
+_ENV_PATH = r"C:\Users\Owner\OneDrive\DoubleCheck\doublecheck-api\api_keys\.env"
+try:
+    from dotenv import load_dotenv
+    if os.path.exists(_ENV_PATH):
+        load_dotenv(_ENV_PATH, override=True)
+        print("[startup] Loaded API keys from %s" % _ENV_PATH)
+    else:
+        load_dotenv(override=True)   # fallback: .env in cwd
+        print("[startup] WARNING: canonical .env not found at %s -- tried cwd .env" % _ENV_PATH)
+except ImportError:
+    print("[startup] WARNING: python-dotenv not installed; relying on ambient env vars")
+
+# Fail loudly if any required key is still missing -- never silently default to no_evaluators
+_REQUIRED_KEYS = {
+    "ANTHROPIC_API_KEY": "Evaluator A (Claude Sonnet 4.6)",
+    "OPENAI_API_KEY":    "Evaluator B (GPT-5.5)",
+    "XAI_API_KEY":       "Evaluator C (Grok 4.3)",
+}
+_missing_keys = [k for k in _REQUIRED_KEYS if not os.environ.get(k)]
+if _missing_keys:
+    for k in _missing_keys:
+        print("[FATAL] Missing env var: %s (needed for %s)" % (k, _REQUIRED_KEYS[k]))
+    print("[FATAL] Add the missing keys to %s and re-run." % _ENV_PATH)
+    sys.exit(1)
+print("[startup] All 3 required API keys present: %s" % ", ".join(_REQUIRED_KEYS.keys()))
+# ── End key loading ───────────────────────────────────────────────────────────
+
 logger = logging.getLogger(__name__)
 
 REPO_ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
