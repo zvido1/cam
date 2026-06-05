@@ -1591,6 +1591,37 @@ def run_lease_coverage_only(
         print(f"[lease_adapter:analyze] Stage 7 failed (non-fatal): {_s7_e}", flush=True)
         result["cross_provision_findings"] = []
 
+    # ── Stage 5e-F: G-cand Finding Consequence Provenance (Step 375E-COV-A) ──
+    # POPULATE/RECORD only. Attaches use_consequence/materiality provenance to
+    # cross_provision_findings. Does NOT change routing, buckets, or current_bucket.
+    # G-cand gate: adverse directional candidate (Pass-1, verification-agnostic).
+    # NOT gated on verification (vote-wobble) or current Risk (circular).
+    # COV-B (separate step) decides lawyer-facing landing from these provenance fields.
+    try:
+        from cam.adapters.lease_review.lease_finding_consequence import (
+            assess_finding_consequence, FINDING_CONSEQUENCE_ENABLED,
+        )
+        if FINDING_CONSEQUENCE_ENABLED and result.get("cross_provision_findings"):
+            result["cross_provision_findings"], _finding_consequence_meta = assess_finding_consequence(
+                cross_provision_findings=result["cross_provision_findings"],
+                coverage_assessment=coverage_assessment,
+                use_profile=use_profile_data_c,
+                perspective=cfg.get("perspective", "tenant"),
+                cfg=cfg,
+            )
+            result["_stage_data"]["finding_consequence_meta"] = _finding_consequence_meta
+            _fc_assessed = _finding_consequence_meta.get("assessed", 0)
+            _fc_new = _finding_consequence_meta.get("newly_assessed", 0)
+            print(
+                f"[lease_adapter:analyze] Stage 5e-F: {_fc_assessed} finding(s) with provenance "
+                f"({_fc_new} newly assessed)",
+                flush=True,
+            )
+        else:
+            print("[lease_adapter:analyze] Stage 5e-F: gated (flag off or no findings)", flush=True)
+    except Exception as _fc_e:
+        print(f"[lease_adapter:analyze] Stage 5e-F (finding consequence) failed (non-fatal): {_fc_e}", flush=True)
+
     # ── Step 362: Perspective leak detection (non-fatal logging only) ──
     # Catches CPF prose that names the opposing party first in a tenant-perspective run.
     _perspective_cfg = cfg.get("perspective", "tenant")
