@@ -1661,16 +1661,16 @@ def _dedup_compound_findings(findings: List[dict]) -> List[dict]:
 
 # ── Directionality normalization ───────────────────────────────────────────────
 
-# Maps (lp_id, finding_type) → correct directionality label.
-# Perspective must not flip the factual label of who is exposed.
-_DIRECTIONALITY_MAP: Dict[tuple, str] = {
-    ("LP-27", "directional_mismatch"): "tenant_unprotected",
-}
+# 376: LP-27 hardcoded sign override REMOVED. Directional sign must come from governed
+# evaluator assessment (per-evaluator exposed_party), never from a constant. Emptied
+# rather than deleted so _normalize_directionality stays a structural no-op (reversible,
+# and still available if a FUTURE governed normalization rule is ever added). Measured
+# effect: 34f3b9 Dir-24 corrects tenant_unprotected→landlord_unprotected (was contradicting
+# a 3-0 landlord consensus); 52adbf/19f9a7 LP-27 directional unchanged (evaluators already
+# said tenant). See build_log/376_chat_instruction.md.
+_DIRECTIONALITY_MAP: Dict[tuple, str] = {}
 
-# Maps (lp_id, finding_type) → correct affected_party label.
-_AFFECTED_PARTY_MAP: Dict[tuple, str] = {
-    ("LP-27", "directional_mismatch"): "tenant",
-}
+_AFFECTED_PARTY_MAP: Dict[tuple, str] = {}
 
 
 def _normalize_directionality(findings: List[dict]) -> List[dict]:
