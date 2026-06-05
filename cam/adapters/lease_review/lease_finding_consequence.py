@@ -28,7 +28,10 @@ Finding-scope vs LP-scope:
   5e owns consequence; Stage 7 owns sign. Separation enforced by prompt, not just by doctrine.
 
 Provenance fields added to directional findings:
-  stage7_direction:        "tenant_unprotected" (always, for adverse directional findings)
+  stage7_direction:        Stage 7's actual directionality value (f["directionality"]), or None if absent.
+                           NOT hardcoded — records what Stage 7 actually produced.
+  stage7_direction_source: "stage7" if directionality was present; "absent" if None/missing.
+                           No fallback to "tenant_unprotected" (Step 375E-COV-A2b fix).
   use_consequence:         "beneficial"|"neutral"|"harmful"|"context_dependent"
   materiality:             "high"|"medium"|"low"|"not_applicable"
   use_consequence_source:  "assessed"|"absent"
@@ -520,7 +523,9 @@ def assess_finding_consequence(
     # ── Annotate already-assessed findings (copy from LP-scope use_impact) ────
     for f, lp in already_assessed_pairs:
         ui = _normalize_consequence(lp.get("use_impact") or {})
-        f["stage7_direction"] = "tenant_unprotected"
+        _s7d = f.get("directionality")
+        f["stage7_direction"] = _s7d
+        f["stage7_direction_source"] = "stage7" if _s7d is not None else "absent"
         f["use_consequence"] = ui.get("use_consequence", "context_dependent")
         f["materiality"] = ui.get("materiality", "low")
         f["use_consequence_source"] = "assessed"
@@ -533,7 +538,9 @@ def assess_finding_consequence(
             "[lease_finding_consequence] No use_profile — marking unassessed findings as absent"
         )
         for f, _ in needs_assessment_pairs:
-            f["stage7_direction"] = "tenant_unprotected"
+            _s7d = f.get("directionality")
+            f["stage7_direction"] = _s7d
+            f["stage7_direction_source"] = "stage7" if _s7d is not None else "absent"
             f["use_consequence"] = "context_dependent"
             f["materiality"] = "low"
             f["use_consequence_source"] = "absent"
@@ -605,7 +612,9 @@ def assess_finding_consequence(
     for f, _ in needs_assessment_pairs:
         fid = f.get("finding_id", "")
         verdict = merged.get(fid, {})
-        f["stage7_direction"] = "tenant_unprotected"
+        _s7d = f.get("directionality")
+        f["stage7_direction"] = _s7d
+        f["stage7_direction_source"] = "stage7" if _s7d is not None else "absent"
         if verdict.get("use_consequence") in _VALID_USE_CONSEQUENCE:
             f["use_consequence"] = verdict["use_consequence"]
             f["materiality"] = verdict.get("materiality", "low")
