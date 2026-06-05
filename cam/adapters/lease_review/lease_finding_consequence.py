@@ -20,9 +20,12 @@ Finding-scope vs LP-scope:
   Build finding-scoped output plainly; do NOT build LP-reuse-guard machinery.
   Reuse-safety is DEFERRED/UNEXERCISED (many-to-many only arises in compound layer).
 
-5e prompt for G-cand findings:
-  Stage 7 direction is FIXED INPUT. Evaluators assess use_consequence and materiality ONLY.
-  They must not re-litigate whether the finding is adverse — Stage 7 owns sign, 5e owns consequence.
+5e prompt for G-cand findings (Step 375E-COV-A2 fix):
+  Evaluators receive CLAUSE FACTS + tenant use profile — NOT the Stage-7 adversarial title or
+  direction label. Stage 7 direction is stored as stage7_direction provenance on the finding but
+  is NOT fed to 5e as a leading frame (A1 confirmed that doing so contaminates consequence
+  assessment — LP-11 inverted from beneficial to harmful under the old framing).
+  5e owns consequence; Stage 7 owns sign. Separation enforced by prompt, not just by doctrine.
 
 Provenance fields added to directional findings:
   stage7_direction:        "tenant_unprotected" (always, for adverse directional findings)
@@ -88,16 +91,28 @@ _EVALUATOR_LINEUP: dict = {
 _VALID_USE_CONSEQUENCE = frozenset({"beneficial", "neutral", "harmful", "context_dependent"})
 _VALID_MATERIALITY = frozenset({"high", "medium", "low", "not_applicable"})
 _MATERIALITY_RANK = {"not_applicable": 0, "low": 1, "medium": 2, "high": 3}
+_PRESENT_VERDICTS = frozenset({
+    "explicitly_present", "implicitly_present",
+    "covered_by_default_law", "covered_in_other_LP",
+})
 
-# ── System prompt (finding-scoped, direction FIXED) ────────────────────────────
+# ── System prompt (finding-scoped, consequence-independent — Step 375E-COV-A2) ──
+#
+# Fix: removed the Stage-7-direction-FIXED leading frame that caused contamination
+# (A1 confirmed: LP-11 inverted from beneficial to harmful under the old framing).
+# Now uses the variant-B shape: clause facts + use profile, no adverse pre-framing.
+# stage7_direction is stored on the finding as provenance but NOT fed to 5e here.
 
-_FINDING_SYSTEM_PROMPT = """You are a commercial real estate attorney assessing how a lease provision directional finding affects a specific tenant's operations.
+_FINDING_SYSTEM_PROMPT = """You are a commercial real estate attorney assessing how specific lease provision gaps affect a tenant's day-to-day operations.
 
-Stage 7 cross-provision analysis has already established that a directional mismatch exists — the landlord's lease terms are adverse to the tenant's protected position on each listed provision. The finding direction is FIXED. DO NOT reassess whether each finding is valid or whether the direction is correct. Accept the adverse direction as a settled fact.
+For each listed provision, assess:
+1. use_consequence: given THIS tenant's specific business and operational context, what is the practical consequence of this clause situation?
+2. materiality: how significant is this for THIS tenant's core business operations?
 
-Your role is to assess ONLY:
-1. use_consequence: given THIS tenant's specific use of the space, how consequential is the adverse direction in practice?
-2. materiality: how significant is this finding for THIS tenant's core business operations?
+INDEPENDENCE REQUIREMENT: Absence or structural incompleteness does NOT equal adverse by default.
+Ask: does this gap give the tenant MORE operational freedom or MORE exposure? A structurally
+incomplete provision may have beneficial, neutral, or harmful use consequence depending on this
+specific tenant's operations. Assess consequence independently from any directional concern.
 
 Return a JSON object with one key per finding ID (e.g. "Dir-01", "Dir-02"):
 {
@@ -110,10 +125,10 @@ Return a JSON object with one key per finding ID (e.g. "Dir-01", "Dir-02"):
 
 Definitions:
   use_consequence:
-    harmful:           The adverse finding creates meaningful practical risk or cost for this tenant given their use
-    neutral:           The finding has little practical effect on this tenant's operations despite the adverse direction
-    beneficial:        Despite the adverse direction in the abstract, the finding is net-positive for this tenant
-                       given their specific use (requires a concrete operational justification — not assumed)
+    beneficial:        The gap or clause situation is net-positive for this tenant given their use
+                       (e.g., absence of a restriction gives the tenant MORE operational freedom)
+    neutral:           The gap has little practical effect on this tenant's operations
+    harmful:           The gap creates meaningful risk, cost, or constraint for this tenant given their use
     context_dependent: Cannot determine without more information about this tenant's specific situation
 
   materiality:
@@ -123,8 +138,11 @@ Definitions:
     not_applicable: This provision is irrelevant to this tenant's specific use and operations
 
 Rules:
-  - DO NOT question or re-examine the directional finding — accept it as given
-  - "harmful because the direction is adverse" is not sufficient reasoning — ground the answer in what this means for THIS tenant's specific use type
+  - Absence does NOT equal adverse by default — ask whether the gap gives the tenant more freedom or more exposure
+  - For an operational tenant (warehousing, distribution, light assembly): a missing restriction typically means
+    the landlord CANNOT restrict the tenant's activities — that is favorable, not adverse
+  - Ground every answer in THIS tenant's specific business type and operational dependencies
+  - "harmful because something is missing" is not sufficient — explain the actual operational impact
   - Must return a verdict for every finding ID listed — no omissions
   - Return only the JSON object, no markdown fences"""
 
@@ -166,7 +184,12 @@ def _build_finding_user_prompt(
     use_profile: dict,
     perspective: str,
 ) -> str:
-    """Build a batched user prompt covering all unassessed directional findings."""
+    """Build a batched user prompt covering all unassessed directional findings.
+
+    Step 375E-COV-A2 fix: passes clause facts from the LP assessment instead of
+    the Stage-7 adversarial title/headline/direction. stage7_direction is stored
+    on the finding as provenance but is NOT fed here as a leading frame.
+    """
     biz = use_profile.get("business_type") or "unspecified"
     deps = use_profile.get("operational_dependencies") or []
     other = use_profile.get("other_use_risk_factors") or []
@@ -184,8 +207,7 @@ def _build_finding_user_prompt(
 
     lines += [
         "",
-        "DIRECTIONAL FINDINGS TO ASSESS:",
-        "(Direction is FIXED as adverse/tenant_unprotected per Stage 7. DO NOT re-examine direction.)",
+        "LEASE PROVISIONS TO ASSESS (clause facts only):",
         "",
     ]
 
@@ -195,15 +217,54 @@ def _build_finding_user_prompt(
         lp_id = lp_ids[0] if lp_ids else ""
         lp = coverage_by_lp.get(lp_id, {})
         lp_name = lp.get("issue_area_name") or lp.get("provision_name") or lp_id
-        headline = (f.get("headline") or "").strip()
-        detail = (f.get("detail") or "").strip()
+
+        # ── Clause facts from the LP assessment (neutral framing) ──────────────
+        coverage_state = lp.get("coverage_state", "")
+        evs = lp.get("element_verdicts") or []
+        present_labels = []
+        missing_labels = []
+        for ev in evs:
+            if not isinstance(ev, dict):
+                continue
+            label = (
+                ev.get("element_label")
+                or ev.get("element_name")
+                or ev.get("description")
+            )
+            if not label:
+                eid = ev.get("element_id") or ""
+                label = eid.split(".")[-1].replace("_", " ") if eid else None
+            verdict = ev.get("verdict", "")
+            if verdict in _PRESENT_VERDICTS:
+                if label:
+                    present_labels.append(label)
+            elif verdict in {"missing", "unclear"}:
+                if label:
+                    missing_labels.append(label)
+
+        if coverage_state == "review_needed":
+            cov_desc = "uncertain — evaluators could not reach agreement on whether this provision is adequately addressed"
+        elif coverage_state == "partial":
+            cov_desc = (
+                f"partial — {len(present_labels)} element(s) confirmed in lease, "
+                f"{len(missing_labels)} element(s) not confirmed"
+            )
+        elif coverage_state == "missing":
+            cov_desc = "not present in lease"
+        else:
+            cov_desc = coverage_state or "status unknown"
+
+        tenant_text = (lp.get("tenant_text") or "").strip()
 
         lines.append(f"  {fid} [LP: {lp_id} — {lp_name}]")
-        lines.append(f"    Stage 7 finding (FIXED direction — adverse): {headline}")
-        if detail and detail != headline:
-            # Truncate long details to keep prompt manageable
-            detail_excerpt = detail[:300] + "…" if len(detail) > 300 else detail
-            lines.append(f"    Detail: {detail_excerpt}")
+        lines.append(f"    Provision coverage: {cov_desc}")
+        if present_labels:
+            lines.append("    Elements confirmed in lease: " + "; ".join(present_labels[:6]))
+        if missing_labels:
+            lines.append("    Elements not confirmed in lease: " + "; ".join(missing_labels[:4]))
+        if tenant_text:
+            excerpt = tenant_text[:400] + "…" if len(tenant_text) > 400 else tenant_text
+            lines.append(f"    Relevant lease language: {excerpt}")
         lines.append("")
 
     lines.append(
