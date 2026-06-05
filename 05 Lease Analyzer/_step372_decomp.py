@@ -7,6 +7,16 @@ the flip (1/2/3). Maps to REAL JSON field names; flags absent layers.
 import json, hashlib, re
 from collections import defaultdict, Counter
 
+def _normalize_use_consequence(ui):
+    """Read use_consequence; normalize legacy gap_impact for pre-375M artifacts."""
+    if not ui: return None
+    uc = ui.get("use_consequence")
+    if uc is not None: return uc
+    legacy = ui.get("gap_impact") or ""
+    if legacy == "favorable": return "beneficial"
+    if legacy == "adverse":   return "harmful"
+    return legacy or None
+
 LEASE = r"C:\Users\Owner\OneDrive\CAM\05 Lease Analyzer\results"
 
 RUNS = {
@@ -33,7 +43,7 @@ def load(rid):
 def action_bucket(a):
     """Exact replica of app.js Mode-C bucket logic."""
     ui = a.get("use_impact") or {}
-    skip = (ui.get("gap_impact") == "favorable") or (ui.get("materiality") == "not_applicable")
+    skip = (_normalize_use_consequence(ui) == "beneficial") or (ui.get("materiality") == "not_applicable")
     cs = a.get("coverage_state")
     pc = a.get("partial_class")
     if (not skip) and (cs in ("potentially_unenforceable","covered_unfavorable","missing","review_needed")
@@ -87,7 +97,7 @@ data = {lbl: load(rid) for lbl, rid in RUNS.items()}
 # 2. element_verdicts            (per-element, includes citations)
 # 3. coverage_state_baseline     (merged element → baseline, no dispute override)
 # 4. coverage_state              (post-dispute/override)
-# 5. use_impact.{gap_impact,materiality}  (Stage 5e — persisted in use_impact dict)
+# 5. use_impact.{use_consequence,materiality}  (Stage 5e — persisted in use_impact dict)
 # 6. lp_confidence               (= confidence cap — persisted as lp_confidence vs lp_confidence_base)
 # 7. review_priority_distance_signal  (escalated/hard_flag)
 # 8. action_bucket               (DERIVED — not stored; recomputed from above)
@@ -103,7 +113,7 @@ CHAIN_LAYERS = [
     ("element_verdicts",          lambda a: get_ev_verdicts_key(a)),
     ("coverage_state_baseline",   lambda a: a.get("coverage_state_baseline")),
     ("coverage_state",            lambda a: a.get("coverage_state")),
-    ("use_impact.gap_impact",     lambda a: (a.get("use_impact") or {}).get("gap_impact")),
+    ("use_impact.use_consequence", lambda a: _normalize_use_consequence(a.get("use_impact") or {})),
     ("use_impact.materiality",    lambda a: (a.get("use_impact") or {}).get("materiality")),
     ("lp_confidence(cap)",        lambda a: a.get("lp_confidence")),
     ("review_escalated",          lambda a: (a.get("review_priority_distance_signal") or {}).get("escalated")),

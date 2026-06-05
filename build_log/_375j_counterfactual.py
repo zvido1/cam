@@ -16,6 +16,16 @@ RUN:
 import json, os, sys, io, textwrap
 from collections import Counter
 
+def _normalize_use_consequence(ui):
+    """Read use_consequence; normalize legacy gap_impact for pre-375M artifacts."""
+    if not ui: return None
+    uc = ui.get("use_consequence")
+    if uc is not None: return uc
+    legacy = ui.get("gap_impact") or ""
+    if legacy == "favorable": return "beneficial"
+    if legacy == "adverse":   return "harmful"
+    return legacy or None
+
 if hasattr(sys.stdout, 'buffer'):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 if hasattr(sys.stderr, 'buffer'):

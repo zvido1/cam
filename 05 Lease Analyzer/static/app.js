@@ -4980,6 +4980,20 @@ const _HEATMAP_LP_IDS = [
     "LP-25","LP-26","LP-27","LP-28","LP-29","LP-30","LP-31","LP-32",
 ];
 
+// Step 375M: normalizeUseConsequence — single read-side normalizer for all use_impact consumers.
+// New artifacts write use_consequence with values {beneficial, neutral, harmful, context_dependent}.
+// Old artifacts (pre-375M) write gap_impact with values {favorable, neutral, adverse, context_dependent}.
+// This function prefers use_consequence and maps legacy gap_impact so every consumer works on both.
+function normalizeUseConsequence(ui) {
+    if (!ui) return null;
+    if (ui.use_consequence !== undefined && ui.use_consequence !== null) return ui.use_consequence;
+    // Legacy: map gap_impact vocabulary to new vocabulary
+    var legacy = ui.gap_impact;
+    if (legacy === 'favorable') return 'beneficial';
+    if (legacy === 'adverse')   return 'harmful';
+    return legacy || null;  // neutral, context_dependent unchanged; absent → null
+}
+
 // Step 338: derive risk level from LP assessment + cross_provision_findings.
 // Pure function — no DOM access, no side effects.
 // Rule ladder: first match wins. coverage_state is ONE input, not the output.
@@ -5002,16 +5016,17 @@ function deriveProvisionRiskLevel(lp, crossProvisionFindings, perspective) {
     }
 
     // Step 341b: check use_impact BEFORE compound override.
-    // Compound override: HIGH compound risk always supersedes a favorable gap_impact.
+    // Compound override: HIGH compound risk always supersedes a beneficial use_consequence.
     const ui = lp.use_impact || null;
+    const _uc = normalizeUseConsequence(ui);
     const hasHighCompound = cpfs.some(function(f) {
         return f.finding_type === 'compound_risk' && (f.severity || '').toUpperCase() === 'HIGH';
     });
     if (ui && !hasHighCompound) {
-        if (ui.gap_impact === 'favorable') {
-            return { lp_id: lpId, risk_level: 'green', dominant_reason: 'Favorable absence — ' + (ui.use_reasoning || '') };
+        if (_uc === 'beneficial') {
+            return { lp_id: lpId, risk_level: 'green', dominant_reason: 'Beneficial absence — ' + (ui.use_reasoning || '') };
         }
-        if (ui.gap_impact === 'neutral' && ui.materiality === 'low') {
+        if (_uc === 'neutral' && ui.materiality === 'low') {
             return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Low impact for this tenant — ' + (ui.use_reasoning || '') };
         }
         if (ui.materiality === 'not_applicable') {
@@ -5052,15 +5067,16 @@ function deriveProvisionRiskLevel(lp, crossProvisionFindings, perspective) {
     // Step 345: review_needed — Stage 5e result overrides when available
     if (state === 'review_needed') {
         const ui = lp.use_impact;
+        const _uc2 = normalizeUseConsequence(ui);
         if (ui && ui.confidence !== 'no_evaluators') {
-            if (ui.gap_impact === 'adverse' && ui.materiality === 'high')
-                return { lp_id: lpId, risk_level: 'red', dominant_reason: 'Review needed — adverse high-materiality gap' };
-            if (ui.gap_impact === 'adverse' && ui.materiality === 'medium')
-                return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Review needed — adverse medium-materiality gap' };
-            if (ui.gap_impact === 'adverse' && ui.materiality === 'low')
-                return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Review needed — adverse low-materiality gap' };
-            if (ui.gap_impact === 'favorable' || ui.gap_impact === 'neutral')
-                return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Review needed — favorable or neutral gap' };
+            if (_uc2 === 'harmful' && ui.materiality === 'high')
+                return { lp_id: lpId, risk_level: 'red', dominant_reason: 'Review needed — harmful high-materiality gap' };
+            if (_uc2 === 'harmful' && ui.materiality === 'medium')
+                return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Review needed — harmful medium-materiality gap' };
+            if (_uc2 === 'harmful' && ui.materiality === 'low')
+                return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Review needed — harmful low-materiality gap' };
+            if (_uc2 === 'beneficial' || _uc2 === 'neutral')
+                return { lp_id: lpId, risk_level: 'amber', dominant_reason: 'Review needed — beneficial or neutral gap' };
         }
     }
 
@@ -16216,8 +16232,8 @@ function buildCovToolbar(a, tenantIdx) {
         📝 Notes${noteCount > 0 ? ` <span class="res-note-count">${noteCount}</span>` : ''}
     </button>`;
 
-    // Step 341b: suppress "Draft Missing Clause" when use_impact marks gap as favorable
-    const _uiFavorable = a.use_impact && a.use_impact.gap_impact === 'favorable';
+    // Step 341b: suppress "Draft Missing Clause" when use_impact marks gap as beneficial
+    const _uiFavorable = normalizeUseConsequence(a.use_impact) === 'beneficial';
     const isMissingAdvisor = state === 'missing' && !_uiFavorable;
     const advisorLabel = isMissingAdvisor ? '💡 Draft Missing Clause' : '💡 AI Advisor';
     const advisorCls = isMissingAdvisor ? 'res-advisor-btn cov-advisor-primary' : 'res-advisor-btn';
@@ -16294,12 +16310,12 @@ function renderCoveragePanel() {
             a.covered_unfavorable_adverse_to !== _viewerPerspective;
     }
 
-    // Step 341b: use_impact.gap_impact = "favorable" or materiality = "not_applicable"
+    // Step 341b: use_impact.use_consequence = "beneficial" or materiality = "not_applicable"
     // moves a missing/partial LP out of problems and into the favorable group.
     function _isUseImpactFavorable(a) {
         const ui = a.use_impact;
         if (!ui) return false;
-        if (ui.gap_impact === 'favorable') return true;
+        if (normalizeUseConsequence(ui) === 'beneficial') return true;
         if (ui.materiality === 'not_applicable') return true;
         return false;
     }
@@ -16640,9 +16656,9 @@ function renderCoveragePanel() {
         // Pure layout/IA + footnote relocation — no count/routing/classifier/computed-value change.
         const _ciUi = a.use_impact;
         const _ciReason = (_ciUi && _ciUi.use_reasoning) ? String(_ciUi.use_reasoning).trim() : '';
-        const _ciGap = (_ciUi && _ciUi.gap_impact) || '';
-        const _ciReasonCls = _ciGap === 'favorable' ? 'cv-ci-reason-favorable'
-                           : (_ciGap === 'adverse' ? 'cv-ci-reason-adverse' : 'cv-ci-reason-neutral');
+        const _ciGap = normalizeUseConsequence(_ciUi) || '';
+        const _ciReasonCls = _ciGap === 'beneficial' ? 'cv-ci-reason-favorable'
+                           : (_ciGap === 'harmful' ? 'cv-ci-reason-adverse' : 'cv-ci-reason-neutral');
         const _ciParts = [];
         if (_ciReason) _ciParts.push('<div class="cv-ci-reason ' + _ciReasonCls + '">' + esc(_ciReason) + '</div>');
         if (stmt) _ciParts.push('<div class="cv-ci-exposure">' + esc(stmt) + (srcNote ? ' ' + srcNote : '') + '</div>');
@@ -17713,9 +17729,9 @@ function renderNavSidebar() {
             const needsAttention = [];
             const worthReviewing = [];
             ca.forEach(a => {
-                const _uiGap = a.use_impact && a.use_impact.gap_impact;
+                const _uiGap = normalizeUseConsequence(a.use_impact);
                 const _uiMat = a.use_impact && a.use_impact.materiality;
-                const _skipForUseImpact = _uiGap === 'favorable' || _uiMat === 'not_applicable';
+                const _skipForUseImpact = _uiGap === 'beneficial' || _uiMat === 'not_applicable';
                 if (!_skipForUseImpact && (
                     a.coverage_state === "potentially_unenforceable"
                     || a.coverage_state === "covered_unfavorable"
@@ -18073,11 +18089,11 @@ function classifyFindingType(finding, mode, context) {
     var state    = finding.coverage_state || '';
     var pcls     = finding.partial_class  || '';
     var ui       = finding.use_impact;
-    var gap      = ui && ui.gap_impact;
+    var gap      = normalizeUseConsequence(ui);
     var mat      = ui && ui.materiality;
     var uiActive = ui && ui.confidence !== 'no_evaluators';
 
-    // Consequence tier (UNCHANGED — use_impact.materiality + partial_class + gap_impact).
+    // Consequence tier (UNCHANGED — use_impact.materiality + partial_class + use_consequence).
     // Wrapped so the hard_flag floor below can run as the genuine LAST step (promote-only).
     var _consequenceBucket = (function() {
         if (state === 'covered' || state === 'covered_typical' || state === 'not_applicable') return 'addressed';
@@ -18104,7 +18120,7 @@ function classifyFindingType(finding, mode, context) {
         }
 
         if (state === 'missing') {
-            if (uiActive && gap === 'favorable') return 'addressed';
+            if (uiActive && gap === 'beneficial') return 'addressed';
             if (uiActive && mat === 'not_applicable') return 'improvement';
             return sevTriage();
         }

@@ -17,7 +17,7 @@ Architecture:
 
 Output per LP (added to assessment dict):
   use_impact = {
-      "gap_impact":           "favorable" | "neutral" | "adverse" | "context_dependent",
+      "use_consequence":      "beneficial" | "neutral" | "harmful" | "context_dependent",
       "materiality":          "high" | "medium" | "low" | "not_applicable",
       "use_reasoning":        "...",
       "confidence":           "assert" | "assert_weak" | "context_dependent" | "no_evaluators",
@@ -73,7 +73,7 @@ _EVALUATOR_LINEUP: dict[str, dict] = {
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
-_VALID_GAP_IMPACT  = frozenset({"favorable", "neutral", "adverse", "context_dependent"})
+_VALID_USE_CONSEQUENCE = frozenset({"beneficial", "neutral", "harmful", "context_dependent"})
 _VALID_MATERIALITY = frozenset({"high", "medium", "low", "not_applicable"})
 _PRESENT_VERDICTS  = frozenset({
     "explicitly_present", "implicitly_present",
@@ -108,16 +108,16 @@ For each listed provision, determine whether the gap (missing or significantly p
 Return a JSON object with one key per LP ID containing exactly these fields:
 {
   "LP-XX": {
-    "gap_impact":    "favorable" | "neutral" | "adverse" | "context_dependent",
+    "use_consequence": "beneficial" | "neutral" | "harmful" | "context_dependent",
     "materiality":   "high" | "medium" | "low" | "not_applicable",
     "use_reasoning": "One sentence grounding the answer in the tenant's specific use — not generic lease risk."
   }
 }
 
 Definitions:
-  favorable:         The absence or weakness of this provision benefits THIS client given their use
+  beneficial:        The absence or weakness of this provision benefits THIS client given their use
   neutral:           This gap has little practical effect on this client's operations
-  adverse:           This gap creates meaningful risk or cost for this client given their use
+  harmful:           This gap creates meaningful risk or cost for this client given their use
   context_dependent: Cannot determine without more information about the specific situation
 
 Absence ≠ adverse by default. When a restriction is MISSING, ask: does the absence give the tenant
@@ -125,8 +125,8 @@ MORE freedom or MORE exposure? For operational tenants (warehousing, distributio
 logistics), a missing permitted use or use restriction clause means the landlord CANNOT restrict
 the tenant's activities by claiming they violate the use clause. This is favorable — not adverse.
 Example: LP-05 Permitted Use absent for a warehouse tenant → tenant has maximum operational
-flexibility; landlord cannot claim tenant violates an undefined use restriction. Gap impact: favorable.
-Only mark absent use clauses as adverse if the tenant's specific operations require an affirmative
+flexibility; landlord cannot claim tenant violates an undefined use restriction. Use consequence: beneficial.
+Only mark absent use clauses as harmful if the tenant's specific operations require an affirmative
 landlord commitment (e.g., exclusive use rights, specific permitted use carve-outs for licensing).
 
 Materiality:
@@ -177,7 +177,7 @@ def _build_user_prompt(
             status = "missing from lease"
         lines.append(f"  {pid} [{name}]: {status}")
 
-    lines += ["", "Return JSON only with gap_impact, materiality, and use_reasoning for each LP."]
+    lines += ["", "Return JSON only with use_consequence, materiality, and use_reasoning for each LP."]
     return "\n".join(lines)
 
 # ── Evaluator call ─────────────────────────────────────────────────────────────
@@ -243,8 +243,8 @@ def _merge_verdicts(
     """Merge 3 evaluator outputs into one use_impact per LP.
 
     Agreement rules:
-      3/3 same gap_impact → assert
-      2/3 same gap_impact → assert_weak (use majority)
+      3/3 same use_consequence → assert
+      2/3 same use_consequence → assert_weak (use majority)
       1-1-1 split → context_dependent
     Materiality: 3/3 same → use; else use most conservative (lowest rank).
     """
@@ -255,7 +255,7 @@ def _merge_verdicts(
         # All evaluators failed — return context_dependent for all
         return {
             a.get("issue_area_id") or a.get("provision_id") or "": {
-                "gap_impact": "context_dependent", "materiality": "low",
+                "use_consequence": "context_dependent", "materiality": "low",
                 "use_reasoning": "Evaluators unavailable — cannot assess use impact.",
                 "confidence": "no_evaluators", "evaluator_agreement": None,
             }
@@ -272,10 +272,10 @@ def _merge_verdicts(
         reasonings  = []
         for r in completed:
             lp_out = r["lp_output"].get(pid) or {}
-            gi = (lp_out.get("gap_impact") or "").lower().strip()
+            gi = (lp_out.get("use_consequence") or "").lower().strip()
             mt = (lp_out.get("materiality") or "").lower().strip()
             rs = (lp_out.get("use_reasoning") or "").strip()
-            if gi in _VALID_GAP_IMPACT:
+            if gi in _VALID_USE_CONSEQUENCE:
                 impacts.append(gi)
             if mt in _VALID_MATERIALITY:
                 materialities.append(mt)
@@ -284,13 +284,13 @@ def _merge_verdicts(
 
         if not impacts:
             merged[pid] = {
-                "gap_impact": "context_dependent", "materiality": "low",
+                "use_consequence": "context_dependent", "materiality": "low",
                 "use_reasoning": "No valid evaluator verdict.",
                 "confidence": "no_evaluators", "evaluator_agreement": None,
             }
             continue
 
-        # gap_impact governance
+        # use_consequence governance
         from collections import Counter
         gi_counts = Counter(impacts)
         most_common_gi, most_common_count = gi_counts.most_common(1)[0]
@@ -314,20 +314,20 @@ def _merge_verdicts(
         else:
             mat = "low"
 
-        # use_reasoning: prefer reasoning from the evaluator whose gap_impact won;
+        # use_reasoning: prefer reasoning from the evaluator whose use_consequence won;
         # fall back to first available
         reasoning = reasonings[0] if reasonings else "No reasoning provided."
-        # Try to match reasoning to the winning impact
+        # Try to match reasoning to the winning consequence
         for r in completed:
             lp_out = r["lp_output"].get(pid) or {}
-            if (lp_out.get("gap_impact") or "").lower().strip() == gap_impact:
+            if (lp_out.get("use_consequence") or "").lower().strip() == gap_impact:
                 cand = (lp_out.get("use_reasoning") or "").strip()
                 if cand:
                     reasoning = cand
                     break
 
         merged[pid] = {
-            "gap_impact": gap_impact,
+            "use_consequence": gap_impact,
             "materiality": mat,
             "use_reasoning": reasoning,
             "confidence": confidence,
@@ -369,7 +369,7 @@ def assess_use_impact(
         _ca_by_id = {(a.get("issue_area_id") or a.get("provision_id") or ""): a for a in coverage_assessment}
         for a in flagged:
             a["use_impact"] = {
-                "gap_impact": "context_dependent", "materiality": "low",
+                "use_consequence": "context_dependent", "materiality": "low",
                 "use_reasoning": "No use profile available — cannot assess tenant-specific impact.",
                 "confidence": "no_evaluators", "evaluator_agreement": None,
             }
@@ -428,10 +428,10 @@ def assess_use_impact(
         "status": "applied",
     }
 
-    n_favorable = sum(1 for v in merged.values() if v["gap_impact"] == "favorable")
-    n_adverse   = sum(1 for v in merged.values() if v["gap_impact"] == "adverse")
-    n_neutral   = sum(1 for v in merged.values() if v["gap_impact"] == "neutral")
-    n_ctx       = sum(1 for v in merged.values() if v["gap_impact"] == "context_dependent")
+    n_favorable = sum(1 for v in merged.values() if v["use_consequence"] == "beneficial")
+    n_adverse   = sum(1 for v in merged.values() if v["use_consequence"] == "harmful")
+    n_neutral   = sum(1 for v in merged.values() if v["use_consequence"] == "neutral")
+    n_ctx       = sum(1 for v in merged.values() if v["use_consequence"] == "context_dependent")
     _fb_note = " (FALLBACK fired)" if _stage5e_fallbacks else ""
     print(
         f"[lease_use_impact] Stage 5e complete: "

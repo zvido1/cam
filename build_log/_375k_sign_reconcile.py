@@ -18,6 +18,16 @@ RUN:
 import json, os, sys, io, textwrap
 from collections import Counter
 
+def _normalize_use_consequence(ui):
+    """Read use_consequence; normalize legacy gap_impact for pre-375M artifacts."""
+    if not ui: return None
+    uc = ui.get("use_consequence")
+    if uc is not None: return uc
+    legacy = ui.get("gap_impact") or ""
+    if legacy == "favorable": return "beneficial"
+    if legacy == "adverse":   return "harmful"
+    return legacy or None
+
 if hasattr(sys.stdout, 'buffer'):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 if hasattr(sys.stderr, 'buffer'):
@@ -87,13 +97,19 @@ def _gap_impact_stable(lp_id):
     uniq = stab.get("unique_gap_impact") or []
     return len(uniq) <= 1, uniq
 
+def _uc_to_sign(uc):
+    """Map use_consequence vocabulary to sign vocabulary for Stage7 comparison."""
+    return {"beneficial": "favorable", "harmful": "adverse"}.get(uc, uc)
+
 def _axis_relation(s7_dir, s5e_gi):
     """Classify the sign relationship between Stage 7 and Stage 5e."""
     if s5e_gi == "absent":
         return "missing_stage5e"
     if s5e_gi == "context_dependent":
         return "ambiguous"
-    if s7_dir == s5e_gi:
+    # Map 5e consequence vocabulary to sign vocabulary before comparing to Stage 7
+    s5e_sign = _uc_to_sign(s5e_gi)
+    if s7_dir == s5e_sign:
         return "aligned"
     # explicit sign disagreement
     return "sign_conflict"
@@ -105,7 +121,7 @@ def _conflict_cause(lp_id, s7_dir, s5e_gi, s7_detail, s5e_reasoning):
     if s7_dir == s5e_gi:
         return "n/a"
     # LP-05 pattern: Stage 7 flags absent protection; 5e says absence benefits tenant
-    if s5e_gi == "favorable":
+    if s5e_gi == "beneficial":
         return "favorable_absence"
     # LP-20 pattern: Stage 7 flags generic mismatch; 5e says use-specific context makes it low priority
     if s5e_gi == "neutral":
@@ -167,7 +183,7 @@ def rule_B(s7_dir, s5e_gi, axis_rel, mat_source, dominant_mat):
         return _mat_route(mat_source, dominant_mat, adverse)
     if s5e_gi == "context_dependent":
         return "needs_review_sign_ambiguous"
-    adverse = (s5e_gi == "adverse")
+    adverse = (s5e_gi == "harmful")
     return _mat_route(mat_source, dominant_mat, adverse)
 
 def rule_C(s7_dir, s5e_gi, axis_rel, mat_source, dominant_mat):
@@ -194,7 +210,7 @@ def rule_E(s7_dir, s5e_gi, axis_rel, mat_source, dominant_mat):
         return "consequence_unassessed_no_5e_sign"
     if s5e_gi == "context_dependent":
         return "needs_review_sign_ambiguous"
-    adverse = (s5e_gi == "adverse")
+    adverse = (s5e_gi == "harmful")
     return _mat_route(mat_source, dominant_mat, adverse)
 
 def _diagnostic_safe(axis_rel, mat_source, dominant_mat, s7_dir):
@@ -220,7 +236,7 @@ for fid, f in sorted(cpf_dir.items()):
     # Stage 5e
     ui = ui_by_lp.get(primary) if primary else None
     if ui:
-        s5e_gi        = ui.get("gap_impact") or "absent"
+        s5e_gi        = _normalize_use_consequence(ui) or "absent"
         s5e_reasoning = ui.get("use_reasoning") or ""
         s5e_confidence= ui.get("confidence") or ""
     else:

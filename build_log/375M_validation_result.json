@@ -1,0 +1,82 @@
+{
+  "validation_pass": true,
+  "j_bucket_drift": [],
+  "j_count_match": true,
+  "k_bucket_drift": [],
+  "legacy_compat_pass": true,
+  "lp05_specific_pass": true,
+  "lp05_use_consequence": "beneficial",
+  "lp05_axis_relation": "sign_conflict",
+  "j_committed_buckets": {
+    "risk": 32
+  },
+  "j_rerun_buckets": {
+    "risk": 32
+  },
+  "k_per_rule_counts": {
+    "bucket_rule_A": {
+      "committed": {
+        "consequence_unassessed": 18,
+        "actionable_material_risk": 6,
+        "needs_review_sign_conflict": 2
+      },
+      "re_derived": {
+        "consequence_unassessed": 18,
+        "actionable_material_risk": 6,
+        "needs_review_sign_conflict": 2
+      }
+    },
+    "bucket_rule_B": {
+      "committed": {
+        "consequence_unassessed": 18,
+        "actionable_material_risk": 6,
+        "improvement_favorable": 1,
+        "low_materiality_or_addressed": 1
+      },
+      "re_derived": {
+        "consequence_unassessed": 18,
+        "actionable_material_risk": 6,
+        "improvement_favorable": 1,
+        "low_materiality_or_addressed": 1
+      }
+    },
+    "bucket_rule_C": {
+      "committed": {
+        "consequence_unassessed_no_alignment": 18,
+        "actionable_material_risk": 6,
+        "needs_review_sign_conflict": 2
+      },
+      "re_derived": {
+        "consequence_unassessed_no_alignment": 18,
+        "actionable_material_risk": 6,
+        "needs_review_sign_conflict": 2
+      }
+    },
+    "bucket_rule_D": {
+      "committed": {
+        "consequence_unassessed": 18,
+        "actionable_material_risk": 7,
+        "low_materiality": 1
+      },
+      "re_derived": {
+        "consequence_unassessed": 18,
+        "actionable_material_risk": 7,
+        "low_materiality": 1
+      }
+    },
+    "bucket_rule_E": {
+      "committed": {
+        "consequence_unassessed_no_5e_sign": 18,
+        "actionable_material_risk": 6,
+        "improvement_favorable": 1,
+        "low_materiality_or_addressed": 1
+      },
+      "re_derived": {
+        "consequence_unassessed_no_5e_sign": 18,
+        "actionable_material_risk": 6,
+        "improvement_favorable": 1,
+        "low_materiality_or_addressed": 1
+      }
+    }
+  }
+}

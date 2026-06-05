@@ -7,6 +7,16 @@ six-run envelope (Branch 0A). Maps to REAL JSON field names; flags absent fields
 import json, hashlib
 from collections import defaultdict
 
+def _normalize_use_consequence(ui):
+    """Read use_consequence; normalize legacy gap_impact for pre-375M artifacts."""
+    if not ui: return None
+    uc = ui.get("use_consequence")
+    if uc is not None: return uc
+    legacy = ui.get("gap_impact") or ""
+    if legacy == "favorable": return "beneficial"
+    if legacy == "adverse":   return "harmful"
+    return legacy or None
+
 LEASE = r"C:\Users\Owner\OneDrive\CAM\05 Lease Analyzer\results"
 
 RUNS = {  # label -> run_id (the six matched 370c runs)
@@ -27,7 +37,7 @@ def load(rid):
 def action_bucket(a):
     """Exact replica of app.js Mode-C bucket derivation (renderSidebar)."""
     ui = a.get("use_impact") or {}
-    skip = (ui.get("gap_impact") == "favorable") or (ui.get("materiality") == "not_applicable")
+    skip = (_normalize_use_consequence(ui) == "beneficial") or (ui.get("materiality") == "not_applicable")
     cs = a.get("coverage_state")
     pc = a.get("partial_class")
     if (not skip) and (cs in ("potentially_unenforceable", "covered_unfavorable", "missing", "review_needed")
@@ -63,7 +73,7 @@ def governed_fields(a):
         "review_hard_flag": rp.get("hard_flag"),
         "stage7_included": stage7_included(a),                   # included_in_stage7_pass1_input (derived)
         "use_impact_present": bool(ui),
-        "use_impact.gap_impact": ui.get("gap_impact"),
+        "use_impact.use_consequence": _normalize_use_consequence(ui),
         "use_impact.materiality": ui.get("materiality"),
         "verdict_distance.severity": vd.get("severity"),
     }
@@ -72,7 +82,7 @@ def governed_fields(a):
 GOVERNANCE_KEYS = [
     "coverage_state", "action_bucket", "materiality", "dispute_triggered",
     "lp_confidence(cap)", "review_escalated", "review_hard_flag", "stage7_included",
-    "use_impact.gap_impact", "use_impact.materiality",
+    "use_impact.use_consequence", "use_impact.materiality",
 ]
 # Structural/supporting subset (changes here w/o governance change = Class 2)
 STRUCTURAL_KEYS = [
