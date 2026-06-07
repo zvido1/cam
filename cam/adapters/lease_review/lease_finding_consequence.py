@@ -521,6 +521,8 @@ def assess_finding_consequence(
     )
 
     # ── Annotate already-assessed findings (copy from LP-scope use_impact) ────
+    # DEF-001: LP-scope use_impact (from lease_use_impact.py) carries use_reasoning,
+    # confidence, and evaluator_agreement — copy them alongside the consequence fields.
     for f, lp in already_assessed_pairs:
         ui = _normalize_consequence(lp.get("use_impact") or {})
         _s7d = f.get("directionality")
@@ -531,6 +533,10 @@ def assess_finding_consequence(
         f["use_consequence_source"] = "assessed"
         f["materiality_source"] = "assessed"
         f["assessment_scope"] = "finding_linked_lp"
+        # DEF-001 fix — persist reasoning provenance from LP-scope assessment
+        f["use_consequence_reasoning"]       = ui.get("use_reasoning")
+        f["consequence_confidence"]          = ui.get("confidence")
+        f["consequence_evaluator_agreement"] = ui.get("evaluator_agreement")
 
     # ── No use_profile → keyless mode, mark unassessed findings as absent ─────
     if not use_profile:
@@ -546,6 +552,10 @@ def assess_finding_consequence(
             f["use_consequence_source"] = "absent"
             f["materiality_source"] = "absent"
             f["assessment_scope"] = "finding_linked_lp"
+            # DEF-001 fix — no evaluator ran; persist null/boilerplate honestly
+            f["use_consequence_reasoning"]       = None
+            f["consequence_confidence"]          = "no_evaluators"
+            f["consequence_evaluator_agreement"] = None
         meta = {
             "assessed": len(already_assessed_pairs),
             "newly_assessed": 0,
@@ -620,12 +630,20 @@ def assess_finding_consequence(
             f["materiality"] = verdict.get("materiality", "low")
             f["use_consequence_source"] = "assessed"
             f["materiality_source"] = "assessed"
+            # DEF-001 fix — persist reasoning provenance from merged verdict
+            f["use_consequence_reasoning"]       = verdict.get("use_reasoning")
+            f["consequence_confidence"]          = verdict.get("confidence")
+            f["consequence_evaluator_agreement"] = verdict.get("evaluator_agreement")
             n_newly_assessed += 1
         else:
             f["use_consequence"] = "context_dependent"
             f["materiality"] = "low"
             f["use_consequence_source"] = "absent"
             f["materiality_source"] = "absent"
+            # DEF-001 fix — no valid verdict; persist null/boilerplate honestly
+            f["use_consequence_reasoning"]       = None
+            f["consequence_confidence"]          = "no_evaluators"
+            f["consequence_evaluator_agreement"] = None
             n_absent += 1
         f["assessment_scope"] = "finding_linked_lp"
 
