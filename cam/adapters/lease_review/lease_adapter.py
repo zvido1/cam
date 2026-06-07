@@ -1622,6 +1622,27 @@ def run_lease_coverage_only(
     except Exception as _fc_e:
         print(f"[lease_adapter:analyze] Stage 5e-F (finding consequence) failed (non-fatal): {_fc_e}", flush=True)
 
+    # ── Step 376h: P2'' directional routing (consequence-anchored, sign diagnostic-only) ──
+    # Attaches p2pp_routing dict to each directional_mismatch finding in place.
+    # MUST run after Stage 5e-F — requires use_consequence + use_consequence_source.
+    # Sign/directionality is preserved as diagnostic output but must not affect bucket.
+    try:
+        from cam.adapters.lease_review.lease_p2pp_routing import apply_p2pp_routing
+        if result.get("cross_provision_findings"):
+            _p2pp_n = apply_p2pp_routing(result["cross_provision_findings"])
+            _p2pp_risk = sum(
+                1 for f in result["cross_provision_findings"]
+                if f.get("finding_type") == "directional_mismatch"
+                and (f.get("p2pp_routing") or {}).get("bucket") == "risk"
+            )
+            print(
+                f"[lease_adapter:analyze] P2'' routing: {_p2pp_n} directional finding(s) classified "
+                f"({_p2pp_risk} risk, {_p2pp_n - _p2pp_risk} other)",
+                flush=True,
+            )
+    except Exception as _p2pp_e:
+        print(f"[lease_adapter:analyze] P2'' routing failed (non-fatal): {_p2pp_e}", flush=True)
+
     # ── Step 362: Perspective leak detection (non-fatal logging only) ──
     # Catches CPF prose that names the opposing party first in a tenant-perspective run.
     _perspective_cfg = cfg.get("perspective", "tenant")

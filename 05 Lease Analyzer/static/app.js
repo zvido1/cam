@@ -4776,7 +4776,8 @@ function _computeRiskCounts(r, perspective) {
         var govSig = f.finding_type === 'compound_risk' ? deriveCompoundGovernanceSignal(f, caByLp)
                    : f.finding_type === 'directional_mismatch' ? deriveDirectionalGovernanceSignal(f) : null;
         var fi = { _item_type: 'synthesis', finding_type: f.finding_type,
-                   severity: f.severity, directionality: f.directionality || '' };
+                   severity: f.severity, directionality: f.directionality || '',
+                   p2pp_routing: f.p2pp_routing || null }; // Step 376h: P2'' pre-computed bucket
         var bucket = classifyFindingType(fi, 'c', { perspective: perspective, govSig: govSig });
         var implicated = (f.implicated_lps || []).join(', ');
         if (bucket !== 'risk') {
@@ -18057,6 +18058,15 @@ function classifyFindingType(finding, mode, context) {
         if (ft === 'compound_risk') return 'risk'; // guardrail #1: always Risk
 
         if (ft === 'directional_mismatch') {
+            // Step 376h P2'': bucket pre-computed by backend from consequence/materiality/
+            // consequence_source/mismatch_support. Sign/directionality is diagnostic-only
+            // and must NOT affect the bucket (routing_use === 'diagnostic_only').
+            var p2pp = finding.p2pp_routing;
+            if (p2pp && p2pp.bucket) {
+                return p2pp.bucket;
+            }
+            // Backward-compat: artifacts produced before 376h lack p2pp_routing.
+            // Fall back to sign-based routing for those artifacts only.
             var dir = finding.directionality || '';
             var adverseTo = dir === 'tenant_unprotected' ? 'tenant'
                           : dir === 'landlord_unprotected' ? 'landlord' : null;
@@ -18395,7 +18405,8 @@ function renderNavSidebar() {
                 var govSig = f.finding_type === 'compound_risk' ? deriveCompoundGovernanceSignal(f, caByLp)
                            : f.finding_type === 'directional_mismatch' ? deriveDirectionalGovernanceSignal(f) : null;
                 var fi = { _item_type: 'synthesis', finding_type: f.finding_type,
-                           severity: f.severity, directionality: f.directionality || '' };
+                           severity: f.severity, directionality: f.directionality || '',
+                           p2pp_routing: f.p2pp_routing || null }; // Step 376h: P2'' pre-computed bucket
                 var bucket = classifyFindingType(fi, 'c', { perspective: _perspective, govSig: govSig });
                 var sev = (f.severity || 'HIGH').toUpperCase();
                 var lps = (f.implicated_lps || []).join(', ');
