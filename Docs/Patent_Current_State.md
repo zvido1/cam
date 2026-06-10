@@ -886,8 +886,15 @@ IP↔MI distance corrected to 4 in 351b (table error; code was correct).
   sentences are captured in this document. Should be written before
   the attorney conversation.
 - **Stage 5d formalization** — Step 302 spec exists. Multi-model
-  consensus (≥2/3) required before enabling. Currently gated
-  (`STAGE_5D_ENABLED = False`).
+  consensus (≥2/3) required before enabling. **ENABLED** as of Step 303
+  (variance acceptance test passed 2026-05-04, 5 runs ±1 stable;
+  `STAGE_5D_ENABLED = True` in `lease_use_aware_coverage.py`).
+  Confirmed product-behavior note: if Stage 5d skips (generic or absent
+  permitted-use clause), no use_profile is generated, Stage 5e-F runs
+  keyless, and P2'' Rule 1a routes ALL directional findings to
+  review_needed/consequence_not_assessed. A lease with a generic
+  permitted-use clause produces zero directional Risk by construction.
+  (DEF-008 doc correction, 2026-06-10)
 
 ---
 

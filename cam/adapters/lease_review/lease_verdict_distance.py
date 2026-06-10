@@ -12,7 +12,10 @@ Two independent signals:
 These are consumed independently to govern confidence ceiling and review priority.
 """
 
+import logging
 from collections import Counter
+
+logger = logging.getLogger(__name__)
 
 
 # ── Sentinel for LPs that never entered Stage 305 ─────────────────────────────
@@ -44,12 +47,27 @@ _SEVERITY_ORDER = ["high", "medium", "low"]
 def derive_verdict_distance(v1: str, v2: str) -> int:
     """Return ordinal distance between two verdict states on the six-rung ladder.
 
-    Returns 0 for identical verdicts or unknown verdicts (fail-safe).
+    DEF-006 (F4): Unknown verdict strings resolve to "unclear" (rank 3) and emit a
+    log warning. Previously returned 0 (silent distance-0 / perfect-agreement), which
+    was the wrong fail direction — unknown verdicts should surface as disagreement, not
+    vanish into apparent agreement. "unclear" is rank 3 on the ladder; an unknown string
+    paired with "explicitly_present" (rank 0) yields distance 3 (moderate disagreement)
+    rather than the old 0 (no disagreement), which is the conservative-correct outcome.
     """
     r1 = VERDICT_RANK.get(v1)
     r2 = VERDICT_RANK.get(v2)
-    if r1 is None or r2 is None:
-        return 0
+    if r1 is None:
+        logger.warning(
+            "[lease_verdict_distance] Unknown verdict string %r — treating as 'unclear' (rank 3). "
+            "Vocabulary drift? Add to VERDICT_RANK if this is a new valid verdict.", v1
+        )
+        r1 = VERDICT_RANK["unclear"]  # rank 3
+    if r2 is None:
+        logger.warning(
+            "[lease_verdict_distance] Unknown verdict string %r — treating as 'unclear' (rank 3). "
+            "Vocabulary drift? Add to VERDICT_RANK if this is a new valid verdict.", v2
+        )
+        r2 = VERDICT_RANK["unclear"]  # rank 3
     return abs(r1 - r2)
 
 

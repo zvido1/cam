@@ -299,6 +299,14 @@ def _call_finding_evaluator(
         with claimed_lock:
             if provider in claimed_providers:
                 return None
+            # F8d (intentional): provider is claimed before the API call and is NOT
+            # released on failure. This preserves evaluator independence: if role A claims
+            # provider X and fails, role B cannot silently retry on the same provider (which
+            # would make A and B effectively the same evaluator, defeating 3-way independence).
+            # Own-chain fallback uses fb_provider (a different provider), so each role's
+            # own retry is unaffected. The cost is that a provider that is healthy for B is
+            # blocked after A's failure. Doctrine decision: independence requirement outweighs
+            # coverage recovery. Do not remove this claim-before-call pattern.
             claimed_providers.add(provider)
         try:
             target = ModelTarget(
@@ -353,12 +361,30 @@ def _merge_finding_verdicts(
 ) -> dict:
     """Merge 3 evaluator outputs into one verdict per finding.
 
-    Agreement rules (mirrors _merge_verdicts in lease_use_impact.py):
-      3/3 same use_consequence → assert (confidence field carried in meta but not in provenance)
-      2/3 same use_consequence → assert_weak (use majority)
-      1-1-1 split → context_dependent
-    Materiality: 3/3 same → use; else use most conservative (lowest rank).
+    DEF-003 (F1) — Consequence support floor:
+      Expected evaluator count = 3 (fixed lineup).
+      3 valid, all agree → "assert" (true 3/3)
+      3 valid, 2 agree   → "assert_weak" (2/3 majority)
+      2 valid, both agree → "assert_duo" (reduced confidence; NOT full assert)
+      1 valid            → "insufficient_support" (cannot assert; prevents Risk routing)
+      0 valid            → "no_evaluators"
+      1-1-1 split        → "context_dependent"
+    Provenance: expected_evaluator_count, valid_evaluator_count, vote_distribution,
+                consequence_support_label stored on each verdict.
+
+    DEF-004 (F2) — Materiality majority merge:
+      {high,high,low} → high (majority), not low (strict-min rejected).
+      2/3 majority → majority value; minority preserved in materiality_votes.
+      high↔low spread → materiality_disputed=True.
+      No-majority (e.g. {high,medium,low}) → consequence_source NOT "assessed";
+        route_to_review_needed=True signals caller to force Review Needed.
+      0 valid materiality values → materiality_source="no_valid_materiality".
+
+    F8c — 1-1-1 split reasoning:
+      On a genuine 3-way split (no evaluator adopted the synthesized "context_dependent"),
+      store null reasoning rather than attributing the first evaluator's reasoning.
     """
+    _N_EXPECTED = 3  # fixed 3-evaluator lineup
     completed = [r for r in results if r.get("completed") and r.get("finding_output")]
     n_ok = len(completed)
 
@@ -371,6 +397,16 @@ def _merge_finding_verdicts(
                 "use_reasoning": "Evaluators unavailable — cannot assess use consequence.",
                 "confidence": "no_evaluators",
                 "evaluator_agreement": None,
+                "expected_evaluator_count": _N_EXPECTED,
+                "valid_evaluator_count": 0,
+                "vote_distribution": {},
+                "consequence_support_label": "no_evaluators",
+                "materiality_votes": [],
+                "materiality_support": "no_valid_materiality",
+                "materiality_agreement": None,
+                "materiality_disputed": False,
+                "materiality_source": "no_valid_materiality",
+                "route_to_review_needed": False,  # already routes via no_evaluators path
             }
             for f in findings
         }
@@ -394,6 +430,9 @@ def _merge_finding_verdicts(
             if rs:
                 reasonings.append(rs)
 
+        n_valid_uc = len(consequences)
+        vote_dist = dict(Counter(consequences))
+
         if not consequences:
             merged[fid] = {
                 "use_consequence": "context_dependent",
@@ -401,38 +440,119 @@ def _merge_finding_verdicts(
                 "use_reasoning": "No valid evaluator verdict for this finding.",
                 "confidence": "no_evaluators",
                 "evaluator_agreement": None,
+                "expected_evaluator_count": _N_EXPECTED,
+                "valid_evaluator_count": 0,
+                "vote_distribution": vote_dist,
+                "consequence_support_label": "no_evaluators",
+                "materiality_votes": materialities,
+                "materiality_support": "no_valid_materiality" if not materialities else "assessed",
+                "materiality_agreement": None,
+                "materiality_disputed": False,
+                "materiality_source": "no_valid_materiality" if not materialities else "assessed",
+                "route_to_review_needed": False,
             }
             continue
 
-        # use_consequence governance
+        # ── use_consequence governance (DEF-003) ─────────────────────────────
         uc_counts = Counter(consequences)
         most_common_uc, most_common_count = uc_counts.most_common(1)[0]
 
-        if most_common_count == len(consequences):   # all agree
+        if n_valid_uc == _N_EXPECTED and most_common_count == _N_EXPECTED:
+            # True 3/3 unanimous
             final_uc = most_common_uc
             confidence = "assert"
-            agree_str = f"{len(consequences)}-0"
-        elif most_common_count >= 2:                  # 2/3 majority
+            agree_str = "3-0"
+            support_label = "full_assert"
+        elif n_valid_uc == _N_EXPECTED and most_common_count >= 2:
+            # 2/3 majority (all 3 responded, 2 agree)
             final_uc = most_common_uc
             confidence = "assert_weak"
             agree_str = "2-1"
-        else:                                         # 1-1-1 split
+            support_label = "majority_assert"
+        elif n_valid_uc == 2 and most_common_count == 2:
+            # 2 valid evaluators, both agree (1 failed); reduced confidence, NOT full assert
+            final_uc = most_common_uc
+            confidence = "assert_duo"
+            agree_str = "2-0-1f"  # 2 agree, 0 dissent, 1 failed
+            support_label = "duo_assert"
+        elif n_valid_uc >= 2 and most_common_count >= 2:
+            # General 2+ majority with some valid failures
+            final_uc = most_common_uc
+            confidence = "assert_weak"
+            agree_str = f"{most_common_count}-{n_valid_uc - most_common_count}"
+            support_label = "majority_assert"
+        elif n_valid_uc == 1:
+            # DEF-003: single valid evaluator — insufficient support for assert
+            # Preserve verdict as diagnostic; must NOT route Risk on consequence alone
+            final_uc = most_common_uc  # preserve for audit; routing gates on support_label
+            confidence = "insufficient_support"
+            agree_str = "1-0-2f"  # 1 valid, 0 dissent, 2 failed
+            support_label = "insufficient_support"
+        else:
+            # 1-1-1 split (all 3 valid, no majority)
             final_uc = "context_dependent"
             confidence = "context_dependent"
             agree_str = "1-1-1"
+            support_label = "split"
 
-        # materiality: most conservative of reported values
-        mat = min(materialities, key=lambda m: _MATERIALITY_RANK.get(m, 1)) if materialities else "low"
+        # ── materiality merge (DEF-004) ───────────────────────────────────────
+        n_valid_mat = len(materialities)
+        materiality_disputed = False
+        mat_source = "assessed"
+        route_to_review_needed = False
 
-        # use_reasoning: prefer the reasoning from the evaluator whose consequence won
-        reasoning = reasonings[0] if reasonings else "No reasoning provided."
-        for r in completed:
-            out = r["finding_output"].get(fid) or {}
-            if (out.get("use_consequence") or "").lower().strip() == final_uc:
-                cand = (out.get("use_reasoning") or "").strip()
-                if cand:
-                    reasoning = cand
-                    break
+        if n_valid_mat == 0:
+            # No valid materiality from any evaluator
+            mat = "low"
+            mat_source = "no_valid_materiality"
+            mat_support = "no_valid_materiality"
+            mat_agreement = None
+        elif n_valid_mat == 1:
+            mat = materialities[0]
+            mat_support = "singleton"
+            mat_agreement = f"1-of-{n_valid_mat}"
+        else:
+            mat_counts = Counter(materialities)
+            most_common_mat, mat_majority_count = mat_counts.most_common(1)[0]
+            mat_ranks = [_MATERIALITY_RANK.get(m, 1) for m in materialities]
+            has_high = "high" in materialities
+            has_low = "low" in materialities
+
+            if mat_majority_count >= 2:
+                # 2+ evaluators agree on materiality → majority wins (DEF-004)
+                mat = most_common_mat
+                mat_support = f"majority_{mat_majority_count}-of-{n_valid_mat}"
+                mat_agreement = f"{mat_majority_count}-{n_valid_mat - mat_majority_count}"
+                if has_high and has_low:
+                    materiality_disputed = True
+            else:
+                # No majority (e.g. {high, medium, low}) — cannot assert materiality
+                # DEF-004 PINNED: route Review Needed; do NOT select minimum
+                mat = "low"  # store defensively but routing is gated by route_to_review_needed
+                mat_source = "no_majority"
+                mat_support = "no_majority"
+                mat_agreement = "1-1-1"
+                route_to_review_needed = True
+
+        # ── use_reasoning (F8c fix) ───────────────────────────────────────────
+        # On a 1-1-1 split, no evaluator said "context_dependent" — store null
+        # rather than misattributing the first evaluator's reasoning.
+        if support_label == "split":
+            # True 3-way split: synthesized context_dependent, no adopter
+            reasoning = None
+        else:
+            reasoning = None
+            for r in completed:
+                out = r["finding_output"].get(fid) or {}
+                if (out.get("use_consequence") or "").lower().strip() == final_uc:
+                    cand = (out.get("use_reasoning") or "").strip()
+                    if cand:
+                        reasoning = cand
+                        break
+            if reasoning is None and reasonings:
+                # Only fallback to reasonings[0] when the adopted verdict had a matching evaluator
+                # (don't use it on splits where we set reasoning=None above)
+                reasoning = reasonings[0] if support_label not in ("split",) else None
 
         merged[fid] = {
             "use_consequence": final_uc,
@@ -440,6 +560,18 @@ def _merge_finding_verdicts(
             "use_reasoning": reasoning,
             "confidence": confidence,
             "evaluator_agreement": agree_str,
+            # DEF-003 provenance
+            "expected_evaluator_count": _N_EXPECTED,
+            "valid_evaluator_count": n_valid_uc,
+            "vote_distribution": vote_dist,
+            "consequence_support_label": support_label,
+            # DEF-004 provenance
+            "materiality_votes": materialities,
+            "materiality_support": mat_support if n_valid_mat > 0 else "no_valid_materiality",
+            "materiality_agreement": mat_agreement,
+            "materiality_disputed": materiality_disputed,
+            "materiality_source": mat_source,
+            "route_to_review_needed": route_to_review_needed,
         }
 
     return merged
@@ -529,9 +661,17 @@ def assess_finding_consequence(
         f["stage7_direction"] = _s7d
         f["stage7_direction_source"] = "stage7" if _s7d is not None else "absent"
         f["use_consequence"] = ui.get("use_consequence", "context_dependent")
-        f["materiality"] = ui.get("materiality", "low")
         f["use_consequence_source"] = "assessed"
-        f["materiality_source"] = "assessed"
+        # DEF-005 (F3): materiality_source tracks the materiality value's OWN provenance,
+        # independent of consequence provenance. Only "assessed" if a valid materiality
+        # value was actually present in the LP-scope use_impact.
+        _lp_mat = ui.get("materiality")
+        if _lp_mat in _VALID_MATERIALITY:
+            f["materiality"] = _lp_mat
+            f["materiality_source"] = "assessed"
+        else:
+            f["materiality"] = "low"
+            f["materiality_source"] = "defaulted_low"  # no valid materiality from LP-scope
         f["assessment_scope"] = "finding_linked_lp"
         # DEF-001 fix — persist reasoning provenance from LP-scope assessment
         f["use_consequence_reasoning"]       = ui.get("use_reasoning")
@@ -625,21 +765,84 @@ def assess_finding_consequence(
         _s7d = f.get("directionality")
         f["stage7_direction"] = _s7d
         f["stage7_direction_source"] = "stage7" if _s7d is not None else "absent"
-        if verdict.get("use_consequence") in _VALID_USE_CONSEQUENCE:
-            f["use_consequence"] = verdict["use_consequence"]
-            f["materiality"] = verdict.get("materiality", "low")
+
+        uc = verdict.get("use_consequence")
+        support_label = verdict.get("consequence_support_label", "no_evaluators")
+
+        # DEF-003: "assessed" source requires at least duo support (2+ valid evaluators).
+        # insufficient_support (1 valid) is preserved as diagnostic but NOT stamped "assessed".
+        # This ensures Rule 1a (csrc != "assessed") fires in P2'', routing Review Needed.
+        if uc in _VALID_USE_CONSEQUENCE and support_label not in ("no_evaluators", "insufficient_support"):
+            f["use_consequence"] = uc
             f["use_consequence_source"] = "assessed"
-            f["materiality_source"] = "assessed"
+
+            # DEF-004 + DEF-005: materiality_source tracks materiality's OWN provenance.
+            # route_to_review_needed=True (no-majority) also forces non-"assessed" source.
+            _mat_src = verdict.get("materiality_source", "assessed")
+            _route_rnr = verdict.get("route_to_review_needed", False)
+            if _route_rnr:
+                # No-majority materiality → cannot assert material tier; force Review Needed path
+                f["materiality"] = verdict.get("materiality", "low")
+                f["materiality_source"] = "no_majority"
+                # Override consequence source to prevent Rule 3 (Risk routing)
+                f["use_consequence_source"] = "no_majority_materiality"
+            elif _mat_src not in ("assessed",):
+                # Zero valid materiality returns or other non-assessed provenance
+                f["materiality"] = verdict.get("materiality", "low")
+                f["materiality_source"] = _mat_src  # "no_valid_materiality", "defaulted_low", etc.
+            else:
+                f["materiality"] = verdict.get("materiality", "low")
+                f["materiality_source"] = "assessed"
+
+            # DEF-003: persist all consequence support provenance fields
+            f["consequence_support_label"]       = support_label
+            f["expected_evaluator_count"]        = verdict.get("expected_evaluator_count", 3)
+            f["valid_evaluator_count"]           = verdict.get("valid_evaluator_count", 0)
+            f["vote_distribution"]               = verdict.get("vote_distribution", {})
+            # DEF-004: persist materiality provenance fields
+            f["materiality_votes"]               = verdict.get("materiality_votes", [])
+            f["materiality_support"]             = verdict.get("materiality_support")
+            f["materiality_agreement"]           = verdict.get("materiality_agreement")
+            f["materiality_disputed"]            = verdict.get("materiality_disputed", False)
             # DEF-001 fix — persist reasoning provenance from merged verdict
             f["use_consequence_reasoning"]       = verdict.get("use_reasoning")
             f["consequence_confidence"]          = verdict.get("confidence")
             f["consequence_evaluator_agreement"] = verdict.get("evaluator_agreement")
             n_newly_assessed += 1
+
+        elif uc in _VALID_USE_CONSEQUENCE and support_label == "insufficient_support":
+            # DEF-003: 1 valid evaluator — preserve verdict as diagnostic, but NOT "assessed"
+            # P2'' Rule 1a will fire (csrc != "assessed") → Review Needed
+            f["use_consequence"] = uc
+            f["use_consequence_source"] = "insufficient_consequence_support"
+            f["materiality"] = verdict.get("materiality", "low")
+            f["materiality_source"] = verdict.get("materiality_source", "no_valid_materiality")
+            f["consequence_support_label"]       = support_label
+            f["expected_evaluator_count"]        = verdict.get("expected_evaluator_count", 3)
+            f["valid_evaluator_count"]           = verdict.get("valid_evaluator_count", 0)
+            f["vote_distribution"]               = verdict.get("vote_distribution", {})
+            f["materiality_votes"]               = verdict.get("materiality_votes", [])
+            f["materiality_support"]             = verdict.get("materiality_support")
+            f["materiality_agreement"]           = verdict.get("materiality_agreement")
+            f["materiality_disputed"]            = verdict.get("materiality_disputed", False)
+            f["use_consequence_reasoning"]       = verdict.get("use_reasoning")
+            f["consequence_confidence"]          = verdict.get("confidence")
+            f["consequence_evaluator_agreement"] = verdict.get("evaluator_agreement")
+            n_absent += 1  # counts as not fully assessed for routing purposes
+
         else:
             f["use_consequence"] = "context_dependent"
             f["materiality"] = "low"
             f["use_consequence_source"] = "absent"
             f["materiality_source"] = "absent"
+            f["consequence_support_label"]       = "no_evaluators"
+            f["expected_evaluator_count"]        = 3
+            f["valid_evaluator_count"]           = 0
+            f["vote_distribution"]               = {}
+            f["materiality_votes"]               = []
+            f["materiality_support"]             = "no_valid_materiality"
+            f["materiality_agreement"]           = None
+            f["materiality_disputed"]            = False
             # DEF-001 fix — no valid verdict; persist null/boilerplate honestly
             f["use_consequence_reasoning"]       = None
             f["consequence_confidence"]          = "no_evaluators"

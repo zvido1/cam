@@ -1,5 +1,7 @@
 """
 P2'' directional routing helper — Step 376h.
+Step 378: F8a — fallthrough reason string corrected (unrecognized_consequence_value).
+Step 378: F8b — _derive_mismatch_support parse-failure now logs a warning.
 
 classify_directional_p2pp(finding) routes a directional_mismatch finding under P2'':
   consequence-anchored, support-gated, high/medium-collapsed, harmful-only Risk.
@@ -23,6 +25,10 @@ Sign/directionality may be displayed and audited but must NOT appear in routing 
 Authorized scope (Step 376h): directional_mismatch findings only.
 Non-directional findings (compound_risk, cross_coverage_gap) are not touched.
 """
+
+import logging as _logging
+
+_logger = _logging.getLogger(__name__)
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -60,6 +66,15 @@ def _derive_mismatch_support(finding: dict) -> str:
     try:
         confirmed = int(parts[0])
     except (ValueError, IndexError):
+        # F8b: emit a visible tripwire so evaluator_agreement format drift is never silent.
+        # Fail direction is correct (returns "unknown" → Rule 1b → review_needed), but
+        # without logging the drift is invisible across all findings in a run.
+        _logger.warning(
+            "[lease_p2pp_routing] _derive_mismatch_support: cannot parse evaluator_agreement %r "
+            "for finding %r — returning 'unknown' (routes review_needed). "
+            "Check Stage 7 evaluator_agreement format.",
+            ea, finding.get("finding_id"),
+        )
         return "unknown"
 
     if confirmed >= 3:
@@ -196,8 +211,10 @@ def classify_directional_p2pp(finding: dict) -> dict:
                        "low_materiality_directional_issue")
 
     # ── Fallthrough: unrecognized use_consequence with assessed source ─────────
-    # Defensive; should not be reached for any valid use_consequence value.
-    return _result("review_needed", "consequence_not_assessed")
+    # F8a: consequence WAS assessed (source="assessed") but produced an unrecognized value.
+    # "consequence_not_assessed" was false in the audit trail — renamed to the accurate
+    # "unrecognized_consequence_value" so audit distinguishes type-drift from missing assessment.
+    return _result("review_needed", "unrecognized_consequence_value")
 
 
 # ── Batch application ─────────────────────────────────────────────────────────

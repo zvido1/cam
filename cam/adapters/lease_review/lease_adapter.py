@@ -986,6 +986,10 @@ def run_lease_analysis(
                 perspective=cfg.get("perspective", "tenant"),
                 cfg=cfg,
             )
+            # DEF-007 (F5): Stage 5e runs 3 evaluator calls per batch.
+            # assess_use_impact() does not return a call count; increment by the fixed
+            # 3-evaluator-per-run count (same omission class as the Step 335 fixes).
+            total_api_calls += 3
         except Exception as e:
             print(f"[lease_adapter] Stage 5e (use_impact) failed (non-fatal): {e}", flush=True)
 
@@ -1003,7 +1007,17 @@ def run_lease_analysis(
             _base_conf = _a.get("lp_confidence_base", "low")
             _vote_count = {"high": 3, "medium": 2, "low": 1}.get(_base_conf, 1)
             _ui = _a.get("use_impact") or {}
-            _consequence = _ui.get("materiality") or "moderate"
+            # F8e: _ui.get("materiality") or "moderate" is a silent default of the 375I
+            # pattern family. Direction is conservative (defaults toward capping), but
+            # the default is unprovenance'd. Log when it fires.
+            _raw_mat = _ui.get("materiality")
+            if not _raw_mat:
+                import logging as _logging
+                _logging.getLogger(__name__).info(
+                    "[lease_adapter] Stage 5f: materiality absent for LP %s — defaulting to 'moderate' for confidence cap",
+                    _a.get("issue_area_id") or _a.get("provision_id") or "unknown",
+                )
+            _consequence = _raw_mat or "moderate"
             _a["lp_confidence"] = apply_distance_confidence_cap(
                 _base_conf, _severity, _vote_count, _consequence
             )
@@ -1441,6 +1455,10 @@ def run_lease_coverage_only(
                 perspective=cfg.get("perspective", "tenant"),
                 cfg=cfg,
             )
+            # DEF-007 (F5): Stage 5e runs 3 evaluator calls per batch.
+            # assess_use_impact() does not return a call count; increment by the fixed
+            # 3-evaluator-per-run count (same omission class as the Step 335 fixes).
+            total_api_calls += 3
         except Exception as e:
             print(f"[lease_adapter:analyze] Stage 5e (use_impact) failed (non-fatal): {e}", flush=True)
 
@@ -1458,7 +1476,17 @@ def run_lease_coverage_only(
             _base_conf = _a.get("lp_confidence_base", "low")
             _vote_count = {"high": 3, "medium": 2, "low": 1}.get(_base_conf, 1)
             _ui = _a.get("use_impact") or {}
-            _consequence = _ui.get("materiality") or "moderate"
+            # F8e: _ui.get("materiality") or "moderate" is a silent default of the 375I
+            # pattern family. Direction is conservative (defaults toward capping), but
+            # the default is unprovenance'd. Log when it fires.
+            _raw_mat = _ui.get("materiality")
+            if not _raw_mat:
+                import logging as _logging
+                _logging.getLogger(__name__).info(
+                    "[lease_adapter] Stage 5f: materiality absent for LP %s — defaulting to 'moderate' for confidence cap",
+                    _a.get("issue_area_id") or _a.get("provision_id") or "unknown",
+                )
+            _consequence = _raw_mat or "moderate"
             _a["lp_confidence"] = apply_distance_confidence_cap(
                 _base_conf, _severity, _vote_count, _consequence
             )
@@ -1612,6 +1640,11 @@ def run_lease_coverage_only(
             result["_stage_data"]["finding_consequence_meta"] = _finding_consequence_meta
             _fc_assessed = _finding_consequence_meta.get("assessed", 0)
             _fc_new = _finding_consequence_meta.get("newly_assessed", 0)
+            # DEF-007 (F5): Stage 5e-F runs 3 evaluator calls per batch when newly assessing.
+            # assess_finding_consequence() does not return a call count; increment by 3
+            # when model calls were made (newly_assessed > 0 implies a batch was run).
+            if _fc_new > 0:
+                total_api_calls += 3
             print(
                 f"[lease_adapter:analyze] Stage 5e-F: {_fc_assessed} finding(s) with provenance "
                 f"({_fc_new} newly assessed)",
