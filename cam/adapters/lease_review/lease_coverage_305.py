@@ -56,6 +56,31 @@ PRESENCE_VERDICTS = frozenset({
     "covered_in_other_LP",
 })
 
+# ── DEF-010a: Presence-tier normalization ──────────────────────────────────────
+# All four presence-mechanism verdicts are semantically equivalent for consensus
+# purposes — each indicates the element is satisfied.  A 3-way split of
+# EP/IP/CD (each evaluator picks a different mechanism) should collapse to a
+# present-like majority, not fire "no_consensus".
+#
+# Rank order for re-expansion (most explicit → least explicit):
+#   explicitly_present   = 0  (highest priority / most informative)
+#   implicitly_present   = 1
+#   covered_in_other_LP  = 2  (tied ordinal with CD in VERDICT_RANK)
+#   covered_by_default_law = 2
+# When two members are tied, the VERDICT_RANK order (EP→IP→CO→CD) breaks the tie.
+_PRESENCE_TIER: frozenset = frozenset({
+    "explicitly_present",
+    "implicitly_present",
+    "covered_by_default_law",
+    "covered_in_other_LP",
+})
+_PRESENCE_TIER_EXPANSION_RANK: dict = {
+    "explicitly_present":    0,
+    "implicitly_present":    1,
+    "covered_in_other_LP":   2,
+    "covered_by_default_law": 3,
+}
+
 # ── Evaluator lineup (mirrors lease_use_aware_coverage.py EVALUATOR_LINEUP) ───
 from cam.adapters.lease_review.model_config import (  # noqa: E402
     EVALUATOR_A_PRIMARY, EVALUATOR_A_FALLBACK,
@@ -771,11 +796,19 @@ def merge_element_verdicts(verdicts: list[dict], element: dict) -> dict:
             "disagreements": verdicts,
         }
 
-    counts = Counter(v["verdict"] for v in active)
-    majority_verdict, majority_count = counts.most_common(1)[0]
+    # DEF-010a: Presence-tier normalization for Counter.
+    # All four presence-mechanism labels (EP, IP, CD, CO) are mapped to the
+    # synthetic "present_like" tier for counting purposes only.  The raw verdict
+    # strings in `active` are NOT modified — they are preserved for citation
+    # extraction, disagreement recording, and provenance.
+    def _tier_label(v: str) -> str:
+        return "present_like" if v in _PRESENCE_TIER else v
+
+    tier_counts = Counter(_tier_label(v["verdict"]) for v in active)
+    majority_tier, majority_count = tier_counts.most_common(1)[0]
 
     if majority_count < 2:
-        # All three active verdicts differ
+        # All three active verdicts differ (even after tier normalization)
         return {
             "verdict": "unclear",
             "confidence": "low",
@@ -784,6 +817,19 @@ def merge_element_verdicts(verdicts: list[dict], element: dict) -> dict:
             "disagreements": verdicts,
             "disagreement_citations": _collect_disagreement_citations(verdicts),  # Step 372D2-fix
         }
+
+    # Re-expand "present_like" tier to a specific verdict before returning.
+    # Among presence-tier evaluators in active, pick the one with the LOWEST
+    # _PRESENCE_TIER_EXPANSION_RANK (most explicit wins).  Raw verdict strings
+    # are preserved in `active`; only the returned merged verdict is the winner.
+    if majority_tier == "present_like":
+        presence_active = [v for v in active if v["verdict"] in _PRESENCE_TIER]
+        majority_verdict = min(
+            (v["verdict"] for v in presence_active),
+            key=lambda vv: _PRESENCE_TIER_EXPANSION_RANK.get(vv, 99),
+        )
+    else:
+        majority_verdict = majority_tier
 
     # ── Disputed gate (Supplement #21 Phase 1) ───────────────────────────────
     # If active verdicts span both presence and missing — the disagreement crosses
@@ -804,11 +850,24 @@ def merge_element_verdicts(verdicts: list[dict], element: dict) -> dict:
 
     # 2-of-3 or 3-of-3 consensus
     confidence = "high" if majority_count == len(verdicts) else "medium"
-    majority_citations = [
-        v["citation"] for v in active
-        if v["verdict"] == majority_verdict and v["citation"]
-    ]
-    dissents = [v for v in verdicts if v["verdict"] != majority_verdict]
+    # DEF-010a: when majority_tier was "present_like", all presence-tier evaluators
+    # are majority members regardless of their specific mechanism label.  Collect
+    # citations from the full presence-tier cohort so the citation check below does
+    # not falsely fire "citation_required_but_absent" because only one of three
+    # evaluators chose the re-expanded winner label.
+    if majority_tier == "present_like":
+        majority_citations = [
+            v["citation"] for v in active
+            if v["verdict"] in _PRESENCE_TIER and v["citation"]
+        ]
+        # Dissents are non-presence, non-unclear evaluators (e.g. "missing").
+        dissents = [v for v in verdicts if v["verdict"] not in _PRESENCE_TIER and v["verdict"] != "unclear"]
+    else:
+        majority_citations = [
+            v["citation"] for v in active
+            if v["verdict"] == majority_verdict and v["citation"]
+        ]
+        dissents = [v for v in verdicts if v["verdict"] != majority_verdict]
 
     # Citation-or-it-didn't-happen check (architecture spec §6)
     if majority_verdict in PRESENCE_VERDICTS:
