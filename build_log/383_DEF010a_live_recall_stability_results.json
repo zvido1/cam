@@ -1,0 +1,1577 @@
+{
+  "n_runs": 10,
+  "commit_sha": "d134ef8",
+  "underpowered": false,
+  "run_ids": [
+    "lease_review_20260610_181625_6a7716",
+    "lease_review_20260610_225328_0774c7",
+    "lease_review_20260611_011252_a845ff",
+    "lease_review_20260611_013848_504920",
+    "lease_review_20260611_020258_23cbb9",
+    "lease_review_20260611_022811_109280",
+    "lease_review_20260611_102924_96c08c",
+    "lease_review_20260611_105528_f52761",
+    "lease_review_20260611_112107_66a036",
+    "lease_review_20260611_114530_9026f5"
+  ],
+  "lp13_coverage_state_distribution": {
+    "covered": 10
+  },
+  "lp13_stage7_inclusion_rate": "0/10",
+  "lp13_final_finding_rate": "0/10",
+  "lp13_risk_rate": "0/10",
+  "lp13_observed_stable_covered_across_runs": true,
+  "lp13_hard_case_seen": true,
+  "lp13_per_run_labels": [
+    {
+      "run_number": 1,
+      "job_id": "lease_review_20260610_181625_6a7716",
+      "coverage_state": "covered",
+      "negligence_carveouts_per_eval": [
+        "explicitly_present",
+        "explicitly_present",
+        "implicitly_present"
+      ],
+      "negligence_carveouts_merged": "explicitly_present",
+      "hard_case_this_run": false,
+      "in_attention_items": false
+    },
+    {
+      "run_number": 2,
+      "job_id": "lease_review_20260610_225328_0774c7",
+      "coverage_state": "covered",
+      "negligence_carveouts_per_eval": [
+        "implicitly_present",
+        "explicitly_present",
+        "implicitly_present"
+      ],
+      "negligence_carveouts_merged": "explicitly_present",
+      "hard_case_this_run": false,
+      "in_attention_items": false
+    },
+    {
+      "run_number": 3,
+      "job_id": "lease_review_20260611_011252_a845ff",
+      "coverage_state": "covered",
+      "negligence_carveouts_per_eval": [
+        "implicitly_present",
+        "explicitly_present",
+        "covered_by_default_law"
+      ],
+      "negligence_carveouts_merged": "explicitly_present",
+      "hard_case_this_run": true,
+      "in_attention_items": false
+    },
+    {
+      "run_number": 4,
+      "job_id": "lease_review_20260611_013848_504920",
+      "coverage_state": "covered",
+      "negligence_carveouts_per_eval": [
+        "implicitly_present",
+        "explicitly_present",
+        "implicitly_present"
+      ],
+      "negligence_carveouts_merged": "explicitly_present",
+      "hard_case_this_run": false,
+      "in_attention_items": false
+    },
+    {
+      "run_number": 5,
+      "job_id": "lease_review_20260611_020258_23cbb9",
+      "coverage_state": "covered",
+      "negligence_carveouts_per_eval": [
+        "explicitly_present",
+        "explicitly_present",
+        "implicitly_present"
+      ],
+      "negligence_carveouts_merged": "explicitly_present",
+      "hard_case_this_run": false,
+      "in_attention_items": false
+    },
+    {
+      "run_number": 6,
+      "job_id": "lease_review_20260611_022811_109280",
+      "coverage_state": "covered",
+      "negligence_carveouts_per_eval": [
+        "explicitly_present",
+        "explicitly_present",
+        "implicitly_present"
+      ],
+      "negligence_carveouts_merged": "explicitly_present",
+      "hard_case_this_run": false,
+      "in_attention_items": false
+    },
+    {
+      "run_number": 7,
+      "job_id": "lease_review_20260611_102924_96c08c",
+      "coverage_state": "covered",
+      "negligence_carveouts_per_eval": [
+        "explicitly_present",
+        "explicitly_present",
+        "explicitly_present"
+      ],
+      "negligence_carveouts_merged": "explicitly_present",
+      "hard_case_this_run": false,
+      "in_attention_items": false
+    },
+    {
+      "run_number": 8,
+      "job_id": "lease_review_20260611_105528_f52761",
+      "coverage_state": "covered",
+      "negligence_carveouts_per_eval": [
+        "explicitly_present",
+        "explicitly_present",
+        "covered_by_default_law"
+      ],
+      "negligence_carveouts_merged": "explicitly_present",
+      "hard_case_this_run": false,
+      "in_attention_items": false
+    },
+    {
+      "run_number": 9,
+      "job_id": "lease_review_20260611_112107_66a036",
+      "coverage_state": "covered",
+      "negligence_carveouts_per_eval": [
+        "implicitly_present",
+        "explicitly_present",
+        "implicitly_present"
+      ],
+      "negligence_carveouts_merged": "explicitly_present",
+      "hard_case_this_run": false,
+      "in_attention_items": false
+    },
+    {
+      "run_number": 10,
+      "job_id": "lease_review_20260611_114530_9026f5",
+      "coverage_state": "covered",
+      "negligence_carveouts_per_eval": [
+        "implicitly_present",
+        "explicitly_present",
+        "implicitly_present"
+      ],
+      "negligence_carveouts_merged": "explicitly_present",
+      "hard_case_this_run": false,
+      "in_attention_items": false
+    }
+  ],
+  "unique_finding_identities": 27,
+  "findings_in_all_runs": 22,
+  "findings_in_one_run_only": 0,
+  "risk_findings_in_all_runs": 4,
+  "harmful_highmid_in_all_runs": 15,
+  "material_risk_disappearances": [
+    "LP-03",
+    "LP-19",
+    "LP-26"
+  ],
+  "bucket_flip_risk_to_nonrisk": [
+    "LP-02",
+    "LP-03",
+    "LP-05",
+    "LP-06",
+    "LP-07",
+    "LP-18",
+    "LP-19",
+    "LP-21",
+    "LP-22",
+    "LP-25",
+    "LP-26",
+    "LP-27",
+    "LP-28",
+    "LP-29"
+  ],
+  "case": "B",
+  "push_d134ef8": true,
+  "def002_blocked": true,
+  "per_run_bucket_tallies": [
+    {
+      "run_number": 1,
+      "job_id": "lease_review_20260610_181625_6a7716",
+      "status": "completed",
+      "dir_findings": 27,
+      "crx_findings": 6,
+      "risk_bucket": 14,
+      "review_bucket": 2,
+      "improvement_bucket": 11,
+      "api_calls": 94,
+      "elapsed_sec": 1501.0,
+      "run_quality": "unknown"
+    },
+    {
+      "run_number": 2,
+      "job_id": "lease_review_20260610_225328_0774c7",
+      "status": "completed",
+      "dir_findings": 26,
+      "crx_findings": 6,
+      "risk_bucket": 9,
+      "review_bucket": 12,
+      "improvement_bucket": 5,
+      "api_calls": 94,
+      "elapsed_sec": 1578.0,
+      "run_quality": "clean"
+    },
+    {
+      "run_number": 3,
+      "job_id": "lease_review_20260611_011252_a845ff",
+      "status": "completed",
+      "dir_findings": 26,
+      "crx_findings": 7,
+      "risk_bucket": 14,
+      "review_bucket": 3,
+      "improvement_bucket": 9,
+      "api_calls": 94,
+      "elapsed_sec": 1556.3,
+      "run_quality": "clean"
+    },
+    {
+      "run_number": 4,
+      "job_id": "lease_review_20260611_013848_504920",
+      "status": "completed",
+      "dir_findings": 27,
+      "crx_findings": 6,
+      "risk_bucket": 15,
+      "review_bucket": 4,
+      "improvement_bucket": 8,
+      "api_calls": 94,
+      "elapsed_sec": 1449.6,
+      "run_quality": "clean"
+    },
+    {
+      "run_number": 5,
+      "job_id": "lease_review_20260611_020258_23cbb9",
+      "status": "completed",
+      "dir_findings": 25,
+      "crx_findings": 6,
+      "risk_bucket": 12,
+      "review_bucket": 5,
+      "improvement_bucket": 8,
+      "api_calls": 93,
+      "elapsed_sec": 1513.0,
+      "run_quality": "clean"
+    },
+    {
+      "run_number": 6,
+      "job_id": "lease_review_20260611_022811_109280",
+      "status": "completed",
+      "dir_findings": 24,
+      "crx_findings": 6,
+      "risk_bucket": 11,
+      "review_bucket": 4,
+      "improvement_bucket": 9,
+      "api_calls": 92,
+      "elapsed_sec": 1506.5,
+      "run_quality": "clean"
+    },
+    {
+      "run_number": 7,
+      "job_id": "lease_review_20260611_102924_96c08c",
+      "status": "completed",
+      "dir_findings": 24,
+      "crx_findings": 6,
+      "risk_bucket": 13,
+      "review_bucket": 1,
+      "improvement_bucket": 10,
+      "api_calls": 94,
+      "elapsed_sec": 1563.7,
+      "run_quality": "clean"
+    },
+    {
+      "run_number": 8,
+      "job_id": "lease_review_20260611_105528_f52761",
+      "status": "completed",
+      "dir_findings": 27,
+      "crx_findings": 4,
+      "risk_bucket": 14,
+      "review_bucket": 2,
+      "improvement_bucket": 11,
+      "api_calls": 94,
+      "elapsed_sec": 1539.2,
+      "run_quality": "clean"
+    },
+    {
+      "run_number": 9,
+      "job_id": "lease_review_20260611_112107_66a036",
+      "status": "completed",
+      "dir_findings": 27,
+      "crx_findings": 5,
+      "risk_bucket": 15,
+      "review_bucket": 2,
+      "improvement_bucket": 10,
+      "api_calls": 94,
+      "elapsed_sec": 1462.7,
+      "run_quality": "clean"
+    },
+    {
+      "run_number": 10,
+      "job_id": "lease_review_20260611_114530_9026f5",
+      "status": "completed",
+      "dir_findings": 27,
+      "crx_findings": 7,
+      "risk_bucket": 6,
+      "review_bucket": 16,
+      "improvement_bucket": 5,
+      "api_calls": 94,
+      "elapsed_sec": 1497.7,
+      "run_quality": "clean"
+    }
+  ],
+  "per_finding_summary": [
+    {
+      "lp_id": "LP-01",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Payment method protection gap",
+        "Uncertain rent payment methods",
+        "Uncertain payment tender methods",
+        "Rent payment without offset protection",
+        "Uncertain rent tender methods",
+        "Uncertain rent tender method",
+        "No payment method protections",
+        "Undefined payment method risk",
+        "Missing payment dispute protections"
+      ],
+      "consequences_seen": [
+        "context_dependent",
+        "neutral"
+      ],
+      "materialities_seen": [
+        "low"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "full_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": false,
+      "always_risk": false,
+      "is_harmful": false,
+      "high_mid_materiality": false,
+      "material_risk_candidate": false
+    },
+    {
+      "lp_id": "LP-02",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Unlimited rent escalation exposure",
+        "Uncapped future rent increases",
+        "Uncapped renewal rent growth",
+        "Uncapped escalation exposure",
+        "Uncapped rent escalation exposure",
+        "Uncapped annual rent growth",
+        "Unlimited escalation exposure"
+      ],
+      "consequences_seen": [
+        "harmful"
+      ],
+      "materialities_seen": [
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "full_assert"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-03",
+      "appearances": 8,
+      "appearance_rate": "8/10",
+      "in_all_runs": false,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Fixed term without adjustment rights",
+        "Ambiguous renewal term dates",
+        "Ambiguous lease commencement triggers",
+        "Ambiguous lease term boundaries",
+        "Limited term trigger clarity",
+        "Unclear term trigger rights",
+        "Commencement date uncertainty",
+        "Conditional renewal at uncertain cost"
+      ],
+      "consequences_seen": [
+        "harmful"
+      ],
+      "materialities_seen": [
+        "high",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-04",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "review_needed"
+      ],
+      "bucket_stable": true,
+      "titles_seen": [
+        "Cash deposit only requirement",
+        "No alternative security forms",
+        "Security deposit form restriction",
+        "Locked cash deposit without alternatives",
+        "Tied-up deposit without alternatives",
+        "No alternative security form option",
+        "No flexible security instruments",
+        "No alternative security option",
+        "Cash-only security requirement",
+        "Locked security without flexibility"
+      ],
+      "consequences_seen": [
+        "context_dependent"
+      ],
+      "materialities_seen": [
+        "low",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": false,
+      "always_risk": false,
+      "is_harmful": false,
+      "high_mid_materiality": true,
+      "material_risk_candidate": false
+    },
+    {
+      "lp_id": "LP-05",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Constrained operations without relief",
+        "Strict use control without co-tenancy",
+        "No co-tenancy protection",
+        "No co-tenancy or operation rights",
+        "No co-tenancy protection remedy",
+        "Potential implied operation duties",
+        "Missing co-tenancy protections",
+        "No co-tenancy or operation relief",
+        "Implied continuous operation pressure",
+        "Implied operation requirement risk"
+      ],
+      "consequences_seen": [
+        "beneficial",
+        "harmful"
+      ],
+      "materialities_seen": [
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-06",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Limited structural maintenance only",
+        "No HVAC response time rights",
+        "Undefined landlord repair timelines",
+        "No enforceable repair timelines",
+        "Undefined repair timelines and costs",
+        "No HVAC repair timelines",
+        "Undefined repair and downtime rights",
+        "No HVAC response timelines",
+        "Undefined structural repair timelines",
+        "Missing repair response timelines"
+      ],
+      "consequences_seen": [
+        "context_dependent",
+        "harmful"
+      ],
+      "materialities_seen": [
+        "high",
+        "low",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-07",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Uncapped CAM increase risk",
+        "Uncapped CAM exposure",
+        "Uncapped CAM growth exposure",
+        "Unlimited annual CAM exposure",
+        "Uncapped CAM without transparency",
+        "Unlimited CAM exposure",
+        "Uncapped CAM despite audit rights",
+        "Uncapped CAM cost exposure"
+      ],
+      "consequences_seen": [
+        "context_dependent",
+        "harmful"
+      ],
+      "materialities_seen": [
+        "high",
+        "low",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "full_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-09",
+      "appearances": 8,
+      "appearance_rate": "8/10",
+      "in_all_runs": false,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Full ongoing transfer liability",
+        "Restricted transfer flexibility",
+        "Transfer consent asymmetry",
+        "No sublease profit retention right",
+        "Recapture without transfer protections",
+        "Ongoing liability after transfer",
+        "Recapture risk without profit share"
+      ],
+      "consequences_seen": [
+        "beneficial",
+        "context_dependent",
+        "neutral"
+      ],
+      "materialities_seen": [
+        "low",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "full_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": false,
+      "always_risk": false,
+      "is_harmful": false,
+      "high_mid_materiality": true,
+      "material_risk_candidate": false
+    },
+    {
+      "lp_id": "LP-10",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "risk"
+      ],
+      "bucket_stable": true,
+      "titles_seen": [
+        "Improvement value at risk",
+        "Unclear improvement ownership",
+        "Undefined end-of-term improvement rights",
+        "Improvement ownership uncertainty",
+        "No alteration ownership rights",
+        "Undefined improvement ownership rules",
+        "Undefined improvement ownership at end",
+        "No improvement ownership rights",
+        "Improvement ownership disputes",
+        "No ownership or lien discharge rights"
+      ],
+      "consequences_seen": [
+        "harmful"
+      ],
+      "materialities_seen": [
+        "high",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [],
+      "ever_risk": true,
+      "always_risk": true,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-11",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Full acceleration without cure buffer",
+        "Full acceleration without safeguards",
+        "No protection against rent acceleration",
+        "No reciprocal termination safeguards",
+        "Accelerated liability without cure options",
+        "No protection against acceleration",
+        "Rent acceleration exposure",
+        "Full acceleration exposure",
+        "Accelerated default exposure",
+        "Full rent acceleration exposure"
+      ],
+      "consequences_seen": [
+        "beneficial",
+        "context_dependent"
+      ],
+      "materialities_seen": [
+        "high",
+        "low",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "full_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": false,
+      "always_risk": false,
+      "is_harmful": false,
+      "high_mid_materiality": true,
+      "material_risk_candidate": false
+    },
+    {
+      "lp_id": "LP-14",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "risk"
+      ],
+      "bucket_stable": true,
+      "titles_seen": [
+        "No extended force majeure termination",
+        "Prolonged force majeure lock-in",
+        "No relief for extended force majeure",
+        "Prolonged impairment without exit",
+        "No FM termination threshold",
+        "No exit after extended force majeure",
+        "No extended force majeure exit",
+        "Ongoing obligations during events",
+        "No force majeure termination right",
+        "No long-term force majeure exit"
+      ],
+      "consequences_seen": [
+        "harmful"
+      ],
+      "materialities_seen": [
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [],
+      "ever_risk": true,
+      "always_risk": true,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-15",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement"
+      ],
+      "bucket_stable": true,
+      "titles_seen": [
+        "Signage subject to Landlord discretion",
+        "Signage removal without monument option",
+        "Alterable signage without consent",
+        "No prominent signage right",
+        "Risk of signage removal",
+        "Signage removal vulnerability",
+        "Uncertain visibility rights",
+        "No signage modification rights",
+        "No signage protection rights"
+      ],
+      "consequences_seen": [
+        "neutral"
+      ],
+      "materialities_seen": [
+        "low"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "full_assert",
+        "majority_assert"
+      ],
+      "ever_risk": false,
+      "always_risk": false,
+      "is_harmful": false,
+      "high_mid_materiality": false,
+      "material_risk_candidate": false
+    },
+    {
+      "lp_id": "LP-16",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "risk"
+      ],
+      "bucket_stable": true,
+      "titles_seen": [
+        "No visitor parking guarantee",
+        "Uncertain customer access",
+        "No visitor parking modification rights",
+        "No parking modification protections",
+        "Parking access changeable without consent",
+        "Parking access alteration risk",
+        "Unprotected parking access changes",
+        "Risk of parking access loss",
+        "No parking modification safeguards",
+        "Parking changes without visitor guarantee"
+      ],
+      "consequences_seen": [
+        "harmful"
+      ],
+      "materialities_seen": [
+        "high",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [],
+      "ever_risk": true,
+      "always_risk": true,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-17",
+      "appearances": 8,
+      "appearance_rate": "8/10",
+      "in_all_runs": false,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Standard governing law only",
+        "Governing law specification gap",
+        "No governing law flexibility",
+        "Remedies article imbalance",
+        "Ambiguous governing law",
+        "No governing law choice",
+        "Incomplete dispute resolution rights",
+        "Potential governing law ambiguity"
+      ],
+      "consequences_seen": [
+        "context_dependent",
+        "neutral"
+      ],
+      "materialities_seen": [
+        "low"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "full_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": false,
+      "always_risk": false,
+      "is_harmful": false,
+      "high_mid_materiality": false,
+      "material_risk_candidate": false
+    },
+    {
+      "lp_id": "LP-18",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Unlimited holdover consequential exposure",
+        "Open-ended consequential damages exposure",
+        "Open-ended consequential liability",
+        "Consequential damages exposure",
+        "Unlimited holdover exposure",
+        "Unlimited holdover liability",
+        "Unlimited consequential damages exposure",
+        "No consequential damages protection",
+        "Open-ended holdover liability",
+        "No consequential damage protection"
+      ],
+      "consequences_seen": [
+        "beneficial",
+        "context_dependent",
+        "harmful"
+      ],
+      "materialities_seen": [
+        "low",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "full_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-19",
+      "appearances": 8,
+      "appearance_rate": "8/10",
+      "in_all_runs": false,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Unexpected upgrade cost burden",
+        "Undefined upgrade expenses",
+        "No utility upgrade cost split",
+        "Potential upgrade cost liability",
+        "Narrower utility protections than remedies",
+        "Unclear upgrade cost allocation",
+        "Limited service interruption relief",
+        "Undefined utility upgrade costs"
+      ],
+      "consequences_seen": [
+        "beneficial",
+        "context_dependent",
+        "harmful",
+        "neutral"
+      ],
+      "materialities_seen": [
+        "high",
+        "medium",
+        "not_applicable"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-20",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement"
+      ],
+      "bucket_stable": true,
+      "titles_seen": [
+        "Competition without remedy",
+        "Incomplete competitive protection",
+        "No exclusivity breach remedy",
+        "No exclusivity remedy framework",
+        "No exclusivity violation remedy",
+        "No exclusivity breach remedies",
+        "Exclusivity enforcement gap",
+        "Exclusivity lacking enforcement mechanisms",
+        "Unenforceable exclusivity right"
+      ],
+      "consequences_seen": [
+        "harmful",
+        "neutral"
+      ],
+      "materialities_seen": [
+        "low",
+        "not_applicable"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [],
+      "ever_risk": false,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": false,
+      "material_risk_candidate": false
+    },
+    {
+      "lp_id": "LP-21",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Unlimited guarantor exposure",
+        "Unlimited guarantor liability",
+        "Unlimited guaranty exposure",
+        "No guarantor liability cap",
+        "No guarantor release conditions"
+      ],
+      "consequences_seen": [
+        "context_dependent",
+        "harmful"
+      ],
+      "materialities_seen": [
+        "high",
+        "low",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "full_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-22",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Forced execution without self-executing protection",
+        "No automatic SNDA protections",
+        "No automatic subordination protection",
+        "Unconditional subordination",
+        "Forced subordination without protections",
+        "Subordination without timing protections",
+        "Subordination without timing protection",
+        "Subordination risk without protections",
+        "Subordination without protections"
+      ],
+      "consequences_seen": [
+        "beneficial",
+        "harmful",
+        "neutral"
+      ],
+      "materialities_seen": [
+        "high",
+        "low"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "majority_assert"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-24",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "No insurance proceeds allocation",
+        "No insurance proceeds recovery rights",
+        "Loss of proceeds on early termination",
+        "Insurance proceeds allocation gap",
+        "Undefined insurance interests",
+        "No input on insurance proceeds",
+        "No insurance proceeds claim",
+        "No insurance proceeds rights",
+        "Unclear insurance proceeds allocation"
+      ],
+      "consequences_seen": [
+        "neutral"
+      ],
+      "materialities_seen": [
+        "low"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "full_assert",
+        "majority_assert"
+      ],
+      "ever_risk": false,
+      "always_risk": false,
+      "is_harmful": false,
+      "high_mid_materiality": false,
+      "material_risk_candidate": false
+    },
+    {
+      "lp_id": "LP-25",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Undefined post-taking usability",
+        "Post-taking lease uncertainty",
+        "Unclear post-taking repair rights",
+        "Undefined post-taking restoration duty",
+        "No post-taking restoration rights",
+        "Unclear post-taking restoration",
+        "Undefined post-taking restoration",
+        "No partial taking restoration rights",
+        "Undefined post-taking restoration duties"
+      ],
+      "consequences_seen": [
+        "context_dependent",
+        "harmful"
+      ],
+      "materialities_seen": [
+        "high",
+        "low",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-26",
+      "appearances": 8,
+      "appearance_rate": "8/10",
+      "in_all_runs": false,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "No constructive eviction remedy",
+        "No constructive eviction framework",
+        "Default-conditioned quiet enjoyment only",
+        "Narrowly conditioned quiet enjoyment",
+        "Conditional quiet enjoyment right",
+        "Quiet enjoyment conditioned on compliance",
+        "Conditional quiet enjoyment only"
+      ],
+      "consequences_seen": [
+        "beneficial",
+        "context_dependent",
+        "harmful",
+        "neutral"
+      ],
+      "materialities_seen": [
+        "high",
+        "low"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "full_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-27",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Missing self-help and offset rights",
+        "Limited Landlord default remedies only",
+        "Narrower tenant remedy framework",
+        "Narrow deposit-dependent remedies",
+        "Remedies limited to deposit and termination",
+        "Narrower remedy framework",
+        "Landlord default remedy thinness",
+        "Limited Landlord default remedies",
+        "Deposit-dependent limited remedies"
+      ],
+      "consequences_seen": [
+        "context_dependent",
+        "harmful"
+      ],
+      "materialities_seen": [
+        "high",
+        "low",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "full_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-28",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Unclear ADA modification costs",
+        "Uncertain ADA cost allocation",
+        "No ADA cost allocation split",
+        "Undefined ADA cost allocation",
+        "Undefined ADA modification costs",
+        "No ADA cost allocation rights",
+        "Compliance cost allocation gap",
+        "No ADA structural allocation",
+        "Potential structural compliance costs"
+      ],
+      "consequences_seen": [
+        "context_dependent",
+        "harmful",
+        "neutral"
+      ],
+      "materialities_seen": [
+        "high",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-29",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "review_needed",
+        "risk"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Entry oversight absence",
+        "No entry oversight right",
+        "No oversight during Landlord entry",
+        "No entry monitoring rights",
+        "Unaccompanied landlord entry",
+        "Unprotected operational privacy",
+        "No right to accompany during entry",
+        "No entry accompaniment right"
+      ],
+      "consequences_seen": [
+        "context_dependent",
+        "harmful"
+      ],
+      "materialities_seen": [
+        "low",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed",
+        "no_majority_materiality"
+      ],
+      "materiality_sources_seen": [
+        "assessed",
+        "no_majority"
+      ],
+      "support_labels_seen": [
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": true,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    },
+    {
+      "lp_id": "LP-30",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "improvement",
+        "review_needed"
+      ],
+      "bucket_stable": false,
+      "titles_seen": [
+        "Unlimited estoppel request burden",
+        "Unlimited estoppel requests",
+        "No estoppel request limits",
+        "No estoppel demand limits",
+        "Unlimited administrative burden",
+        "Unlimited estoppel request frequency",
+        "Estoppel request burden"
+      ],
+      "consequences_seen": [
+        "context_dependent",
+        "harmful",
+        "neutral"
+      ],
+      "materialities_seen": [
+        "low"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [
+        "duo_assert",
+        "full_assert",
+        "majority_assert",
+        "split"
+      ],
+      "ever_risk": false,
+      "always_risk": false,
+      "is_harmful": true,
+      "high_mid_materiality": false,
+      "material_risk_candidate": false
+    },
+    {
+      "lp_id": "LP-32",
+      "appearances": 10,
+      "appearance_rate": "10/10",
+      "in_all_runs": true,
+      "in_one_run_only": false,
+      "buckets_seen": [
+        "risk"
+      ],
+      "bucket_stable": true,
+      "titles_seen": [
+        "No pre-existing contamination protections",
+        "No pre-existing contamination rights",
+        "No pre-existing contamination testing",
+        "Unknown contamination without testing",
+        "Environmental liability inheritance",
+        "No environmental testing right",
+        "Undefined contamination liability",
+        "No pre-existing contamination protection",
+        "No pre-existing contamination reps",
+        "No independent environmental testing"
+      ],
+      "consequences_seen": [
+        "harmful"
+      ],
+      "materialities_seen": [
+        "high",
+        "medium"
+      ],
+      "consequence_sources_seen": [
+        "assessed"
+      ],
+      "materiality_sources_seen": [
+        "assessed"
+      ],
+      "support_labels_seen": [],
+      "ever_risk": true,
+      "always_risk": true,
+      "is_harmful": true,
+      "high_mid_materiality": true,
+      "material_risk_candidate": true
+    }
+  ]
+}
