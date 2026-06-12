@@ -1,9 +1,259 @@
-# CAM Current State — Updated 2026-06-07 (P2'' PRODUCTION ROUTING SHIPPED: 376h wired + DEF-001 reasoning-persistence; sign demoted to diagnostic-only in live code)
+# CAM Current State — Updated 2026-06-11 (DIRECTIONAL-METHOD ARC: 388 done — Case B confirmed, 15 retained, Axis 1 demoted to modifier-only, GATE CLEARED. NEXT = Step 389 closed-form directional prototype: mechanism test on 5-8 Atlas LPs, three contamination guards mandatory, freeform baseline required. DEF-002 still blocked.)
 
-> **ORIENTATION FOR A NEW READER (next-thread Claude / GPT) — read this block first, then the
-> session handoff `build_log/375E-DIR_session_handoff_2026_06_05.md` which is authoritative on any
-> conflict.** The 375E-DIR investigation arc is now CLOSED at the code-seam + policy-paper level.
-> The 375I–L block below it is SETTLED INVESTIGATION (correct, but superseded by this closeout).
+> **ORIENTATION FOR A NEW READER (next-thread Claude / GPT) — read THIS block first.** The live
+> frontier as of 2026-06-10 is the RECALL-STABILITY arc (steps 377–385), summarized immediately
+> below. The 2026-06-07 P2''/376h block beneath it is now CLOSED HISTORY (shipped, pushed, live).
+> The 375E-DIR and 375I–L blocks below that are SETTLED HISTORY. The 372-chain is CLOSED HISTORY.
+> Authoritative defect/decision record: `build_log/defects.md` (DEF-001 through DEF-012) and
+> `build_log/parked_strategic_ideas.md`.
+
+## Where things stand (2026-06-11 — the live frontier: the closed-form directional METHOD)
+
+**NEW READER: read the directional-method docs in this order:**
+`build_log/strategic_pivot_methodology_2026_06_11.md` (CAM is a domain-general method; lease analyzer
+is instance one) → `build_log/directional_question_audit_2026_06_11.md` (the current Q2 is a wish-list
+defect factory; the discriminating question is latent in Evaluator B's q2a/q2b; four domain-general
+axes extracted + paper-validated) → `build_log/387_directional_axis_coverage_and_control_audit.md`
+(axes tested vs 27 findings: 12 dropped as wish-list, 15 retained, marginal Case A) →
+`build_log/388_chat_instruction.md` (the LIVE GATE: is Axis-1 fact-anchored or just the
+"landlord-has-Article-17" constant in disguise?).
+
+### The directional-method arc (2026-06-11) — where the recall investigation LANDED
+The recall flicker (LP-03/19/26) traced to source: the directional-risk question has no enumerated
+home. Stage 7 Pass-1 asks Q1 cross-coverage (enumerated, stable) + Q2 directional (freeform "is it
+one-sided?", flickers). The current Q2 is a WISH-LIST GENERATOR — it flagged 27 of 27 LPs as
+`tenant_unprotected` by asking, in effect, "can you imagine an additional protection this clause
+lacks?" (always yes). KEY DISCOVERY: the discriminating question already exists, latent in Evaluator
+B's use of `q2a` (does protection exist + run the right way) and `q2b` (proportional vs
+disproportionate). Evaluator C wanders to "tenant unprotected"; B finds the real asymmetry. FIX SHAPE:
+make q2a/q2b the REQUIRED closed verdict, demote the freeform note to explanation-only (the
+closed-verdict+reason principle). Four domain-general axes extracted from the real findings:
+(1) Proportionality, (2) Obligation-without-remedy, (3) Conditional-protection, (4) Unilateral-control.
+These are CONTRACT-GENERAL (NDA/SaaS/employment too) = the cookie cutter, the methodology pivot made
+concrete.
+
+**387 axis audit result:** 27 findings -> 12 DROPPED as wish-list-only, 15 retained = MARGINAL Case A
+(landed exactly on the threshold). The 44% drop is meaningful (discarded findings were concentrated in
+the old failure mode). Known cases: LP-03 = FIXABLE via Axis 2 (the §8.3 rent-before-ready trap is
+deterministic once the closed obligation/remedy pair is asked; this run produced only the LOW-severity
+wish-list version, the closed question forces the HIGH-severity real finding every run). LP-19 =
+GENUINELY CONTESTED (Axis 2 "remedy exists via §6.3" vs Axis 3 "remedy gated on negligence +
+untenantable + 5-day threshold, common case uncovered" — opposite readings = the 1:1:1 cause; route as
+Review Needed/contested, NOT forced Risk; non-deliberation doctrine validated at clause level). LP-26 =
+AXIS-SUPPORTED (Axis 3 conditional + Axis 1 proportionality). The axes are both a FIX (force closed
+verdict) and a DIAGNOSTIC (separate fixable-unasked-question from genuinely-contested).
+
+**388 is the LIVE GATE (a real gate, NOT a rubber stamp — predicted result is Case B).** The retained
+15 landed exactly on threshold, so the marginal pass hinges on Axis 1. Risk: Axis 1 (proportionality)
+may be firing on the near-CONSTANT "landlord has broader Article 17 remedies than tenant" (true of
+almost every lease = a second defect factory in a tie) rather than concrete SAME-RISK disproportions.
+Evaluator B used the same "narrower than Article 17" sentence across 6 findings. 388 checks whether
+Axis-1-only findings are same-risk-anchored (keep) or generic-Article-17 (demote). The HEADLINE number
+is the POST-TIGHTENING retained count, compared to threshold — not the pre-tightening 15. If Case B:
+demote Axis 1 to MODIFIER-ONLY (can strengthen an Axis-2/3/4 finding, never a standalone trigger), then
+prototype. If Case A: prototype 5-8 LPs (LP-03 stability + LP-19 contested-routing). DEF-002 blocked
+through all of it.
+
+**388 RESULT (2026-06-11, commit 0447005 local-only) — Case B confirmed, ZERO collateral. GATE CLEARED.**
+The feared "Axis 1 props up the count" turned out FALSE in the best way: ZERO retained findings are
+Axis-1-ONLY, so demoting Axis 1 to modifier-only drops NOTHING — the 15 hold. Axis 1 appears in 7 of 15
+(LP-06, LP-11, LP-20, LP-22, LP-26, LP-27, LP-28); in 6 of 7 it is DECORATIVE (the finding survives on
+Axis 2 or 3 without it). The ONE genuine same-risk Axis-1 finding is LP-27 ("default by either party"
+is the symmetric event; §5.1 vs Article 17 is a specific NAMED parallel comparison). 3 of 7 are pure
+generic-Article-17 (LP-11, LP-22, LP-26); LP-26's real support is Axis 3 ALONE (confirmed). So the
+"marginal" Case A from 387 was an artifact of counting Axis-1 decoration as support — the real retained
+set is 15 genuine Axis-2/3 findings, a comfortable clear. **Axis 1 RULE for v1: modifier-only, never a
+standalone trigger; requires a SAME-RISK cited comparison; "narrower than Article 17 generally" does
+NOT satisfy it.** Canonical fixtures now labeled: LP-03 = Axis-2 obligation-without-remedy prototype;
+LP-19 = axis-contested (Axis 2 vs 3); LP-26 = Axis-3 conditional (Axis 1 must NOT carry it); LP-27 =
+valid same-risk Axis-1; LP-11/LP-22 = negative Axis-1 controls; LP-15/LP-16 = wish-list controls.
+
+**NEXT = Step 389 closed-form directional PROTOTYPE (mechanism test, NOT transfer test).** Sequencing
+decided: prototype NOW (5-8 LPs on Atlas) → then second LEASE (transfer) → then second DOMAIN. Rationale:
+389 tests whether the closed-form MECHANISM works at all; testing transfer before mechanism is
+"validating fog." THREE CONTAMINATION GUARDS the 389 spec MUST enforce (these are the difference
+between a real test and a false Case A): (1) the axis questions in the model-facing prompt must be
+GENERIC / lease-agnostic — the canonical LP-03/19/26 expectations are POST-RUN human ACCEPTANCE CHECKS
+and must NEVER appear in the prompt (writing "find the §8.3 trap" into the prompt makes LP-03 surface
+for the wrong reason = false pass); (2) require a FREEFORM BASELINE run on the SAME N — LP-03 was
+already present 8/10 in freeform, so 5/5 closed-form could be luck; stabilization must be measured
+AGAINST the old behavior, not in a vacuum; (3) enforce "prose can't create findings" STRUCTURALLY —
+routing/candidate logic reads CLOSED ANSWER FIELDS ONLY; the reason/citation fields are display-only and
+not visible to candidate generation (structure, not instruction). Even a clean 389 = "mechanism works
+on ONE lease," NOT "axes are right/complete" — the negative controls (LP-15/16, LP-11/22) are what give
+Case A its teeth.
+
+**STANDING:** all directional-method validation so far is on ONE lease (Atlas). Even a clean 388 means
+"ready for PROTOTYPE," not "validated" — real validation is the closed-form questions holding their
+drop-rate + axis-distribution across MULTIPLE leases (the cross-domain methodology test). Do NOT build
+the schema until 388 clears Axis 1 AND (for contested findings) a calibration source confirms the
+split is real professional disagreement, not tool noise.
+
+---
+
+## CLOSED HISTORY below this line (2026-06-10 recall-stability arc and earlier)
+
+## Where things stood (2026-06-10 — the recall-stability frontier, now folded into the method arc above)
+
+**Two things shipped to main since 06-07: the 378 governance-correctness batch (`6990434`) and
+DEF-010a coverage-consensus normalization (`d134ef8`). The live question is now RECALL STABILITY —
+whether material directional findings are GENERATED consistently enough run-to-run to support an
+external-facing consolidated view (DEF-002). DEF-002 is BLOCKED on this.**
+
+### Shipped since 06-07
+- **Step 378 governance-correctness batch (`6990434`, pushed)** — fixed verified defects DEF-003
+  through DEF-009 (consequence support floor, materiality majority-merge replacing strict-min,
+  materiality_source masquerade, unknown-verdict distance hardening, API-call counting, the stale
+  STAGE_5D doc, F8 smaller items). Two doctrine pins enforced in code: (DEF-003) a single valid
+  consequence evaluator may not route Risk as `assert`/`assessed`; (DEF-004) materiality merges by
+  2/3 majority not strict-min, and no-majority {high,medium,low} routes Review Needed. F7/DEF-009
+  (tenant-hardwired consequence prompt on landlord runs) FENCED not fixed — landlord-perspective
+  consequence output remains unvalidated. Validated by post-push repeatability check (two Atlas runs
+  on same commit): Dir-18 confirmed the DEF-004 majority correction live, Dir-21 confirmed the
+  no-majority pin live, no Case-C regression. cam/core untouched.
+- **DEF-010a coverage-consensus normalization (`d134ef8`, pushed)** — `merge_element_verdicts()` in
+  `lease_coverage_305.py` now normalizes the four present-like verdicts (explicitly_present /
+  implicitly_present / covered_by_default_law / covered_in_other_LP) to one "present_like" tier for
+  the Counter / majority computation ONLY, then re-expands to the most-explicit specific label.
+  Raw per-evaluator labels preserved unchanged for audit. Fixes the LP-13 flicker: three evaluators
+  agreeing an element is PRESENT but disagreeing on MECHANISM no longer collapse to `unclear`.
+  `lease_verdict_distance.py` and Stage 7 `_FLAGGED_STATES` deliberately UNTOUCHED. 18/18 tests.
+  cam/core untouched.
+
+### The recall investigation (377–384, the arc that produced the above)
+- **Root cause found (380):** LP-13 (indemnification/negligence-carveout, a harmful high-materiality
+  unanimous Risk finding) appeared in some runs and VANISHED in others on byte-identical input. Traced
+  to Stage 305 coverage consensus treating mechanism-disagreement as existence-disagreement → spurious
+  `unclear` → coverage_state flips review_needed↔covered → Stage 7 attention gate forwards on
+  review_needed, excludes on covered → finding appears/vanishes. DEF-010a fixes the consensus half.
+- **Live validation (383, N=10 keyed Atlas runs on `d134ef8`):** LP-13 now `covered` 10/10, never
+  flickers. The HARD case recurred live in run 3 (IP / EP / CD_by_default_law — three distinct
+  present-like labels, no majority pre-fix) and DEF-010a resolved it correctly. DEF-010a validated
+  at the strongest available level (unit test + live hard-case recurrence).
+- **Residual recall instability (384, the DEF-002 blocker):** three OTHER material findings still
+  appear/disappear, via THREE DISTINCT mechanisms (Case A/B MIXED — they do NOT cluster):
+  - **LP-03** (disappears runs 6,7): a Stage 7 PASS-1 GENERATION miss — CONFIRMED by step 385
+    trace (Case B). Coverage output is pixel-identical across compared runs and LP-03 is correctly
+    in Stage 7 `attention_items` in the absent runs, so neither coverage nor the attention gate is
+    the failure layer. LP-03 disappears solely because Stage 7 Pass-1 does not PROPOSE it as a
+    candidate in runs 6,7 (candidate count 24 vs 26-27; run 7 also dropped LP-17). When LP-03 does
+    reach Pass-2 it confirms harmful/high/Risk consistently — so the finding would have survived had
+    Pass-1 generated it. It is legally unambiguous; NO Joshua question needed. LIMITATION: Pass-1 raw
+    input/output is NOT persisted, so the trace found the failure LAYER but not the MECHANISM
+    (truncation/capacity vs prompt-ordering vs model-judgment omission vs parser loss). The run-7
+    LP-03+LP-17 co-drop hints the drops correlate with candidate-list length → truncation is a live
+    hypothesis. NEXT: step 386 instruments Pass-1 (persist raw input/output, finish_reason, parsed
+    candidates, dropped-attention summary, candidate density) then N=10 to capture the mechanism.
+    Do NOT build the post-Pass-1 validation gate until the mechanism is measured — if it is
+    truncation, a config fix is correct and a governance gate would be over-engineering (and a
+    weaker patent story). This is the second live instance of Future Patent Item B
+    (candidate-completeness / recall governance); LP-13 was the first.
+
+  **386 RESULT (2026-06-11) — CONFIRMED: MODEL-JUDGMENT OMISSION, and LP-03 REFRAMED.** N=10
+  instrumented Atlas run (raw Pass-1 output persisted). LP-03 dropped 1/10 (run 5, density 0.926).
+  Reading the raw output: all three evaluators SAW LP-03 at its attention position, assessed the
+  initial-term coverage adequate (cited Sections 1.2/2.1/2.2, actual dates), and returned
+  `mismatch_flag=false`. NOT truncation, NOT parser loss, NOT identity drift — the models
+  affirmatively JUDGED no mismatch. The "selective summarizer" hypothesis is confirmed at the most
+  direct level (you can read the model reasoning its way to "this is fine").
+  **CRITICAL REFRAME:** LP-03 is NO LONGER a "clean code bug / no Joshua needed." It is
+  JUDGMENT-VARIANCE, the same phenomenon as LP-19/LP-26 — the model reaches a genuinely different
+  substantive judgment run-to-run. The "3-0 when present" was misleading: it confirms 3-0
+  CONDITIONAL on being raised, but whether it gets raised is itself a judgment coin-flip. The fix
+  is now WORLD-DEPENDENT and cannot be chosen from artifacts:
+    - IF LP-03's coverage is genuinely adequate (model's "no mismatch" is correct) → the
+      over-generation runs are the error; correct behavior is CONSISTENT non-flagging; LP-03 was
+      never supposed to be Risk (the LP-13 pattern). Fix = stabilize toward silence.
+    - IF coverage is genuinely inadequate (the "mismatch" runs are correct) → the "no mismatch"
+      judgment is the model being WRONG some runs; fix = candidate-completeness governance (flagged
+      LP must produce a candidate so Pass-2 adjudicates). = Future Patent Item B.
+  Only a lawyer reading the actual clause can say which world. So LP-03 JOINS the lawyer-panel list.
+  **BROADER FINDING (the real DEF-002 blocker):** the drop pattern is NOT LP-03-specific. Across 10
+  runs: LP-03 dropped 1×, LP-26 1×, LP-19 2×, LP-17 1× — FOUR different findings, density dipping to
+  0.926. Pass-1 has a GENERAL judgment-variance recall property (~10-15% of runs omit some flagged
+  provision by judgment). This is a PROPERTY of the generation stage, not a per-finding quirk — which
+  makes candidate-completeness an ARCHITECTURAL question (Future Patent Item B), not a patch.
+  **DO NOT BUILD THE COMPLETENESS GATE YET:** in world-1 (model judgment correct) a gate that forces
+  findings through would MANUFACTURE false positives. Measure which world via the lawyer panel first.
+  **NEXT MOVE: lawyer-PANEL calibration (NOT one oracle, NOT $800/hr Joshua-as-authority).** Send
+  LP-03/LP-19/LP-26/§11.2 to 2-3 CRE lawyers, fixed-fee, bucket-only (Risk/Review-Needed-depends/
+  Drafting-improvement/Standard), ANSWERED INDEPENDENTLY (no conferring — the DISTRIBUTION is the
+  data; conferring collapses the panel into one consensus and destroys the signal). The four buckets
+  map onto CAM's own output buckets, so the panel calibrates CAM's routing against human routing on
+  contested clauses. If the human panel SPLITS the same way the models split, that is LIVE EVIDENCE
+  the non-deliberation doctrine (Supp #22) is calibrated to genuine professional disagreement — a
+  patent-grade validation with a human control group, for the cost of three emails.
+
+  **OPERATIONAL FLAG:** the 386 harness ran messily (two harnesses competed on one checkpoint, stale
+  .pyc, a stalled run, recovery-from-disk). The raw-OUTPUT reads are trustworthy (files on disk); the
+  checkpoint bookkeeping is less so. Second time the harness tooling itself was the fragile link (379
+  couldn't run, 386 ran twice over itself). The measurement apparatus needs HARDENING before it feeds
+  anything validator-facing.
+  - **LP-19** (disappears runs 2,5): consequence NONDETERMINISM — evaluators split 1:1:1 on
+    use_consequence (harmful/beneficial/context_dependent) across runs. May be genuine interpretive
+    ambiguity (service-interruption gap may be neutral for a separately-metered tenant), not a bug.
+
+  **386 PREFLIGHT UPDATE (2026-06-10) — truncation structurally disfavored for LP-03.** The Pass-1
+  output cap is 12K tokens (raised 8K→12K at Step 372c, `9f60d23` — the bump that protects THIS
+  call), estimated successful Pass-1 output is ~5.4–10.8K (comfortable headroom), AND the killer
+  fact: LP-03 is at POSITION 5 of 27 in the attention list. Tail-truncation cannot drop item 5
+  while keeping items 1–4 intact. So the remaining live hypothesis is MODEL-JUDGMENT OMISSION at
+  candidate generation — Pass-1 is behaving like a discretionary issue-spotter ("selective
+  summarizer") instead of a high-recall candidate generator. This is a ROLE-ASSIGNMENT mismatch:
+  discretion belongs in Pass-2 (which culls), not Pass-1 (which should cast wide). The same
+  judgment-nondeterminism may underlie LP-19/LP-26 — all three could be one phenomenon (frontier
+  models making non-deterministic salience calls on judgeable questions) surfacing at different
+  stages. Step 386 instrumentation persists verbatim Pass-1 raw output; reading whether LP-03
+  appears at position 5 in the raw text on dropped runs is MORE diagnostic than finish_reason and
+  resolves parser-loss vs model-omission directly. finish_reason threading deferred (clean
+  Step-372c-class telemetry pass-through, available if needed, NOT needed given position-5).
+  Likely fix order IF model-omission confirmed: (1) correct Pass-1 PROMPT ROLE to mandate a
+  candidate per attention LP (cheap, root cause), (2) add candidate-completeness GATE as enforcement
+  (durable, = Future Patent Item B), (3) re-run N to confirm. Do NOT skip the prompt fix for the
+  gate alone. N=10 instrumented run in progress.
+  - **LP-26** (disappears runs 5,6): same mechanism — polarity reversal (harmful↔neutral) on quiet
+    enjoyment / SNDA absence. May be genuine ambiguity (non-disturbance need depends on deal context).
+  - The run-2/run-10 bucket outliers (low Risk, high Review Needed via mismatch_support_insufficient)
+    are a SEPARATE Stage 7 softness issue and do NOT drive the disappearances. Lowest urgency.
+
+### Live decisions / two-lane workplan (2026-06-10)
+- **Code lane:** LP-03 generation trace (385, read-only, on the 10 existing N=10 artifacts) — locate
+  why a confident finding intermittently fails to generate. No lawyer needed.
+- **Legal-calibration lane (NOT on the critical path):** LP-19 / LP-26 / §11.2 indemnification need a
+  legal read on whether the clause is genuinely CONTESTED among CRE lawyers — NOT "what is the answer."
+  If lawyers genuinely disagree, CAM's preserved evaluator disagreement is CORRECT (non-deliberation
+  doctrine, Supplement #22), and the "disappearance" is the consequence layer correctly declining to
+  assert — a presentation question, not a stability bug. Design decision: do NOT treat one lawyer as
+  oracle (esp. at $800/hr); use a fixed-fee micro-panel (≥2–3 CRE contacts, bucket-only:
+  Risk/Depends/Standard/Improvement). The DISTRIBUTION of their answers is the data: 3/3 agree → route
+  confidently; 1/1/1 split → CAM's Review-Needed output is validated, log as evidence not defect.
+  §11.2 indemnification is the one most likely to have a CONSENSUS answer, so it's the best single-read
+  target if a panel isn't available.
+- **DEF-010b DEFERRED** (Stage 7 gate widening to forward `covered` LPs with mechanism-disagreement):
+  do NOT build until the legal lane says LP-13's clause deserves to be a finding. Forcing LP-13 back
+  into Stage 7 may be resurrecting a finding the corrected pipeline correctly declined to make.
+- **DEF-002 BLOCKED** until LP-03 is diagnosed AND the legal lane resolves whether LP-19/LP-26 are
+  bugs or working-as-designed ambiguity.
+
+### Telemetry / cost (DEF-012, logged not built)
+N=10 confirmed 94 API calls/run but artifacts store NO per-call token counts, so cost-per-run cannot
+be computed (only call count). Needed before pricing/licensing math, not before DEF-002. The 4-model
+frontier stack (gpt-5.5, grok-4.3, gemini-3.1-pro-preview, claude-sonnet-4-6) also lacks a reliable
+pricing table. Future telemetry-economics item.
+
+### Environment note (resolved this arc)
+The keyed-run harness initially could not run locally (AppX Python 3.13 shell lacked the model SDKs).
+Root cause: wrong interpreter + missing SDKs, NOT missing keys. API keys live at
+`C:/Users/Owner/OneDrive/DoubleCheck/doublecheck-api/api_keys/.env` — now documented in CLAUDE.md
+under "Environment — RUNNING THE PIPELINE." Keyed runs execute correctly once the right venv/SDKs are
+used; the N=10 harness (383) ran clean. Any future "cannot run" must name which of keys/SDK/interpreter
+is missing, not stop at "no API keys."
+
+---
+
+> **CLOSED HISTORY BELOW — the 2026-06-07 P2''/376h frontier (shipped, pushed, live):**
+> The 375E-DIR investigation arc is CLOSED at the code-seam + policy-paper level.
+> The 375I–L block below it is SETTLED INVESTIGATION (correct, but superseded by its closeout).
 > Everything under the 372-chain is CLOSED HISTORY.
 
 ## Where things stand (2026-06-07 — the live frontier)
