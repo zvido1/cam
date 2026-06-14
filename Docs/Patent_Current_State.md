@@ -5,7 +5,230 @@ Reading this gives you the full patent architecture without needing to
 read all 20+ patent supplements. Parallels `CAM_Current_State.md`
 (which orients to the build state); this orients to the patent state.
 
-**Last updated:** 2026-06-07 (covering the 375/376 directional-governance arc: consequence-gated directional routing reduced to practice and shipped, sign demoted to diagnostic-only — Supplement #23. The future-patent-relevant item flagged in the 2026-06-04 note below has now been BUILT with a proof case and documented.)
+**Last updated:** 2026-06-12 (cross-domain auditor / governance lineage; three-layer directional governance architecture; refined minority doctrine — Supplement #24. This IS a new-claim update in the sense of reduction-to-practice + refinement of the already-described §7 Optional Auditor Capability, now demonstrated across four domains with measured precision/recall tradeoffs and located within a three-layer architecture. See the 2026-06-12 note immediately below. The 06-10 recall-stability note and the 06-07 Supplement #23 note follow beneath.)
+
+> **Build-state note (2026-06-12, cross-domain auditor arc — steps 389–392B):** the build advanced
+> through the closed-form directional prototype (389), Axis-2 tightening (391), and a cross-domain
+> auditor lineage investigation (392A) plus a paper test of a light trace auditor against real lease
+> traces (392B). **One new patent contribution arose: Supplement #24.** It is best characterized as
+> **reduction-to-practice + refinement of the already-described "Optional Auditor Capability" (§7 of
+> the generalized-framework Technical Overview)**, NOT a from-scratch new claim. Summary of patent
+> relevance:
+>
+> - **Cross-domain auditor lineage (392A).** The auditor role — an independent check on reasoning
+>   QUALITY that can invalidate/withhold a finding even under evaluator agreement, distinct from the
+>   votes — is reduced to practice across FOUR benchmark domains with increasing sophistication:
+>   FEVER (standalone process audit) → GPQA (audit + adversarial unanimity-challenge falsification) →
+>   SciFact (audit flag + rule library + withhold + conviction test, with a DOCUMENTED over-withhold
+>   failure, RULE-SF-002) → ContractNLI (audit + elimination + model-diversified governance, with a
+>   QUANTIFIED precision/recall tradeoff: CCA 80.4%→83.2%, Withheld 17→33, many correct findings
+>   withheld). The measured recall COST is itself part of the record. This is the patent-relevant
+>   asset and it strengthens the domain-generality claim. The lease analyzer is the FIFTH domain
+>   instance and the only one lacking the layer.
+>
+> - **Three-layer directional governance architecture (392B).** The directional pipeline decomposes
+>   into Layer 1 axis discipline (closed-form questions decide what gets asked) / Layer 2 trace
+>   auditor (decides whether the answer is validly reasoned) / Layer 3 materiality-routing (decides
+>   whether valid answers warrant protective action). The auditor SITS BEFORE routing and is
+>   forbidden from judging materiality. New Guardrail #17.
+>
+> - **Refined minority doctrine.** A lone evaluator survives because its trace is VALID (specific,
+>   cited, no smuggled assumption), not merely because it produced a finding. This REFINES Supplement
+>   #15-b ("minority never silenced") — the audit-trail preservation guarantee is unchanged; a
+>   validity gate is added in front of the routing decision. New Guardrail #18.
+>
+> - **LP-15 boundary case (canonical).** LP-15 migrated, across the 390→391 tightenings, from an
+>   auditor-validity problem (390 hypothetical "such as" trace — killable by a light auditor) to a
+>   MATERIALITY problem (391 specific cited $10M/$5M + negligence/gross-negligence trace — passes the
+>   auditor by design; B/C judge it immaterial = genuine 1-vs-2 materiality split). LP-15 is now a
+>   Layer-3 materiality/routing case, not a Layer-2 auditor-validity failure — possibly a
+>   correctly-surfaced contested finding mislabeled as a wish-list control.
+>
+> - **Lease-domain porting constraint.** Port the LIGHT FEVER-style trace-compliance auditor; do NOT
+>   port the heavy SciFact/ContractNLI withhold/elimination machinery, because over-withhold suppresses
+>   CORRECT findings and in a legal tool a withheld correct Risk finding is the unforgivable failure.
+>
+> - **Open Layer-1 item (§8.3).** The §8.3 Landlord's-Work / fixed-commencement trap remains
+>   unsurfaced — a trap of ABSENCE (fixed rent obligation, missing abatement remedy), a different
+>   shape than the four present-text axes. This is a Layer-1 axis-completeness question (is it Axis-2
+>   not triggering, an Axis-2 absence-of-remedy variant, or a fifth axis?), paper/design work,
+>   SEPARATE from the auditor and NOT something the auditor can or should compensate for.
+>
+> Net: the contribution map and supplement index ARE updated by this arc (Supplement #24 added).
+> Two new guardrails (#17 three-layer architecture; #18 refined minority validity gate). All
+> quantitative lease findings remain single-lease (Atlas), DIRECTIONAL, and OUT of the patent record
+> except as example/validation context; the cross-domain auditor evidence is the reduced-to-practice
+> patent asset. Layer 2 (light auditor) is designed + paper-validated but NOT built; Layer 3
+> (materiality/routing) is open and blocks DEF-002. Architecture A Phase 2 standalone supplement is
+> still owed (unchanged).
+>
+> - **§8.3 absence-trap Layer-1 census (Step 393; paper/read-only, NO build, NO model calls).**
+>   The §8.3 Landlord's-Work / fixed-commencement trap is a trap of ABSENCE (fixed §3.1 rent
+>   obligation "without abatement" + foreseeable §8.3 delivery failure + no paired relief anywhere)
+>   that the four PRESENT-TEXT axes cannot grip. Design-option (a) "Axis-2 already covers it, just
+>   not triggering" is ELIMINATED: Axis-2 q_a tests an obligation LINKED TO a named landlord
+>   failure, while the §8.3 obligation runs REGARDLESS OF any landlord condition — inverse polarity,
+>   confirmed mechanically against the prompt text. An absence-evidence contract v0 is fixed with
+>   Element 2 drawn NARROW (counterparty PERFORMANCE FAILURE only; no-fault external events excluded)
+>   to keep the first test case clean. Three candidate families are kept separate: (1)
+>   performance-failure absence-of-relief (the §8.3/LP-01 shape; build target = Axis-2 absence
+>   variant), (2) no-fault loss-allocation (the LP-14/force-majeure shape; parked fifth-axis
+>   CANDIDATE, NOT in v0), (3) interim-relief gap (the §5.1 cure-window cluster across ~8 LPs; tagged
+>   PARTIAL — termination is relief but not INTERIM relief). On Atlas the performance-failure shape
+>   is a NEAR-SINGLETON (LP-01 only). **(b) Axis-2 variant vs (c) fifth axis stays OPEN** — one lease
+>   cannot settle it, and the count is downstream of two definitional forks (Element-2 scope;
+>   relief-adequacy "ever" vs "interim") that a second lease + Layer-3 calibration must pin down.
+>   Build-lean provisionally (b). Document-scope precondition (full lease IS fed to every evaluator,
+>   confirmed in code; not-assessable/scope-incomplete state becomes MANDATORY before production and
+>   for multi-document packages). Full detail in Supplement #24 §9; source
+>   `build_log/393_absence_census_RESULTS.md` (local commit `c95ad56`, not pushed).
+>
+> - **§8.3 second-lease census + corpus scan (Step 394a; paper/read-only, NO model calls; local
+>   commit `06a5817`).** Ran the same narrowed absence contract v0 statically on a SECOND lease
+>   (T-10, retail, placeholder Exhibit B) plus a boundary-control census on T-08 (force-majeure-heavy).
+>   **Result — T-10 is INDETERMINATE on the §8.3 recurrence question, NOT a counter-instance:** T-10's
+>   Landlord's-Work structural hooks exist (§1.1(j), §2.1 "if any," Exhibit B) but Exhibit B is an
+>   unpopulated bracketed placeholder and the Commencement Date is a circular cross-reference (not a
+>   fixed calendar date), so the landlord performance failure is not foreseeable-from-text and CANNOT
+>   be scored a confident YES. 0 v0-YES across 24 assessable LPs (15 PARTIAL / 9 NO / 8 NA). **T-08
+>   boundary HOLDS:** robust §16.3 FM rent abatement (full/proportionate) → LP-14 = NO; the no-fault
+>   family stays cleanly outside v0. **Corpus-scan headline (the load-bearing finding): Atlas is the
+>   ONLY fixture in the entire ~22-file test corpus with a POPULATED Exhibit B** ("4 dock levelers,
+>   HVAC upgrades, LED lighting, 400A/480V electrical"); every other fixture (T-01..T-16, T-10-NY,
+>   templates) has a placeholder or no Exhibit B. **Interpretive consequence (recorded with strict
+>   wording discipline): ZERO CLEANLY-MEASURABLE CROSS-LEASE RECURRENCE INSTANCES CURRENTLY EXIST —
+>   NOT "zero instances exist."** Atlas IS a clean, grounded instance (populated Exhibit B + rent
+>   fixed to a calendar date independent of buildout = Element 2 grounded, not assumed); what is
+>   missing is a SECOND clean instance. The (b)-vs-(c) call stays OPEN but the build-lean toward (b)
+>   Axis-2 absence variant is REINFORCED — not because the pattern is weak (it is well-grounded on
+>   Atlas) but because no available second fixture can EXERCISE it, so a fifth-axis claim would be
+>   premature on evidence AVAILABILITY, not evidence-against. **Gating requirement to revisit (c):**
+>   an EXECUTED commercial/retail lease with a populated, specific Landlord's-Work exhibit — template
+>   fixtures cannot test it. Full detail in Supplement #24 §9; source
+>   `build_log/394a_second_lease_census_RESULTS.md`.
+>
+> - **§8.3 FIRST REAL external populated-work lease — Albireo census (Step 394c; paper/read-only, NO
+>   model calls; durable fixture committed locally, not pushed).** Obtained and censused the first
+>   REAL, EXTERNAL, POPULATED-Landlord's-Work lease — the Albireo Pharma / SHIGO 10 PO Owner LLC office
+>   lease (10 Post Office Square, Boston MA; executed; SEC Exhibit 10.1; 2017-02-07). This satisfies the
+>   394a gating requirement (executed lease with a specific populated Landlord's-Work exhibit) that no
+>   corpus fixture except Atlas could meet — Exhibit C Work Letter (10 enumerated construction items)
+>   + Exhibit E Building Finish Specifications (3 pages) + Exhibit D Concept Plan (Dyer Brown
+>   Architects), MORE populated than Atlas. Durable fixture at
+>   `05 Lease Analyzer/test_data/tenants/albireo_10postoffice_lease.txt`, regenerable via
+>   `build_log/build_albireo_fixture.py` from the SEC HTML (self-verifies 6 load-bearing clauses;
+>   verification passed 2026-06-12). **Result — Albireo is a clean NO on the §8.3 absence shape, and a
+>   NO for the MOST INFORMATIVE reason: it CONTAINS exactly the paired relief whose ABSENCE defines the
+>   Atlas trap, in three layers** — (1) Commencement tied to delivery (§1: rent runs from the LATER of
+>   Target Date or Substantial Completion + possession, so the tenant structurally cannot owe rent on
+>   undelivered space — inverse of Atlas's fixed calendar date); (2) express §3.1(C) day-for-day Base
+>   Rent credit for late delivery past the April 1 outside date, stacked on the 2-month Rent Abatement;
+>   (3) §7.1/§14/§15 abatement corroborating comprehensive rent-relief drafting. **The §34 wrinkle
+>   (design lesson): Albireo has an aggressive Independent-Covenants / no-setoff clause (§34, §6.1) —
+>   the KIND of clause that in Atlas would BE the trap — yet it does NOT create the §8.3 shape, because
+>   §3.1(C) is a carved-out, self-executing rent CREDIT that coexists with the no-setoff regime.
+>   Design consequence for the Axis-2 absence-variant diagnostic: do NOT infer the §8.3 shape from an
+>   aggressive no-setoff clause alone; check whether a carved-out self-executing delivery remedy
+>   coexists.** **Interpretive consequence (strict wording discipline): ZERO CLEANLY-MEASURABLE
+>   CROSS-LEASE RECURRENCE INSTANCES OF THE §8.3 ABSENCE SHAPE CURRENTLY EXIST — NOT "zero instances
+>   exist."** The honest tally is now Atlas = one clean ABSENCE instance, Albireo = one clean
+>   PAIRED-RELIEF COUNTER-instance, T-10 = indeterminate. **(b)-vs-(c) stays OPEN, but the (b) Axis-2
+>   variant lean is REINFORCED on EVIDENCE now (not just availability):** the first lease that CAN
+>   exercise the hook lands on the counter-shape for a substantive reason (a well-drafted commercial
+>   lease includes the delivery remedy as a matter of course), making the Atlas gap look IDIOSYNCRATIC
+>   rather than recurrent. Caveats kept honest: Albireo is OFFICE vs Atlas WAREHOUSE (not a perfect
+>   structural twin); one counter-instance no more proves (b) than one instance proved (c) — two real
+>   data points now point the same way. **Gating requirement to revisit (c) is now sharper:** a
+>   populated-work lease with fixed-date rent AND no delivery-failure relief (a populated-work WAREHOUSE
+>   counter-or-confirming lease would be the strongest next data point). Full detail in Supplement #24
+>   §9b; source `build_log/394c_second_real_lease_census_RESULTS.md`.
+>
+> - **⚠ DOCUMENTATION HAZARD — LP-ID dual numbering (read before cross-referencing any "LP-NN").**
+>   The closed-form directional prototype harness (Steps 389–392B) uses LP IDs that DO NOT match
+>   `cam/adapters/lease_review/lease_provision_taxonomy.py`. The collision is PARTIAL, not total —
+>   the dangerous kind: prototype LP-03 (Lease Term & Renewal) and LP-26 (Quiet Enjoyment) COINCIDE
+>   with the taxonomy entries of the same number, but prototype LP-11 ("Rent Acceleration" → taxonomy
+>   LP-11 is "Default & Remedies"), LP-15 ("Insurance" → taxonomy LP-08; taxonomy LP-15 is "Signage"),
+>   and LP-19 ("Casualty" → taxonomy LP-24; taxonomy LP-19 is "Utilities") DO NOT. Prototype LP-27
+>   ("Default and Remedies") RESOLVED to taxonomy LP-27 (Landlord Default & Tenant Remedies) by cited
+>   clause content (§17.3 vs §5.1), NOT to label-similar taxonomy LP-11. A reader who spot-checks
+>   LP-03/LP-26, sees them line up, and trusts the rest is wrong on four of six. The prototype numbering is internally consistent
+>   across 389/390/391/392B, so NO finding is invalidated — but EVERY "LP-NN" in Supplement #24, its
+>   canonical examples (LP-11 scalpel proof, LP-15 390→391 migration, LP-27 same-risk Axis-1), and the
+>   directional-arc RESULTS docs is a PROTOTYPE ID. **Canonical crosswalk:
+>   `Docs/LP_ID_Crosswalk_Directional_Prototype_to_Taxonomy.md`** (created 2026-06-12; documentation
+>   containment only — no harness renumbering). **Standing rule:** directional-method docs from Steps
+>   389–393 use prototype LP IDs unless explicitly marked "taxonomy LP-NN"; attorney-facing and
+>   patent-facing summaries must cite BOTH prototype and taxonomy ID (e.g. "prototype LP-15 = taxonomy
+>   LP-08 Insurance") until the harness is reconciled.
+>
+> - **Action ontology vNext — Leverage / Client Advantage axis + negative-space symmetry (Steps 395 / 395b; paper/design only, NO model calls, NO build, NO schema change, NO UI). DESIGN RESULT, not a patent contribution yet.** Two paper memos established that the finding object probably has TWO orthogonal dimensions, not one: **(1) protective disposition** (Risk / Improvement / Review Needed / Addressed / Standard — the existing axis, "what protects the client from harm?") and **(2) advantage disposition** (Leverage / Neutral — new, "what does the client hold that helps them?"). The decisive structural fact: the two are NOT mutually exclusive — the same clause can be Risk AND Leverage (e.g. a self-help termination right with a trap cure window) — so Leverage cannot be a fifth sibling bucket in a one-label-per-finding scheme; it is an orthogonal axis. "Favorable" is REJECTED as a label (sentiment, not action); "Leverage / Client Advantage" passes the action-test ("assert this / use this in negotiation"). **Negative-space symmetry (the spine):** the §8.3 absence machinery is one half of a general operator — *detect legally material absence, route it by who the absence favors or harms.* Adverse absence (missing protection that HARMS the client) is the §8.3/LP-01 shape already in the record; favorable absence (missing restriction / counterparty remedy / cap / consent right that HELPS the client) is the same four-element contract with the beneficiary reversed. Same engine, sign flip. It inherits the SAME document-scope discipline: favorable absence is a false-LEVERAGE generator on partial uploads exactly as adverse absence is a false-TRAP generator. **395b census result (Atlas + Albireo, capped, paper):** present-text leverage RECURS robustly on both leases (Atlas audit-teeth §3.4, exclusivity §24.14, security-deposit self-help §5.1; Albireo uncapped delivery credit §3.1(C)); favorable absence is REAL but DRAFTING-DEPENDENT — one clean instance on loosely-drafted Atlas (§15.2 permitted-transfer carve-out escapes §15.3 recapture), essentially NONE on tightly-drafted Albireo (a meticulous lease has little favorable absence for the same reason it has little adverse absence). **Sharpest evidence of the symmetry:** the Albireo §3.1(C) delivery credit is the SAME clause that scored as Atlas's adverse-absence counter-instance in §9b — present in Albireo it is tenant LEVERAGE, absent in Atlas it is tenant RISK. One clause, two axes, opposite leases. **Decision: AXIS WARRANTED** (present-text half robust; favorable-absence half real but thin, rides alongside the §8.3 adverse work under shared scope discipline + "needs a second clean instance" gating). One element needs lawyer calibration: WHICH leverage is material enough to surface (the advantage-axis analogue of the Layer-3 materiality question) — a future leverage-edition blind packet, distinct from the §8.3 packet. **Consequence for DEF-010: bucket-stability work must NOT harden around the single (protective) axis** — diagnose protective-axis variance now (paper, 383/386 artifacts), but do not build routing governance that assumes one axis, because the object model is becoming two-dimensional. Counterparty-Leverage parked as the v0-excluded mirror category. NOT a build authorization; NOT yet a patent contribution — earns its own supplement only IF adopted and built with a proof case. Full detail: `build_log/395_action_ontology_vnext_leverage_negative_space.md` and `build_log/395b_favorable_absence_census_RESULTS.md` (local, not pushed).
+
+> **Build-state note (2026-06-10, recall-stability arc — steps 377–385):** the build advanced
+> through a governance-correctness batch and a recall-variance investigation. **No new patent
+> claims arose. The patent contributions below are unchanged.** Summary of patent relevance:
+>
+> - **Step 378 (`6990434`, shipped):** governance-correctness fixes (DEF-003 consequence support
+>   floor; DEF-004 materiality majority-merge replacing strict-min, with no-majority routing to
+>   Review Needed; DEF-005–009). These are RTP / correctness hardening of EXISTING claims (the
+>   support-gated assertion and orthogonal-confidence/review doctrines), NOT new contributions. The
+>   DEF-004 pin — "a one-evaluator materiality minority must not silently demote a two-evaluator
+>   majority; no-majority materiality cannot assert an action bucket and routes to Review Needed" —
+>   is an instance of the existing preserve-disagreement / support-gated-assertion doctrine, not a
+>   new claim. Validated live (Dir-18, Dir-21) on the post-push repeatability check.
+>
+> - **DEF-010a (`d134ef8`, shipped):** Stage 305 coverage consensus now normalizes the four
+>   present-like verdict labels to one tier for the EXISTENCE-consensus computation only, while
+>   preserving the exact mechanism labels for audit and leaving the verdict-distance ladder
+>   unchanged. This is implementation hygiene / RTP — it corrects a merge that conflated
+>   mechanism-disagreement with existence-disagreement. NOT itself a new claim. BUT it surfaced a
+>   genuine future-patent item (see below).
+>
+> - **FUTURE PATENT ITEM A — two-axis coverage model (existence vs mechanism).** Flagged, NOT built,
+>   NOT a contribution yet. The insight: a single coverage verdict token carries TWO orthogonal
+>   questions — EXISTENCE (is the protection present?) and MECHANISM (explicit / implicit /
+>   default-law / cross-LP). Prior art (ensemble agreement, conformal/selective prediction,
+>   LLM-as-judge) computes agreement on a single token; the novel move is computing consensus
+>   PER AXIS because the axes have DIFFERENT governance consequences (existence-disagreement gates
+>   inclusion; mechanism-disagreement modulates confidence and triggers jurisdiction/default-law
+>   warnings). Same evaluators, two independent consensus computations, two distinct downstream
+>   consequences. This is the same preserve-disagreement principle as the sign demotion (Supp #23)
+>   and materiality-provenance (378) — a third occurrence, which strengthens it as an architectural
+>   pattern. Full write-up in `build_log/parked_strategic_ideas.md`. **ACTION: attorney question at
+>   claim-scope finalization ("is the existence/mechanism separation a distinct claimable
+>   contribution, and does building it strengthen scope vs describing it?"), NOT a build during the
+>   current arc. Write a supplement only IF/WHEN built with a proof case.**
+>
+> - **FUTURE PATENT ITEM B — candidate-completeness / recall governance.** Flagged, NOT built.
+>   The 380–384 investigation produced hard evidence (LP-13, then LP-03) that the framework's
+>   governance only governs candidates that EXIST — a material, high-confidence finding can
+>   intermittently fail to be GENERATED upstream of all the assertion governance. CAM's existing
+>   claims are precision-side (WHEN to assert); recall-side governance (did the candidate get
+>   generated at all) is currently thin. A candidate-completeness / union-candidate-generation
+>   governance layer would be a distinct contribution that closes the most obvious attack on the
+>   framework ("you govern beautifully over whatever you happened to notice"). **ACTION: attorney
+>   question; supplement only IF/WHEN built with a proof case. Do not inflate into a claim before it
+>   exists.**
+>
+> - **LIVE VALIDATION OF EXISTING DOCTRINE (non-deliberation, Supp #22) — potential evidence, not a
+>   new claim.** The 384 finding that LP-19 and LP-26 show persistent 1:1:1 evaluator splits on
+>   use_consequence (harmful/beneficial/context_dependent) across runs may be genuine interpretive
+>   ambiguity, not nondeterminism noise. IF a fixed-fee CRE-lawyer micro-panel splits the same way
+>   on those clauses, that is LIVE EVIDENCE that CAM's preserved disagreement is CALIBRATED to
+>   genuine professional disagreement — i.e. CAM is uncertain exactly where competent humans are
+>   uncertain. This would SUPPORT (not extend) the deliberate-non-deliberation claim (Supp #22) with
+>   a concrete lease example. The lawyer-calibration design deliberately uses a PANEL distribution,
+>   not a single oracle, because "is this clause contested" is a question a single expert cannot
+>   answer. All such findings remain n=1/n=2-contract, DIRECTIONAL, OUT of the patent record except
+>   as limited example/validation context. See `CAM_Current_State.md` (2026-06-10 frontier) and
+>   `build_log/defects.md` (DEF-010 through DEF-012).
+>
+> Net: the patent contribution map and supplement index are UNCHANGED by this arc. Two future items
+> (A, B) are parked as attorney questions. One existing doctrine (Supp #22) has a pending live
+> validation path. Architecture A Phase 2 standalone supplement is still owed (unchanged from prior
+> notes).
+
+**Last updated (prior):** 2026-06-07 (covering the 375/376 directional-governance arc: consequence-gated directional routing reduced to practice and shipped, sign demoted to diagnostic-only — Supplement #23. The future-patent-relevant item flagged in the 2026-06-04 note below has now been BUILT with a proof case and documented.)
 
 > **Build-state note (2026-06-02):** the build has since advanced through the full 372 integrity chain (evaluator-identity auditability, budget prevention/observability, cross-stage fallback visibility, disagreement-citation surfacing), validated live on two clean 3-real-model runs — see `CAM_Current_State.md`. **No new patent claims arose from that work.** It is reduction-to-practice / strengthened auditability of EXISTING claims, plus n=1-contract characterization findings (kept DIRECTIONAL and deliberately OUT of the patent record). The patent contributions below are unchanged. One *future* patent-relevant item was identified but NOT built and NOT proven necessary: boundary-fragile / conditional-compound-risk (instability metadata propagated as conditional candidate status) — write a supplement IF and WHEN it is built and a proof case exists, not before.
 >
@@ -61,6 +284,39 @@ domain is the first validation instance; the architecture is general.
 - Evaluator behavior change
 - Variance pattern shift
 - → Two outputs: **calibration confidence** + **calibration alerts**
+
+### The Three-Layer Directional Governance Architecture (Supplement #24, 2026-06-12)
+
+The directional analysis pipeline decomposes into three distinct
+governance layers, each answering a different question. They must not
+collapse back into one undifferentiated "is this risky?" decision.
+
+- **Layer 1 — Axis discipline (what gets asked).** Closed-form directional
+  questions across four domain-general axes (proportionality;
+  obligation-without-remedy; conditional-protection; unilateral-control)
+  replace freeform "is this one-sided?" prompts. Reduced to practice in the
+  closed-form prototype (Steps 389–391). Decisive discrimination evidence:
+  LP-11 freeform 10/10 → closed-form 0/5 (the scalpel proof).
+- **Layer 2 — Trace auditor (whether the answer is valid).** A light
+  FEVER-style trace-compliance auditor that invalidates traces relying on
+  unstated/hypothetical assumptions (UNSUPPORTED_INFERENCE /
+  HIDDEN_ASSUMPTION) and preserves specific-and-cited traces. Checks
+  reasoning VALIDITY only; forbidden from judging materiality. Designed and
+  paper-validated against real Step 391 traces; NOT built.
+- **Layer 3 — Materiality / routing (whether valid answers matter).**
+  Decides whether a validly-reasoned finding routes to Risk, Review Needed,
+  or Improvement, and whether a lone valid-but-low-materiality trace forces
+  a candidate. Needs a lawyer-panel calibration input (disagreement-spread
+  measurement, never an oracle). Open; blocks DEF-002.
+
+Pipeline order: evaluator produces a closed-form axis answer → auditor
+checks trace validity → invalid traces discarded/marked → valid traces
+proceed to materiality/routing → lone valid minority traces preserved but
+may route to Review Needed/Improvement rather than Risk. The auditor SITS
+BEFORE routing. This is reduction-to-practice + refinement of the §7
+"Optional Auditor Capability" of the generalized-framework Technical
+Overview, demonstrated across four domains (FEVER/GPQA/SciFact/ContractNLI)
+with measured precision/recall tradeoffs. See Guardrail #17.
 
 ### Run-Time Governance Operates At Every Layer of Decomposition
 
@@ -331,6 +587,15 @@ are in `Docs/Patent_Supplement_2026_MM_DD*.md`.
 - **Confidence-uncertainty vs consequence-uncertainty (refines Guardrail #9)** — 06-07
 - **Detecting and demoting a degraded governance signal as a governance property** — 06-07
 
+### Cross-Domain Auditor & Three-Layer Directional Governance (Supplement #24, 2026-06-12)
+- **Auditor as a recurring cross-domain CAM mechanism (FEVER/GPQA/SciFact/ContractNLI), increasing sophistication** — 06-12
+- **Measured precision/recall tradeoff of the governance layer; documented over-withhold failure (RULE-SF-002; ContractNLI [OK]→[WH])** — 06-12
+- **Three-layer directional architecture: axis discipline / trace auditor / materiality-routing** — 06-12
+- **Light trace-compliance auditor checks reasoning VALIDITY, not legal MATERIALITY; sits before routing** — 06-12
+- **Refined minority doctrine: lone evaluator survives if its TRACE is valid, not because it produced a finding** — 06-12
+- **Lease porting constraint: port the LIGHT auditor; do NOT port heavy withhold/elimination (over-withhold = unforgivable in legal review)** — 06-12
+- **Reduction-to-practice + refinement of §7 Optional Auditor Capability (generalized-framework Technical Overview)** — 06-12
+
 ### Risk + Use-Aware
 - **Coverage state ≠ risk level (Risk Map derivation rules)** — 05-14
 - **Compound confidence capping (min of evaluator + weakest LP)** — 05-14
@@ -391,7 +656,10 @@ any implementation. Do not allow them to soften over time.
    majority outcomes. Only confidence and review priority are modulated.
    This guarantee applies at every decomposition layer — confirmed
    end-to-end at the element layer 2026-05-18 with Step 349c restoring
-   the inline `3 Evaluators` expand on Disputed rows.
+   the inline `3 Evaluators` expand on Disputed rows. (Refined by
+   Guardrail #18: the audit-trail preservation is unconditional, but
+   FORCING a downstream candidate requires the minority's trace to pass
+   the validity gate.)
 
 2. **Citation or it didn't happen.** Even majority consensus cannot
    produce an assertion of presence without a valid citation. This
@@ -509,9 +777,84 @@ any implementation. Do not allow them to soften over time.
     Review Needed. Do not collapse the two axes of uncertainty. Canonical
     example: fb6529 LP-24 (Supplement #23, 2026-06-07).
 
+17. **The three directional governance layers must not collapse into one
+    "is this risky?" decision.** Layer 1 (axis discipline) decides WHAT
+    gets asked — closed-form directional questions. Layer 2 (trace auditor)
+    decides whether the ANSWER IS VALID — whether the reasoning is specific
+    and cited or smuggles an unstated assumption. Layer 3 (materiality /
+    routing) decides whether VALID ANSWERS MATTER — Risk vs Review Needed
+    vs Improvement. The auditor SITS BEFORE routing and is structurally
+    FORBIDDEN from judging materiality; it must never be asked to compensate
+    for an unasked question (an axis-completeness gap is a Layer-1 problem,
+    not an auditor problem). Collapsing the layers reproduces the original
+    "is this one-sided? → yes → Risk" wish-list failure. (Supplement #24,
+    2026-06-12; Layer 1 RTP Steps 389–391; Layer 2 designed + paper-
+    validated, not built; Layer 3 open, blocks DEF-002.)
+
+18. **A lone evaluator survives if its trace is VALID, not because it
+    produced a finding.** This refines Guardrail #1, it does not contradict
+    it. The minority's verdict and reasoning are preserved in the audit
+    trail UNCONDITIONALLY (Guardrail #1 unchanged). But for a lone
+    evaluator's finding to FORCE a downstream candidate, its reasoning
+    trace must pass the Layer-2 validity gate — specific, cited, free of
+    smuggled assumptions. A lone evaluator with a sound cited trace survives
+    (LP-27, where Eval-C dissents); a lone evaluator with an unsupported
+    "such as ... may not be met" trace does not force a candidate (LP-15 at
+    Step 390). Valid minority traces are preserved as SIGNAL but do NOT
+    automatically force Risk — materiality and agreement govern the bucket.
+    The minority is protected when it is WELL-REASONED, not merely when it
+    is PRESENT. The auditor does not silence by headcount; it checks the
+    minority's reasoning. (Supplement #24, 2026-06-12.)
+
 ---
 
 ## Patent Sentences (Most Quotable)
+
+### From 2026-06-12 — Cross-Domain Auditor; Three-Layer Directional Governance (Supplement #24)
+
+> "CAM employs an independent auditor that validates reasoning-trace
+> compliance against a declared domain standard, capable of invalidating
+> findings even under evaluator consensus. This capability is reduced to
+> practice across four independent domains with increasing sophistication —
+> standalone process audit (FEVER), adversarial falsification of unanimous
+> answers (GPQA), rule-library and conviction testing (SciFact), and
+> model-diversified auditing with a quantified precision/recall tradeoff
+> (ContractNLI) — establishing the auditor as a recurring cross-domain
+> governance mechanism rather than a single-domain feature."
+
+> "The auditor's recall cost is measured, not hand-waved: in the heavier
+> domain instances the governance layer is shown to withhold findings that
+> were correct, and that withholding rate is recorded alongside the
+> precision gain. CAM therefore governs the precision/recall tradeoff with
+> measurement, rather than blindly maximizing precision — and in a
+> legal-review instance deliberately ports only the light trace-compliance
+> auditor, because withholding a correct risk finding is a more costly error
+> than surfacing a spurious one."
+
+> "CAM's directional analysis decomposes into three independent governance
+> layers: axis discipline determines which closed-form questions are asked;
+> an independent trace auditor determines whether an evaluator's answer is
+> validly reasoned; and materiality routing determines whether a
+> validly-reasoned finding warrants protective action. The auditor sits
+> before routing and is forbidden from judging materiality. Collapsing these
+> three layers into a single 'is this risky?' decision destroys the
+> architecture."
+
+> "A lone evaluator's finding survives because its reasoning trace is valid —
+> specific, cited, and free of smuggled assumptions — not because it produced
+> a finding or is prominent in the output. This refines the
+> minority-never-silenced guarantee: the minority is preserved in the audit
+> trail unconditionally, but it forces a downstream candidate only when its
+> trace passes the validity gate. The minority is protected when it is
+> well-reasoned, not merely when it is present."
+
+> "A single finding can migrate between governance layers: when an
+> over-firing evaluator's reasoning is tightened from a hypothetical category
+> to specific cited textual facts, the same finding moves from an
+> auditor-validity problem the auditor can kill, to a materiality dispute
+> among valid traces the auditor must, by design, refuse to adjudicate. The
+> auditor is validated for its purpose precisely because it correctly
+> declines to perform the materiality layer's function."
 
 ### From 2026-05-21 — Deliberate Non-Deliberation (Supplement #22)
 
@@ -738,6 +1081,10 @@ anchors for prosecution:
 | **Coverage Snapshot 5-bucket reconciliation (Step 350)** | **Single-classifier source of truth: the Overview tab Coverage Snapshot now routes through the same `classifyFindingType()` that the sidebar uses. Pre-Step 350, the Snapshot used legacy 3-bucket labels (covered / need attention / not applicable) that summed to 7 of 32 LPs — silently dropping 25 LPs. Post-Step 350, the Snapshot shows five action-type buckets that sum to 32. Validated 2026-05-18: 4 Risk + 4 Review Needed + 19 Improvement + 2 Addressed + 3 N/A = 32, with Risk count matching sidebar's RISK → GAPS / COVERAGE sub-bucket exactly.** | **05-18** |
 | **LP-14, LP-22, LP-27, LP-28 Phase 3 propagation (Atlas Meridian)** | **`elements_disputed_critical > 0` → `coverage_state = review_needed`. All four had baseline `partial` overridden. LP-09 had 3 disputed elements but Phase 3 did NOT fire (all were `important` tier — correct). Validated 2026-05-21 (job `lease_review_20260521_010256_e43bad`).** | **05-17 / Steps 355–358** |
 | **fb6529 LP-24 (no insurance-proceeds disposition on early termination)** | **Directional governance: a 3-0 unanimous tenant-disfavored mismatch that the old sign/vote path routed to Risk, and consequence-gated routing routes to Review Needed because use-consequence is genuinely `context_dependent` — grounded in the lease's cross-provision structure (LP-10 §8.4 tenant-improvement framework; unresolved improvement disposition at termination; LP-25 §14.1 trade-fixture protection; LP-24 silence on insurance proceeds for that investment). Demonstrates: agreement on direction is not agreement on harm; confidence-uncertainty vs consequence-uncertainty; consequence grounded in document text not reconstructed; Risk→Review Needed as a correct, documented, intentional demotion.** | **06-07** |
+| **LP-11 Rent Acceleration scalpel proof (Atlas)** | **Layer-1 axis discipline DISCRIMINATES rather than rewording a wish-list: a finding the freeform system flagged 10/10 runs is rejected by the closed-form axes 0/5 runs. Proves the closed-form mechanism is a scalpel, not a differently-worded wish-list generator.** | **06-12** |
+| **LP-15 390→391 layer migration (Atlas)** | **The boundary between the trace auditor and materiality routing. At Step 390, Eval-A's LP-15 trace relied on a hypothetical category ("such as ... may not be met") — a light auditor INVALIDATES it (Layer 2 kill). At Step 391, after tightening, Eval-A's trace cites specific facts ($10M/$5M umbrella; negligence/gross-negligence indemnity; conditional §10.3 subrogation waiver) — the auditor PRESERVES it by design. The finding MIGRATED from a Layer-2 auditor-validity problem to a Layer-3 materiality problem (B/C judge the cited asymmetries immaterial = genuine 1-vs-2 materiality split). Demonstrates: the three layers are distinct; the auditor checks validity not materiality; LP-15 is a materiality/routing case, possibly mislabeled as a control.** | **06-12** |
+| **LP-27 same-risk Axis-1 with Eval-C dissent (Atlas)** | **Refined minority doctrine: Eval-A and Eval-B cite a specific same-risk parallel (§17.3 landlord self-help cure vs §5.1 tenant security-deposit setoff for the same triggering event); Eval-C returns all-no. The lone-ish valid cited trace survives the auditor by REASONING QUALITY, not headcount. The minority is protected when well-reasoned, not merely when present.** | **06-12** |
+| **FEVER / GPQA / SciFact / ContractNLI auditor lineage** | **The auditor as a recurring cross-domain CAM mechanism with increasing sophistication and a measured precision/recall tradeoff (ContractNLI CCA 80.4%→83.2%, Withheld 17→33) plus a documented over-withhold failure (SciFact RULE-SF-002 suppressing correct NEIs). Establishes domain-generality of the auditor and the measured recall cost of heavy governance — the warning against porting heavy withhold/elimination machinery into legal review.** | **06-12** |
 
 ---
 
@@ -771,6 +1118,8 @@ project knowledge.
 | **21** | **2026-05-17** | **Element-Level Merge Governance; Per-Element Verdict Distance and Dispute Propagation — Phases 1–4 fully RTP 2026-05-18–21 (Steps 349/349b/349c/355/356/358)** |
 | **22** | **2026-05-21** | **Deliberate Non-Deliberation; Targeted Citation Check (Deferred)** |
 | **23** | **2026-06-07** | **Consequence-Gated Directional Routing; Sign Demoted to Diagnostic-Only; Confidence-Uncertainty vs Consequence-Uncertainty (shipped `8bd4267` / `ba26ed8`)** |
+| **24** | **2026-06-12** | **Cross-Domain Auditor / Governance Lineage; Three-Layer Directional Governance Architecture; Refined Minority Doctrine (RTP + refinement of §7 Optional Auditor Capability; FEVER/GPQA/SciFact/ContractNLI; Layer 2 designed + paper-validated not built; Layer 3 open)** |
+| **25** | **2026-06-13** | **Architecture A Phase 2: Verdict Distance and Confidence Capping at the LP Layer (formalizes Steps 351/351b/352 RTP; second instantiation of Supplement #18 ordinal-distance governance; deliberate-gap rank scale; consequence-coupled Stage 5f cap; NOT_ASSESSED sentinel)** |
 
 The action-type clarification of 2026-05-18 (including the Step 350
 single-classifier source-of-truth point) is not currently a separate
@@ -782,10 +1131,10 @@ change.
 
 Architecture A Phase 2 (LP-layer verdict distance, Stage 5f confidence
 capping, Steps 351–352) is documented in `build_log/351_chat_instruction.md`
-and `build_log/351b_chat_instruction.md` (correction) but does not yet
-have a standalone patent supplement. Patent sentences appear in this
-document under "Architecture A Phase 2 + Supplement #21 Phases 2–4."
-A standalone supplement should be written before the attorney conversation.
+and `build_log/351b_chat_instruction.md` (correction), and now has a
+standalone patent supplement: `Patent_Supplement_2026_06_13.md` (written
+2026-06-13). Patent sentences also appear in this document under
+"Architecture A Phase 2 + Supplement #21 Phases 2–4."
 
 ---
 
@@ -795,6 +1144,15 @@ Most supplements document architecture that is already implemented and
 running in production. Supplement #21 was **specification-only** at the
 time of writing (2026-05-17 evening) and graduated to **Phase 1 reduced
 to practice** on 2026-05-18, with Phases 2–4 completing by 2026-05-21.
+
+Supplement #24 (2026-06-12) is a MIXED status: the cross-domain auditor
+evidence (FEVER/GPQA/SciFact/ContractNLI) is REDUCED TO PRACTICE benchmark
+work; Layer 1 (closed-form axis discipline) is REDUCED TO PRACTICE in the
+lease prototype (Steps 389–391, local commits `0ff3cc2`/`c709b74`, not
+pushed); Layer 2 (light trace auditor) is DESIGNED + PAPER-VALIDATED
+against real Step 391 traces but NOT BUILT; Layer 3 (materiality/routing)
+is OPEN and blocks DEF-002. The §8.3 absence-trap axis-completeness
+question is paper/design work, separate from the auditor.
 
 ### Phase 1 RTP Timeline (Supplement #21 + companion work)
 
@@ -880,11 +1238,22 @@ IP↔MI distance corrected to 4 in 351b (table error; code was correct).
 - **Joshua's next lease run** — no longer treated as a blocking dependency
   (the specific warehouse deal fell through 2026-05-17; future leases
   are still welcome external validators)
-- **Architecture A Phase 2 standalone supplement** — LP-layer verdict
-  distance (Steps 351–352) and Stage 5f confidence capping are reduced
-  to practice but do not yet have a formal patent supplement. Patent
-  sentences are captured in this document. Should be written before
-  the attorney conversation.
+- **Architecture A Phase 2 standalone supplement** — ✅ WRITTEN
+  2026-06-13 (`Patent_Supplement_2026_06_13.md`). Formalizes LP-layer
+  verdict distance (Steps 351/351b/352) and Stage 5f confidence capping
+  as the second reduced-to-practice instantiation of the Supplement #18
+  ordinal-distance governance (element-layer counterpart is Supplement
+  #21). One empirical item remains open and is noted honestly in the
+  supplement: a live 32-LP real-API T-10 severity distribution (core
+  logic validated synthetically + via Atlas regression).
+- **Supplement #24 open layers** — Layer 2 (light trace-compliance
+  auditor) is designed + paper-validated but NOT built; Layer 3
+  (materiality/routing) is open and blocks DEF-002. The §8.3 absence-trap
+  axis-completeness question (Layer 1) is paper/design work, separate from
+  the auditor. Attorney question: is the existence/mechanism separation
+  (Future Item A) and the three-layer auditor architecture each a distinct
+  claimable contribution, and does building Layer 2 strengthen scope vs
+  describing it as reduced-to-practice across four benchmark domains?
 - **Stage 5d formalization** — Step 302 spec exists. Multi-model
   consensus (≥2/3) required before enabling. **ENABLED** as of Step 303
   (variance acceptance test passed 2026-05-04, 5 runs ±1 stable;
