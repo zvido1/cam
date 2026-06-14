@@ -3,6 +3,7 @@ CAM Lease Analyzer Web App — Configuration
 
 All settings via environment variables with sensible defaults.
 """
+# Step 369: trigger uvicorn --reload to pick up lease_synthesis.py robust matching
 
 import os
 import sys

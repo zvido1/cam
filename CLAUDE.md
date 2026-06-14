@@ -13,6 +13,36 @@ When Tzvi says:
 - **"read current state"** → Read `Docs/CAM_Current_State.md`
 - **"status"** → Show the latest `NNN_code_status.md` you wrote
 
+## Environment — RUNNING THE PIPELINE (read before claiming you can't run)
+
+**API keys live here** (use forward slashes or escape the backslashes in code):
+```
+C:/Users/Owner/OneDrive/DoubleCheck/doublecheck-api/api_keys/.env
+```
+(Windows backslash form: `C:\Users\Owner\OneDrive\DoubleCheck\doublecheck-api\api_keys\.env`)
+
+This file holds OPENAI, ANTHROPIC, XAI, and GEMINI keys. It is NOT in the CAM repo
+and NOT in `05 Lease Analyzer/.env` (that one has only SMTP/app config). Any
+standalone harness or probe that calls models MUST `load_dotenv()` this exact path.
+
+**Before reporting "cannot run — no API keys" or "missing SDKs": you have not hit a
+dead end. Do this first:**
+1. Point `load_dotenv` at the path above.
+2. Run from `C:/Users/Owner/OneDrive/CAM/05 Lease Analyzer` with
+   `PYTHONPATH=C:/Users/Owner/OneDrive/CAM`.
+3. If the Python you're in lacks `anthropic` / `openai` / `google-genai` / `PyMuPDF`,
+   you are in the wrong interpreter (the AppX/Microsoft-Store Python 3.13 shell does
+   NOT have them). Use the project virtualenv that the Railway server uses, or
+   `pip install` the four SDKs into a venv that can read the keys above.
+4. Only after the keys are loaded AND the SDKs are present should you conclude a run
+   is blocked — and if so, say WHICH of (keys / SDKs / venv) is missing, not just
+   "can't run."
+
+A full Mode C Atlas run is ~17–25 min and costs real tokens; that is expected, not a
+blocker. Model stack: `gpt-5.5`, `claude-sonnet-4-6`, `grok-4.3`, `gemini-3.1-pro-preview`.
+
+---
+
 ## How You Work
 1. Always read `build_log/000_project_context.md` at the start of each session
 2. Execute instructions from `chat_instruction` files

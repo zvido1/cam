@@ -1600,6 +1600,14 @@ def run_lease_coverage_only(
             if progress_callback:
                 progress_callback(4, 4, "Cross-provision review")
             print("[lease_adapter:analyze] Stage 7: Cross-provision synthesis...", flush=True)
+            # Step 386: inject artifact dir so Pass-1 instrumentation can write files.
+            try:
+                from pathlib import Path as _Path386
+                _p1_art = _Path386(cfg["output_dir"]) / run_id
+                _p1_art.mkdir(parents=True, exist_ok=True)
+                cfg["_p1_artifact_dir"] = str(_p1_art)
+            except Exception:
+                pass
             synthesis_result = run_synthesis(
                 full_tenant_text=tenant_text,
                 coverage_assessment=coverage_assessment,
