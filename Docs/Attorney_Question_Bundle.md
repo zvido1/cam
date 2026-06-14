@@ -1,0 +1,142 @@
+# Attorney Question Bundle — Consolidated for Claim-Scope Conversation
+
+Date: 2026-06-13
+Status: PAPER / SYNTHESIS. No build, no model calls, no code, freeze-safe, lawyer-independent to assemble. This is the single document to walk into the attorney conversation with (target: before September 2026).
+Supersedes for question-tracking purposes: the Part 4 list in `CAM_Project_Review_2026_06_09.md` (preserved there; consolidated and updated here). Sources folded in: that review's Part 4 + gaps; `parked_strategic_ideas.md` (four parked items that each resolve to an attorney question); Supplement #24 open layers; Supplement #25 (Architecture A Phase 2, now written); Step 396 (DEF-010 variance classification); Step 397 (closed-form question-set design).
+
+Purpose: the project's constraint is lawyer ACCESS, not ideas. This bundle makes one scarce conversation maximally productive by pre-forming every question, grouping by theme, and noting for each what CAM evidence already exists to ground it. Walking in with this means the hour is spent on judgment, not orientation.
+
+---
+
+## How to use this in the conversation
+
+Each question carries: the ASK (what to get a decision on), the WHY (why it matters / what's blocked behind it), and the GROUND (what CAM artifact already supports the discussion, so the lawyer isn't reasoning in a vacuum). Questions are grouped into five themes. The starred (★) ones are the load-bearing few — if the conversation is cut short, these are the ones that unblock the most downstream work.
+
+---
+
+## Theme A — Claim scope and structure
+
+### A1 ★ — Support map: provisional vs new matter
+**Ask:** Which contributions are supported by the existing provisional, and which are new matter requiring the non-provisional (or a continuation) for priority?
+**Why:** This determines filing structure and what gets priority-dated to the provisional. It's the foundational triage; almost every other claim decision depends on it.
+**Ground:** 25 supplements, indexed in `Patent_Current_State.md` Supplement Index, each dated. The provisional's contents define the line; the supplements postdating it (everything roughly from #2 onward, depending on provisional date) are the candidate new-matter set.
+
+### A2 — Claim layering
+**Ask:** Confirm or revise a claim structure layered as conceptual / system / embodiment, each anchored to a deployment surface (inference layer, orchestration, governance, domain app).
+**Why:** Layered claims give fallback positions if broad claims are rejected. The existing strategy assumed this structure; confirm it survives contact with counsel.
+**Ground:** the five-granularity architecture (per-assertion / per-LP / per-element / per-document / across-time) in `Patent_Current_State.md` maps naturally to embodiment-level claims; the core/adapter split (Guardrail #5) supports the conceptual/architecture-level claim.
+
+### A3 ★ — Detectability weighting
+**Ask:** Should claim drafting prioritize OUTPUT-VISIBLE behaviors for licensing enforceability — even at some cost to breadth?
+**Why:** A licensing patent is worth only the infringement you can detect from outside a competitor's product. Internal merge mechanics are near-undetectable; output-visible behaviors are detectable. The strongest licensing claims sit where novelty AND detectability intersect. This reframes which contributions to lead with.
+**Ground:** detectable behaviors already in the product surface — Disputed merge verdicts (amber badge), structured abstention records, action-type buckets with separated confidence, audit-trail provenance fields, the diagnostic-only demoted sign marker. Internal-only: merge mechanics, distance computation. The detectability split is half-mapped already; the review (Gap 3) flagged this as underweighted.
+
+### A4 ★ — §101 / Alice posture
+**Ask:** Structure claims around the concrete data structures and the measured technical failures they remedy, leading bottom-up from mechanisms rather than the abstract "govern AI assertions" idea?
+**Why:** "Method for governing AI assertions" is squarely in Alice abstract-idea risk. The antidote is already in the record — specific structures (the six-rung ladder with the deliberate rank-4 gap; distance × consequence matrices; provenance fields; dispute-propagation gates) plus the measured failures they fix (run-to-run instability; sign perspective-coupling). The claims must be drafted from those concrete mechanisms.
+**Ground:** Supplement #25 (deliberate-gap rank scale, with the Step 351b defense of why a linear scale fails); Supplement #23 (sign measured to be perspective-coupled — a concrete technical failure remedied); Supplement #21 (dispute-propagation gate); the DEF-010 variance work (Step 396) is documented measured instability the structures address.
+
+### A8 — Continuation runway
+**Ask:** How to structure the non-provisional so later-built contributions (recall governance, the closed-form Axis-5 absence question, temporal case studies) have a filing home?
+**Why:** Several of the strongest future contributions aren't built yet. The non-provisional should leave room to add them via continuation without losing priority.
+**Ground:** the parked items below (Theme D) are the named future contributions; each is logged with its trigger.
+
+---
+
+## Theme B — Prior art and novelty defense
+
+### B1 ★ — Prior-art landscape confirmation
+**Ask:** Confirm the closest prior-art families and the distinguishing features per contribution, so the claims are drafted around the gaps.
+**Why:** An examiner or a licensee's counsel will raise these. Having the distinctions pre-drawn shapes the claims and speeds prosecution.
+**Ground (the closest families, already identified in Gap 3):**
+- selective prediction / learning-to-defer / abstention — the academic name for "governed refusal to assert." CAM distinction: governs at multiple decomposition layers with action-type routing, not a single accept/defer gate.
+- conformal prediction — calibrated uncertainty with abstention guarantees. CAM distinction: disagreement is ordinal-semantic and preserved, not collapsed to a coverage probability.
+- self-consistency / ensemble-disagreement — CAM distinction: disagreement is SIGNAL preserved per-axis, not voted away.
+- LLM-as-judge / multi-agent debate — **the strongest differentiator: the non-deliberation doctrine (Supplement #22).** The field's default is deliberate-to-converge; CAM documents a deliberate REFUSAL to deliberate, with the conformity-pressure rationale. This is a genuine architectural distinction against the debate literature.
+
+### B2 — The likely-most-defensible novel core
+**Ask:** Confirm that the three most defensible novel elements are (i) the non-deliberation doctrine, (ii) the action-type ontology (bucket = lawyer action, orthogonal to confidence, leverage explicitly NOT a classifier), and (iii) ordinal verdict distance with the deliberate rank-4 gap — and prioritize claim drafting around them.
+**Why:** These three have the least obvious academic counterpart. Concentrating claim strength here is the highest-novelty-confidence bet.
+**Ground:** Supplement #22 (non-deliberation), the action-type doctrine section + Guardrails #9–11 (`Patent_Current_State.md`), Supplements #18 and #25 (ordinal distance, both layers, with the gap defense).
+
+---
+
+## Theme C — Inventorship, disclosure, evidence
+
+### C1 — AI-assisted inventorship posture
+**Ask:** Claim-by-claim, what human-contribution story should the claims be drafted to support, given heavy AI tooling (Chat, Code, GPT adversarial review)? Is the build_log record adequate?
+**Why:** USPTO Feb-2024 guidance: AI-assisted inventions are patentable when a natural person made a significant contribution to EACH claim. A challenger could probe this. The position is strong but must be made explicit at drafting time.
+**Ground:** the build_log is a contemporaneous record of the human making gating decisions and rejecting AI proposals — the P2'' adoption, the DEF-002 product decision, the "demote don't delete" sign call, the measure-before-enforce discipline, the refusal to write supplements for unbuilt work. All documented human judgments.
+
+### C2 ★ — Public deployment vs foreign filing
+**Ask:** Does vered.ai (or any demo) publicly DISCLOSE post-provisional mechanisms? Implications for foreign filing (absolute-novelty jurisdictions) and the PCT go/no-go and timing?
+**Why:** US gives a 1-year grace for the inventor's own disclosure; most foreign jurisdictions are absolute-novelty. Deploying a product doesn't necessarily disclose internals, but the audit trail surfaces some. This gates the entire international strategy.
+**Ground:** the deployed product's UI surfaces (Coverage & Gaps, the audit trail with Disputed verdicts and provenance) are the disclosure surface; the merge mechanics and distance computation are not visible. The audit-trail internals are the specific exposure to assess. Be deliberate about demo exposure until answered.
+
+### C3 — Evidence standards for conception/RTP
+**Ask:** What form of dated documentation best serves conception / diligence / RTP narratives if ever contested?
+**Why:** The prosecution narrative leans on dated sequencing (e.g. Supplement #21 written evening of 2026-05-17, first RTP commit next morning). But Docs/ and build_log/ are gitignored — only OneDrive metadata dates them, which is mutable and weak.
+**Ground:** Gap 4 of the June review proposes a tamper-evident evidence repo (private git remote with the ignore lifted for Docs/build_log) giving hashed, dated commits for every supplement. Worth confirming this is the right form before investing in the habit. NOTE: this connects to a real current pain — the OneDrive sync/`.tmp.driveupload` staging issue surfaced 2026-06-13 is itself an argument for moving the documentation trail onto proper version control rather than relying on OneDrive.
+
+---
+
+## Theme D — The parked second-order contributions (build only if the answer says so)
+
+These four are the parked-strategic-ideas items. Each was deliberately logged as "an attorney question at claim-scope, NOT a build decision." The discipline holds: do not build any of them to strengthen the patent unless the attorney says it materially helps. Posing them is the action; building is downstream and conditional.
+
+### D1 ★ — Does a second domain materially strengthen claim scope?
+**Ask:** Does a second-domain proof-of-concept (e.g. legislative/statutory ambiguity review) materially strengthen claim scope, or can domain-generality be claimed from the ARCHITECTURE alone (the core is domain-independent by construction)?
+**Why:** This is the single biggest potential time-sink on the horizon. The parked file flags it as a "focus magnet" that could quietly become the main thing and pull off the patent endgame. If the architecture alone supports the generality claim, a second domain is unnecessary effort — and a thin, unvalidated second domain could even WEAKEN a claim. This question prevents months of misdirected work.
+**Ground:** the cross-domain auditor evidence already spans four benchmark domains (FEVER/GPQA/SciFact/ContractNLI — Supplement #24); the core/adapter split (Guardrail #5) is the architecture-level generality argument. The lease analyzer is the validation instance, not the invention. The question is whether four-benchmark + architecture is ENOUGH, or whether a fifth fully-built domain adapter adds claim strength.
+
+### D2 — Two-axis coverage model (existence vs mechanism) as a distinct claim
+**Ask:** Is the two-axis existence/mechanism separation a distinct, claimable architectural contribution, and does BUILDING it strengthen claim scope vs merely describing it?
+**Why:** Surfaced from the DEF-010a/LP-13 investigation. The insight: one coverage verdict token carries two orthogonal questions (is the protection there? / how is it there?) and consensus should be computed PER AXIS because the axes have different governance consequences. It's the same preserve-disagreement principle as the sign demotion and materiality-provenance — a recurring architectural pattern (third+ occurrence), which is more defensible than a one-off.
+**Ground:** the LP-13 failure is the motivating evidence (three evaluators agreed existence, differed on mechanism, merge misread it as existence-disagreement). Full write-up in `parked_strategic_ideas.md`. NOT built; DEF-010a was the cheap hotfix.
+
+### D3 — Recall / candidate-completeness governance as a distinct claim
+**Ask:** Is candidate-completeness governance (the framework guarantees a question is structurally ASKED for every provision, rather than relying on a model to volunteer it) a distinct claimable contribution complementing the assertion-governance claims?
+**Why:** This closes the most obvious attack on the framework — "you govern beautifully over whatever you happened to notice." CAM's existing claims are precision-side (WHEN to assert); recall-side (did the candidate get GENERATED) is thin. Distinct from selective-prediction/abstention prior art, which governs whether to ASSERT a generated candidate — this governs whether it gets generated at all.
+**Ground:** the recall evidence is on the record — Pass-1 candidate-generation variance (375D-2, LP-03 omission), present-but-one-sided coverage bypass (375H). And **Step 397 (today) designed a concrete instance**: the closed-form Axis-5 absence question structurally guarantees the §8.3 obligation-against-failure question is asked for every provision, so the §8.3 trap can't depend on a model volunteering it. That's a buildable, demonstrable recall-governance mechanism with a paper forcing-test already done. If D3 is claimable, Axis-5 is its proof case.
+
+### D4 — Model-tier robustness as a generality/strategic claim
+**Ask:** Does "model-agnostic by architecture" (reliability lives in the governance, not raw model capability, so CAM runs on commodity inference) support the domain-generality / architecture-level claims?
+**Why:** If the governance — not the model — produces reliability, that strengthens "the contribution is the architecture," and it's also a commercial moat (not exposed to frontier price hikes). Two birds: claim-strength and licensing-pitch strength.
+**Ground:** CAM's founding premise is extracting reliable output from imperfect models (governed assertion, mandatory citations, multi-evaluator consensus all exist because no single model is trusted). The stage-by-stage hypothesis (coverage classification plateaued; only Pass-1 synthesis maybe needs frontier) is in `parked_strategic_ideas.md`. NOTE: this experiment is gated behind the stack-freeze (don't swap models mid-investigation), so it's measurable later but not now — the QUESTION can still be posed now.
+
+---
+
+## Theme E — The directional-governance open architecture (Supplement #24 + Step 397)
+
+These are specific to the three-layer directional architecture and the closed-form work. They're narrower than Themes A–D but they're where the most recent design energy went, and two of them have buildable proof cases already designed.
+
+### E1 — Is the three-layer directional architecture itself claimable?
+**Ask:** Is the separation into Layer 1 (axis discipline) / Layer 2 (trace auditor) / Layer 3 (materiality-routing) — with the auditor structurally forbidden from judging materiality — a distinct claimable contribution, or is it an embodiment of the broader governed-assertion claim?
+**Why:** Supplement #24 frames this as RTP + refinement of the §7 Optional Auditor Capability, demonstrated across four domains. Whether it's its own claim or a dependent embodiment affects how it's drafted.
+**Ground:** Supplement #24; Guardrails #17 (three layers must not collapse) and #18 (refined minority — lone evaluator survives if its TRACE is valid). Layer 1 is RTP (closed-form prototype, the LP-11 scalpel proof); Layer 2 is designed + paper-validated, not built; Layer 3 is open.
+
+### E2 — Does building Layer 2 (the trace auditor) strengthen scope vs describing it?
+**Ask:** Does actually building the light trace-compliance auditor strengthen claim scope, or is the cross-domain reduction-to-practice (four benchmarks) sufficient to claim it?
+**Why:** Same shape as D1/D2 — build-vs-describe. Layer 2 is paper-validated against real Step 391 traces but not built in the lease tool. The four-benchmark RTP may already suffice.
+**Ground:** Supplement #24 §24 open-layers note; the 392B paper test of the light auditor against real lease traces.
+
+### E3 — The closed-form absence axis (Axis 5) as a recall-governance proof case
+**Ask:** Confirm whether the closed-form Axis-5 absence question (designed today, Step 397) is the right concrete proof case for the recall-governance claim (D3) — and whether building it before the attorney conversation strengthens that claim or whether the paper design + forcing-test suffices.
+**Why:** Step 397 designed Axis 5 and showed on paper it forces the §8.3 trap to surface while staying silent on the present-text cases (the discrimination property). It's the most concrete, closest-to-buildable instance of recall governance in the whole record. The question is whether it's worth building as a proof case or whether the design is enough to claim from.
+**Ground:** Step 397 (`397_closed_form_question_set_design.md`) — the design, the four-component anti-wish-list anchor, the document-scope precondition, and the on-paper forcing-test against LP-03/LP-19/LP-26/§11.2. Note the world-question (is LP-03 §8.3 a true risk) is separately lawyer-panel-gated — that's a VALIDATION input, distinct from this claim-scope question.
+
+---
+
+## The starred shortlist (if the conversation is short)
+
+If only 20 minutes: **A1 (support map), A3 (detectability), A4 (§101 posture), B1 (prior art), C2 (public-disclosure/foreign filing), D1 (second-domain — build or not).** These six unblock the most: A1 structures the filing; A3+A4+B1 shape what the claims emphasize and how they survive Alice and the examiner; C2 gates the entire international decision; D1 prevents the single biggest potential misdirection of effort. The rest are refinements on top of these.
+
+---
+
+## What this bundle is NOT
+
+- Not a build authorization for any of the parked items (D1–D4, E2, E3). Each builds ONLY if the attorney says it materially helps the claims, and scoped to what the patent needs.
+- Not a substitute for the claim-priority memo (Gap 3) or the prior-art memo (B1's ground) — those are separate owed deliverables that this bundle's answers will shape. This is the QUESTION list; those are the analysis docs.
+- Not the validation/world-question track. The lawyer PANEL (Packet 02, the §8.3 packet) answers "is this finding correct" — a different lawyer interaction than this claim-scope conversation. Don't conflate: the panel is a CRE attorney judging lease findings; this bundle is a PATENT attorney judging claim scope. Different lawyer, different conversation, possibly different person entirely.
+
+Non-goals honored: no build, no code, no model calls, freeze-safe. This memo: `Docs/Attorney_Question_Bundle.md` (local, not pushed). Accumulate additional questions here as they arise before the conversation.
