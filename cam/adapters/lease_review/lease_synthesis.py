@@ -678,7 +678,8 @@ def _call_single_evaluator(
     model    = ev_cfg["model"]
     fallback = ev_cfg.get("fallback")  # (provider, model, label) or None
 
-    def _try_call(p: str, m: str) -> dict:
+    def _try_call(p: str, m: str) -> tuple:
+        """Returns (raw_str, parsed_dict)."""
         if not health.is_available(p):
             raise RuntimeError(f"provider {p} degraded")
         target = ModelTarget(
@@ -697,17 +698,19 @@ def _call_single_evaluator(
             raise RuntimeError(f"evaluator {role} returned unparseable response")
         if not isinstance(parsed, dict):
             raise RuntimeError(f"evaluator {role} returned non-dict: {type(parsed)}")
-        return parsed
+        return raw, parsed
 
     print(f"[lease_synthesis] Eval-{role}: calling {model} ({provider})...", flush=True)
     try:
-        result = _try_call(provider, model)
+        raw_text, result = _try_call(provider, model)
         elapsed = time.time() - start_time
         print(f"[lease_synthesis] Eval-{role}: {model} succeeded in {round(elapsed, 1)}s", flush=True)
         return {"role": role, "model": model, "provider": provider,
                 "label": ev_cfg["label"], "completed": True,
                 "result": result, "error": None,
-                "elapsed_sec": round(elapsed, 2)}
+                "elapsed_sec": round(elapsed, 2),
+                "raw_response": raw_text,
+                "finish_reason": None}   # finish_reason not exposed by cam/core adapter
     except Exception as e:
         err_str = str(e).lower()
         if any(k in err_str for k in ["503", "connection", "refused", "unavailable", "resource_exhausted"]):
@@ -718,22 +721,26 @@ def _call_single_evaluator(
             fb_provider, fb_model, fb_label = fallback
             print(f"[lease_synthesis] Eval-{role}: trying fallback {fb_model} ({fb_provider})...", flush=True)
             try:
-                result = _try_call(fb_provider, fb_model)
+                raw_text, result = _try_call(fb_provider, fb_model)
                 elapsed = time.time() - start_time
                 print(f"[lease_synthesis] Eval-{role}: fallback succeeded in {round(elapsed, 1)}s", flush=True)
                 return {"role": role, "model": fb_model, "provider": fb_provider,
                         "label": fb_label, "completed": True,
                         "result": result, "error": None,
-                        "elapsed_sec": round(elapsed, 2), "fallback_used": True}
+                        "elapsed_sec": round(elapsed, 2), "fallback_used": True,
+                        "raw_response": raw_text,
+                        "finish_reason": None}
             except Exception as e2:
                 print(f"[lease_synthesis] Eval-{role}: fallback FAILED ({type(e2).__name__})", flush=True)
                 return {"role": role, "model": model, "completed": False,
                         "result": None, "error": str(e2),
-                        "elapsed_sec": round(time.time() - start_time, 2)}
+                        "elapsed_sec": round(time.time() - start_time, 2),
+                        "raw_response": None, "finish_reason": None}
 
         return {"role": role, "model": model, "completed": False,
                 "result": None, "error": str(e),
-                "elapsed_sec": round(time.time() - start_time, 2)}
+                "elapsed_sec": round(time.time() - start_time, 2),
+                "raw_response": None, "finish_reason": None}
 
 
 def _call_compound_evaluator(
@@ -2588,12 +2595,93 @@ def run_synthesis(
             f"— directional synthesis marked INCOMPLETE; will not present clean directional result.",
             flush=True,
         )
-    # Best-effort artifact pointers for later path/variance analysis. Never invent
-    # values; never break the pipeline. Pass-1 raw responses / request hashes are not
-    # persisted to disk today, so those stay empty until 370c adds them.
+    # ── Step 386 re-land (2026-06-14): Pass-1 instrumentation artifacts ─────
+    # Write 4 files per run when cfg["_p1_artifact_dir"] is set.
+    # No behavior change — observation only. Entire block is non-fatal (try/except).
+    _p1_artifact_paths: dict = {}
+    try:
+        import json as _json386
+        _p1_art_dir = (cfg or {}).get("_p1_artifact_dir")
+        if _p1_art_dir:
+            from pathlib import Path as _Path386
+            _d = _Path386(_p1_art_dir)
+            _d.mkdir(parents=True, exist_ok=True)
+
+            # 1 — raw input: flagged LP list + prompt hash/len
+            _raw_input = {
+                "flagged_lp_count": len(flagged_lps),
+                "flagged_lp_ids": [lp["lp_id"] for lp in flagged_lps],
+                "prompt_hash_md5": _p1_hash,
+                "prompt_len": len(user_prompt),
+            }
+            _f_input = _d / "stage7_pass1_raw_input.json"
+            _f_input.write_text(_json386.dumps(_raw_input, indent=2), encoding="utf-8")
+            _p1_artifact_paths["raw_input"] = str(_f_input)
+
+            # 2 — raw output: verbatim LLM response per evaluator
+            _raw_output_lines = []
+            for _r in ("A", "B", "C"):
+                _ev = evaluator_outputs.get(_r, {})
+                _raw_output_lines.append(
+                    f"=== EVALUATOR {_r} | model={_ev.get('model','')} | completed={_ev.get('completed')} ==="
+                )
+                _raw_output_lines.append(_ev.get("raw_response") or "(no response)")
+                _raw_output_lines.append("")
+            _f_output = _d / "stage7_pass1_raw_output.txt"
+            _f_output.write_text("\n".join(_raw_output_lines), encoding="utf-8")
+            _p1_artifact_paths["raw_output"] = str(_f_output)
+
+            # 3 — parsed directional candidates
+            _f_cands = _d / "stage7_pass1_parsed_candidates.json"
+            _f_cands.write_text(
+                _json386.dumps(directional_candidates, indent=2, default=str), encoding="utf-8"
+            )
+            _p1_artifact_paths["parsed_candidates"] = str(_f_cands)
+
+            # 4 — dropped attention items: flagged LPs with no directional candidate
+            _candidate_lp_ids: set = set()
+            for _dc in directional_candidates:
+                for _lid in (_dc.get("lp_ids") or []):
+                    _candidate_lp_ids.add(_lid)
+            _dropped = [
+                {
+                    "lp_id": lp["lp_id"],
+                    "lp_name": lp.get("lp_name", ""),
+                    "coverage_state": lp.get("coverage_state", ""),
+                }
+                for lp in flagged_lps
+                if lp["lp_id"] not in _candidate_lp_ids
+            ]
+            _f_dropped = _d / "stage7_pass1_dropped_attention_items.json"
+            _f_dropped.write_text(
+                _json386.dumps({
+                    "flagged_lp_count": len(flagged_lps),
+                    "candidate_count": len(directional_candidates),
+                    "dropped_count": len(_dropped),
+                    "dropped": _dropped,
+                    "finish_reasons": {
+                        _r: evaluator_outputs.get(_r, {}).get("finish_reason")
+                        for _r in ("A", "B", "C")
+                    },
+                }, indent=2),
+                encoding="utf-8",
+            )
+            _p1_artifact_paths["dropped_attention_items"] = str(_f_dropped)
+
+            print(
+                f"[lease_synthesis] Step 386: Pass-1 artifacts written to {_d} "
+                f"({len(_dropped)} dropped LP(s))",
+                flush=True,
+            )
+    except Exception as _p1art_e:
+        print(
+            f"[lease_synthesis] Step 386: Pass-1 artifact write failed (non-fatal): {_p1art_e}",
+            flush=True,
+        )
+    # ── End Step 386 re-land ─────────────────────────────────────────────────
     directional_guard["execution_path"] = "unknown"
-    directional_guard["raw_response_paths"] = []
-    directional_guard["request_hashes"] = []
+    directional_guard["raw_response_paths"] = _p1_artifact_paths
+    directional_guard["request_hashes"] = {"pass1_prompt_md5": _p1_hash}
     try:
         directional_guard["parse_status"] = [
             {
