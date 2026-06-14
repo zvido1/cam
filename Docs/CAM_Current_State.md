@@ -1,11 +1,27 @@
-# CAM Current State — Updated 2026-06-11 (DIRECTIONAL-METHOD ARC: 388 done — Case B confirmed, 15 retained, Axis 1 demoted to modifier-only, GATE CLEARED. NEXT = Step 389 closed-form directional prototype: mechanism test on 5-8 Atlas LPs, three contamination guards mandatory, freeform baseline required. DEF-002 still blocked.)
+# CAM Current State — Updated 2026-06-12 (DIRECTIONAL-METHOD ARC: prototype built + tested; auditor architecture discovered. 389 prototype = Case B (LP-11 scalpel proof 10/10→0/5 DECISIVE; LP-15 didn't drop). 390/391 = LP-15 Axis-2 over-fire tightened but migrated Axis-2→Axis-3 (whack-a-mole). 392A/B = cross-domain AUDITOR pattern found (FEVER/GPQA/SciFact/ContractNLI); THREE-LAYER architecture: axis discipline / trace auditor / materiality-routing. LP-15 reframed: not a bug, a valid-trace materiality dispute. §8.3 still unsurfaced = cleanest next target. DEF-002 still blocked on layer-3.)
 
 > **ORIENTATION FOR A NEW READER (next-thread Claude / GPT) — read THIS block first.** The live
-> frontier as of 2026-06-10 is the RECALL-STABILITY arc (steps 377–385), summarized immediately
-> below. The 2026-06-07 P2''/376h block beneath it is now CLOSED HISTORY (shipped, pushed, live).
-> The 375E-DIR and 375I–L blocks below that are SETTLED HISTORY. The 372-chain is CLOSED HISTORY.
-> Authoritative defect/decision record: `build_log/defects.md` (DEF-001 through DEF-012) and
-> `build_log/parked_strategic_ideas.md`.
+> frontier as of 2026-06-12 is the DIRECTIONAL-METHOD / CROSS-DOMAIN-AUDITOR arc (steps 389–392B),
+> summarized in the "Where things stand (2026-06-11)" section immediately below this block. The
+> 2026-06-10 RECALL-STABILITY arc (steps 377–385) is now CLOSED HISTORY (shipped: `6990434`,
+> `d134ef8`) and appears below the directional-method section under the "CLOSED HISTORY" divider.
+> The 2026-06-07 P2''/376h block is CLOSED HISTORY (shipped, pushed, live). The 375E-DIR and 375I–L
+> blocks are SETTLED HISTORY. The 372-chain is CLOSED HISTORY. Authoritative defect/decision record:
+> `build_log/defects.md` (DEF-001 through DEF-012) and `build_log/parked_strategic_ideas.md`.
+>
+> **NEW ASSET 2026-06-14 (not a build change, freeze intact):** EDGAR mini-corpus — first external
+> real-lease fixture set. 8 executed commercial leases from SEC filings (10-K/10-Q Exhibit 10.x),
+> 4 property types, 6 jurisdictions, populated/absent work-scope split 3/5, 48/48 fixture checks pass.
+> Committed local `b1ec8e7` (UNPUSHED). Fixtures in `05 Lease Analyzer/test_data/tenants/`; manifest
+> `05 Lease Analyzer/test_data/edgar_corpus_manifest.json`; build `build_log/build_edgar_corpus.py`.
+> This is FIXTURE MATERIAL ONLY — NOT yet run through the pipeline, NOT a validation result, NOT a
+> patent contribution. Sharpest fixtures: Atreca pair (near-controlled contrast in the STRUCTURE of
+> landlord work — EX-10.18 existing-building Landlord's-Work vs EX-10.19 to-be-constructed shell +
+> tenant-built TIs; BOTH populated) and BOKF As-Is Work Letter (document-present / obligation-absent
+> edge case). The cleanest populated-vs-ABSENT contrast pairs a populated lease against an absent one
+> (DiVall Wendy's NNN / Quanterix / SolidPower), NOT the two Atreca leases. See `Docs/NEW_THREAD_PROMPT.md`
+> for the binding-constraint framing: this closed the self-serviceable validation move; human (lawyer)
+> reaction is now the sole remaining trajectory-mover.
 
 ## Where things stand (2026-06-11 — the live frontier: the closed-form directional METHOD)
 
@@ -82,6 +98,72 @@ routing/candidate logic reads CLOSED ANSWER FIELDS ONLY; the reason/citation fie
 not visible to candidate generation (structure, not instruction). Even a clean 389 = "mechanism works
 on ONE lease," NOT "axes are right/complete" — the negative controls (LP-15/16, LP-11/22) are what give
 Case A its teeth.
+
+**389 PROTOTYPE RESULT (2026-06-11/12, commit 0ff3cc2 local) — Case B; LP-11 scalpel proof DECISIVE.**
+Closed-form prototype on 6 LPs, N=5 closed-form vs N=10 freeform baseline, all three guards enforced
+(Guard 3 structural: candidate logic reads closed-answer fields only, prose display-only, 27/27 unit
+tests). HEADLINE: LP-11 freeform 10/10 → closed-form 0/5 — a finding the OLD system flagged every run,
+the closed form rejects every run = the scalpel proof; the mechanism DISCRIMINATES, not a reworded
+wish-list. LP-03/19/26 went 80-90% freeform → 5/5 closed-form (stabilized against baseline). LP-19
+routes contested. LP-26 surfaces without Axis 1 (2/3 evaluators). LP-27 genuine Axis-1 (2/3; Eval-C
+all-no = largest split). BUT LP-15 (wish-list control) did NOT drop (5/5). LP-03 honesty: the surfacing
+finding is the RENEWAL/§2.2-appraiser trap, NOT the §8.3 Landlord's-Work trap — §8.3 STILL UNSURFACED.
+
+**390/391 LP-15 — Axis-2 over-fire tightened, then MIGRATED (whack-a-mole).** 390 read: Eval-A's LP-15
+Axis-2 was an over-fire ("landlord conditions SUCH AS ... MAY NOT be met" = hypothetical category, fails
+the four-part test). 391 (commit c709b74 + 33c139f local) tightened Axis 2 to require naming all four
+(obligation / specific landlord failure / specific consequence / missing remedy) with a q_a_confirmed
+field. Result: Axis-2 over-fire BLOCKED for Eval-A/C — but LP-15 STILL 5/5, because the over-fire MOVED
+to Axis 3 (Eval-A reads the insurance covenant as conditional protection) and Eval-B fires Axis 2 in
+3/5. Under ANY-evaluator voting, one over-eager evaluator sustains the candidate alone. KEY INSIGHT:
+the wish-list bias isn't in any single axis — it's in Eval-A's DISPOSITION to find LP-15 problematic,
+re-expressing through whatever axis is open. (Three data points: Axis-1/LP-26 in 388, Axis-2/LP-15 in
+390, Axis-3/LP-15 in 391 — the "smarter model editorializes" pattern, parked model-tier hypothesis.)
+
+**392A — CROSS-DOMAIN AUDITOR LINEAGE (patent asset; `build_log/392A_*`).** Tzvi recalled an "enforcer."
+It exists, named AUDITOR, in ALL FOUR benchmark domains, evolving: FEVER (standalone process auditor —
+checks reasoning TRACE vs declared standard, can invalidate even under consensus; violation codes
+HIDDEN_ASSUMPTION / UNSUPPORTED_INFERENCE) → GPQA (auditor + adversarial falsification: unanimity
+challenge, fidelity/representation/resurrection/stress-test) → SciFact (auditor FLAG + rule library +
+WITHHOLD + conviction test — DOCUMENTED over-withhold failure: RULE-SF-002 suppressed correct NEIs) →
+ContractNLI (auditor + elimination + model-DIVERSIFIED governance — QUANTIFIED tradeoff: CCA 80.4%→83.2%
+but Withheld 17→33, MANY correct [OK]→[WH]). CONCLUSION: auditor is GENERAL CAM machinery, grew BIGGER
+across domains (Tzvi's "later ones didn't need it" corrected — they needed it MORE). The lease analyzer
+is the ONLY domain LACKING the layer — why LP-15 survives. The HEAVY withhold/elimination version is
+DANGEROUS for legal review (over-withhold = suppressing real risk = unforgivable). Port the LIGHT
+FEVER-style trace-compliance auditor FIRST, not the rule-library/elimination stack.
+
+**392B — LP-15/LP-03 AUDITOR PAPER TEST (`build_log/392B_*`) — Case B-variant; THREE-LAYER architecture.**
+Hand-ran the light auditor against REAL 391 traces. Result is NOT the expected clean kill: the 390 LP-15
+trace (hypothetical) WOULD be invalidated, but the 391 LP-15 trace is now SPECIFIC and CITED ($10M
+umbrella §10.1(e) vs $5M §10.2(b); negligence §11.1(b) vs gross-negligence §11.2(b); §10.3 subrogation
+waiver limited to insured losses) — so the light auditor PRESERVES it (passes valid traces by design).
+LP-03 renewal trap and LP-27 same-risk Axis-1 also preserved (specific, cited, four-part). THE FINDING:
+LP-15 MIGRATED from a trace-validity problem (390, auditable, killable) to a MATERIALITY problem (391,
+NOT auditable — the asymmetries are REAL and IN THE TEXT; B/C judge them immaterial = a genuine 1-vs-2
+materiality split). LP-15 is likely NOT a bug — possibly a correctly-surfaced contested finding,
+MISLABELED as a control.
+
+**THE THREE-LAYER ARCHITECTURE (now official doctrine):**
+1. Axis discipline — force closed-form questions (387-391; SOLVED).
+2. Trace auditor — reject unsupported/hypothetical reasoning (light FEVER-style; DESIGNED+paper-validated,
+   NOT built; port spec-gated, trace-compliance ONLY not withhold/elimination).
+3. Materiality / routing — decide what to do with valid-but-disputed/minority findings (OPEN; needs the
+   lawyer panel as a structural input; BLOCKS DEF-002, whose bucketing IS a layer-3 decision).
+Refined minority doctrine (KEEPER): **a lone evaluator survives if its trace is VALID, not because it
+produced a finding / is loud in JSON.** Minority preserved as SIGNAL after passing the validity gate,
+but valid ≠ automatic Risk — materiality and agreement govern the bucket. This sharpens "minority never
+silenced": protected when WELL-REASONED, not merely PRESENT.
+
+**OPEN ITEMS (all gated, none built):** (a) port light auditor as layer 2 (spec required; trace-
+compliance only). (b) LP-15 → lawyer-panel materiality question ("is $10M/$5M + negligence/gross-
+negligence a material one-sided term or standard allocation?"); if lawyers split, route Review Needed,
+LP-15 was a mislabeled control. (c) §8.3 Landlord's-Work trap = cleanest next closed-form target — a
+trap of ABSENCE (missing abatement remedy), different shape than the four present-text axes; may reveal
+whether a 5th axis is needed or Axis-2 just isn't triggering. (d) layer-3 voting question: does a lone
+valid-but-low-materiality trace force a candidate? (e) DEF-002 stays BLOCKED until layer-3 doctrine
+settles. Artifacts: `build_log/389_*`, `390_*`, `391_*`, `392A_*`, `392B_*`; auditor prompts at
+`01 FEVER/prompts/auditor_prompt_V1.2.txt`, `02 GPQA/prompts/auditor.txt`+`unanimity_challenge.txt`.
 
 **STANDING:** all directional-method validation so far is on ONE lease (Atlas). Even a clean 388 means
 "ready for PROTOTYPE," not "validated" — real validation is the closed-form questions holding their
