@@ -18201,8 +18201,9 @@ function classifyFindingType(finding, mode, context) {
 // Shared by Risk and Needs Review sub-headers. Mirror Risk's pattern: the large directional /
 // one-sided group defaults collapsed; the smaller groups default open.
 var _NAV_SUBGROUP_DEFAULT_COLLAPSED = {
-    risk_gaps: false, risk_compound: false, risk_directional: true,
-    review_coverage: false, review_onesided: true, review_conflicting: false
+    risk_gaps: true, risk_compound: true, risk_directional: true,
+    review_coverage: true, review_onesided: true, review_conflicting: true,
+    review_consnotassessed: true
 };
 
 function _navSubGroupCollapsed(sectionId, jobId) {
@@ -18321,8 +18322,14 @@ function _navBuildUnifiedItem(item, tIdx) {
          + '</button>';
 }
 
+var _NAV_SECTION_DEFAULT_COLLAPSED = {
+    review: true, improvement: true, addressed: true
+};
 function _navSectionCollapsed(sectionId, jobId) {
-    return localStorage.getItem('cam_sidebar_' + sectionId + (jobId ? '_' + jobId : '')) === '1';
+    var stored = localStorage.getItem('cam_sidebar_' + sectionId + (jobId ? '_' + jobId : ''));
+    if (stored !== null) return stored === '1';
+    var base = sectionId.replace(/_\d+$/, '');
+    return _NAV_SECTION_DEFAULT_COLLAPSED[base] || false;
 }
 
 function _navSectionToggle(sectionId, jobId) {
