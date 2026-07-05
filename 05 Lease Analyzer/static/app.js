@@ -16381,7 +16381,12 @@ function renderCoveragePanel() {
               '</div>'
             : "";
 
-        const srcNote = src === "model" ? '<span class="cv-source-model">AI assessed</span>' : "";
+        const _expSrc = src || (a.exposure_reason_code || "");
+        const expProvenanceChip = _expSrc === "model"
+            ? '<span class="cv-exp-provenance-chip">Lease-specific exposure</span>'
+            : (_expSrc === "schema" || _expSrc === "schema_default")
+                ? '<span class="cv-exp-provenance-chip cv-exp-default">Default exposure</span>'
+                : '<span class="cv-exp-provenance-chip cv-exp-unknown">Exposure source unknown</span>';
         const tenantText = (a.tenant_text || "").trim();
         const leaseTextHtml = tenantText
             ? `<div class="cv-lease-text-row" onclick="(function(row){var body=row.nextElementSibling;var opening=body.style.display==='none';body.style.display=opening?'block':'none';row.querySelector('.cv-lt-arrow').textContent=opening?'▾':'▸';row.querySelector('.cv-lt-label').textContent=opening?'Hide lease text':'Show lease text';})(this)"><span class="cv-lt-arrow">▾</span><span class="cv-lt-label"> Hide lease text</span></div><div class="cv-lease-text-body"><pre class="cv-lease-text-pre">${esc(tenantText)}</pre></div>`
@@ -16662,7 +16667,7 @@ function renderCoveragePanel() {
                            : (_ciGap === 'harmful' ? 'cv-ci-reason-adverse' : 'cv-ci-reason-neutral');
         const _ciParts = [];
         if (_ciReason) _ciParts.push('<div class="cv-ci-reason ' + _ciReasonCls + '">' + esc(_ciReason) + '</div>');
-        if (stmt) _ciParts.push('<div class="cv-ci-exposure">' + esc(stmt) + (srcNote ? ' ' + srcNote : '') + '</div>');
+        if (stmt) _ciParts.push('<div class="cv-ci-exposure">' + esc(stmt) + ' ' + expProvenanceChip + '</div>');
         const clientImpactHtml = _ciParts.length
             ? '<div class="cv-client-impact"><div class="cv-client-impact-label">Client Impact</div>' + _ciParts.join('') + '</div>'
             : '';
@@ -16685,6 +16690,20 @@ function renderCoveragePanel() {
             contextDepHtml = '<div class="cv-context-dep"><div class="cv-context-dep-label">Depends on your use</div>' + _cdBody + '</div>';
         }
 
+        // Step 400: materiality provenance
+        var _matDefault = a.materiality || "";
+        var _matAssessed = (a.use_impact && a.use_impact.materiality) || "";
+        var matProvHtml = "";
+        if (_matAssessed) {
+            matProvHtml = '<div class="cv-mat-prov"><span class="cv-mat-prov-chip">Assessed materiality: ' + _matAssessed + '</span>';
+            if (_matDefault && _matDefault !== _matAssessed) {
+                matProvHtml += ' <span class="cv-mat-prov-chip cv-mat-default">Default: ' + _matDefault + '</span>';
+            }
+            matProvHtml += '</div>';
+        } else if (_matDefault) {
+            matProvHtml = '<div class="cv-mat-prov"><span class="cv-mat-prov-chip cv-mat-default">Default materiality: ' + _matDefault + '</span></div>';
+        }
+
         return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
             <div class="cv-item-header">
                 <span class="cv-item-id">${esc(pid)}</span>
@@ -16700,6 +16719,7 @@ function renderCoveragePanel() {
             </div>
             ${escalationHtml}
             ${clientImpactHtml}
+            ${matProvHtml}
             ${contextDepHtml}
             ${leaseTextHtml}
             ${elementDetailHtml}
