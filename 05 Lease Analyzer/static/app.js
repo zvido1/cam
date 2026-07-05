@@ -16674,15 +16674,15 @@ function renderCoveragePanel() {
         // This block is a thin signal strip only: consequence tag + optional 1-1-1 split note.
         // Fires only when use_consequence === "context_dependent". Display only — no logic change.
         var _cdUi = a.use_impact;
-        var _cdConsequence = normalizeUseConsequence(_cdUi) || ‘’;
-        var _cdAgreement = (_cdUi && _cdUi.evaluator_agreement) || ‘’;
-        var _cdIsContextDep = _cdConsequence === ‘context_dependent’;
-        var contextDepHtml = ‘’;
+        var _cdConsequence = normalizeUseConsequence(_cdUi) || '';
+        var _cdAgreement = (_cdUi && _cdUi.evaluator_agreement) || '';
+        var _cdIsContextDep = _cdConsequence === 'context_dependent';
+        var contextDepHtml = '';
         if (_cdIsContextDep) {
-            var _cdBody = _cdAgreement === ‘1-1-1’
-                ? ‘<div class="cv-cd-split-note">Evaluators split 1-1-1 — no consensus on use impact; answer depends on tenant\’s specific use.</div>’
-                : ‘<div class="cv-cd-consequence">Use impact: context-dependent</div>’;
-            contextDepHtml = ‘<div class="cv-context-dep"><div class="cv-context-dep-label">Context Dependency</div>’ + _cdBody + ‘</div>’;
+            var _cdBody = _cdAgreement === '1-1-1'
+                ? '<div class="cv-cd-split-note">Genuinely unsettled — could cut either way.</div>'
+                : '<div class="cv-cd-consequence">Impact depends on your specific operations.</div>';
+            contextDepHtml = '<div class="cv-context-dep"><div class="cv-context-dep-label">Depends on your use</div>' + _cdBody + '</div>';
         }
 
         return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
