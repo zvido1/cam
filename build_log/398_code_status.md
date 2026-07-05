@@ -107,3 +107,21 @@ The 375G block was NOT modified (freeze behavior).
 - `05 Lease Analyzer/static/style.css` — CSS for `.cv-context-dep`, `.cv-context-dep-label`, `.cv-cd-reason`, `.cv-cd-consequence`, `.cv-cd-split-note`
 
 No `cam/core/`, no `summary_generator.py` (synopsis parity deferred per spec — not trivial to add without knowing which rendering path covers Mode C in the PDF).
+
+---
+
+## 398b follow-up cleanup (2026-07-05)
+
+**Problem:** The original 398 block reprinted `use_impact.use_reasoning` inside the Context Dependency box. Step 375G (Client Impact) already renders that same text. On any `context_dependent` card, the user saw the reasoning sentence twice — once in the indigo Client Impact box, once in the amber Context Dependency box.
+
+**Fix (app.js only):** Removed the `_cdReason` rendering line from the Context Dependency block. The block is now a thin signal strip: it emits only the consequence tag ("Use impact: context-dependent") and, when `evaluator_agreement === "1-1-1"`, the purple split note. It no longer re-displays `use_reasoning`.
+
+The secondary show-trigger `(_cdReason && !_cdConsequence)` was also dropped — that case (substantive reasoning without a consequence value) is already fully handled by 375G. The Context Dependency strip fires only on `use_consequence === "context_dependent"`.
+
+The `_CD_FALLBACKS` array was removed (no longer needed since we no longer render reasoning here). The 375G block is unchanged.
+
+**Result:** A `context_dependent` card shows:
+1. **Client Impact** (indigo) — `use_reasoning` + `exposure_statement`
+2. **Context Dependency** (amber strip) — consequence tag and/or 1-1-1 split note only
+
+No `cam/core/`, prompt, model, or pipeline changes. `style.css` unchanged (existing CSS classes still used).

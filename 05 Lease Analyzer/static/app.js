@@ -16667,36 +16667,22 @@ function renderCoveragePanel() {
             ? '<div class="cv-client-impact"><div class="cv-client-impact-label">Client Impact</div>' + _ciParts.join('') + '</div>'
             : '';
 
-        // Step 398: Context Dependency block — surfaces Stage 5e use_consequence="context_dependent"
-        // and the model-authored use_reasoning explaining why the outcome depends on tenant use.
-        // Fires only when consequence is context_dependent, OR when use_reasoning is substantive
-        // and consequence is absent (catches incomplete use_impact). Fallback strings are suppressed.
-        // No model call, no logic change — display only.
-        var _CD_FALLBACKS = [
-            'No use profile available — cannot assess tenant-specific impact.',
-            'Evaluators unavailable — cannot assess use impact.',
-            'No reasoning provided.',
-            'No valid evaluator verdict.',
-        ];
+        // Step 398 / 398b: Context Dependency signal strip — surfaces Stage 5e use_consequence=
+        // "context_dependent" and the evaluator-agreement split when present.
+        // use_reasoning is intentionally NOT reprinted here: 375G already renders it in the
+        // "Client Impact" box above, so reprinting it here would duplicate user-facing content.
+        // This block is a thin signal strip only: consequence tag + optional 1-1-1 split note.
+        // Fires only when use_consequence === "context_dependent". Display only — no logic change.
         var _cdUi = a.use_impact;
-        var _cdConsequence = normalizeUseConsequence(_cdUi) || '';
-        var _cdRawReason = (_cdUi && _cdUi.use_reasoning) ? String(_cdUi.use_reasoning).trim() : '';
-        var _cdReason = (_cdRawReason && _CD_FALLBACKS.indexOf(_cdRawReason) === -1) ? _cdRawReason : '';
-        var _cdAgreement = (_cdUi && _cdUi.evaluator_agreement) || '';
-        var _cdIsContextDep = _cdConsequence === 'context_dependent';
-        var _cdShow = _cdIsContextDep || (_cdReason && !_cdConsequence);
-        var contextDepHtml = '';
-        if (_cdShow) {
-            var _cdBody = '';
-            if (_cdReason) _cdBody += '<div class="cv-cd-reason">' + esc(_cdReason) + '</div>';
-            if (_cdIsContextDep) {
-                _cdBody += _cdAgreement === '1-1-1'
-                    ? '<div class="cv-cd-split-note">Evaluators split 1-1-1 — no consensus on use impact; answer depends on tenant’s specific use.</div>'
-                    : '<div class="cv-cd-consequence">Use impact: context-dependent</div>';
-            }
-            if (_cdBody) {
-                contextDepHtml = '<div class="cv-context-dep"><div class="cv-context-dep-label">Context Dependency</div>' + _cdBody + '</div>';
-            }
+        var _cdConsequence = normalizeUseConsequence(_cdUi) || ‘’;
+        var _cdAgreement = (_cdUi && _cdUi.evaluator_agreement) || ‘’;
+        var _cdIsContextDep = _cdConsequence === ‘context_dependent’;
+        var contextDepHtml = ‘’;
+        if (_cdIsContextDep) {
+            var _cdBody = _cdAgreement === ‘1-1-1’
+                ? ‘<div class="cv-cd-split-note">Evaluators split 1-1-1 — no consensus on use impact; answer depends on tenant\’s specific use.</div>’
+                : ‘<div class="cv-cd-consequence">Use impact: context-dependent</div>’;
+            contextDepHtml = ‘<div class="cv-context-dep"><div class="cv-context-dep-label">Context Dependency</div>’ + _cdBody + ‘</div>’;
         }
 
         return `<div class="cv-item cv-item-${tier}" data-pid="${esc(pid)}">
