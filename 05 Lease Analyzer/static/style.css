@@ -12520,6 +12520,45 @@ body.mode-c .card-docview-link {
 }
 
 /* ══════════════════════════════════════════════════════
+   STEP 398 — CONTEXT DEPENDENCY BLOCK
+   Surfaces use_consequence="context_dependent" from Stage 5e (use_impact).
+   Amber/ochre tone — distinct from the indigo Client Impact block above.
+   ══════════════════════════════════════════════════════ */
+.cv-context-dep {
+    margin: 0.4rem 0 0.55rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-left: 4px solid #d97706;
+}
+.cv-context-dep-label {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #92400e;
+    margin-bottom: 0.25rem;
+}
+.cv-cd-reason {
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: #374151;
+}
+.cv-cd-consequence {
+    font-size: 0.8rem;
+    color: #78350f;
+    margin-top: 0.2rem;
+    font-style: italic;
+}
+.cv-cd-split-note {
+    font-size: 0.8rem;
+    color: #7c3aed;
+    margin-top: 0.2rem;
+    font-style: italic;
+}
+
+/* ══════════════════════════════════════════════════════
    STEP 342 — AUDIT TRAIL REASONING (per-evaluator in table + merge trace)
    ══════════════════════════════════════════════════════ */
 .audit-cov-ev-reason {
