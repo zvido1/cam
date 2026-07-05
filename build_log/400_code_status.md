@@ -122,4 +122,4 @@ Sorting was explicitly out of scope for Step 400, by Tzvi's call. Cards render i
 
 ## Commit SHA
 
-(pending)
+`282abb9` — unpushed, local main.
