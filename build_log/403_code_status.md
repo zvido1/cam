@@ -75,4 +75,4 @@ If a user (or prior testing session) previously toggled the RISK section, their 
 
 ## Commit SHA
 
-(pending)
+`24d4767` — unpushed, local main.
