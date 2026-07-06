@@ -18323,7 +18323,7 @@ function _navBuildUnifiedItem(item, tIdx) {
 }
 
 var _NAV_SECTION_DEFAULT_COLLAPSED = {
-    review: true, improvement: true, addressed: true
+    risk: true, review: true, improvement: true, addressed: true
 };
 function _navSectionCollapsed(sectionId, jobId) {
     var stored = localStorage.getItem('cam_sidebar_' + sectionId + (jobId ? '_' + jobId : ''));
