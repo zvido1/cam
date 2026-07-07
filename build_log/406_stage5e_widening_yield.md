@@ -121,9 +121,8 @@ LP-22, LP-24, LP-25, LP-26, LP-27, LP-28, LP-29, LP-30
 | Abstain / no-verdict | 0 | — |
 
 **Consequence breakdown (decisive 18, Run-A as primary):**
-- harmful: 16 (LP-01, LP-02, LP-04, LP-06, LP-07, LP-09, LP-11, LP-15, LP-18, LP-19, LP-22, LP-24, LP-25, LP-26, LP-27, LP-28, LP-29 — but LP-30 is neutral)
-  - Correction: harmful=15 (LP-01,02,04,06,07,09,11,15,18,19,22,24,25,26,27,28,29), neutral=1 (LP-30), plus LP-28=harmful confirmed
-- neutral: LP-30
+- harmful: 15 (LP-01, LP-02, LP-04, LP-06, LP-07, LP-09, LP-11, LP-15, LP-18, LP-19, LP-22, LP-24, LP-25, LP-26, LP-27, LP-28, LP-29)
+- neutral: 1 (LP-30)
 - beneficial: 0 decisive (LP-21 is value-churn)
 
 **Baseline comparison:** COV-A directional G-cand lane achieved 14/18 decisive (78%).
