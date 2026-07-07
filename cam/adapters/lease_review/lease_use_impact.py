@@ -3,7 +3,8 @@ Stage 5e: Use-Aware Provision Impact Assessment (Step 341b, extended Step 345)
 
 For each LP that is:
   - missing (applicable)
-  - partially covered with >= 50% missing elements
+  - partially covered with >= 50% missing elements  [narrow/default gate]
+    OR any partial LP when _WIDEN_PARTIAL_ELIGIBILITY / cfg["widen_partial"] is True
   - review_needed (evaluators could not resolve coverage)
 
 three evaluators assess whether the gap or uncertainty is favorable, neutral, or adverse
@@ -11,7 +12,10 @@ for the specific tenant's use. Results are stored as `use_impact` on each LP
 assessment dict.
 
 Architecture:
-  - Three evaluator threads, each processes ALL flagged LPs in one batched call
+  - Flagged LPs are split into chunks of _CHUNK_SIZE (~11 per chunk) so the batched
+    response stays within max_output_tokens=3000 per evaluator call.
+  - Three evaluator threads process each chunk in parallel; per-chunk lp_output dicts
+    are merged across chunks before _merge_verdicts runs.
   - Governance: 3/3 agree → assert, 2/3 agree → assert_weak, 1-1-1 split → context_dependent
   - Fallback: if use_profile absent, mark gap_impact = "context_dependent" without calling models
 
@@ -39,9 +43,22 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# ── Feature flag ───────────────────────────────────────────────────────────────
+# ── Feature flags ──────────────────────────────────────────────────────────────
 
 USE_IMPACT_ENABLED = True
+
+# Step 406 diagnostic flag: when True, _should_assess admits ALL partial LPs
+# regardless of the present/absent element ratio (removes the >=50% missing gate).
+# Default is False — the narrow 50% behaviour is the production baseline.
+# Override at call time via cfg={"widen_partial": True}; this constant is the
+# module-level default and can be changed for a session-scoped experiment.
+_WIDEN_PARTIAL_ELIGIBILITY: bool = False
+
+# Chunk size for batched evaluator calls.  405 §5 established that ~20-25 LPs of
+# {use_consequence, materiality, use_reasoning} output can exceed
+# max_output_tokens=3000 per evaluator.  Chunking to <=11 LPs per call keeps each
+# response well within the ceiling; results are merged before _merge_verdicts runs.
+_CHUNK_SIZE: int = 11
 
 # ── Evaluator lineup (mirrors lease_use_aware_coverage.py) ────────────────────
 
@@ -83,8 +100,14 @@ _MATERIALITY_RANK  = {"not_applicable": 0, "low": 1, "medium": 2, "high": 3}
 
 # ── Eligibility filter ─────────────────────────────────────────────────────────
 
-def _should_assess(a: dict) -> bool:
-    """Return True if this LP assessment needs use_impact evaluation."""
+def _should_assess(a: dict, widen_partial: bool = False) -> bool:
+    """Return True if this LP assessment needs use_impact evaluation.
+
+    widen_partial=False (default/production): partial LPs admitted only when
+      ≥50% of element_verdicts are non-present (the original coverage gate).
+    widen_partial=True (Step 406 diagnostic): ALL partial LPs admitted
+      regardless of present/absent ratio; missing/review_needed unchanged.
+    """
     state = a.get("coverage_state", "")
     if state == "missing":
         return True
@@ -93,11 +116,18 @@ def _should_assess(a: dict) -> bool:
     if state == "partial":
         evs = a.get("element_verdicts") or []
         if not evs:
-            return False
+            return False          # no element data in either mode — nothing for 5e to assess
+        if widen_partial:
+            return True           # wide: admit all partial LPs that have element data
         n_present = sum(1 for e in evs if e.get("verdict") in _PRESENT_VERDICTS)
         n_total   = len(evs)
         return n_total > 0 and (n_total - n_present) / n_total >= 0.5
     return False
+
+
+def _chunk_list(lst: list, size: int) -> list[list]:
+    """Split lst into sub-lists of at most `size` items (no item repeated or lost)."""
+    return [lst[i:i + size] for i in range(0, len(lst), size)]
 
 # ── Prompt builders ────────────────────────────────────────────────────────────
 
@@ -346,7 +376,14 @@ def assess_use_impact(
 ) -> list:
     """Add use_impact to flagged LP assessments via 3 parallel evaluators.
 
-    Flags: coverage_state = "missing" (applicable) OR "partial" with >= 50% missing elements.
+    Eligibility (cfg["widen_partial"] or _WIDEN_PARTIAL_ELIGIBILITY controls scope):
+      narrow (default): missing/review_needed always; partial only if >=50% missing elements.
+      wide (Step 406):  missing/review_needed always; ALL partial LPs admitted.
+
+    Batched calls are split into chunks of _CHUNK_SIZE LPs per evaluator to stay within
+    max_output_tokens=3000.  Per-chunk lp_output dicts are merged before _merge_verdicts
+    runs; _merge_verdicts semantics are unchanged.
+
     If use_profile is None / empty, marks all flagged LPs as context_dependent without API calls.
 
     Returns:
@@ -356,53 +393,98 @@ def assess_use_impact(
         merged use_impact verdicts are unchanged.
     """
     cfg = cfg or {}
+    widen_partial: bool = cfg.get("widen_partial", _WIDEN_PARTIAL_ELIGIBILITY)
 
-    flagged = [a for a in coverage_assessment if _should_assess(a)]
+    flagged = [a for a in coverage_assessment if _should_assess(a, widen_partial=widen_partial)]
     if not flagged:
         logger.info("[lease_use_impact] No flagged LPs — skipping use_impact stage")
-        # Step 372b: no evaluators ran → no fallback.
         return coverage_assessment, {"fallback_used": False, "fallbacks": None, "status": "no_flagged_lps"}
 
     # No use_profile → can't assess; mark context_dependent without API calls
     if not use_profile:
         logger.warning("[lease_use_impact] No use_profile — marking all flagged as context_dependent")
-        _ca_by_id = {(a.get("issue_area_id") or a.get("provision_id") or ""): a for a in coverage_assessment}
         for a in flagged:
             a["use_impact"] = {
                 "use_consequence": "context_dependent", "materiality": "low",
                 "use_reasoning": "No use profile available — cannot assess tenant-specific impact.",
                 "confidence": "no_evaluators", "evaluator_agreement": None,
             }
-        # Step 372b: no evaluators ran → no fallback.
         return coverage_assessment, {"fallback_used": False, "fallbacks": None, "status": "no_use_profile"}
 
+    chunks = _chunk_list(flagged, _CHUNK_SIZE)
+    n_chunks = len(chunks)
+    gate_label = "wide(all-partial)" if widen_partial else "narrow(>=50%)"
     print(
-        f"[lease_use_impact] Stage 5e: assessing {len(flagged)} flagged LP(s) via 3 evaluators...",
+        f"[lease_use_impact] Stage 5e: {len(flagged)} flagged LP(s) [{gate_label}], "
+        f"{n_chunks} chunk(s) of <={_CHUNK_SIZE}, 3 evaluators...",
         flush=True,
     )
 
-    user_prompt     = _build_user_prompt(flagged, use_profile, perspective)
-    claimed_providers: set = set()
-    claimed_lock    = threading.Lock()
+    # Accumulated per-evaluator lp_output across chunks; role → {pid: verdict_dict}
+    per_ev_lp_output: dict[str, dict] = {role: {} for role in _EVALUATOR_LINEUP}
+    # Last completed result metadata per evaluator (for fallback detection)
+    per_ev_last_meta: dict[str, dict] = {}
+    # Track every label used per evaluator (for accurate fallback detection across chunks)
+    per_ev_labels: dict[str, list] = {role: [] for role in _EVALUATOR_LINEUP}
 
-    # Run 3 evaluators in parallel (each gets the same batched prompt)
+    for chunk_idx, chunk in enumerate(chunks, 1):
+        user_prompt  = _build_user_prompt(chunk, use_profile, perspective)
+        claimed_providers: set  = set()   # fresh per chunk — roles compete within a chunk
+        claimed_lock = threading.Lock()
+
+        print(
+            f"[lease_use_impact]   chunk {chunk_idx}/{n_chunks}: "
+            f"{len(chunk)} LP(s) ({chunk[0].get('issue_area_id','')}…{chunk[-1].get('issue_area_id','')})",
+            flush=True,
+        )
+
+        chunk_results: list[dict] = []
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = {
+                executor.submit(
+                    _call_evaluator,
+                    role, ev_cfg, user_prompt,
+                    claimed_providers, claimed_lock,
+                ): role
+                for role, ev_cfg in _EVALUATOR_LINEUP.items()
+            }
+            for fut in as_completed(futures):
+                try:
+                    chunk_results.append(fut.result())
+                except Exception as e:
+                    role = futures[fut]
+                    logger.error(f"[lease_use_impact] Eval-{role} chunk {chunk_idx} raised: {e}")
+                    chunk_results.append({
+                        "role": role, "lp_output": None,
+                        "completed": False, "error": str(e),
+                    })
+
+        # Merge chunk output into per-evaluator accumulators
+        for r in chunk_results:
+            role = r.get("role") or ""
+            if not role:
+                continue
+            if r.get("completed") and r.get("lp_output"):
+                per_ev_lp_output[role].update(r["lp_output"])
+            label = r.get("label")
+            if label:
+                per_ev_labels[role].append(label)
+            # Overwrite with last-seen meta for this role (captures fallback label if any)
+            per_ev_last_meta[role] = r
+
+    # Reconstruct the flat results list that _merge_verdicts expects
     results: list[dict] = []
-    with ThreadPoolExecutor(max_workers=3) as executor:
-        futures = {
-            executor.submit(
-                _call_evaluator,
-                role, ev_cfg, user_prompt,
-                claimed_providers, claimed_lock,
-            ): role
-            for role, ev_cfg in _EVALUATOR_LINEUP.items()
-        }
-        for fut in as_completed(futures):
-            try:
-                results.append(fut.result())
-            except Exception as e:
-                role = futures[fut]
-                logger.error(f"[lease_use_impact] Eval-{role} raised: {e}")
-                results.append({"role": role, "lp_output": None, "completed": False, "error": str(e)})
+    for role, ev_cfg in _EVALUATOR_LINEUP.items():
+        lp_out = per_ev_lp_output[role]
+        meta   = per_ev_last_meta.get(role, {})
+        results.append({
+            "role":        role,
+            "label":       meta.get("label", ev_cfg["label"]),
+            "lp_output":   lp_out if lp_out else None,
+            "completed":   bool(lp_out),
+            "elapsed_sec": meta.get("elapsed_sec"),
+            "error":       meta.get("error") if not lp_out else None,
+        })
 
     merged = _merge_verdicts(results, flagged)
 
@@ -412,20 +494,21 @@ def assess_use_impact(
         if pid in merged:
             a["use_impact"] = merged[pid]
 
-    # Step 372b: stage-level fallback visibility (admin observability; metadata only).
-    # 5e collapses 3 evaluators into one use_impact per LP with no model identity; this
-    # records whether any evaluator answered with a non-primary (fallback) model. The
-    # result dict carries the real answering `label`; flag when it differs from the primary.
-    _stage5e_fallbacks = [
-        {"role": r.get("role"), "label": r.get("label")}
-        for r in results
-        if r.get("completed") and r.get("label")
-        and r.get("label") != _EVALUATOR_LINEUP.get(r.get("role"), {}).get("label")
-    ]
+    # Step 372b: stage-level fallback visibility.
+    # A fallback fired if any label used for a role differs from the primary label.
+    _stage5e_fallbacks = []
+    for role, ev_cfg in _EVALUATOR_LINEUP.items():
+        primary = ev_cfg["label"]
+        non_primary = [l for l in per_ev_labels.get(role, []) if l != primary]
+        if non_primary:
+            _stage5e_fallbacks.append({"role": role, "label": non_primary[0]})
+
     use_impact_meta = {
         "fallback_used": bool(_stage5e_fallbacks),
         "fallbacks": _stage5e_fallbacks or None,
         "status": "applied",
+        "chunks": n_chunks,
+        "widen_partial": widen_partial,
     }
 
     n_favorable = sum(1 for v in merged.values() if v["use_consequence"] == "beneficial")
@@ -435,7 +518,8 @@ def assess_use_impact(
     _fb_note = " (FALLBACK fired)" if _stage5e_fallbacks else ""
     print(
         f"[lease_use_impact] Stage 5e complete: "
-        f"{n_favorable} favorable, {n_adverse} adverse, {n_neutral} neutral, {n_ctx} context_dependent{_fb_note}",
+        f"{n_favorable} favorable, {n_adverse} adverse, {n_neutral} neutral, "
+        f"{n_ctx} context_dependent | {n_chunks} chunk(s){_fb_note}",
         flush=True,
     )
     return coverage_assessment, use_impact_meta
