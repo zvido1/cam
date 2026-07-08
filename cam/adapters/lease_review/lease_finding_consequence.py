@@ -3,7 +3,8 @@ Stage 5e (Finding-Scope): G-cand Consequence Provenance (Step 375E-COV-A)
 
 Attaches use_consequence provenance to cross_provision_findings records:
   - directional_mismatch findings: G-cand lane → finding-scoped 5e consequence assessment
-  - compound_risk findings: compound_consequence_source = "not_assessed" (structurally forced)
+  - compound_risk findings: compound consequence assessed via neutral compound prompt (408C);
+      fields written with compound_ prefix; assessment_scope="finding_compound"
 
 POPULATE/RECORD only. Does NOT change routing, buckets, or lawyer-visible output.
 COV-B (separate, later) will consume these fields to change lawyer-facing landing.
@@ -16,20 +17,29 @@ G-cand gate:
   consequence, so gating consequence-assessment on that output is the snake eating its audit log).
 
 Finding-scope vs LP-scope:
-  On the current lease, finding↔LP is 1:1 for directional findings (per 375P precheck).
+  On the current lease, finding<->LP is 1:1 for directional findings (per 375P precheck).
   Build finding-scoped output plainly; do NOT build LP-reuse-guard machinery.
   Reuse-safety is DEFERRED/UNEXERCISED (many-to-many only arises in compound layer).
 
 5e prompt for G-cand findings (Step 375E-COV-A2 fix):
-  Evaluators receive CLAUSE FACTS + tenant use profile — NOT the Stage-7 adversarial title or
+  Evaluators receive CLAUSE FACTS + tenant use profile -- NOT the Stage-7 adversarial title or
   direction label. Stage 7 direction is stored as stage7_direction provenance on the finding but
   is NOT fed to 5e as a leading frame (A1 confirmed that doing so contaminates consequence
-  assessment — LP-11 inverted from beneficial to harmful under the old framing).
+  assessment -- LP-11 inverted from beneficial to harmful under the old framing).
   5e owns consequence; Stage 7 owns sign. Separation enforced by prompt, not just by doctrine.
+
+Compound-path neutral-input contract (408C):
+  Compound prompt builder feeds: finding_id header, per-LP clause facts (issue_area_name,
+  coverage state, element labels, tenant_text excerpt <=400 chars), and cited_sections
+  resolved from full_tenant_text (<=600 chars each). Quarantined fields (never in prompt):
+  headline, title, short_summary, detail, severity, verdict, pattern_type,
+  evaluator_agreement, evaluator_verdicts, affected_party, LP-level use_impact verdicts.
+  Compound findings assessed independently per finding_id; LP-27-in-5-CRX receives 5
+  independent verdict blocks, no state bleed.
 
 Provenance fields added to directional findings:
   stage7_direction:        Stage 7's actual directionality value (f["directionality"]), or None if absent.
-                           NOT hardcoded — records what Stage 7 actually produced.
+                           NOT hardcoded -- records what Stage 7 actually produced.
   stage7_direction_source: "stage7" if directionality was present; "absent" if None/missing.
                            No fallback to "tenant_unprotected" (Step 375E-COV-A2b fix).
   use_consequence:         "beneficial"|"neutral"|"harmful"|"context_dependent"
@@ -38,13 +48,20 @@ Provenance fields added to directional findings:
   materiality_source:      "assessed"|"absent"
   assessment_scope:        "finding_linked_lp"
 
-Provenance field added to compound findings:
-  compound_consequence_source: "not_assessed"
-  (Structurally forced — no single LP consequence is correct for multi-LP compound findings)
+Provenance fields added to compound findings (408C):
+  compound_use_consequence, compound_materiality
+  compound_consequence_source: assessed|insufficient_consequence_support|no_majority_materiality|not_assessed
+  compound_consequence_reason: reason code when not assessed
+  compound_consequence_support_label, compound_vote_distribution,
+  compound_valid_evaluator_count, compound_expected_evaluator_count
+  compound_consequence_reasoning, compound_evaluator_agreement
+  compound_materiality_votes, compound_materiality_support, compound_materiality_disputed
+  compound_assessment_input_source: section_text+tenant_text|tenant_text_only
+  assessment_scope: "finding_compound"
 
 use_consequence_source values used in COV-A:
-  "assessed"  — verdict produced (either copied from LP-scope use_impact or from new 5e run)
-  "absent"    — no use_profile provided, or all evaluators failed
+  "assessed"  -- verdict produced (either copied from LP-scope use_impact or from new 5e run)
+  "absent"    -- no use_profile provided, or all evaluators failed
   ("defaulted_floor" and "not_eligible" are reserved for COV-B annotations on existing findings)
 """
 
@@ -148,6 +165,210 @@ Rules:
   - "harmful because something is missing" is not sufficient — explain the actual operational impact
   - Must return a verdict for every finding ID listed — no omissions
   - Return only the JSON object, no markdown fences"""
+
+
+# ── Compound system prompt (408C — neutral, interaction-only) ─────────────────
+#
+# Models the FINDING_SYSTEM_PROMPT shape but asks about clause *interaction*,
+# not a single gap. Carries the same INDEPENDENCE REQUIREMENT. Must NOT name any
+# Stage 7 pattern, must NOT assert compound risk exists, must NOT use adverse framing.
+# All four outcomes are equally allowed; harmful is NOT the default.
+# Keys by finding_id (e.g. "CRX-02") exactly as directional keys by "Dir-NN".
+
+_COMPOUND_FINDING_SYSTEM_PROMPT = """You are a commercial real estate attorney assessing how multiple interacting lease provisions affect a tenant's day-to-day operations.
+
+For each listed provision group, assess:
+1. use_consequence: given THIS tenant's specific business and operational context, what is the practical effect of how these clauses interact with each other?
+2. materiality: how significant is this interaction for THIS tenant's core business operations?
+
+INDEPENDENCE REQUIREMENT: Absence or structural incompleteness does NOT equal adverse by default.
+Ask: does the interaction among these provisions give the tenant MORE operational freedom or MORE exposure? The combination may have beneficial, neutral, or harmful use consequence depending on this specific tenant's operations. Assess consequence independently from any concern about pattern or structure.
+
+Return a JSON object with one key per finding ID (e.g. "CRX-01", "CRX-02"):
+{
+  "CRX-NN": {
+    "use_consequence": "beneficial" | "neutral" | "harmful" | "context_dependent",
+    "materiality": "high" | "medium" | "low" | "not_applicable",
+    "use_reasoning": "One sentence grounding the assessment in the specific clause facts and tenant use — not generic lease risk."
+  }
+}
+
+Definitions:
+  use_consequence:
+    beneficial:        The interaction among these provisions is net-positive for this tenant given their use
+                       (e.g., the combination gives the tenant MORE flexibility or protection)
+    neutral:           The interaction has little practical effect on this tenant's operations
+    harmful:           The interaction creates meaningful risk, cost, or constraint for this tenant given their use
+    context_dependent: Cannot determine without more information about this tenant's specific situation
+
+  materiality:
+    high:           Directly affects the tenant's core business operations or creates significant financial exposure
+    medium:         Relevant but not operationally critical for this specific tenant
+    low:            Minor relevance to this tenant's use case
+    not_applicable: These provisions are irrelevant to this tenant's specific use and operations
+
+Rules:
+  - Absence does NOT equal adverse by default — ask whether the combination gives the tenant more freedom or more exposure
+  - Ground every answer in THIS tenant's specific business type and operational dependencies
+  - Assess each finding ID independently based only on the clause facts provided for it
+  - "harmful because something is missing" is not sufficient — explain the actual operational impact of the interaction
+  - Must return a verdict for every finding ID listed — no omissions
+  - Return only the JSON object, no markdown fences"""
+
+
+# ── Section resolver (408C) ────────────────────────────────────────────────────
+
+import re as _re
+
+
+def _resolve_section_excerpt(section_ref: str, full_tenant_text: str, max_chars: int = 600) -> Optional[str]:
+    """Locate a cited section in the lease text and return a bounded neutral excerpt.
+
+    Follows the same locate pattern as lease_adapter._section_relevant_to_provision.
+    Returns None if the section cannot be located or text is empty.
+    """
+    if not full_tenant_text or not section_ref:
+        return None
+    ref_clean = section_ref.strip()
+    ref_clean = _re.sub(r'^(section\s*|sec\.\s*|ss\.?\s*|#\s*)', '', ref_clean, flags=_re.IGNORECASE).strip()
+    if not ref_clean:
+        return None
+    pattern = _re.compile(r'\bsection\s+' + _re.escape(ref_clean) + r'\b', _re.IGNORECASE)
+    m = pattern.search(full_tenant_text)
+    if not m:
+        return None
+    start = m.start()
+    excerpt = full_tenant_text[start:start + max_chars]
+    if len(full_tenant_text) - start > max_chars:
+        excerpt = excerpt + "..."
+    return excerpt.strip() or None
+
+
+# ── Compound prompt builder (408C) ────────────────────────────────────────────
+
+def _build_compound_finding_user_prompt(
+    compound_findings: list,
+    coverage_by_lp: dict,
+    full_tenant_text: str,
+    use_profile: dict,
+    perspective: str,
+) -> tuple:
+    """Build a batched user prompt covering all assemblable compound findings.
+
+    Returns (prompt_str, input_source_map) where input_source_map maps
+    finding_id -> "section_text+tenant_text" | "tenant_text_only".
+
+    Forbidden from prompt: headline, title, short_summary, detail, severity, verdict,
+    pattern_type, evaluator_agreement, evaluator_verdicts, affected_party, LP use_impact.
+    """
+    biz = use_profile.get("business_type") or "unspecified"
+    deps = use_profile.get("operational_dependencies") or []
+    other = use_profile.get("other_use_risk_factors") or []
+
+    lines = [
+        f"PERSPECTIVE: {perspective.upper()}",
+        "",
+        "TENANT USE CONTEXT:",
+        f"  Business type: {biz}",
+    ]
+    if deps:
+        lines.append("  Key operational dependencies: " + "; ".join(str(d) for d in deps))
+    if other:
+        lines.append("  Other risk factors: " + "; ".join(str(r) for r in other))
+
+    lines += [
+        "",
+        "PROVISION INTERACTIONS TO ASSESS (clause facts only):",
+        "",
+    ]
+
+    input_source_map: dict = {}
+
+    for f in compound_findings:
+        fid = f.get("finding_id", "")
+        implicated_lps = f.get("implicated_lps") or []
+        cited_sections = f.get("cited_sections") or []
+
+        lines.append(f"  {fid}")
+        lines.append(f"  Implicated provisions ({len(implicated_lps)}):")
+
+        for lp_id in implicated_lps:
+            lp = coverage_by_lp.get(lp_id, {})
+            lp_name = lp.get("issue_area_name") or lp.get("provision_name") or lp_id
+            coverage_state = lp.get("coverage_state", "")
+            evs = lp.get("element_verdicts") or []
+
+            present_labels = []
+            missing_labels = []
+            for ev in evs:
+                if not isinstance(ev, dict):
+                    continue
+                label = (
+                    ev.get("element_label")
+                    or ev.get("element_name")
+                    or ev.get("description")
+                )
+                if not label:
+                    eid = ev.get("element_id") or ""
+                    label = eid.split(".")[-1].replace("_", " ") if eid else None
+                verdict = ev.get("verdict", "")
+                if verdict in _PRESENT_VERDICTS:
+                    if label:
+                        present_labels.append(label)
+                elif verdict in {"missing", "unclear"}:
+                    if label:
+                        missing_labels.append(label)
+
+            if coverage_state == "review_needed":
+                cov_desc = "uncertain -- evaluators could not reach agreement"
+            elif coverage_state == "partial":
+                cov_desc = (
+                    f"partial -- {len(present_labels)} element(s) confirmed, "
+                    f"{len(missing_labels)} element(s) not confirmed"
+                )
+            elif coverage_state == "missing":
+                cov_desc = "not present in lease"
+            else:
+                cov_desc = coverage_state or "status unknown"
+
+            tenant_text = (lp.get("tenant_text") or "").strip()
+
+            lines.append(f"    [{lp_id} -- {lp_name}]")
+            lines.append(f"      Provision coverage: {cov_desc}")
+            if present_labels:
+                lines.append("      Elements confirmed: " + "; ".join(present_labels[:6]))
+            if missing_labels:
+                lines.append("      Elements not confirmed: " + "; ".join(missing_labels[:4]))
+            if tenant_text:
+                excerpt = tenant_text[:400] + "..." if len(tenant_text) > 400 else tenant_text
+                lines.append(f"      Relevant lease language: {excerpt}")
+
+        has_section_text = False
+        if cited_sections and full_tenant_text:
+            section_lines = []
+            for sec_ref in cited_sections:
+                excerpt = _resolve_section_excerpt(sec_ref, full_tenant_text)
+                if excerpt:
+                    section_lines.append(f"    Cited section [{sec_ref}]: {excerpt}")
+                    has_section_text = True
+            if section_lines:
+                lines.append("  Cited lease sections:")
+                lines.extend(section_lines)
+
+        input_source_map[fid] = "section_text+tenant_text" if has_section_text else "tenant_text_only"
+
+        lines.append(
+            "  Question: Given the clauses above and how they reference one another, "
+            "does the interaction among these provisions increase, reduce, or not materially affect "
+            "this tenant's practical/legal exposure for the stated use context?"
+        )
+        lines.append("")
+
+    lines.append(
+        "Return JSON only with use_consequence, materiality, and use_reasoning "
+        "for each finding ID (e.g. CRX-01, CRX-02, ...)."
+    )
+    return "\n".join(lines), input_source_map
 
 
 # ── Normalizer for legacy gap_impact fields (pre-375M artifacts) ───────────────
@@ -285,10 +506,12 @@ def _call_finding_evaluator(
     user_prompt: str,
     claimed_providers: set,
     claimed_lock: threading.Lock,
+    system_prompt: str = _FINDING_SYSTEM_PROMPT,
 ) -> dict:
-    """Call one evaluator with the finding-scoped system prompt.
+    """Call one evaluator with the given system prompt (default: _FINDING_SYSTEM_PROMPT).
 
-    Mirrors _call_evaluator in lease_use_impact.py but uses _FINDING_SYSTEM_PROMPT.
+    Mirrors _call_evaluator in lease_use_impact.py. Pass system_prompt explicitly
+    to use the compound evaluator prompt; directional callers omit it (default preserved).
     """
     from cam.core.provider_router import ModelTarget, ProviderRouter, RouterConfig
     from cam.core.json_extract import safe_json_extract
@@ -317,7 +540,7 @@ def _call_finding_evaluator(
             )
             router = ProviderRouter([target], RouterConfig())
             adapter = router._get_adapter(provider)
-            raw = adapter.call(_FINDING_SYSTEM_PROMPT, user_prompt, target).strip()
+            raw = adapter.call(system_prompt, user_prompt, target).strip()
             parsed = safe_json_extract(raw)
             if not isinstance(parsed, dict):
                 raise ValueError(f"Response is not a dict (got {type(parsed).__name__})")
@@ -585,6 +808,7 @@ def assess_finding_consequence(
     use_profile: Optional[dict],
     perspective: str,
     cfg: Optional[dict] = None,
+    full_tenant_text: str = "",
 ) -> tuple:
     """Attach finding-scoped consequence provenance to cross_provision_findings.
 
@@ -614,12 +838,176 @@ def assess_finding_consequence(
         if pid:
             coverage_by_lp[pid] = a
 
-    # ── Annotate compound findings (structurally forced — no LP consequence) ──
-    n_compound = 0
-    for f in cross_provision_findings:
-        if f.get("finding_type") == "compound_risk":
+    # ── Compound finding assessment (408C) ────────────────────────────────────
+    _COMPOUND_CHUNK_SIZE = 11  # mirror 5e chunking; 6 CRX on Atreca is well under
+    compound_findings_all = [
+        f for f in cross_provision_findings
+        if f.get("finding_type") == "compound_risk"
+    ]
+    n_compound = len(compound_findings_all)
+
+    if not use_profile:
+        # Keyless mode — mark all compound findings not_assessed
+        for f in compound_findings_all:
             f["compound_consequence_source"] = "not_assessed"
-            n_compound += 1
+            f["compound_consequence_reason"] = "no_use_profile"
+            f["assessment_scope"] = "finding_compound"
+        compound_assessed_count = 0
+        compound_not_assessed_count = n_compound
+    else:
+        # Partition into assemblable vs unassemblable
+        assemblable = []
+        unassemblable = []
+        for f in compound_findings_all:
+            lp_ids = f.get("implicated_lps") or []
+            has_tenant_text = any(
+                (coverage_by_lp.get(lp_id, {}).get("tenant_text") or "").strip()
+                for lp_id in lp_ids
+            )
+            cited = f.get("cited_sections") or []
+            has_section = bool(cited and full_tenant_text)
+            if has_tenant_text or has_section:
+                assemblable.append(f)
+            else:
+                unassemblable.append(f)
+
+        for f in unassemblable:
+            f["compound_consequence_source"] = "not_assessed"
+            f["compound_consequence_reason"] = "compound_input_unavailable"
+            f["assessment_scope"] = "finding_compound"
+
+        print(
+            f"[lease_finding_consequence] Compound path: {len(compound_findings_all)} total — "
+            f"{len(assemblable)} assemblable, {len(unassemblable)} unassemblable (not_assessed)",
+            flush=True,
+        )
+
+        compound_assessed_count = 0
+        compound_not_assessed_count = len(unassemblable)
+
+        if assemblable:
+            # Chunk if exceeding _COMPOUND_CHUNK_SIZE
+            def _chunk_compound(lst, size):
+                return [lst[i:i + size] for i in range(0, len(lst), size)]
+
+            chunks = _chunk_compound(assemblable, _COMPOUND_CHUNK_SIZE)
+            all_compound_merged: dict = {}
+
+            for chunk_idx, chunk in enumerate(chunks):
+                print(
+                    f"[lease_finding_consequence] Compound chunk {chunk_idx + 1}/{len(chunks)}: "
+                    f"{len(chunk)} finding(s), 3 evaluators...",
+                    flush=True,
+                )
+                user_prompt_compound, input_source_map = _build_compound_finding_user_prompt(
+                    chunk, coverage_by_lp, full_tenant_text, use_profile, perspective
+                )
+
+                claimed_providers_c: set = set()
+                claimed_lock_c = threading.Lock()
+                evaluator_results_c: list = []
+
+                with ThreadPoolExecutor(max_workers=3) as executor:
+                    futures_c = {
+                        executor.submit(
+                            _call_finding_evaluator,
+                            role, ev_cfg, user_prompt_compound,
+                            claimed_providers_c, claimed_lock_c,
+                            _COMPOUND_FINDING_SYSTEM_PROMPT,
+                        ): role
+                        for role, ev_cfg in _EVALUATOR_LINEUP.items()
+                    }
+                    for fut in as_completed(futures_c):
+                        try:
+                            evaluator_results_c.append(fut.result())
+                        except Exception as e:
+                            role = futures_c[fut]
+                            logger.error(f"[lease_finding_consequence] Compound Eval-{role} raised: {e}")
+                            evaluator_results_c.append({
+                                "role": role, "finding_output": None,
+                                "completed": False, "error": str(e),
+                            })
+
+                chunk_merged = _merge_finding_verdicts(evaluator_results_c, chunk)
+                all_compound_merged.update(chunk_merged)
+
+                for f in chunk:
+                    fid = f.get("finding_id", "")
+                    f["compound_assessment_input_source"] = input_source_map.get(fid, "tenant_text_only")
+
+            # Write-back with compound_ prefix (DEF-003 gating ladder, Step H)
+            for f in assemblable:
+                fid = f.get("finding_id", "")
+                verdict = all_compound_merged.get(fid, {})
+                support_label = verdict.get("consequence_support_label", "no_evaluators")
+                uc = verdict.get("use_consequence")
+
+                if uc in _VALID_USE_CONSEQUENCE and support_label not in ("no_evaluators", "insufficient_support"):
+                    _mat_src = verdict.get("materiality_source", "assessed")
+                    _route_rnr = verdict.get("route_to_review_needed", False)
+
+                    if _route_rnr:
+                        csrc = "no_majority_materiality"
+                    else:
+                        csrc = "assessed"
+
+                    f["compound_use_consequence"] = uc
+                    f["compound_materiality"] = verdict.get("materiality", "low")
+                    f["compound_consequence_source"] = csrc
+                    f["compound_consequence_support_label"] = support_label
+                    f["compound_expected_evaluator_count"] = verdict.get("expected_evaluator_count", 3)
+                    f["compound_valid_evaluator_count"] = verdict.get("valid_evaluator_count", 0)
+                    f["compound_vote_distribution"] = verdict.get("vote_distribution", {})
+                    f["compound_materiality_votes"] = verdict.get("materiality_votes", [])
+                    f["compound_materiality_support"] = verdict.get("materiality_support")
+                    f["compound_materiality_disputed"] = verdict.get("materiality_disputed", False)
+                    f["compound_consequence_reasoning"] = verdict.get("use_reasoning")
+                    f["compound_evaluator_agreement"] = verdict.get("evaluator_agreement")
+                    f["assessment_scope"] = "finding_compound"
+                    compound_assessed_count += 1
+
+                elif uc in _VALID_USE_CONSEQUENCE and support_label == "insufficient_support":
+                    f["compound_use_consequence"] = uc
+                    f["compound_materiality"] = verdict.get("materiality", "low")
+                    f["compound_consequence_source"] = "insufficient_consequence_support"
+                    f["compound_consequence_support_label"] = support_label
+                    f["compound_expected_evaluator_count"] = verdict.get("expected_evaluator_count", 3)
+                    f["compound_valid_evaluator_count"] = verdict.get("valid_evaluator_count", 0)
+                    f["compound_vote_distribution"] = verdict.get("vote_distribution", {})
+                    f["compound_materiality_votes"] = verdict.get("materiality_votes", [])
+                    f["compound_materiality_support"] = verdict.get("materiality_support")
+                    f["compound_materiality_disputed"] = verdict.get("materiality_disputed", False)
+                    f["compound_consequence_reasoning"] = verdict.get("use_reasoning")
+                    f["compound_evaluator_agreement"] = verdict.get("evaluator_agreement")
+                    f["compound_consequence_reason"] = "insufficient_consequence_support"
+                    f["assessment_scope"] = "finding_compound"
+                    compound_not_assessed_count += 1
+
+                else:
+                    f["compound_consequence_source"] = "not_assessed"
+                    f["compound_consequence_reason"] = "no_valid_evaluator_verdict"
+                    f["compound_consequence_support_label"] = support_label
+                    f["compound_expected_evaluator_count"] = 3
+                    f["compound_valid_evaluator_count"] = 0
+                    f["compound_vote_distribution"] = {}
+                    f["compound_materiality_votes"] = []
+                    f["compound_materiality_support"] = "no_valid_materiality"
+                    f["compound_materiality_disputed"] = False
+                    f["compound_consequence_reasoning"] = None
+                    f["compound_evaluator_agreement"] = None
+                    f["assessment_scope"] = "finding_compound"
+                    compound_not_assessed_count += 1
+
+            n_c_harmful = sum(1 for f in assemblable if f.get("compound_use_consequence") == "harmful")
+            n_c_neutral = sum(1 for f in assemblable if f.get("compound_use_consequence") == "neutral")
+            n_c_beneficial = sum(1 for f in assemblable if f.get("compound_use_consequence") == "beneficial")
+            n_c_ctx = sum(1 for f in assemblable if f.get("compound_use_consequence") == "context_dependent")
+            print(
+                f"[lease_finding_consequence] Compound 5e-F complete: "
+                f"{n_c_harmful} harmful, {n_c_neutral} neutral, {n_c_beneficial} beneficial, "
+                f"{n_c_ctx} context_dependent; {compound_not_assessed_count} not_assessed",
+                flush=True,
+            )
 
     # ── Identify G-cand directional findings ──────────────────────────────────
     # Gate: finding_type == "directional_mismatch" (Pass-1 candidate, verification-agnostic).
@@ -645,10 +1033,10 @@ def assess_finding_consequence(
             needs_assessment_pairs.append((f, lp))
 
     print(
-        f"[lease_finding_consequence] G-cand lane: {len(directional)} directional finding(s) — "
+        f"[lease_finding_consequence] G-cand lane: {len(directional)} directional finding(s) -- "
         f"{len(already_assessed_pairs)} already-assessed (copy), "
         f"{len(needs_assessment_pairs)} unassessed (new 5e), "
-        f"{n_compound} compound (not_assessed)",
+        f"{n_compound} compound (408C path)",
         flush=True,
     )
 
@@ -702,6 +1090,8 @@ def assess_finding_consequence(
             "absent": len(needs_assessment_pairs),
             "total_directional": len(directional),
             "total_compound": n_compound,
+            "compound_assessed": 0,
+            "compound_not_assessed": n_compound,
             "reason": "no_use_profile",
         }
         return cross_provision_findings, meta
@@ -716,6 +1106,8 @@ def assess_finding_consequence(
             "absent": 0,
             "total_directional": len(directional),
             "total_compound": n_compound,
+            "compound_assessed": compound_assessed_count,
+            "compound_not_assessed": compound_not_assessed_count,
             "reason": "all_already_assessed",
         }
         return cross_provision_findings, meta
@@ -876,6 +1268,8 @@ def assess_finding_consequence(
         "absent": n_absent,
         "total_directional": len(directional),
         "total_compound": n_compound,
+        "compound_assessed": compound_assessed_count,
+        "compound_not_assessed": compound_not_assessed_count,
         "fallback_used": bool(fallbacks),
         "fallbacks": fallbacks or None,
         "status": "applied",

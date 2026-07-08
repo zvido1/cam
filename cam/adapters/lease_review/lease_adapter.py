@@ -1644,6 +1644,7 @@ def run_lease_coverage_only(
                 use_profile=use_profile_data_c,
                 perspective=cfg.get("perspective", "tenant"),
                 cfg=cfg,
+                full_tenant_text=tenant_text,
             )
             result["_stage_data"]["finding_consequence_meta"] = _finding_consequence_meta
             _fc_assessed = _finding_consequence_meta.get("assessed", 0)
