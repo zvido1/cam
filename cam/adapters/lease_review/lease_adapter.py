@@ -845,9 +845,22 @@ def run_lease_analysis(
                     update_lp_progress(_job_id, lp_id, lp_name, state)
                 except Exception:
                     pass
+        # Step 414: retirement-drift guard — run once before LP evaluation loop
+        try:
+            from cam.adapters.lease_review.lease_coverage_305 import (
+                EVALUATOR_LINEUP_305 as _lineup_305_b,
+                validate_evaluator_chains as _validate_chains_b,
+            )
+            _chain_guard_b = _validate_chains_b(_lineup_305_b, cfg.get("evaluator_fallback_mode", "product"))
+            if _chain_guard_b["run_config_degraded"]:
+                cfg = dict(cfg)
+                cfg["_run_config_degraded"] = True
+        except Exception as _guard_b_e:
+            print(f"[lease_adapter] evaluator chain guard failed (non-fatal): {_guard_b_e}", flush=True)
         coverage_assessment = assess_coverage(
             dispositions, tenant_text, negative_space_by_provision,
             lp_progress_callback=_lp_progress_cb,
+            cfg=cfg,
         )
         coverage_summary = summarize_coverage(coverage_assessment)
         ns_summary = summarize_negative_space(negative_space_by_provision)
@@ -1098,6 +1111,20 @@ def run_lease_analysis(
     models_used["extraction"] = models_used.get("extractor", "")
     models_used["severity"] = models_used.get("severity_assessor", "")
 
+    # Step 414: run-level degraded flag
+    try:
+        from cam.adapters.lease_review.lease_coverage_305 import collect_run_fallback_events as _crfe_b
+        _fallback_events_b = _crfe_b(coverage_assessment, datetime.now(timezone.utc).isoformat())
+    except Exception as _fe_b_e:
+        print(f"[lease_adapter] fallback_events collection failed (non-fatal): {_fe_b_e}", flush=True)
+        _fallback_events_b = []
+    _run_config_degraded_b = cfg.get("_run_config_degraded", False)
+    _run_degraded_b = bool(_fallback_events_b) or _run_config_degraded_b
+    _degraded_reason_b = (
+        "evaluator_fallback" if _fallback_events_b
+        else ("chain_config_degraded" if _run_config_degraded_b else None)
+    )
+
     # ── Build summary ──
     pipeline_elapsed = time.time() - pipeline_start
     summary = _compute_summary(dispositions)
@@ -1127,6 +1154,9 @@ def run_lease_analysis(
         "human_feedback": [],
         "coverage_assessment": coverage_assessment,
         "coverage_summary": coverage_summary,
+        "run_degraded": _run_degraded_b,
+        "degraded_reason": _degraded_reason_b,
+        "fallback_events": _fallback_events_b,
         "exposure_summary": exposure_summary,
         "conflicts": conflicts,
         "jurisdiction": {
@@ -1319,9 +1349,22 @@ def run_lease_coverage_only(
                     update_lp_progress(_job_id_c, lp_id, lp_name, state)
                 except Exception:
                     pass
+        # Step 414: retirement-drift guard — run once before LP evaluation loop
+        try:
+            from cam.adapters.lease_review.lease_coverage_305 import (
+                EVALUATOR_LINEUP_305 as _lineup_305_c,
+                validate_evaluator_chains as _validate_chains_c,
+            )
+            _chain_guard_c = _validate_chains_c(_lineup_305_c, cfg.get("evaluator_fallback_mode", "product"))
+            if _chain_guard_c["run_config_degraded"]:
+                cfg = dict(cfg)
+                cfg["_run_config_degraded"] = True
+        except Exception as _guard_c_e:
+            print(f"[lease_adapter:analyze] evaluator chain guard failed (non-fatal): {_guard_c_e}", flush=True)
         coverage_assessment = assess_coverage(
             extraction["provisions"], tenant_text, negative_space_by_provision,
             lp_progress_callback=_lp_progress_cb_c,
+            cfg=cfg,
         )
         # Step 335: sum coverage evaluator calls (3 per LP via assess_coverage_305)
         total_api_calls += sum(a.get("_coverage_api_calls", 0) for a in coverage_assessment)
@@ -1537,6 +1580,20 @@ def run_lease_coverage_only(
 
     pipeline_elapsed = time.time() - pipeline_start
 
+    # Step 414: run-level degraded flag (Mode C)
+    try:
+        from cam.adapters.lease_review.lease_coverage_305 import collect_run_fallback_events as _crfe_c
+        _fallback_events_c = _crfe_c(coverage_assessment, datetime.now(timezone.utc).isoformat())
+    except Exception as _fe_c_e:
+        print(f"[lease_adapter:analyze] fallback_events collection failed (non-fatal): {_fe_c_e}", flush=True)
+        _fallback_events_c = []
+    _run_config_degraded_c = cfg.get("_run_config_degraded", False)
+    _run_degraded_c = bool(_fallback_events_c) or _run_config_degraded_c
+    _degraded_reason_c = (
+        "evaluator_fallback" if _fallback_events_c
+        else ("chain_config_degraded" if _run_config_degraded_c else None)
+    )
+
     # ── Assemble result (deviation-shaped fields empty, not missing) ──
     result = {
         "run_id": run_id,
@@ -1576,6 +1633,9 @@ def run_lease_coverage_only(
         "human_feedback": [],
         "coverage_assessment": coverage_assessment,
         "coverage_summary": coverage_summary,
+        "run_degraded": _run_degraded_c,
+        "degraded_reason": _degraded_reason_c,
+        "fallback_events": _fallback_events_c,
         "exposure_summary": exposure_summary,
         "conflicts": conflicts_c,
         "jurisdiction": {

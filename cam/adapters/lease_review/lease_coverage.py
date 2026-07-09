@@ -37,6 +37,7 @@ def assess_coverage(
     full_tenant_text: str,
     negative_space_signals: Optional[dict] = None,
     lp_progress_callback=None,
+    cfg: Optional[dict] = None,
 ) -> list:
     """Assess coverage state for all issue areas.
 
@@ -249,6 +250,7 @@ def assess_coverage(
                     elements_305=area["expected_elements_305"],
                     negative_space_candidates=_ns_candidates,
                     all_lp_texts=all_lp_texts,
+                    cfg=cfg or {},
                 )
                 # Step 305 per-element verdicts are the authoritative source for
                 # covered/partial/missing state — do NOT override with legacy regex

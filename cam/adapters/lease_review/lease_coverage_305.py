@@ -116,7 +116,8 @@ EVALUATOR_LINEUP_305: dict[str, dict] = {
         "max_output_tokens": 3000,
         "temperature": 0.0,
         "timeout_sec": 300.0,
-        "own_chain": [],  # grok-3 retired 2026-05-15; no same-provider fallback
+        # grok-3 retired 2026-05-15; grok-4.3 (primary) doubles as the same-provider self-retry
+        "own_chain": [(EVALUATOR_C_PRIMARY[0], EVALUATOR_C_PRIMARY[1], EVALUATOR_C_FALLBACK_LABEL)],
     },
 }
 
@@ -178,6 +179,20 @@ def _classify_failure(error_msg: str, model: str) -> str:
     if "malformed" in m or "not a list" in m or "nonetype" in m:
         return "reasoning_exhaustion" if _is_split_model(model) else "malformed_response"
     return "unknown"
+
+
+# Step 414: failure classes classified as transient for same-model retry eligibility and
+# for fallback_class provenance metadata. Per 413 spec:
+#   malformed_response, empty_response — clearly transient (parsing hiccup, one-off content gap).
+#   truncation — included per 413 spec. A token-ceiling hit can recur, but under the chain design
+#   the same-model retry uses the same budget cap, so a persistent ceiling hit simply fails again
+#   and the canonical abstain / cross-family fallback path fires with no additional wasted calls.
+_TRANSIENT_FAILURE_CLASSES = frozenset({"malformed_response", "empty_response", "truncation"})
+
+
+def _is_transient_failure(reason: str) -> bool:
+    """True when the failure class warrants a same-model retry (Step 414)."""
+    return reason in _TRANSIENT_FAILURE_CLASSES
 
 
 # ── Prompts ────────────────────────────────────────────────────────────────────
@@ -522,12 +537,22 @@ def _call_single_evaluator_305(
             })
             raise
 
-    # Phase 1: own-provider chain (primary + fallback)
+    # Step 414: track same-provider retry state for provenance
+    _retry_attempted = False
+    _hard_fail_no_retry = False
+    _fb_mode = cfg.get("evaluator_fallback_mode", "product")
+
+    # Phase 1: own-provider chain (primary + same-provider chain).
+    # Role C's own_chain contains a grok-4.3 self-retry entry (same-provider step).
+    # Same-model entries are only attempted on transient failures; hard failures break Phase 1
+    # early via the guard below — immediate re-call of the same model won't recover a hard outage.
     own_candidates = [(evaluator_cfg["provider"], evaluator_cfg["model"], evaluator_cfg["label"])]
     for entry in evaluator_cfg.get("own_chain", []):
         own_candidates.append(entry)
 
     for _idx, (provider, model, label) in enumerate(own_candidates):
+        if _idx > 0:
+            _retry_attempted = True
         try:
             verdicts, call_meta = _try_call(provider, model, label)
             elapsed = time.time() - start_time
@@ -540,13 +565,66 @@ def _call_single_evaluator_305(
                 "completed": True, "elapsed_sec": round(elapsed, 2),
                 "element_verdicts": verdicts, "error": None,
                 "fallback_reason": _fb_reason, "fallback_trigger_stage": _fb_stage,
+                "abstained": False, "abstain_reason": None,
+                "same_provider_retry_attempted": _retry_attempted,
+                "same_provider_retry_succeeded": _retry_attempted,  # True iff retry slot produced this result
                 **call_meta,
             }
         except Exception as e:
+            _fail_class = _classify_failure(str(e), model)
             errors.append(f"{model}: {e}")
-            print(f"[lease_coverage_305] Eval-{role} ({pid}): {model} FAILED: {e}", flush=True)
+            print(f"[lease_coverage_305] Eval-{role} ({pid}): {model} FAILED ({_fail_class}): {e}", flush=True)
+
+            # Step 414: same-model self-retry guard — skip if next candidate is the same model
+            # and the current failure is hard (not transient). Hard outages won't recover on
+            # an immediate re-call; proceed to canonical abstain or shared pool instead.
+            _next_idx = _idx + 1
+            if (_next_idx < len(own_candidates)
+                    and own_candidates[_next_idx][1] == evaluator_cfg["model"]
+                    and not _is_transient_failure(_fail_class)):
+                print(
+                    f"[lease_coverage_305] Eval-{role} ({pid}): {model} hard failure "
+                    f"({_fail_class}) — skipping same-model self-retry",
+                    flush=True,
+                )
+                _hard_fail_no_retry = True
+                break
 
     # Phase 2: shared fallback pool
+    # Step 414: canonical mode — abstain instead of crossing model family.
+    # Distinguish: hard-failure abstain (no retry attempted) vs retry-exhausted abstain.
+    if _fb_mode == "canonical":
+        elapsed = time.time() - start_time
+        _first_reason = attempt_failures[0]["reason"] if attempt_failures else "unknown"
+        _abstain_reason = (
+            "hard_failure_no_retry_canonical_abstain"
+            if _hard_fail_no_retry
+            else "same_provider_retry_exhausted_canonical_abstain"
+        )
+        print(
+            f"[lease_coverage_305] Eval-{role} ({pid}): canonical mode — "
+            f"abstaining ({_abstain_reason}, first failure: {_first_reason})",
+            flush=True,
+        )
+        _budget = _compute_output_budget(evaluator_cfg, len(elements_305))
+        return {
+            "role": role, "model": evaluator_cfg["model"],
+            "provider": evaluator_cfg["provider"], "label": evaluator_cfg["label"],
+            "completed": False, "elapsed_sec": round(elapsed, 2),
+            "element_verdicts": None,
+            "error": "canonical_mode_cross_family_fallback_aborted",
+            "abstained": True,
+            "abstain_reason": _abstain_reason,
+            "requested_budget": _budget, "max_output_tokens": _budget,
+            "actual_output_tokens": None, "budget_utilization_pct": None,
+            "output_tokens_used": None, "output_utilization": None,
+            "usage_source": None, "n_subcalls": 0, "split_applied": False,
+            "finish_reason": None, "truncated": False,
+            "fallback_reason": _first_reason, "fallback_trigger_stage": "305",
+            "same_provider_retry_attempted": _retry_attempted,
+            "same_provider_retry_succeeded": False,
+        }
+
     print(f"[lease_coverage_305] Eval-{role} ({pid}): own chain exhausted, trying shared pool", flush=True)
     while True:
         pool_entry = None
@@ -568,6 +646,9 @@ def _call_single_evaluator_305(
                 "completed": True, "elapsed_sec": round(elapsed, 2),
                 "element_verdicts": verdicts, "error": None,
                 "fallback_reason": _fb_reason, "fallback_trigger_stage": "305",
+                "abstained": False, "abstain_reason": None,
+                "same_provider_retry_attempted": _retry_attempted,
+                "same_provider_retry_succeeded": False,
                 **call_meta,
             }
         except Exception as e:
@@ -576,21 +657,60 @@ def _call_single_evaluator_305(
 
     elapsed = time.time() - start_time
     logger.warning(f"[lease_coverage_305] Eval-{role} ({pid}): all attempts failed: {errors}")
+    _budget = _compute_output_budget(evaluator_cfg, len(elements_305))
     return {
         "role": role, "model": evaluator_cfg["model"], "provider": evaluator_cfg["provider"],
         "label": evaluator_cfg["label"],
         "completed": False, "elapsed_sec": round(elapsed, 2),
         "element_verdicts": None, "error": "; ".join(errors),
         # Step 372a/372c: no successful call — record the budget that would have been used.
-        "requested_budget": _compute_output_budget(evaluator_cfg, len(elements_305)),
-        "max_output_tokens": _compute_output_budget(evaluator_cfg, len(elements_305)),
+        "requested_budget": _budget, "max_output_tokens": _budget,
         "actual_output_tokens": None, "budget_utilization_pct": None,
         "output_tokens_used": None, "output_utilization": None,
         "usage_source": None, "n_subcalls": 0, "split_applied": False,
         "finish_reason": None, "truncated": False,
         "fallback_reason": attempt_failures[0]["reason"] if attempt_failures else None,
         "fallback_trigger_stage": "305",
+        "abstained": False, "abstain_reason": None,
+        "same_provider_retry_attempted": _retry_attempted,
+        "same_provider_retry_succeeded": False,
     }
+
+
+def validate_evaluator_chains(lineup: dict, mode: str = "product") -> dict:
+    """Retirement-drift guard (Step 414). Call once per run before Stage 305 begins.
+
+    In canonical mode, any role with own_chain=[] raises RuntimeError — a declared
+    own_chain_empty_reason does NOT grant an exemption; canonical requires a populated chain.
+    In product/debug mode, warns and sets run_config_degraded=True.
+
+    Returns {"run_config_degraded": bool, "warnings": list[str]}.
+    """
+    warnings_out = []
+    run_config_degraded = False
+
+    for role, role_cfg in lineup.items():
+        own_chain = role_cfg.get("own_chain", [])
+        reason = role_cfg.get("own_chain_empty_reason")
+
+        if not own_chain:
+            _reason_note = f" (declared: {reason})" if reason else ""
+            msg = (
+                f"[evaluator_chain_guard] Role {role}: own_chain is empty{_reason_note}; "
+                f"this evaluator has no same-provider retry target."
+            )
+            warnings_out.append(msg)
+            if mode == "canonical":
+                raise RuntimeError(
+                    f"[evaluator_chain_guard] Role {role} has no same-provider fallback "
+                    f"(empty own_chain{_reason_note}). Canonical mode requires a populated "
+                    f"own_chain for evaluator integrity — a declared reason does not substitute. "
+                    f"Populate own_chain or switch to product mode."
+                )
+            print(msg, flush=True)
+            run_config_degraded = True
+
+    return {"run_config_degraded": run_config_degraded, "warnings": warnings_out}
 
 
 def _run_three_evaluators_305(
@@ -1183,6 +1303,7 @@ def assess_coverage_305(
         role: {
             "completed": r["completed"],
             "model": r["model"],
+            "provider": r.get("provider"),
             "actual_model": r.get("model"),
             "actual_label": r.get("label"),
             "is_fallback": bool(r.get("model")) and r.get("model") != EVALUATOR_LINEUP_305.get(role, {}).get("model"),
@@ -1203,6 +1324,15 @@ def assess_coverage_305(
             "split_applied": r.get("split_applied"),
             "fallback_reason": r.get("fallback_reason"),
             "fallback_trigger_stage": r.get("fallback_trigger_stage"),
+            # Step 414: same-provider retry + abstain provenance
+            "abstained": r.get("abstained", False),
+            "abstain_reason": r.get("abstain_reason"),
+            "same_provider_retry_attempted": r.get("same_provider_retry_attempted", False),
+            "same_provider_retry_succeeded": r.get("same_provider_retry_succeeded"),
+            "fallback_class": (
+                ("transient" if _is_transient_failure(r.get("fallback_reason") or "") else "hard")
+                if r.get("fallback_reason") else None
+            ),
         }
         for role, r in evaluator_results.items()
     }
@@ -1210,7 +1340,12 @@ def assess_coverage_305(
     # Step 372a: LP-level fallback flag for a quiet, audit-surface-only confidence
     # tick. Records which slot(s) fell back and to what — NOT a lawyer-facing alarm.
     _fallbacks = [
-        {"role": role, "actual_model": r.get("model"), "actual_label": r.get("label")}
+        {
+            "role": role,
+            "actual_model": r.get("model"),
+            "actual_label": r.get("label"),
+            "actual_provider": r.get("provider"),
+        }
         for role, r in evaluator_results.items()
         if bool(r.get("model")) and r.get("model") != EVALUATOR_LINEUP_305.get(role, {}).get("model")
     ]
@@ -1246,3 +1381,74 @@ def assess_coverage_305(
         "lp_confidence_base": lp_confidence_base,
         "per_evaluator_lp_verdicts": per_evaluator_lp_verdicts,
     }
+
+
+def collect_run_fallback_events(coverage_assessment: list, timestamp: str) -> list:
+    """Scan coverage_assessment for LP-level degraded events (Step 414 run-level degraded flag).
+
+    Captures three event types:
+      "fallback"  — evaluator succeeded but used a non-primary model
+      "abstain"   — evaluator did not complete due to canonical mode abstain
+      "all_failed" — evaluator did not complete because all candidates (including shared pool) failed
+
+    Returns a list of event dicts.  Empty list means all evaluators completed on-primary.
+    """
+    events = []
+    for lp in coverage_assessment:
+        lp_meta = lp.get("lp_meta", {})
+        lp_id = lp.get("issue_area_id", "?")
+        ev_meta = lp.get("evaluator_meta", {})
+
+        # Fallback events — model substitution occurred, but evaluator still produced verdicts
+        if lp_meta.get("fallback_used"):
+            for fb in (lp_meta.get("fallbacks") or []):
+                role = fb.get("role")
+                ev = ev_meta.get(role, {})
+                primary_cfg = EVALUATOR_LINEUP_305.get(role, {})
+                fb_reason = ev.get("fallback_reason")
+                events.append({
+                    "event_type": "fallback",
+                    "stage": "305",
+                    "lp_id": lp_id,
+                    "role": role,
+                    "requested_model": primary_cfg.get("model"),
+                    "requested_provider": primary_cfg.get("provider"),
+                    "actual_model": fb.get("actual_model"),
+                    "actual_provider": fb.get("actual_provider"),
+                    "fallback_reason": fb_reason,
+                    "fallback_class": (
+                        ("transient" if _is_transient_failure(fb_reason or "") else "hard")
+                        if fb_reason else None
+                    ),
+                    "same_provider_retry_attempted": ev.get("same_provider_retry_attempted", False),
+                    "same_provider_retry_succeeded": ev.get("same_provider_retry_succeeded", False),
+                    "abstained": False,
+                    "abstain_reason": None,
+                    "timestamp": timestamp,
+                })
+
+        # Abstain / all-fail events — evaluator did not complete at all
+        for role, ev in ev_meta.items():
+            if ev.get("completed", True):
+                continue
+            primary_cfg = EVALUATOR_LINEUP_305.get(role, {})
+            _event_type = "abstain" if ev.get("abstained") else "all_failed"
+            events.append({
+                "event_type": _event_type,
+                "stage": "305",
+                "lp_id": lp_id,
+                "role": role,
+                "requested_model": primary_cfg.get("model"),
+                "requested_provider": primary_cfg.get("provider"),
+                "actual_model": None,
+                "actual_provider": None,
+                "fallback_reason": ev.get("fallback_reason"),
+                "fallback_class": None,
+                "same_provider_retry_attempted": ev.get("same_provider_retry_attempted", False),
+                "same_provider_retry_succeeded": False,
+                "abstained": bool(ev.get("abstained")),
+                "abstain_reason": ev.get("abstain_reason"),
+                "timestamp": timestamp,
+            })
+
+    return events
