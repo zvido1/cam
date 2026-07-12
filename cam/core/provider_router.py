@@ -5,6 +5,122 @@ import random
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
+# ── Evaluator generation-parameter capability map ─────────────────────────────
+#
+# Step 416: Replace the broad startswith("gpt-5") temperature guard with an
+# explicit, per-model capability table.  Any model not in this table is assumed
+# to support all declared generation parameters unless explicitly listed below.
+#
+# Populated from live probes run 2026-07-12:
+#   gpt-5.5  → BadRequestError: "temperature does not support 0 with this model.
+#              Only the default (1) value is supported."
+#              ANY value other than 1 is rejected.  Only temperature=1 (default)
+#              is accepted, so we treat this as temperature-unsupported.
+#   gpt-5.4  → Accepts temperature=0. ✓
+#   gpt-5.2  → Accepts temperature=0. ✓  (original adapter comment was wrong)
+#   gpt-4o   → Accepts temperature=0. ✓
+#
+# When a model is in TEMPERATURE_ONLY_DEFAULT, the adapter:
+#   (a) omits the temperature parameter from the outbound payload,
+#   (b) records the omission reason in effective_request_metadata on the adapter,
+#   (c) does NOT raise — this is a documented capability exception.
+# When a model is NOT in TEMPERATURE_ONLY_DEFAULT and temperature is declared,
+#   temperature MUST appear in the outbound payload or the integrity check raises.
+#
+TEMPERATURE_ONLY_DEFAULT_MODELS: frozenset = frozenset({
+    "gpt-5.5",   # Only accepts temperature=1 (provider default). Probe 2026-07-12.
+})
+
+# All OpenAI models that use max_completion_tokens instead of max_tokens.
+# Probe confirmed: gpt-5.x models use the Responses / Chat-Completions path
+# that requires max_completion_tokens.  This set is separate from the
+# temperature capability map.
+MAX_COMPLETION_TOKENS_MODELS: frozenset = frozenset({
+    "gpt-5.5", "gpt-5.4", "gpt-5.2",
+})
+
+# Evaluator-critical generation parameters — the complete declared set.
+# Used by the integrity assertion to enumerate what must be checked.
+EVALUATOR_CRITICAL_PARAMS: tuple = (
+    "temperature",
+    "max_tokens",          # maps to max_output_tokens on ModelTarget
+    "reasoning_effort",
+    # top_p, top_k, penalties: not declared anywhere in the evaluator stack;
+    # no assertion needed unless added to ModelTarget in future.
+)
+
+
+def _check_generation_integrity(
+    target: "ModelTarget",
+    params: dict,
+    temperature_omit_reason: Optional[str] = None,
+) -> dict:
+    """Assert declared evaluator generation config matches outbound payload.
+
+    Step 416: Core invariant — any declared evaluator-critical generation
+    parameter that does not appear in the outbound payload must be backed by an
+    explicit capability exception.  Silent omission is a hard failure.
+
+    Returns effective_request_metadata dict for logging.
+
+    Raises FatalProviderError if an undocumented omission is detected.
+    """
+    declared = {
+        "temperature": target.temperature,
+        "max_tokens": target.max_output_tokens,
+        "reasoning_effort": target.reasoning_effort,
+    }
+
+    transmitted = {}
+    omitted = {}
+    omission_reasons = {}
+
+    # temperature
+    if "temperature" in params:
+        transmitted["temperature"] = params["temperature"]
+    else:
+        if temperature_omit_reason:
+            omitted["temperature"] = target.temperature
+            omission_reasons["temperature"] = temperature_omit_reason
+        else:
+            raise FatalProviderError(
+                f"config_integrity_violation: declared temperature={target.temperature!r} "
+                f"for model={target.model!r} was dropped with no capability exception. "
+                f"Either add the model to TEMPERATURE_ONLY_DEFAULT_MODELS (with probe evidence) "
+                f"or transmit the parameter."
+            )
+
+    # max_tokens (outbound key varies but something must be present)
+    tok_key = "max_completion_tokens" if "max_completion_tokens" in params else "max_tokens"
+    if tok_key in params:
+        transmitted["max_tokens"] = params[tok_key]
+        transmitted["_max_tokens_key"] = tok_key
+    else:
+        raise FatalProviderError(
+            f"config_integrity_violation: max_output_tokens={target.max_output_tokens!r} "
+            f"for model={target.model!r} not present in outbound payload."
+        )
+
+    # reasoning_effort — optional; only declared on some roles/stages
+    if target.reasoning_effort is not None:
+        if "reasoning_effort" in params:
+            transmitted["reasoning_effort"] = params["reasoning_effort"]
+        else:
+            # reasoning_effort is only sent for reasoning models; non-reasoning
+            # models legitimately don't receive it.  This is not an integrity
+            # violation — reasoning_effort absence is model-gated, not silent.
+            omitted["reasoning_effort"] = target.reasoning_effort
+            omission_reasons["reasoning_effort"] = "non_reasoning_model_or_effort_not_applicable"
+
+    return {
+        "declared": declared,
+        "transmitted": transmitted,
+        "omitted": omitted,
+        "omission_reasons": omission_reasons,
+        "provider": getattr(target, "provider", None),
+        "model": target.model,
+    }
+
 # Import robust JSON extraction (handles nested JSON from LLM responses)
 from cam.core.json_extract import safe_json_extract as _safe_json_extract_v2
 
@@ -189,47 +305,63 @@ class BaseAdapter:
 
 class OpenAIAdapter(BaseAdapter):
     """
-    Uses OpenAI Responses API (works with gpt-5.2 per your probe).
+    OpenAI Chat Completions adapter.
     Env: OPENAI_API_KEY
     """
-    # Effort escalation ladder for GPT-5.2 empty output retries
+    # Effort escalation ladder for empty-output retries on reasoning models
     EFFORT_ESCALATION = ["medium", "high"]
-    
+
+    # Step 416: per-call integrity metadata for the most recent call.
+    last_integrity: Optional[dict] = None
+
     def __init__(self):
         from openai import OpenAI
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
             raise FatalProviderError("OPENAI_API_KEY missing")
-        # Use a longer timeout for GPT-5.2 models with reasoning_effort
-        # Default timeout is 60s, but GPT-5.2 can take much longer
-        self.client = OpenAI(api_key=api_key, timeout=600.0)  # 10 minutes for reasoning models
+        self.client = OpenAI(api_key=api_key, timeout=600.0)
 
     def _call_once(self, system_prompt: str, user_prompt: str, target: ModelTarget, effort_override: str = None) -> str:
-        """Single API call with optional effort override."""
-        # Build messages array
+        """Single API call with optional effort override.
+
+        Step 416: Uses explicit per-model capability map (TEMPERATURE_ONLY_DEFAULT_MODELS
+        and MAX_COMPLETION_TOKENS_MODELS) instead of broad startswith("gpt-5") guards.
+        Runs _check_generation_integrity before every call — undocumented parameter
+        omissions raise FatalProviderError.
+        """
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": user_prompt})
-        
-        # Build request parameters
-        params = {
+
+        params: Dict[str, Any] = {
             "model": target.model,
             "messages": messages,
         }
-        # GPT-5.2 requires max_completion_tokens instead of max_tokens
-        # GPT-5.2 only supports default temperature (1), not custom values
-        if target.model.startswith("gpt-5"):
+
+        # Max-token field: models in MAX_COMPLETION_TOKENS_MODELS require the
+        # Responses-API field name; all others use the standard max_tokens key.
+        if target.model in MAX_COMPLETION_TOKENS_MODELS:
             params["max_completion_tokens"] = target.max_output_tokens
-            # Don't set temperature for GPT-5.2 (uses default 1)
         else:
             params["max_tokens"] = target.max_output_tokens
+
+        # Temperature: omit only for models in TEMPERATURE_ONLY_DEFAULT_MODELS.
+        # Those models reject any non-default value (probe confirmed 2026-07-12).
+        # All other models receive declared temperature — no broad prefix guard.
+        temperature_omit_reason: Optional[str] = None
+        if target.model in TEMPERATURE_ONLY_DEFAULT_MODELS:
+            temperature_omit_reason = (
+                f"model={target.model!r} only accepts temperature=1 (provider default); "
+                f"declared temperature={target.temperature!r} omitted. "
+                f"Capability exception: TEMPERATURE_ONLY_DEFAULT_MODELS. Probe: 2026-07-12."
+            )
+            # Omit temperature from params — provider default (1) governs.
+        else:
             params["temperature"] = target.temperature
-        
-        # Add reasoning_effort for reasoning models only (Chat Completions API)
-        # Use override if provided, otherwise use target's setting
+
+        # reasoning_effort: only reasoning models support it.
         effort = effort_override or target.reasoning_effort
-        # Only reasoning models support reasoning_effort (gpt-5.x and o1/o3/o4 series)
         _is_reasoning_model = (
             target.model.startswith("gpt-5") or
             target.model.startswith("o1") or
@@ -238,13 +370,20 @@ class OpenAIAdapter(BaseAdapter):
         )
         if effort and _is_reasoning_model:
             params["reasoning_effort"] = effort
-        
-        # Use Chat Completions API (supports reasoning_effort)
-        # Pass per-request timeout for long-running reasoning models
+
+        # Step 416: integrity assertion — raises FatalProviderError on undocumented omission.
+        integrity = _check_generation_integrity(target, params, temperature_omit_reason)
+        self.last_integrity = integrity
+        print(
+            f"[openai][integrity] model={target.model!r} "
+            f"transmitted={list(integrity['transmitted'].keys())} "
+            f"omitted={list(integrity['omitted'].keys())} "
+            f"reasons={integrity['omission_reasons']}",
+            flush=True,
+        )
+
         resp = self.client.chat.completions.create(**params, timeout=target.timeout_sec)
-        # Step 372c: stash real token usage (side-channel; does not alter output)
         self.last_usage = _extract_usage(resp)
-        # Extract content from response
         if resp.choices and len(resp.choices) > 0:
             return resp.choices[0].message.content or ""
         return ""
@@ -284,50 +423,53 @@ class AnthropicAdapter(BaseAdapter):
     """
     Env: ANTHROPIC_API_KEY
     """
+    # Step 416: per-call integrity metadata for the most recent call.
+    last_integrity: Optional[dict] = None
+
     def __init__(self):
         from anthropic import Anthropic
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
             raise FatalProviderError("ANTHROPIC_API_KEY missing")
-        self.client = Anthropic(api_key=api_key, timeout=600.0)  # 10 min for extended thinking
+        self.client = Anthropic(api_key=api_key, timeout=600.0)
 
     def call(self, system_prompt: str, user_prompt: str, target: ModelTarget) -> str:
         try:
-            # Build request parameters
-            params = {
+            params: Dict[str, Any] = {
                 "model": target.model,
                 "max_tokens": target.max_output_tokens,
                 "system": system_prompt,
                 "messages": [{"role": "user", "content": user_prompt}],
             }
-            
-            # Enable extended thinking if reasoning_effort is set
+
+            # Extended thinking mode: temperature is not supported alongside thinking.
+            # Anthropic API rejects temperature when thinking is enabled.
+            temperature_omit_reason: Optional[str] = None
             if target.reasoning_effort:
-                # Map reasoning_effort to thinking budget
-                budget_map = {
-                    "low": 5000,
-                    "medium": 10000,
-                    "high": 20000,
-                    "xhigh": 32000,
-                }
+                budget_map = {"low": 5000, "medium": 10000, "high": 20000, "xhigh": 32000}
                 budget = budget_map.get(target.reasoning_effort, 10000)
-                params["thinking"] = {
-                    "type": "enabled",
-                    "budget_tokens": budget,
-                }
-                # Extended thinking doesn't support custom temperature
+                params["thinking"] = {"type": "enabled", "budget_tokens": budget}
+                temperature_omit_reason = (
+                    f"Anthropic extended thinking (reasoning_effort={target.reasoning_effort!r}) "
+                    f"does not support custom temperature; declared temperature={target.temperature!r} omitted. "
+                    f"Capability exception: Anthropic extended-thinking API constraint."
+                )
             else:
                 params["temperature"] = target.temperature
-            
+
+            # Step 416: integrity assertion.
+            integrity = _check_generation_integrity(target, params, temperature_omit_reason)
+            self.last_integrity = integrity
+
             resp = self.client.messages.create(**params, timeout=target.timeout_sec)
-            # Step 372c: stash real token usage (side-channel; does not alter output)
             self.last_usage = _extract_usage(resp)
-            # content is list of blocks
             chunks = []
             for block in resp.content:
                 if getattr(block, "type", None) == "text":
                     chunks.append(block.text)
             return "\n".join(chunks).strip()
+        except FatalProviderError:
+            raise
         except Exception as e:
             msg = f"anthropic_error: {type(e).__name__}: {e}"
             s = str(e).lower()
@@ -588,6 +730,9 @@ class XAIAdapter(BaseAdapter):
     xAI via OpenAI-compatible endpoint.
     Env: XAI_API_KEY
     """
+    # Step 416: per-call integrity metadata for the most recent call.
+    last_integrity: Optional[dict] = None
+
     def __init__(self):
         from openai import OpenAI
         api_key = os.getenv("XAI_API_KEY")
@@ -595,11 +740,9 @@ class XAIAdapter(BaseAdapter):
             raise FatalProviderError("XAI_API_KEY missing")
         self.base_url = "https://api.x.ai/v1"
         self.api_key = api_key
-        # Don't create client here - create per-call to respect target.timeout_sec
         self._openai_class = OpenAI
 
     def call(self, system_prompt: str, user_prompt: str, target: ModelTarget) -> str:
-        # Create client with target-specific timeout
         timeout_sec = target.timeout_sec if target.timeout_sec else 60.0
         client = self._openai_class(
             api_key=self.api_key,
@@ -607,18 +750,25 @@ class XAIAdapter(BaseAdapter):
             timeout=timeout_sec,
         )
         try:
-            resp = client.chat.completions.create(
-                model=target.model,
-                messages=[
+            params: Dict[str, Any] = {
+                "model": target.model,
+                "messages": [
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_prompt},
                 ],
-                temperature=target.temperature,
-                max_tokens=target.max_output_tokens,
-            )
-            # Step 372c: stash real token usage (side-channel; does not alter output)
+                "temperature": target.temperature,
+                "max_tokens": target.max_output_tokens,
+            }
+
+            # Step 416: integrity assertion — temperature unconditionally transmitted.
+            integrity = _check_generation_integrity(target, params)
+            self.last_integrity = integrity
+
+            resp = client.chat.completions.create(**params)
             self.last_usage = _extract_usage(resp)
             return (resp.choices[0].message.content or "").strip()
+        except FatalProviderError:
+            raise
         except Exception as e:
             msg = f"xai_error: {type(e).__name__}: {e}"
             s = str(e).lower()
