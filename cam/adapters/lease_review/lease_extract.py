@@ -13,6 +13,7 @@ Uses cam/core/schema_validator.py for output validation.
 Uses cam/core/json_extract.py for parsing model responses.
 """
 
+import hashlib
 import json
 import re
 import time
@@ -28,6 +29,19 @@ from cam.core.provider_router import (
 )
 from cam.core.json_extract import safe_json_extract
 from cam.core.provider_health import get_health_tracker
+
+
+class ExtractionIntegrityError(Exception):
+    """Raised when canonical extraction fails and fallback would silently substitute.
+
+    In canonical mode (Mode C), the pipeline must not proceed with evidence from
+    a fallback extractor. This error is caught by the adapter and converted to a
+    hard abort so the run is never indistinguishable from a clean Gemini-primary run.
+    """
+    def __init__(self, message: str, errors: list = None, attempt_chain: list = None):
+        super().__init__(message)
+        self.errors = errors or []
+        self.attempt_chain = attempt_chain or []
 
 # Schema path for validation
 SCHEMA_PATH = Path(__file__).parent / "schemas" / "extraction_schema.json"
@@ -244,7 +258,7 @@ EXTRACTION_PRIMARY_TIMEOUT = 300.0
 EXTRACTION_FALLBACK_TIMEOUT = 300.0
 
 # Output token caps
-EXTRACTION_MAX_TOKENS_SINGLE = 32_000  # Single-call path (lease ≤ CHUNK_WORD_THRESHOLD)
+EXTRACTION_MAX_TOKENS_SINGLE = 65_000  # Single-call path — raised from 32k (Step 421B: headroom above observed 27-31k Gemini output)
 EXTRACTION_MAX_TOKENS_CHUNK  = 24_000  # Per-chunk path — half the provisions per call
 
 # Tenant word count above which extraction splits into provision-list chunks.
@@ -684,6 +698,7 @@ def extract_provisions_single_doc(
     tenant_text: str,
     provisions: List[dict],
     config: dict,
+    canonical: bool = True,
 ) -> Dict[str, Any]:
     """Mode C (single-document analyze): extract per-issue-area clause text.
 
@@ -696,6 +711,9 @@ def extract_provisions_single_doc(
         tenant_text: Full text of the lease to analyze.
         provisions: List of provision dicts (id, name, description, search_hints).
         config: Pipeline config dict.
+        canonical: If True (default), fail-closed on primary extractor failure —
+            raises ExtractionIntegrityError instead of silently falling back to
+            an alternate extractor. Set False only in debug/replay harnesses.
 
     Returns:
         Dict with keys: provisions, contract_metadata, deal_overview, meta.
@@ -718,21 +736,39 @@ def extract_provisions_single_doc(
     obj = None
     actual_model = EXTRACTION_CHAIN[0][1]
     actual_provider = EXTRACTION_CHAIN[0][0]
+    primary_provider = EXTRACTION_CHAIN[0][0]
+    primary_model = EXTRACTION_CHAIN[0][1]
     fallback_used = False
     google_provider_error = False
+    attempt_chain: List[Dict[str, Any]] = []
 
     for chain_idx, (provider, model_name) in enumerate(EXTRACTION_CHAIN):
         if obj is not None:
             break
 
+        # ── Canonical fail-closed guard (Part 2) ──────────────────────────────
+        # In canonical mode, only the primary extractor is authorised. If the
+        # primary failed, raise rather than silently substituting a fallback —
+        # same pattern as the evaluator guard added in Step 414.
+        if canonical and chain_idx > 0:
+            elapsed_so_far = time.time() - start_time
+            failure_reason = f"primary extractor ({primary_provider}/{primary_model}) failed; fallback suppressed in canonical mode"
+            print(
+                f"[lease_extract single-doc] CANONICAL FAIL-CLOSED: {failure_reason}",
+                flush=True,
+            )
+            raise ExtractionIntegrityError(failure_reason, errors=errors, attempt_chain=attempt_chain)
+
         if not health.is_available(provider):
             print(f"[lease_extract single-doc] Skipping {model_name} ({provider} degraded), trying next...", flush=True)
             errors.append({"model": model_name, "error": f"provider {provider} degraded, skipped"})
+            attempt_chain.append({"model": model_name, "provider": provider, "outcome": "skipped_degraded"})
             continue
 
         if chain_idx == 1 and provider == "google" and google_provider_error:
             print(f"[lease_extract single-doc] Skipping {model_name} (google provider-level error on primary), trying next...", flush=True)
             errors.append({"model": model_name, "error": "google provider-level error, skipped"})
+            attempt_chain.append({"model": model_name, "provider": provider, "outcome": "skipped_provider_error"})
             continue
 
         if chain_idx == 0 or provider == "google":
@@ -762,6 +798,7 @@ def extract_provisions_single_doc(
             adapter = _get_adapter_for_provider(provider)
         except Exception as e:
             errors.append({"model": model_name, "error": f"adapter init: {e}"})
+            attempt_chain.append({"model": model_name, "provider": provider, "outcome": f"adapter_init_failed: {e}"})
             continue
 
         try:
@@ -773,19 +810,28 @@ def extract_provisions_single_doc(
             raw_stripped = raw.strip()
             if len(raw_stripped) < 100 or raw_stripped.startswith(("I'm sorry", "I cannot", "Error:", "The document")):
                 errors.append({"model": model_name, "error": f"model_refused_or_error: {raw_stripped[:100]}"})
+                attempt_chain.append({"model": model_name, "provider": provider, "outcome": "refused_or_error"})
                 print(f"[lease_extract single-doc] {model_name} returned refusal/error: {raw_stripped[:100]}", flush=True)
                 continue
 
             try:
                 obj = _extract_provisions_json(raw)
             except ValueError as ve:
+                # ── Raw failure capture (Part 6) ─────────────────────────────
                 print(f"[lease_extract single-doc] {model_name} JSON extraction failed: {ve}", flush=True)
-                errors.append({"model": model_name, "error": f"json_extract: {ve}"})
+                errors.append({
+                    "model": model_name,
+                    "error": f"json_extract: {ve}",
+                    "raw_response_len": len(raw),
+                    "raw_response_preview": repr(raw[:2000]),
+                })
+                attempt_chain.append({"model": model_name, "provider": provider, "outcome": f"json_parse_failed: {ve}"})
                 continue
 
             ok, why = _validate_extraction(obj)
             if not ok:
                 errors.append({"model": model_name, "error": f"validation: {why}"})
+                attempt_chain.append({"model": model_name, "provider": provider, "outcome": f"validation_failed: {why}"})
                 obj = None
                 continue
 
@@ -795,8 +841,11 @@ def extract_provisions_single_doc(
                 fallback_used = True
 
             elapsed_so_far = time.time() - start_time
+            attempt_chain.append({"model": model_name, "provider": provider, "outcome": "success"})
             print(f"[lease_extract single-doc] {model_name} succeeded in {round(elapsed_so_far, 1)}s ({call_label})", flush=True)
 
+        except ExtractionIntegrityError:
+            raise
         except Exception as e:
             error_str = str(e).lower()
             is_provider_error = any(k in error_str for k in [
@@ -804,6 +853,7 @@ def extract_provisions_single_doc(
                 "service_unavailable", "resource_exhausted",
             ])
             errors.append({"model": model_name, "error": str(e)})
+            attempt_chain.append({"model": model_name, "provider": provider, "outcome": f"exception: {type(e).__name__}"})
             if is_provider_error:
                 health.mark_degraded(provider, reason=str(e)[:100])
                 if chain_idx == 0 and provider == "google":
@@ -817,6 +867,7 @@ def extract_provisions_single_doc(
     elapsed = time.time() - start_time
 
     if obj is None:
+        # Non-canonical (debug) mode reached full chain exhaustion.
         print(f"[lease_extract single-doc] All models failed. Returning empty provisions.", flush=True)
         stub_provisions = []
         for prov in provisions:
@@ -838,11 +889,14 @@ def extract_provisions_single_doc(
             "meta": {
                 "model": "none",
                 "provider": "none",
+                "primary_model": primary_model,
+                "primary_provider": primary_provider,
                 "fallback_used": True,
                 "elapsed_sec": round(elapsed, 2),
                 "errors": errors,
                 "extraction_failed": True,
                 "single_doc": True,
+                "extraction_attempt_chain": attempt_chain,
             },
         }
 
@@ -869,10 +923,13 @@ def extract_provisions_single_doc(
         "meta": {
             "model": actual_model,
             "provider": actual_provider,
+            "primary_model": primary_model,
+            "primary_provider": primary_provider,
             "fallback_used": fallback_used,
             "elapsed_sec": round(elapsed, 2),
             "errors": errors,
             "single_doc": True,
+            "extraction_attempt_chain": attempt_chain,
         },
     }
 

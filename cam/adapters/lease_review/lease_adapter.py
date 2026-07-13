@@ -7,6 +7,7 @@ Pipeline order: Stage 1 (extraction) -> Stage 4 (rules) -> Cascade (if RULE-LS-0
                 -> Stage 5 (severity) -> Stage 6 (disposition)
 """
 
+import hashlib
 import json
 import os
 import re
@@ -1289,9 +1290,12 @@ def run_lease_coverage_only(
     parse_elapsed = time.time() - parse_start
     tenant_word_count = len(tenant_text.split())
     cfg["tenant_word_count"] = tenant_word_count
+    # Step 421B: source document hash for evidence provenance
+    source_document_hash = hashlib.sha256(tenant_text.encode("utf-8")).hexdigest()
     print(
         f"[lease_adapter:analyze] Document: {len(tenant_text)} chars "
-        f"({tenant_word_count} words) | parse {parse_elapsed:.2f}s",
+        f"({tenant_word_count} words) | parse {parse_elapsed:.2f}s | "
+        f"source_hash={source_document_hash[:16]}",
         flush=True,
     )
 
@@ -1309,15 +1313,51 @@ def run_lease_coverage_only(
     if progress_callback:
         progress_callback(2, 4, "Extracting provisions.")
     print("[lease_adapter:analyze] Single-document extraction...", flush=True)
-    extraction = extract_provisions_single_doc(tenant_text, provisions, cfg)
+    from cam.adapters.lease_review.lease_extract import ExtractionIntegrityError
+    extraction = None
+    extraction_integrity_error = None
+    try:
+        extraction = extract_provisions_single_doc(tenant_text, provisions, cfg, canonical=True)
+    except ExtractionIntegrityError as _eie:
+        extraction_integrity_error = _eie
+        print(
+            f"[lease_adapter:analyze] EXTRACTION INTEGRITY ABORT: {_eie}",
+            flush=True,
+        )
+        raise GateAbortError(
+            f"Extraction integrity failure: primary extractor failed and canonical mode "
+            f"prohibits silent fallback. Errors: {[e.get('error', '')[:120] for e in _eie.errors[-3:]]}. "
+            f"Re-run or use debug mode."
+        )
     total_api_calls += 1
-    models_used["extractor"] = extraction["meta"]["model"]
-    models_used["extractor_provider"] = extraction["meta"].get("provider", "")
-    models_used["extractor_fallback_used"] = extraction["meta"].get("fallback_used", False)
+    meta = extraction["meta"]
+
+    # ── Stub-provision guard (Part 3) ─────────────────────────────────────────
+    # If every extractor failed (non-canonical / debug mode), do not produce a
+    # legal analysis report from empty evidence.  This path cannot be reached in
+    # canonical mode (fail-closed guard above already raised), but guard here for
+    # defence-in-depth.
+    if meta.get("extraction_failed"):
+        raise GateAbortError(
+            "Extraction failed: all extractors returned unparseable responses. "
+            "Cannot produce a valid legal analysis report from empty evidence. "
+            f"Errors: {[e.get('error', '')[:80] for e in meta.get('errors', [])[-3:]]}"
+        )
+
+    models_used["extractor"] = meta["model"]
+    models_used["extractor_provider"] = meta.get("provider", "")
+    models_used["extractor_fallback_used"] = meta.get("fallback_used", False)
     models_used["extraction"] = models_used["extractor"]
+
+    # ── Extraction output hash (Part 8) ────────────────────────────────────────
+    _all_tenant_texts = "".join(
+        p.get("tenant_text", "") for p in extraction["provisions"]
+    )
+    extraction_output_hash = hashlib.sha256(_all_tenant_texts.encode("utf-8")).hexdigest()
     print(
         f"[lease_adapter:analyze] Extraction complete: "
-        f"{len(extraction['provisions'])} provisions in {extraction['meta']['elapsed_sec']}s",
+        f"{len(extraction['provisions'])} provisions in {meta['elapsed_sec']}s | "
+        f"extraction_hash={extraction_output_hash[:16]}",
         flush=True,
     )
 
@@ -1368,6 +1408,12 @@ def run_lease_coverage_only(
         )
         # Step 335: sum coverage evaluator calls (3 per LP via assess_coverage_305)
         total_api_calls += sum(a.get("_coverage_api_calls", 0) for a in coverage_assessment)
+        # Step 421B: per-LP evidence hash for finding provenance
+        _prov_text_map = {p["provision_id"]: p.get("tenant_text", "") for p in extraction["provisions"]}
+        for _ca_item in coverage_assessment:
+            _lp_id = _ca_item.get("issue_area_id") or _ca_item.get("provision_id") or ""
+            _tt = _prov_text_map.get(_lp_id, "")
+            _ca_item["tenant_text_hash"] = hashlib.sha256(_tt.encode("utf-8")).hexdigest()[:16]
         coverage_summary = summarize_coverage(coverage_assessment)
         ns_summary = summarize_negative_space(negative_space_by_provision)
         print(
@@ -1636,6 +1682,17 @@ def run_lease_coverage_only(
         "run_degraded": _run_degraded_c,
         "degraded_reason": _degraded_reason_c,
         "fallback_events": _fallback_events_c,
+        # Step 421B: extraction provenance and integrity fields
+        "source_document_hash": source_document_hash,
+        "extraction_output_hash": extraction_output_hash,
+        "extraction_provider": extraction["meta"].get("provider", ""),
+        "extraction_model": extraction["meta"].get("model", ""),
+        "extraction_primary_provider": extraction["meta"].get("primary_provider", "google"),
+        "extraction_primary_model": extraction["meta"].get("primary_model", "gemini-3.1-pro-preview"),
+        "extraction_fallback_used": extraction["meta"].get("fallback_used", False),
+        "extraction_degraded": extraction["meta"].get("fallback_used", False),
+        "extraction_attempt_chain": extraction["meta"].get("extraction_attempt_chain", []),
+        "extraction_failure_reason": None,
         "exposure_summary": exposure_summary,
         "conflicts": conflicts_c,
         "jurisdiction": {
