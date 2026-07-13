@@ -177,6 +177,116 @@ LP-14, LP-22, LP-26, LP-27 are very short and consistent between hashes. LP-05 a
 
 ---
 
+---
+
+## N=10 Extraction Probe — Hash Distribution and LP Variance
+
+### Hash distribution (N=10, all succeeded, no repair fired)
+
+| Hash | Count | LP chars |
+|------|-------|----------|
+| `f7f64b5c4b08b55c` | **8/10** | 127,480 |
+| `d3e62ead1670adb8` | 2/10 | 115,495 |
+
+Note: This reverses the N=5 finding (4/5 d3e62ead, 1/5 f7f64b5c). Over N=15 combined: f7f64b5c = 9 runs, d3e62ead = 6. The modal is unstable across sample sets — neither hash is clearly "the Gemini answer."
+
+### Per-LP stability
+
+**Stable (20/33):** LP-01, LP-02, LP-04, LP-06, LP-09, LP-11, LP-13, LP-14, LP-16, LP-18, LP-20 (stub), LP-21 (stub), LP-22, LP-23 (stub), LP-25, LP-26, LP-29, LP-30, LP-31 (stub), LP-32
+
+**Material variance (6/33):** LP-00, LP-03, LP-05, LP-07, LP-12, LP-28
+
+**Cosmetic/tiny (7/33):** LP-08, LP-10, LP-15, LP-17, LP-19, LP-24, LP-27
+
+### What Gemini is varying — exact content
+
+The variance is not random character noise. Gemini makes different **start/stop extraction decisions** for each of the 6 variable LPs.
+
+#### LP-07 — Operating Expenses (+4,377 chars in modal)
+
+Both hashes share the same 573-char opening (the Annual Estimate payment mechanism). Then they diverge:
+
+- **Modal `f7f64b5c` (11,492 chars):** Extracts the full Operating Expenses definition including:
+  - The Operating Expenses definition (all items in scope: Taxes, capital repairs, Common Area Amenities, parking, etc.)
+  - **Operating Expense Exclusions** — what is NOT charged to tenant (the carve-outs)
+  - **Controllable Expenses Cap** — capping annual increases on controllable items at typically 5%
+  - Annual reconciliation mechanism
+  - Rent definition tying together Base Rent + Operating Expenses
+
+- **Minor `d3e62ead` (7,115 chars):** Extracts the same opening, the beginning of the Operating Expenses definition (items in scope), then ends at `"ses or that varies with occupancy or use. Base Rent, Tenant's Share of Operating Expenses and all other amounts payable by Tenant to Landlord hereunder are collectively referred to herein as 'Rent.'"` — this is a sentence boundary, not a truncation, but it cuts off before the exclusions, cap, and reconciliation.
+
+**Legal consequence:** An evaluator working from d3e62ead LP-07 sees what Operating Expenses include but not what they exclude. The Controllable Expenses Cap (which bounds year-over-year cost increases on controllable items) is absent from d3e62ead. The exclusions list is absent. These are the provisions that determine whether the tenant's operating expense exposure is bounded or unbounded — the exact terms that determine coverage risk.
+
+#### LP-12 — Delivery / Acceptance of Premises (+3,959 chars in modal)
+
+Both hashes share 1,561 chars (the Delivery obligations and 120-day termination right). Then they diverge:
+
+- **Modal `f7f64b5c`:** After the termination right provision, continues with: "Tenant acknowledges and agrees that following the Commencement Date, Landlord may require access to portions of the Premises in order to complete Landlord's Work..." (Landlord's Work access rights, tenant's obligations during construction, disclaimer clause).
+
+- **Minor `d3e62ead`:** After the termination right provision, continues with: "Notwithstanding anything to the contrary contained in this Lease, Tenant and Landlord acknowledge and agree that the effectiveness of this Lease shall be subject to the following condition precedent ('Condition Precedent'): Landlord shall have entered into a lease termination agreement..." — a condition precedent tied to the existing tenant vacating.
+
+**Legal consequence:** These are different substantive sections of the lease routed to LP-12 in different runs. The minor hash captures the Condition Precedent (lease effectiveness depends on prior tenant vacating) — a significant tenant protection. The modal captures the Landlord's Work access rights — a potential burden on tenant. They're not the same clause, and an evaluator working from one would not see the other.
+
+#### LP-28 — Use / Compliance (+3,722 chars in modal)
+
+Both share the Section 7 Use clause (ADA, Legal Requirements). Modal continues with compliance obligations including:
+- Landlord's responsibility for Common Area compliance as of Commencement Date
+- Future compliance costs allocation between landlord/tenant
+- ADA specialist disclosure (California Civil Code 1938(a))
+- Miscellaneous provisions including attorney's fees, integration clause
+
+Minor truncates after the basic Use clause. Legal consequence: landlord compliance obligations and cost allocation between parties (Operating Expense vs. tenant direct cost) are absent from the minor hash.
+
+#### LP-03 — Commencement Date / Term (+904 chars in modal)
+
+Both share the Base Term definition (835 Industrial Lease cross-reference). Modal continues with Landlord's Work access provisions and the acknowledgment/delivery confirmation mechanism. Minor stops at the same depth as modal but without the Landlord's Work section.
+
+#### LP-05 — Permitted Use (+205 chars in modal)
+
+Modal includes the page-1 "Permitted Use: Research and development laboratory, related office..." definition from the key-terms table before the Section 7 clause. Minor starts directly at Section 7. The permitted use definition is a key boundary on what tenant may do with the space.
+
+#### LP-00 — Parties & Premises (−1,186 chars in modal; minor has MORE)
+
+Unusual: the minor hash d3e62ead has 1,186 more chars in LP-00. Modal ends at 990 chars (the identifying parties, Building, Premises, Project description). Minor continues with: Rent Adjustment Percentage (3%), Base Term definition (the 835 Industrial Lease cross-reference), and the full Base Term expiration mechanics. These are key quantitative terms: the 3% annual rent adjustment is absent from the modal hash's LP-00.
+
+---
+
+### Decision 3 — LP-07 percentage table: confirmed finding
+
+**The table is in LP-00, not LP-07, under Gemini extraction.**
+
+- The key-terms table (Tenant's Share 100%, Building's Share 45.79%, Rent Adjustment 3%) is at char 1,994 in the source document.
+- In the `d3e62ead` extraction (minor hash), LP-00 contains this table in full (confirmed above — 2,176 chars including "Tenant's Share of Operating Expenses of Building: 100%" and "Building's Share of Project: 45.79%").
+- In the `f7f64b5c` extraction (modal hash), LP-00 is only 990 chars and does NOT include the table — it stops at the Project description.
+
+**Search across 101 Gemini-primary pipeline result files: 0 hits for the table in any LP.**
+
+This means LP-00 in the pipeline results either (a) doesn't include this content when going through Stage 5, (b) LP-00 is filtered out before evaluators (it's an `identity_check: true` provision), or (c) the table was never reaching evaluators in any pipeline run.
+
+The 418c run that contained the table in LP-07 was confirmed to be gpt-5.5, not Gemini. So: **under Gemini extraction, the key-terms table has never appeared in LP-07. In most Gemini runs, it appears in LP-00 (which is identity-check only, not evaluated for coverage). In f7f64b5c (modal, 8/10), it doesn't appear in any LP at all.**
+
+**Which LPs need the table values:**
+- LP-07 (Operating Expenses): needs Tenant's Share (100%) — Gemini's LP-07 contains the clause defining Operating Expenses, which references "Tenant's Share" without quantifying it. The 100% figure is only in LP-00.
+- LP-02 (Rent/Rent Escalation): needs Rent Adjustment Percentage (3%) — this appears in LP-00 (minor hash only) but not in LP-02 directly.
+- LP-03 (Commencement Date): contains the Base Term definition which references the target date (August 1, 2019) — the target commencement date may be in the LP-03 text depending on hash.
+
+---
+
+## Schema Finding — Decision 1 Mechanism
+
+The extraction schema has a `status` field with values: `FOUND_BOTH`, `TEMPLATE_ONLY`, `TENANT_ONLY`, `AMBIGUOUS`.
+
+Stub provisions (LP-20, LP-21, LP-23, LP-31) return: `status=AMBIGUOUS`, `tenant_text=""`, `alignment_notes="No [X] found in the document."` The schema has no `NOT_APPLICABLE` state. Gemini uses `AMBIGUOUS` for both "provision genuinely absent from this lease type" and "couldn't determine if present."
+
+Gate 3 rescoping mechanism (not yet implemented):
+- Allow empty `tenant_text` when `provision_id` is in known-absent set for this lease type AND `alignment_notes` contains "not found" or similar language
+- Hard-fail any provision NOT in the known-absent set with empty `tenant_text`
+- Known-absent set for industrial/warehouse: `{LP-20, LP-21, LP-23, LP-31}`
+
+The latent bug: an extraction failure on LP-07 would produce `status=AMBIGUOUS, tenant_text=""` — which the rescoped gate correctly rejects because LP-07 is not in the known-absent set.
+
+---
+
 ## Step 423 (Policy Resimulation)
 
 **Blocked pending 422.** Cannot rerun policy simulation until a clean baseline extraction is frozen.
@@ -185,6 +295,10 @@ LP-14, LP-22, LP-26, LP-27 are very short and consistent between hashes. LP-05 a
 
 ## Action Required
 
-This step is **STOPPED** pending Chat decisions on the 3 decisions above.
+This step is **STOPPED** pending Chat decisions on the 3 decisions above. Updated findings below.
 
-The panel run (N=10) and policy resimulation (Step 423) are blocked until a clean extraction with 0 true-failure stubs is achieved and frozen.
+**Decision 1 (stubs):** Mechanism confirmed. LP-20/21/23/31 correctly absent. Schema uses `AMBIGUOUS` as catch-all; no `NOT_APPLICABLE` state exists. Gate 3 rescope: allow known-absent set, hard-fail all others. Implementation ready when authorized.
+
+**Decision 2 (freeze):** Do not freeze. N=10 confirms 2 hashes (8/10 vs 2/10), and the modal itself shifts across sample sets (was 4/5 d3e62ead in N=5, now 8/10 f7f64b5c in N=10). The 6 variable LPs contain material legal content that differs between runs: Operating Expense exclusions/cap (LP-07), Condition Precedent (LP-12), compliance cost allocation (LP-28). Freezing either hash chooses which legal protections the evaluators see.
+
+**Decision 3 (table):** The key-terms table (100%/45.79%/3%) is in LP-00 under Gemini extraction (minor hash only; absent from LP-00 in modal). It has never appeared in LP-07 under any Gemini run. It appeared in LP-07 only under gpt-5.5 (418c). The values needed for operating expense and rent assessment are not reliably reaching any LP's tenant_text under Gemini.
