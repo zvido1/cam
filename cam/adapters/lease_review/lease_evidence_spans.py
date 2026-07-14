@@ -39,6 +39,44 @@ from 423A, this is documentation closing a gap, not a code change):
     quote, normalized. This invariant is re-checked (not merely assumed)
     before a span is returned as `verified` — see `resolve_span`'s
     defence-in-depth check.
+
+CANONICAL SOURCE NORMALIZATION V2 (Step 425):
+
+  Step 424 measured that 55% of unverified spans traced not to the model
+  or the resolver but to typographic artifacts in the parser's raw output
+  — chiefly bare page-number lines injected mid-sentence by the source SEC
+  filing's pagination (e.g. "...renovation;\n4\n(b) capital..."), plus
+  spurious spacing around punctuation and quoted defined terms.
+
+  The governing rule, and the line that must never be crossed:
+
+    Strip what is not in the document. Never rewrite what is.
+
+  Page-number lines are filing furniture, not lease content — removing
+  them makes canonical_text MORE faithful to the lease, so they are
+  stripped from the text itself (`canonical_whitespace_v2` /
+  `_strip_page_number_lines`). Everything else observed in 424 — spacing
+  around punctuation, spacing inside quote marks — IS lease content
+  (those characters are genuinely in the document). Rewriting them to
+  match a model's quote would be editing the evidence to fit the claim,
+  which is exactly what this substrate exists to prevent. Those are
+  instead tolerated ONLY in the declared matching profile
+  (`canonical_whitespace_v2`'s pattern builder and normalizer) — the text
+  in `canonical_text` is never touched for this reason.
+
+  `raw_source_text` / `raw_source_text_hash` preserve the parser's
+  completely untouched output alongside `canonical_text` for both
+  profiles. A CanonicalSource built with `canonical_whitespace_v2` has a
+  DIFFERENT `canonical_text` (and therefore a different
+  `canonical_text_hash` / `source_document_hash`) than one built with
+  `canonical_whitespace_v1` from the same raw text — spans resolved
+  against one are invalid against the other, by the same hash-drift rule
+  that has applied since 423A. That is the substrate working as designed,
+  not a regression.
+
+  `canonical_whitespace_v2` still never tolerates a substantive character
+  difference: no fuzzy matching, no edit distance, no paraphrase. "45.79%"
+  and "45.80%" are still, and will always be, different strings.
 """
 
 from __future__ import annotations
@@ -55,6 +93,15 @@ from typing import List, Optional, Tuple
 # it never alters canonical_text itself, so offsets stay exact.
 
 NORMALIZATION_PROFILE_V1 = "canonical_whitespace_v1"
+NORMALIZATION_PROFILE_V2 = "canonical_whitespace_v2"
+
+# Punctuation characters that tolerate adjacent whitespace differences
+# under v2 (Step 425 Task 2). Deliberately narrow — comma, period,
+# semicolon, colon, close-paren, and the quote character (which gets
+# tolerance on BOTH sides — see _build_flexible_pattern). No other
+# character, and no digit ever, is treated as whitespace-adjacent-tolerant.
+_V2_TOLERANT_CHARS = frozenset(',.;:)"')
+_V2_QUOTE_CHAR = '"'
 
 
 def _normalize_canonical_whitespace_v1(text: str) -> str:
@@ -67,8 +114,29 @@ def _normalize_canonical_whitespace_v1(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _normalize_canonical_whitespace_v2(text: str) -> str:
+    """v1's whitespace-run collapse, PLUS two additional declared
+    tolerances (Step 425 Task 2):
+
+      - whitespace immediately before a tolerated punctuation character
+        (`,.;:)"`) is removed: "word ;" normalizes the same as "word;".
+      - whitespace immediately after/before a quote mark (`"`) is removed:
+        '" Term "' normalizes the same as '"Term"'.
+
+    Still touches ONLY whitespace. No digit, letter, or any other
+    character is ever removed or substituted — "45.79%" and "45.80%"
+    normalize to themselves, unchanged, and remain unequal.
+    """
+    t = re.sub(r"\s+", " ", text).strip()
+    t = re.sub(r'\s+([,.;:)])', r"\1", t)
+    t = re.sub(r'"\s+', '"', t)
+    t = re.sub(r'\s+"', '"', t)
+    return t
+
+
 _NORMALIZERS = {
     NORMALIZATION_PROFILE_V1: _normalize_canonical_whitespace_v1,
+    NORMALIZATION_PROFILE_V2: _normalize_canonical_whitespace_v2,
 }
 
 
@@ -96,6 +164,42 @@ class CanonicalSource:
     normalization_profile: str
     source_type: str
     run_id: str
+    # Step 425: the parser's completely untouched output, preserved
+    # alongside canonical_text. Diagnostic provenance ONLY — never used
+    # for span validity (that stays keyed to canonical_text_hash /
+    # source_document_hash, which DOES differ between v1 and v2 of the
+    # same raw text; see module docstring).
+    raw_source_text: str = ""
+    raw_source_text_hash: str = ""
+    # Diagnostic transformation count — how many bare page-number lines
+    # _strip_page_number_lines removed. Always 0 for v1.
+    page_number_lines_stripped: int = 0
+
+
+# Step 425 Task 1: a line is stripped ONLY if, after trimming leading/
+# trailing spaces/tabs, its entire content is digits and nothing else.
+# "Section 4", "4. Operating Expenses", "(4)", "4%", "$4", "4 days", and
+# "Page 4 of 20" all keep the digit adjacent to non-whitespace content on
+# the same line and are therefore never touched — the regex requires the
+# digit run to reach the line-ending newline with only space/tab padding
+# in between. A false strip is worse than a missed one; this rule is kept
+# as narrow as it can possibly be.
+_PAGE_NUMBER_LINE_RE = re.compile(r"^[ \t]*\d+[ \t]*\n", re.MULTILINE)
+
+
+def _strip_page_number_lines(text: str) -> Tuple[str, int]:
+    """Remove bare page-number lines from `text` (Step 425 Task 1).
+
+    Only a line whose ENTIRE content, after trimming spaces/tabs, is one
+    or more digits is removed — nothing else about the text changes. This
+    is the only transformation `canonical_whitespace_v2` applies to the
+    addressable text itself; every other tolerance (punctuation/quote
+    spacing) lives in the matching profile, not here — see module
+    docstring "the line that must never be crossed."
+
+    Returns (stripped_text, count_of_lines_removed).
+    """
+    return _PAGE_NUMBER_LINE_RE.subn("", text)
 
 
 def build_canonical_source(
@@ -107,29 +211,50 @@ def build_canonical_source(
     """Wrap the deterministic parser's output as the canonical, hashed,
     offset-addressable source.
 
-    `canonical_text` is the parser's output verbatim — no transformation is
-    applied at the text level. Normalization (see `normalize`) is used only
-    to compare a proposed quote against a candidate slice, never to alter
-    the addressable text itself, so the same start_char/end_char always
-    point at the same characters regardless of which quote proposed them.
+    Under `canonical_whitespace_v1` (default), `canonical_text` is the
+    parser's output verbatim — no transformation is applied at the text
+    level.
+
+    Under `canonical_whitespace_v2` (Step 425), `canonical_text` is the
+    parser's output with bare page-number lines removed
+    (`_strip_page_number_lines`) — the one text-level transformation this
+    substrate performs, because page numbers are filing furniture, not
+    lease content (see module docstring). Every other tolerance (spacing
+    around punctuation/quote marks) lives in the matching profile, never
+    in the text.
+
+    `raw_source_text` / `raw_source_text_hash` always preserve the
+    parser's completely untouched output, regardless of profile, as
+    diagnostic provenance.
 
     `source_document_hash` and `canonical_text_hash` are identical by
-    construction in this slice (canonical_text IS the parser's output,
-    unmodified). The schema keeps them as separate fields because a future
-    parser stage (e.g. PDF layout reconstruction) could legitimately
-    produce a canonical_text that differs from the raw parse; this split
-    gives that a place to land without a schema change. Not exercised here
-    — the current corpus is EDGAR .txt (423 spec §3.1).
+    construction (both hash `canonical_text`) — under v1 that equals
+    `raw_source_text_hash`; under v2 it does not, because `canonical_text`
+    has had page-number lines removed. This is deliberate: span validity
+    (`EvidenceSpan.source_document_hash`) must be keyed to the exact text
+    offsets are resolved against, so a v1-resolved span is correctly
+    invalid against a v2 source of the same document, and vice versa.
     """
-    digest = hashlib.sha256(tenant_text.encode("utf-8")).hexdigest()
+    raw_source_text = tenant_text
+    raw_source_text_hash = hashlib.sha256(raw_source_text.encode("utf-8")).hexdigest()
+
+    if normalization_profile == NORMALIZATION_PROFILE_V2:
+        canonical_text, page_number_lines_stripped = _strip_page_number_lines(raw_source_text)
+    else:
+        canonical_text, page_number_lines_stripped = raw_source_text, 0
+
+    canonical_digest = hashlib.sha256(canonical_text.encode("utf-8")).hexdigest()
     return CanonicalSource(
-        source_document_hash=digest,
-        canonical_text=tenant_text,
-        canonical_text_hash=digest,
-        text_length=len(tenant_text),
+        source_document_hash=canonical_digest,
+        canonical_text=canonical_text,
+        canonical_text_hash=canonical_digest,
+        text_length=len(canonical_text),
         normalization_profile=normalization_profile,
         source_type=source_type,
         run_id=run_id,
+        raw_source_text=raw_source_text,
+        raw_source_text_hash=raw_source_text_hash,
+        page_number_lines_stripped=page_number_lines_stripped,
     )
 
 
@@ -188,16 +313,62 @@ def _span_text_hash(span_text: str) -> str:
     return hashlib.sha256(span_text.encode("utf-8")).hexdigest()[:16]
 
 
-def _find_normalized_matches(canonical_text: str, quote: str) -> List[Tuple[int, int]]:
+def _build_flexible_pattern(quote: str, normalization_profile: str) -> str:
+    """Build the whitespace-flexible fallback regex for `quote`.
+
+    v1 (default): a run of whitespace in the QUOTE becomes `\\s+` in the
+    pattern; every other character is escaped literally. This only
+    tolerates whitespace where the quote itself already has whitespace.
+
+    v2 (Step 425 Task 2, on top of v1): additionally inserts an OPTIONAL
+    `\\s*` immediately before every tolerated punctuation character
+    (`,.;:)"`) and immediately after every quote character (`"`) —
+    regardless of whether the quote's own text has whitespace there. This
+    tolerates a source that has extra spacing the quote lacks (or vice
+    versa) ONLY at those specific punctuation/quote-mark boundaries.
+    `\\s*` never requires whitespace to be present, so a quote/source pair
+    with no whitespace there at all still matches identically to v1.
+
+    Every other character — every letter, every digit, every punctuation
+    character not in the tolerated set — is escaped literally in both
+    profiles and must match exactly. No fuzzy matching, no edit distance,
+    no paraphrase, under either profile.
+    """
+    tokens = re.split(r"(\s+)", quote)
+    parts = []
+    for tok in tokens:
+        if tok == "":
+            continue
+        if tok.strip() == "":
+            parts.append(r"\s+")
+            continue
+        if normalization_profile != NORMALIZATION_PROFILE_V2:
+            parts.append(re.escape(tok))
+            continue
+        for ch in tok:
+            if ch in _V2_TOLERANT_CHARS:
+                parts.append(r"\s*")
+            parts.append(re.escape(ch))
+            if ch == _V2_QUOTE_CHAR:
+                parts.append(r"\s*")
+    return "".join(parts)
+
+
+def _find_normalized_matches(
+    canonical_text: str,
+    quote: str,
+    normalization_profile: str = NORMALIZATION_PROFILE_V1,
+) -> List[Tuple[int, int]]:
     """Locate every position in canonical_text that matches `quote`.
 
     Exact substring matches are tried first (fast path — the common case of
-    a model copying text byte-for-byte). If none are found, falls back to a
-    whitespace-flexible search: literal characters in the quote must match
-    exactly, but any run of whitespace in the quote may match any run of
-    whitespace in the source. This tolerates a model reflowing internal
-    line breaks/spacing without ever tolerating a substantive text change —
-    every non-whitespace character in the quote must appear literally.
+    a model copying text byte-for-byte), identically under every profile.
+    If none are found, falls back to the whitespace-flexible search built
+    by `_build_flexible_pattern` for the given `normalization_profile` —
+    see that function for exactly what each profile tolerates. Under every
+    profile, every non-whitespace, non-punctuation-adjacent character in
+    the quote must appear literally; a digit is never treated as
+    whitespace, and no substantive text change is ever tolerated.
 
     Returns (start_char, end_char) tuples in source order. Boundaries are
     always the exact underlying characters in canonical_text, never
@@ -217,18 +388,9 @@ def _find_normalized_matches(canonical_text: str, quote: str) -> List[Tuple[int,
     if exact_matches:
         return exact_matches
 
-    tokens = re.split(r"(\s+)", quote)
-    pattern_parts = []
-    for tok in tokens:
-        if tok == "":
-            continue
-        if tok.strip() == "":
-            pattern_parts.append(r"\s+")
-        else:
-            pattern_parts.append(re.escape(tok))
-    if not pattern_parts:
+    pattern = _build_flexible_pattern(quote, normalization_profile)
+    if not pattern:
         return []
-    pattern = "".join(pattern_parts)
     try:
         return [(m.start(), m.end()) for m in re.finditer(pattern, canonical_text)]
     except re.error:
@@ -267,7 +429,9 @@ def resolve_span(
       - no location                                    -> unverified (fail-
         closed; not usable in canonical Stage 5)
     """
-    matches = _find_normalized_matches(canonical_source.canonical_text, quote)
+    matches = _find_normalized_matches(
+        canonical_source.canonical_text, quote, canonical_source.normalization_profile
+    )
 
     def _make(start_char, end_char, status):
         span = EvidenceSpan(
