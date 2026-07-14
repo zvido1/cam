@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Element-Guided Span Elicitation Output",
+  "description": "Step 423C. Output of one element-guided elicitation call: a list of quotes per neutral, ordinal search target (\"Target N\"). Contains NO provision/LP ids, NO coverage verdicts, NO risk or favorability labels, and NO legal conclusions — additionalProperties: false at both levels is the structural enforcement mechanism, matching 423B's contract. The mapping from \"Target N\" back to an element_id happens in code (lease_element_elicitation.py), never in the model's output.",
+  "type": "object",
+  "required": ["target_matches"],
+  "properties": {
+    "target_matches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["target", "quotes"],
+        "properties": {
+          "target": {
+            "type": "string",
+            "description": "The neutral, ordinal target label as given in the prompt (e.g. \"Target 1\"). Never a provision/LP id."
+          },
+          "quotes": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Verbatim quoted passages bearing on this target. Empty array if none found."
+          }
+        },
+        "additionalProperties": false
+      },
+      "default": []
+    }
+  },
+  "additionalProperties": false
+}

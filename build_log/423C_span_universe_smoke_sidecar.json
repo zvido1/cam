@@ -1,0 +1,211 @@
+{
+  "_artifact_type": "423C_span_universe_sidecar",
+  "_not_live_pipeline_input": true,
+  "_warning": "This sidecar is a diagnostic artifact only. Nothing in Stage 5, assess_coverage, Mode C, or downstream report generation reads it. The first component that consumes verified spans for evaluation must be built in a later, explicitly authorized slice.",
+  "source_document_hash": "e049ee63a4e2f475c133b65ceb7a454b4570e59ec288a39b37129740b200d04d",
+  "canonical_text_hash": "e049ee63a4e2f475c133b65ceb7a454b4570e59ec288a39b37129740b200d04d",
+  "normalization_profile": "canonical_whitespace_v1",
+  "run_id": "423C_smoke_n1",
+  "batching": "per-LP: one call per LP with expected_elements_305, all of that LP's elements presented in one call as neutral ordinal targets (Target 1, Target 2, ...). Batching is a cost decision only \u2014 the model is never told the targets are grouped under a provision.",
+  "lps_run": [
+    "LP-07",
+    "LP-02"
+  ],
+  "elicitation_meta_by_lp": {
+    "LP-07": {
+      "primary_provider": "google",
+      "primary_model": "gemini-3.1-pro-preview",
+      "canonical": true,
+      "fallback_used": false,
+      "fallback_chain": [],
+      "declared_generation_config": {
+        "provider": "google",
+        "model": "gemini-3.1-pro-preview",
+        "temperature": 0.0,
+        "max_output_tokens": 16000
+      },
+      "integrity_metadata": {
+        "declared": {
+          "temperature": 0.0,
+          "max_tokens": 16000,
+          "reasoning_effort": null
+        },
+        "transmitted": {
+          "temperature": 0.0,
+          "max_tokens": 16000,
+          "_max_tokens_key": "max_tokens"
+        },
+        "omitted": {},
+        "omission_reasons": {},
+        "provider": "google",
+        "model": "gemini-3.1-pro-preview"
+      },
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "elapsed_sec": 39.23,
+      "errors": [],
+      "attempt_chain": [
+        {
+          "model": "gemini-3.1-pro-preview",
+          "provider": "google",
+          "outcome": "call_returned"
+        },
+        {
+          "model": "gemini-3.1-pro-preview",
+          "provider": "google",
+          "outcome": "success"
+        }
+      ],
+      "target_count": 6,
+      "provider": "google",
+      "model": "gemini-3.1-pro-preview",
+      "degraded": false,
+      "parse_or_validation_failure_reason": null
+    },
+    "LP-02": {
+      "primary_provider": "google",
+      "primary_model": "gemini-3.1-pro-preview",
+      "canonical": true,
+      "fallback_used": false,
+      "fallback_chain": [],
+      "declared_generation_config": {
+        "provider": "google",
+        "model": "gemini-3.1-pro-preview",
+        "temperature": 0.0,
+        "max_output_tokens": 16000
+      },
+      "integrity_metadata": {
+        "declared": {
+          "temperature": 0.0,
+          "max_tokens": 16000,
+          "reasoning_effort": null
+        },
+        "transmitted": {
+          "temperature": 0.0,
+          "max_tokens": 16000,
+          "_max_tokens_key": "max_tokens"
+        },
+        "omitted": {},
+        "omission_reasons": {},
+        "provider": "google",
+        "model": "gemini-3.1-pro-preview"
+      },
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "elapsed_sec": 12.67,
+      "errors": [],
+      "attempt_chain": [
+        {
+          "model": "gemini-3.1-pro-preview",
+          "provider": "google",
+          "outcome": "call_returned"
+        },
+        {
+          "model": "gemini-3.1-pro-preview",
+          "provider": "google",
+          "outcome": "success"
+        }
+      ],
+      "target_count": 4,
+      "provider": "google",
+      "model": "gemini-3.1-pro-preview",
+      "degraded": false,
+      "parse_or_validation_failure_reason": null
+    }
+  },
+  "raw_elicited_span_count": 11,
+  "deduped_span_count": 9,
+  "dedup_ratio": 1.222,
+  "count_verified": 8,
+  "count_ambiguous": 0,
+  "count_unverified": 1,
+  "elicited_by_is_provenance_not_routing": true,
+  "verified_spans": [
+    {
+      "evidence_span_id": "EV-000001",
+      "start_char": 1944,
+      "end_char": 1998,
+      "excerpt": "Tenant's Share of Operating Expenses of Building: 100%",
+      "elicited_by": [
+        "LP-07.proportionate_share_calculation"
+      ]
+    },
+    {
+      "evidence_span_id": "EV-000002",
+      "start_char": 1999,
+      "end_char": 2034,
+      "excerpt": "Building's Share of Project: 45.79%",
+      "elicited_by": [
+        "LP-07.proportionate_share_calculation"
+      ]
+    },
+    {
+      "evidence_span_id": "EV-000003",
+      "start_char": 25530,
+      "end_char": 26035,
+      "excerpt": "\" Tenant's Share \" shall be the percentage set forth on the first page of this Lease as Tenant's Share as reasonably adjusted by Landlord for changes in the physical size of the Premises or the Projec",
+      "elicited_by": [
+        "LP-07.proportionate_share_calculation"
+      ]
+    },
+    {
+      "evidence_span_id": "EV-000004",
+      "start_char": 15269,
+      "end_char": 17003,
+      "excerpt": "The term \" Operating Expenses \" means all costs and expenses of any kind or description whatsoever incurred or accrued each calendar year during the Term by Landlord with respect to the Project (inclu",
+      "elicited_by": [
+        "LP-07.included_expense_categories"
+      ]
+    },
+    {
+      "evidence_span_id": "EV-000005",
+      "start_char": 22922,
+      "end_char": 23895,
+      "excerpt": "If, during such 90 day period, Tenant reasonably and in good faith questions or contests the accuracy of Landlord's statement of Tenant's Share of Operating Expenses, Landlord will provide Tenant with",
+      "elicited_by": [
+        "LP-07.tenant_audit_rights"
+      ]
+    },
+    {
+      "evidence_span_id": "EV-000006",
+      "start_char": 21436,
+      "end_char": 22500,
+      "excerpt": "Within 90 days after the end of each calendar year (or such longer period as may be reasonably required), Landlord shall furnish to Tenant a statement (an \" Annual Statement \") showing in reasonable d",
+      "elicited_by": [
+        "LP-07.reconciliation_timeline"
+      ]
+    },
+    {
+      "evidence_span_id": "EV-000007",
+      "start_char": 2099,
+      "end_char": 2129,
+      "excerpt": "Rent Adjustment Percentage: 3%",
+      "elicited_by": [
+        "LP-02.annual_increase_mechanism"
+      ]
+    },
+    {
+      "evidence_span_id": "EV-000008",
+      "start_char": 14184,
+      "end_char": 14549,
+      "excerpt": "Base Rent shall be increased on each annual anniversary of the first day of the first full month during the Term of this Lease (each an \" Adjustment Date \") by multiplying the Base Rent payable immedi",
+      "elicited_by": [
+        "LP-02.annual_increase_mechanism",
+        "LP-02.effective_date_of_first_escalation",
+        "LP-02.calculation_methodology"
+      ]
+    }
+  ],
+  "ambiguous_or_unverified_spans": [
+    {
+      "quote_variants_excerpt": [
+        "(a) the original construction costs of the Project and renovation prior to the date of this Lease and costs of correcting defects in such original construction or renovation;\n(b) capital expenditures "
+      ],
+      "verification_status": "unverified",
+      "failure_reason": "quote not found in canonical source (exact or whitespace-flexible match)",
+      "elicited_by": [
+        "LP-07.excluded_expense_categories"
+      ]
+    }
+  ]
+}
