@@ -1,0 +1,216 @@
+{
+  "_artifact_type": "423B_span_universe_sidecar",
+  "_not_live_pipeline_input": true,
+  "_warning": "This sidecar is a diagnostic artifact only. Nothing in Stage 5, assess_coverage, Mode C, or downstream report generation reads it. The first component that consumes verified spans for evaluation must be built in a later, explicitly authorized slice.",
+  "source_document_hash": "e049ee63a4e2f475c133b65ceb7a454b4570e59ec288a39b37129740b200d04d",
+  "canonical_text_hash": "e049ee63a4e2f475c133b65ceb7a454b4570e59ec288a39b37129740b200d04d",
+  "normalization_profile": "canonical_whitespace_v1",
+  "run_id": "423B_smoke_n1",
+  "segmentation_meta": {
+    "primary_provider": "google",
+    "primary_model": "gemini-3.1-pro-preview",
+    "canonical": true,
+    "fallback_used": false,
+    "fallback_chain": [],
+    "declared_generation_config": {
+      "provider": "google",
+      "model": "gemini-3.1-pro-preview",
+      "temperature": 0.0,
+      "max_output_tokens": 16000
+    },
+    "integrity_metadata": {
+      "declared": {
+        "temperature": 0.0,
+        "max_tokens": 16000,
+        "reasoning_effort": null
+      },
+      "transmitted": {
+        "temperature": 0.0,
+        "max_tokens": 16000,
+        "_max_tokens_key": "max_tokens"
+      },
+      "omitted": {},
+      "omission_reasons": {},
+      "provider": "google",
+      "model": "gemini-3.1-pro-preview"
+    },
+    "prompt_hash": "eb559a9bed42cc2a",
+    "config_hash": "7c2ac3de05b6e9ba",
+    "elapsed_sec": 64.31,
+    "errors": [],
+    "attempt_chain": [
+      {
+        "model": "gemini-3.1-pro-preview",
+        "provider": "google",
+        "outcome": "call_returned"
+      },
+      {
+        "model": "gemini-3.1-pro-preview",
+        "provider": "google",
+        "outcome": "success"
+      }
+    ],
+    "provider": "google",
+    "model": "gemini-3.1-pro-preview",
+    "degraded": false,
+    "parse_or_validation_failure_reason": null
+  },
+  "total_proposed_spans": 18,
+  "count_verified": 18,
+  "count_ambiguous": 0,
+  "count_unverified": 0,
+  "counts_by_structural_type": {
+    "table": 1,
+    "clause": 16,
+    "definition": 1
+  },
+  "neutral_label_is_non_routing_provenance": true,
+  "hints_are_non_canonical_resolution_aids_only": true,
+  "verified_spans": [
+    {
+      "evidence_span_id": "EV-000001",
+      "start_char": 1327,
+      "end_char": 2129,
+      "span_type": "table",
+      "excerpt": "Building:\n450 East Jamie Court, South San Francisco, California\nPremises:\nA Building consisting of approximately 74,788 rentable square feet, as determined by Landlord, as shown on Exhibit A .\nProject",
+      "neutral_label": "Key lease terms"
+    },
+    {
+      "evidence_span_id": "EV-000002",
+      "start_char": 2130,
+      "end_char": 2887,
+      "span_type": "clause",
+      "excerpt": "Base Term:\nBeginning on the Commencement Date and ending on the earliest of (i) the date that is 90 days after the date that the Tenant Improvements are Substantially Completed (as such terms are defi",
+      "neutral_label": "Base Term definition"
+    },
+    {
+      "evidence_span_id": "EV-000003",
+      "start_char": 5855,
+      "end_char": 6338,
+      "span_type": "clause",
+      "excerpt": "If Landlord does not Deliver the Premises within 120 days of the Target Commencement Date for any reason other than Force Majeure delays, this Lease may be terminated by Tenant by written notice to La",
+      "neutral_label": "Delivery delay termination right"
+    },
+    {
+      "evidence_span_id": "EV-000004",
+      "start_char": 7580,
+      "end_char": 7913,
+      "span_type": "clause",
+      "excerpt": "As used herein, \" Landlord's Work \" shall mean the construction of private offices in the Premises pursuant to the plan attached hereto as Exhibit C , which Landlord's work shall be performed by Landl",
+      "neutral_label": "Landlord's Work definition and timeline"
+    },
+    {
+      "evidence_span_id": "EV-000005",
+      "start_char": 8007,
+      "end_char": 8110,
+      "span_type": "definition",
+      "excerpt": "The \" Rent Commencement Date \" shall be the date that Landlord substantially completes Landlord's Work.",
+      "neutral_label": "Rent Commencement Date definition"
+    },
+    {
+      "evidence_span_id": "EV-000006",
+      "start_char": 10108,
+      "end_char": 10652,
+      "span_type": "clause",
+      "excerpt": "Notwithstanding anything to the contrary contained in this Lease, Tenant and Landlord acknowledge and agree that the effectiveness of this Lease shall be subject to the following condition precedent (",
+      "neutral_label": "Condition precedent regarding existing tenant"
+    },
+    {
+      "evidence_span_id": "EV-000007",
+      "start_char": 14184,
+      "end_char": 14549,
+      "span_type": "clause",
+      "excerpt": "Base Rent shall be increased on each annual anniversary of the first day of the first full month during the Term of this Lease (each an \" Adjustment Date \") by multiplying the Base Rent payable immedi",
+      "neutral_label": "Annual base rent adjustment"
+    },
+    {
+      "evidence_span_id": "EV-000008",
+      "start_char": 17004,
+      "end_char": 21435,
+      "span_type": "clause",
+      "excerpt": "(a) the original construction costs of the Project and renovation prior to the date of this Lease and costs of correcting defects in such original construction or renovation;\n4\n(b) capital expenditure",
+      "neutral_label": "Operating expenses exclusions"
+    },
+    {
+      "evidence_span_id": "EV-000009",
+      "start_char": 23328,
+      "end_char": 23895,
+      "span_type": "clause",
+      "excerpt": "If after Tenant's review of such Expense Information, Landlord and Tenant cannot agree upon the amount of Tenant's Share of Operating Expenses, then Tenant shall have the right to have a regionally or",
+      "neutral_label": "Tenant audit rights for operating expenses"
+    },
+    {
+      "evidence_span_id": "EV-000010",
+      "start_char": 25241,
+      "end_char": 25529,
+      "span_type": "clause",
+      "excerpt": "Notwithstanding anything set forth herein to the contrary, if the Building is not at least 95% occupied on average during any year of\n6\nthe Term, Tenant's Share of Operating Expenses for such year sha",
+      "neutral_label": "Operating expenses gross-up provision"
+    },
+    {
+      "evidence_span_id": "EV-000011",
+      "start_char": 31870,
+      "end_char": 32600,
+      "span_type": "clause",
+      "excerpt": "If Tenant remains in possession of the Premises after the expiration or earlier termination of the Term without the express written consent of Landlord, (A) Tenant shall become a tenant at sufferance ",
+      "neutral_label": "Holdover rent and damages"
+    },
+    {
+      "evidence_span_id": "EV-000012",
+      "start_char": 38315,
+      "end_char": 39255,
+      "span_type": "clause",
+      "excerpt": "Notwithstanding anything to the contrary set forth herein, if (i) a stoppage of an Essential Service (as defined below) to the Premises shall occur and such stoppage is due solely to the gross neglige",
+      "neutral_label": "Rent abatement for service interruption"
+    },
+    {
+      "evidence_span_id": "EV-000013",
+      "start_char": 43754,
+      "end_char": 44421,
+      "span_type": "clause",
+      "excerpt": "Tenant may construct nonstructural, cosmetics Alterations in the Premises without Landlord's prior approval if the aggregate cost of all such work in any 12 month period does not exceed $50,000.00 (a ",
+      "neutral_label": "Notice-only alterations threshold"
+    },
+    {
+      "evidence_span_id": "EV-000014",
+      "start_char": 65945,
+      "end_char": 66499,
+      "span_type": "clause",
+      "excerpt": "If the Restoration Period is estimated to exceed 3 months (the \" Maximum Restoration Period \"), Landlord may, in such notice, elect to terminate this Lease as of the date that is 75 days after the dat",
+      "neutral_label": "Termination rights for casualty damage"
+    },
+    {
+      "evidence_span_id": "EV-000015",
+      "start_char": 92203,
+      "end_char": 93854,
+      "span_type": "clause",
+      "excerpt": "Notwithstanding the foregoing or anything to the contrary contained in this Lease,\n19\nLandlord's consent to an assignment of this Lease or a subletting of any portion of the Premises to any entity con",
+      "neutral_label": "Permitted assignments without consent"
+    },
+    {
+      "evidence_span_id": "EV-000016",
+      "start_char": 96553,
+      "end_char": 97272,
+      "span_type": "clause",
+      "excerpt": "Except with respect to any Permitted Assignments, if the Rent due and payable by a sublessee or assignee (or a combination of the rental payable under such sublease or assignment plus any bonus or oth",
+      "neutral_label": "Sharing of excess rent"
+    },
+    {
+      "evidence_span_id": "EV-000017",
+      "start_char": 99348,
+      "end_char": 100107,
+      "span_type": "clause",
+      "excerpt": "Tenant shall, within 10 business days of written notice from Landlord, execute, acknowledge and deliver a statement in writing in any form reasonably requested by a proposed lender or purchaser, (i) c",
+      "neutral_label": "Estoppel certificate timeline and requirements"
+    },
+    {
+      "evidence_span_id": "EV-000018",
+      "start_char": 129564,
+      "end_char": 129819,
+      "span_type": "clause",
+      "excerpt": "Landlord and Tenant each represents and warrants that it has not dealt with any broker, agent or other person (collectively, \" Broker \") in connection with this transaction and that no Broker brought ",
+      "neutral_label": "Broker representation"
+    }
+  ],
+  "ambiguous_or_unverified_spans": []
+}

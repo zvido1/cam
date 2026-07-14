@@ -5,7 +5,22 @@ Reading this gives you the full patent architecture without needing to
 read all 20+ patent supplements. Parallels `CAM_Current_State.md`
 (which orients to the build state); this orients to the patent state.
 
-**Last updated:** 2026-07-13 (attorney-validation scope annotation — evidence-assignment incident, Step 421C. Prior: 2026-07-12 — evaluator config boundary, two-story contamination, assertion scope, Steps 416b + 417 spec. Prior: 2026-07-08 — evaluator fallback integrity and frozen-stack provenance, Steps 411–412; 413 design spec written. Prior: 2026-06-13 (Supplement #25 Architecture A Phase 2 written + indexed; Step 397 closed-form question-set design; attorney question bundle assembled.) Prior: 2026-06-12 (cross-domain auditor / governance lineage; three-layer directional governance architecture; refined minority doctrine — Supplement #24.)
+**Last updated:** 2026-07-14 (**Supplement #26 WRITTEN — Governed Evidence Capture and Governed Evidence Selection.** Prior: 2026-07-13 — attorney-validation scope annotation, evidence-assignment incident, Step 421C.)
+
+> **SUPPLEMENT #26 (2026-07-14) — Governed Evidence Capture and Governed Evidence Selection. `Docs/Patent_Supplement_2026_07_14.md`. MIXED STATUS — conception documented and dated; reduction to practice PARTIAL. Read §8 of the supplement before citing anything from it.**
+>
+> **The discovery.** A governed evaluator panel can be made to answer the wrong question by an ungoverned evidence layer, and CAM had no way to detect it. The Atreca key-terms table (Tenant's Share 100%, Building's Share 45.79%, Rent Adjustment 3%) reached zero evaluators across 101 Gemini-primary runs and all 3 Atlas runs. Guardrail #2 ("citation or it didn't happen") is unenforceable if the evidence context itself is unverified.
+>
+> **Four contributions.** (1) **Separation of segmentation from selection** — cutting a document into addressable units is mechanical and happens once; judging which units are relevant to which provision is a judgment and is therefore governed. Fusing them makes the judgment unreviewable. (2) **Governed evidence capture** — hashed canonical source, offset-addressed spans, models propose verbatim quotes and *code* resolves offsets (an offset is never a model claim), three-state verification with `unverified` fail-closed. (3) **Declared-dependency completeness gating** — evidence sufficiency checked against a declared parameter dependency map, never against evaluator agreement. **Agreement is not sufficiency.** (4) **Panel-governed evidence selection with an asymmetric merge rule** — see below.
+>
+> **The asymmetric merge rule is the strongest claim.** At the verdict layer, minority disagreement must not be laundered into false consensus. At the evidence layer, minority relevance must not be *excluded*. Same principle — suppressing the minority manufactures false confidence — with inverted mechanics, because the error costs invert: over-inclusion of evidence costs tokens and noise; omission of evidence produces a confident, unsupported, unfalsifiable verdict. Merge is **cited union**, not majority. Contested inclusions *and* contested withholdings require cited reasons. A failed trace kills the trace, **not the evidence** (routes to Review Needed; a validator may invalidate a justification but never the underlying evidence).
+>
+> **Grok exonerated — canonical example.** Role C's LP-07 `missing` verdicts, attributed across Steps 417–420 to evaluator instability, were *correct*. An ungoverned evidence layer does not merely produce wrong answers — **it produces wrong diagnoses of the evaluators.**
+>
+> **Status discipline (do not soften).** The defect is **not yet fixed** — LP-07's evaluators still cannot see the 100%. Steps 422A–D make the failure *loud* rather than *silent*, which is a precondition for trusting future measurement, not a substitute for one. **No performance baseline exists and none may be cited**; 417/419/420 are void as system baselines and no replacement has been measured. RTP: 414, 416, 421B, 422A–D, the 423A verified-span substrate, and the 423B LP-blind segmentation/proposal sidecar (all built and tested, **not wired** into the live evaluator pipeline — confirmed by seam tests). 423B ran exactly one n=1 plumbing smoke test against the real Atreca lease (18 spans proposed, 18 verified, 0 ambiguous/unverified) — **this is not a recall measurement and must not be cited as one.** Diagnostically, not as a finding: the 45.79% key-terms table did not appear among the 18 spans that single run produced. DESIGNED-NOT-BUILT: parameter block, dependency map, panel selection, trace validation, Gate B. 262 tests passing.
+>
+> **Structural verifiability is closed; semantic verifiability is scoped and OPEN.** CAM may claim its evidence context is complete against a declared parameter set, source-traceable to a hashed document, and non-destructively assigned. It may **not** claim the semantic selection is correct. **A responsive reason can still be wrong.** Do not blur these — the claim scope turns on which is being asserted.
+
 
 > **Candidate note (2026-07-13) — attorney-validation scope annotation: evidence-assignment architecture incident (Step 421C).**
 >
@@ -664,6 +679,18 @@ are in `Docs/Patent_Supplement_2026_MM_DD*.md`.
 - **Lease porting constraint: port the LIGHT auditor; do NOT port heavy withhold/elimination (over-withhold = unforgivable in legal review)** — 06-12
 - **Reduction-to-practice + refinement of §7 Optional Auditor Capability (generalized-framework Technical Overview)** — 06-12
 
+### Governed Evidence Capture & Selection (Supplement #26, 2026-07-14)
+- **Separation of segmentation from selection: unit-creation is mechanical and happens once; relevance-judgment is governed** — 07-14
+- **Offset-addressed evidence spans into a hashed canonical source; models propose verbatim quotes, CODE resolves offsets (an offset is never a model claim)** — 07-14
+- **Three-state span verification (verified / ambiguous / unverified); `unverified` is fail-closed and never reaches an evaluator** — 07-14
+- **Declared-dependency completeness gating: sufficiency checked against a dependency map, never against agreement — AGREEMENT IS NOT SUFFICIENCY** — 07-14
+- **Panel-governed evidence selection over a fixed span universe; the segmenting model does not vote on its own cuts** — 07-14
+- **ASYMMETRIC MERGE: minority relevance INCLUDED at the evidence layer, as minority verdicts are PRESERVED at the verdict layer — one principle, inverted mechanics, because error costs invert** — 07-14
+- **Cited union, not bare vote: contested inclusions AND contested withholdings require reasons** — 07-14
+- **A failed trace kills the TRACE, not the EVIDENCE (routes to Review Needed; a validator may never invalidate evidence)** — 07-14
+- **Structural verifiability CLOSED; semantic verifiability SCOPED-OPEN — a responsive reason can still be wrong** — 07-14
+- **Three-surface fail-closed doctrine: evaluator identity (414) / extraction integrity (421B) / span verification (423A)** — 07-14
+
 ### Risk + Use-Aware
 - **Coverage state ≠ risk level (Risk Map derivation rules)** — 05-14
 - **Compound confidence capping (min of evaluator + weakest LP)** — 05-14
@@ -873,6 +900,46 @@ any implementation. Do not allow them to soften over time.
     The minority is protected when it is WELL-REASONED, not merely when it
     is PRESENT. The auditor does not silence by headcount; it checks the
     minority's reasoning. (Supplement #24, 2026-06-12.)
+
+19. **The evidence layer is governed, not assumed. Agreement is not
+    sufficiency.** Guardrail #2 ("citation or it didn't happen") is
+    unenforceable if the evidence context itself is unverified — a citation
+    to a clause that was never in the evaluator's context is not a citation.
+    Therefore: (a) evidence is **addressed, not copied** — spans cite by
+    offset into a hashed canonical source, and a span that does not resolve
+    to that source is fail-closed and never reaches an evaluator; (b) the
+    model **proposes verbatim quotes and code resolves the offsets** — an
+    offset is never a model claim; (c) evidence **sufficiency is checked
+    against a declared dependency map, never against evaluator agreement**,
+    because three evaluators can agree for the same wrong reason, and
+    correlated error is precisely the condition under which agreement ceases
+    to be evidence; (d) **segmentation and selection are separate acts** —
+    fusing them in one model call makes the relevance judgment unreviewable,
+    because the units over which it was made do not survive it. An ungoverned
+    evidence layer does not merely produce wrong answers — it produces
+    **wrong diagnoses of the evaluators** (canonical example: Grok blamed for
+    LP-07 variance across Steps 417–420; exonerated at 421C — it was
+    reporting faithfully on evidence it had been denied).
+    (Supplement #26, 2026-07-14.)
+
+20. **At the evidence layer the minority is INCLUDED; at the verdict layer
+    the minority is PRESERVED. Same principle, inverted mechanics.** This
+    extends Guardrails #1 and #18 to a new layer; it does not contradict
+    them. Suppressing the minority manufactures false confidence in both
+    cases — but the direction of protection inverts because the error costs
+    invert. Over-inclusion of evidence costs tokens and noise (visible,
+    harmless). Omission of evidence produces a confident, unsupported,
+    **unfalsifiable** verdict (invisible, uncorrectable). Therefore the
+    evidence merge is **cited union, not majority**: if any selector asserts
+    relevance with a surviving trace, the provision receives the span.
+    Contested inclusions **and contested withholdings** require cited reasons
+    — a dissent is as informative as an inclusion. And a **failed trace kills
+    the trace, not the evidence**: a span whose reason fails validation routes
+    to Review Needed, never to silent exclusion. A validator may invalidate a
+    *justification*; it may never invalidate the underlying *evidence*,
+    because a model able to remove spans would be a single ungoverned arbiter
+    holding veto power over a governed panel — a worse failure than the one it
+    was introduced to correct. (Supplement #26, 2026-07-14.)
 
 ---
 
@@ -1188,6 +1255,7 @@ project knowledge.
 | **23** | **2026-06-07** | **Consequence-Gated Directional Routing; Sign Demoted to Diagnostic-Only; Confidence-Uncertainty vs Consequence-Uncertainty (shipped `8bd4267` / `ba26ed8`)** |
 | **24** | **2026-06-12** | **Cross-Domain Auditor / Governance Lineage; Three-Layer Directional Governance Architecture; Refined Minority Doctrine (RTP + refinement of §7 Optional Auditor Capability; FEVER/GPQA/SciFact/ContractNLI; Layer 2 designed + paper-validated not built; Layer 3 open)** |
 | **25** | **2026-06-13** | **Architecture A Phase 2: Verdict Distance and Confidence Capping at the LP Layer (formalizes Steps 351/351b/352 RTP; second instantiation of Supplement #18 ordinal-distance governance; deliberate-gap rank scale; consequence-coupled Stage 5f cap; NOT_ASSESSED sentinel)** |
+| **26** | **2026-07-14** | **Governed Evidence Capture and Governed Evidence Selection (separation of segmentation from selection; offset-addressed verified spans, code-resolved never model-claimed; declared-dependency completeness gating — agreement is not sufficiency; panel-governed selection with ASYMMETRIC merge — minority relevance INCLUDED at the evidence layer as minority verdicts are PRESERVED at the verdict layer; failed trace kills the trace not the evidence; structural verifiability CLOSED, semantic verifiability SCOPED-OPEN. MIXED STATUS — RTP: 414/416/421B/422A–D/423A substrate. DESIGNED-NOT-BUILT: parameter block, dependency map, panel selection, Gate B. NO BASELINE EXISTS.)** |
 
 The action-type clarification of 2026-05-18 (including the Step 350
 single-classifier source-of-truth point) is not currently a separate

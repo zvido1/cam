@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LP-Blind Span Segmentation Proposal Output",
+  "description": "Structural, LP-blind candidate evidence spans proposed from a single lease document (Step 423B). Contains NO issue-area/provision/LP ids, NO coverage verdicts, NO risk or favorability labels, and NO legal conclusions — segmentation only. additionalProperties: false at both levels is the structural enforcement mechanism for the LP-blindness contract: adding any such field fails validation rather than being silently accepted.",
+  "type": "object",
+  "required": ["spans"],
+  "properties": {
+    "spans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["quote", "span_type"],
+        "properties": {
+          "quote": {
+            "type": "string",
+            "description": "Verbatim quote of source text. Not a summary or paraphrase."
+          },
+          "span_type": {
+            "type": "string",
+            "enum": ["clause", "table", "definition", "other"],
+            "description": "Structural type only — a fact about the passage's form, never a legal/semantic judgment about its role (no cap/carveout/condition/exception/remedy/cross_reference)."
+          },
+          "section_hint": {
+            "type": "string",
+            "description": "Optional section/article label for human inspection and resolver disambiguation. Not a canonical address field — never persisted as page_ref/table_ref on the resolved EvidenceSpan."
+          },
+          "page_hint": {
+            "type": "string",
+            "description": "Optional page/location label for human inspection and resolver disambiguation. Not a canonical address field."
+          },
+          "table_hint": {
+            "type": "string",
+            "description": "Optional table row/column label for human inspection and resolver disambiguation. Not a canonical address field."
+          },
+          "neutral_label": {
+            "type": "string",
+            "description": "Optional short neutral description for human inspection only. NOT a routing key — no downstream code may branch on this value."
+          }
+        },
+        "additionalProperties": false
+      },
+      "default": []
+    }
+  },
+  "additionalProperties": false
+}

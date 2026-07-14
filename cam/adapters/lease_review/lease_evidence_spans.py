@@ -15,6 +15,30 @@ One address space. Flat character offsets. No page_ref, no table_ref (423
 spec §3.2) — PDF/OCR addressing is a noted extension point, not designed
 here; an optional field nobody populates becomes a second address space by
 accident later.
+
+MATCHING SEMANTICS (423B Part 0 — declared explicitly; behavior unchanged
+from 423A, this is documentation closing a gap, not a code change):
+
+  - The canonical source text (`CanonicalSource.canonical_text`) is NEVER
+    rewritten or normalized. It is always the parser's raw output. Offsets
+    (`start_char`/`end_char`) always index this raw, unmodified text.
+  - The `canonical_whitespace_v1` normalization profile permits ONLY
+    whitespace-run equivalence for the purpose of *matching* a proposed
+    quote against a location in the canonical source (e.g. a quote that
+    reflows a line break or collapses a double space still resolves). It
+    is never used to rewrite the canonical source itself.
+  - Every non-whitespace character in a proposed quote must match the
+    canonical source LITERALLY for a match to be found. There is no
+    paraphrase matching, no fuzzy/edit-distance matching, and no numeric,
+    date, or word substitution of any kind. "45.79%" and "45.80%" are
+    different strings under this profile and will never resolve to the
+    same location — see `resolve_span`'s exact-then-whitespace-flexible
+    search in `_find_normalized_matches`.
+  - A span is `verified` only if `is_valid_invariant()` holds: the raw
+    source slice at the resolved offsets, normalized, equals the proposed
+    quote, normalized. This invariant is re-checked (not merely assumed)
+    before a span is returned as `verified` — see `resolve_span`'s
+    defence-in-depth check.
 """
 
 from __future__ import annotations
