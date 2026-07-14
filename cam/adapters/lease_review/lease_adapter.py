@@ -1363,7 +1363,9 @@ def run_lease_coverage_only(
         extraction.get("deal_overview", {}),
     )
     _fail_missing = [r for r in _completeness_results if r["gate_status"] == "fail_missing"]
-    _is_canonical = not meta.get("fallback_used", False)  # same flag the extractor sets
+    # Read canonicality from the explicit field recorded by the extractor.
+    # Absent = legacy artifact; fail safe by treating as canonical.
+    _is_canonical = meta.get("canonical", True)
 
     if _fail_missing:
         _failed_ids = [r["provision_id"] for r in _fail_missing]
