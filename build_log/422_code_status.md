@@ -208,14 +208,29 @@ Both hashes share the same 573-char opening (the Annual Estimate payment mechani
 
 - **Modal `f7f64b5c` (11,492 chars):** Extracts the full Operating Expenses definition including:
   - The Operating Expenses definition (all items in scope: Taxes, capital repairs, Common Area Amenities, parking, etc.)
-  - **Operating Expense Exclusions** — what is NOT charged to tenant (the carve-outs)
-  - **Controllable Expenses Cap** — capping annual increases on controllable items at typically 5%
-  - Annual reconciliation mechanism
-  - Rent definition tying together Base Rent + Operating Expenses
+  - **Operating Expense Exclusions** — the carve-out list, items (a) through (u), specifying what is NOT charged to tenant
+  - **Annual Statement / reconciliation mechanism** — the year-end true-up
+  - **Independent Review (audit rights)** — tenant's right to audit Landlord's books, with cost-shifting if overpayment exceeds 5%
+  - **95% occupancy gross-up** — Operating Expenses computed as though the Building were 95% occupied
+  - The `"Tenant's Share"` definition and the Rent definition tying together Base Rent + Operating Expenses
 
-- **Minor `d3e62ead` (7,115 chars):** Extracts the same opening, the beginning of the Operating Expenses definition (items in scope), then ends at `"ses or that varies with occupancy or use. Base Rent, Tenant's Share of Operating Expenses and all other amounts payable by Tenant to Landlord hereunder are collectively referred to herein as 'Rent.'"` — this is a sentence boundary, not a truncation, but it cuts off before the exclusions, cap, and reconciliation.
+> **[CORRECTED 2026-07-14 — FABRICATED CLAIM REMOVED]**
+>
+> The original version of this section listed a **"Controllable Expenses Cap — capping annual increases on controllable items at typically 5%"** among the LP-07 contents.
+>
+> **No such clause exists in the Atreca lease.** Section 5 was read end-to-end against the source on 2026-07-14: it contains the Operating Expenses definition, the exclusions list (a)–(u), the Annual Statement reconciliation, the Independent Review audit rights, the 95% gross-up, and the Tenant's Share definition. There is no cap on Operating Expenses of any kind. Tenant's Share is 100%; the landlord (Alexandria) conceded no cap in this triple-net lab lease.
+>
+> **Mechanism:** the word *"typically"* is the fingerprint. This was not a description of an extraction artifact — it was a description of what an Operating Expenses section *usually contains in commercial leases generally*, written from priors and formatted as an observation. The claim was inferred, not read.
+>
+> **Propagation:** this sentence was inherited by `421C_evidence_assignment_incident.md` §2a (where "typically" was dropped and it became a flat assertion, then escalated to "the primary tenant protection against runaway CAM charges"), and from there into `Docs/Patent_Supplement_2026_07_14.md` §11. All three have been corrected.
+>
+> **Why it survived:** it was bundled in a list with two true items (exclusions, reconciliation); it was exactly the shape a CRE lawyer would expect adjacent to an exclusions list; and no one read the source. Everyone read the report about the source.
+>
+> **Standing rule (now in CLAUDE.md):** a claim about what a document contains requires a verbatim quote and a location, or it must be marked unverified. Characterizing content without quoting it is where fabrication enters.
 
-**Legal consequence:** An evaluator working from d3e62ead LP-07 sees what Operating Expenses include but not what they exclude. The Controllable Expenses Cap (which bounds year-over-year cost increases on controllable items) is absent from d3e62ead. The exclusions list is absent. These are the provisions that determine whether the tenant's operating expense exposure is bounded or unbounded — the exact terms that determine coverage risk.
+- **Minor `d3e62ead` (7,115 chars):** Extracts the same opening, the beginning of the Operating Expenses definition (items in scope), then ends at `"ses or that varies with occupancy or use. Base Rent, Tenant's Share of Operating Expenses and all other amounts payable by Tenant to Landlord hereunder are collectively referred to herein as 'Rent.'"` — this is a sentence boundary, not a truncation, but it cuts off before the exclusions, the reconciliation mechanism, and the audit rights.
+
+**Legal consequence:** An evaluator working from d3e62ead LP-07 sees what Operating Expenses include but not what they exclude. The exclusions list, the Annual Statement reconciliation, and the Independent Review audit rights are absent from d3e62ead. These are the provisions that bound and police the tenant's operating expense exposure — the exact terms that determine coverage risk. **This finding stands. Only the fabricated cap has been removed from it.**
 
 #### LP-12 — Delivery / Acceptance of Premises (+3,959 chars in modal)
 

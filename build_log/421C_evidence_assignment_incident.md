@@ -20,15 +20,17 @@ The consequence is not "some evaluations have lower confidence." The consequence
 
 ## 2. The New Finding (Evidence-Assignment Failures, Confirmed)
 
-### 2a. LP-07 — Operating Expenses: Exclusions and Cap Absent 80% of the Time
+### 2a. LP-07 — Operating Expenses: Exclusions, Reconciliation, and Audit Rights Absent 20% of the Time
 
-The Atreca lease contains an Operating Expense Exclusions list (what is NOT charged to tenant) and a Controllable Expenses Cap (typically 5% annual cap on controllable items). These are the provisions that determine whether the tenant's operating expense exposure is bounded or unbounded — directly relevant to any LP-07 coverage assessment.
+> **[CORRECTED 2026-07-14 — FABRICATED CLAIM REMOVED]** This section originally asserted that the Atreca lease contains a **"Controllable Expenses Cap (typically 5% annual cap on controllable items)"** and described it as "the primary tenant protection against runaway CAM charges." **No such clause exists in this lease.** Section 5 was read end-to-end against the source: it contains the Operating Expenses definition, the exclusions list (a)–(u), the Annual Statement reconciliation, the Independent Review audit rights, the 95% gross-up, and the Tenant's Share definition — and no cap of any kind. Tenant's Share is 100%; Alexandria conceded no cap in this triple-net lab lease. The claim originated in `422_code_status.md` as a description of what an Operating Expenses section *usually* contains, written from priors rather than read from the artifact, and was inherited here as fact. **The finding below stands on the three real clauses; only the fabricated cap has been removed.** See the correction block in `422_code_status.md` for the full mechanism.
+
+The Atreca lease contains an Operating Expense Exclusions list (items (a) through (u) — what is NOT charged to tenant), an Annual Statement reconciliation mechanism (the year-end true-up), and an Independent Review clause (tenant's right to audit Landlord's books, with cost-shifting if overpayment exceeds 5%). These are the provisions that bound and police the tenant's operating expense exposure — directly relevant to any LP-07 coverage assessment.
 
 In N=10 Gemini extractions post-ceiling fix:
-- **Modal hash `f7f64b5c` (8/10 runs, 11,492 LP-07 chars):** Includes the full Operating Expenses definition, the Exclusions list, the Controllable Expenses Cap, and the Annual Reconciliation mechanism.
-- **Minor hash `d3e62ead` (2/10 runs, 7,115 LP-07 chars):** Both hashes share the same 573-char opening. Minor ends at `"...referred to herein as 'Rent.'"` — a grammatical sentence boundary, not a truncation artifact. The Exclusions, Cap, and Reconciliation are absent.
+- **Modal hash `f7f64b5c` (8/10 runs, 11,492 LP-07 chars):** Includes the full Operating Expenses definition, the Exclusions list, the Annual Statement reconciliation, the Independent Review audit rights, and the 95% gross-up.
+- **Minor hash `d3e62ead` (2/10 runs, 7,115 LP-07 chars):** Both hashes share the same 573-char opening. Minor ends at `"...referred to herein as 'Rent.'"` — a grammatical sentence boundary, not a truncation artifact. The Exclusions, Reconciliation, and Audit Rights are absent.
 
-An evaluator working from the minor hash's LP-07 context sees what Operating Expenses include but not what they exclude. The Controllable Expenses Cap — the primary tenant protection against runaway CAM charges — is invisible. This is not a scoring issue; it is a missing evidence issue.
+An evaluator working from the minor hash's LP-07 context sees what Operating Expenses include but not what they exclude, has no visibility into the year-end true-up mechanism, and cannot see that the tenant holds audit rights over the landlord's books. This is not a scoring issue; it is a missing evidence issue.
 
 ### 2b. LP-12 — Delivery / Acceptance: Different Clauses Assigned Across Runs
 
@@ -73,7 +75,7 @@ Steps 417, 419, and 420 measured evaluator panel behavior — how A, B, and C re
 
 **The problem is not measurement error. The problem is that the object being measured was not what the measurements were intended to characterize.**
 
-A "Stage 5 coverage baseline" should measure whether the evaluator panel correctly assesses coverage for the provisions in a real lease. For that measurement to be valid, the evaluators must have access to the material provisions for each LP. If the evidence assignment leaves out the Controllable Expenses Cap from LP-07 in 2 out of 10 runs, and leaves out the quantitative parameters defining tenant exposure in all runs, then the evaluator panel's LP-07 verdicts cannot constitute a coverage baseline for the Operating Expenses provision. They are instead a baseline for evaluator behavior under the specific (and incomplete) evidence that Gemini happened to assign to LP-07.
+A "Stage 5 coverage baseline" should measure whether the evaluator panel correctly assesses coverage for the provisions in a real lease. For that measurement to be valid, the evaluators must have access to the material provisions for each LP. If the evidence assignment leaves out the Operating Expense Exclusions, the reconciliation mechanism, and the tenant's audit rights from LP-07 in 2 out of 10 runs, and leaves out the quantitative parameters defining tenant exposure in all runs, then the evaluator panel's LP-07 verdicts cannot constitute a coverage baseline for the Operating Expenses provision. They are instead a baseline for evaluator behavior under the specific (and incomplete) evidence that Gemini happened to assign to LP-07.
 
 ### 3b. Atlas Lease Check
 
@@ -192,9 +194,42 @@ The evidence-assignment incident is not a failure of the CAM governance framewor
 
 ---
 
-## 9. Recommended Next Step
+## 9. Reporting-Layer Incident — This Report Contained a Fabricated Clause
 
-Write `build_log/422_evidence_assignment_architecture_spec.md`.
+**Added 2026-07-14, one day after this report was written.**
+
+This report asserted, in §2a and §3a, that the Atreca lease contains a **Controllable Expenses Cap**, and characterized it as "the primary tenant protection against runaway CAM charges."
+
+**It does not. No such clause exists in the lease.** The source was read end-to-end on 2026-07-14. Section 5 contains the Operating Expenses definition, the exclusions list (a)–(u), the Annual Statement reconciliation, the Independent Review audit rights, the 95% occupancy gross-up, and the Tenant's Share definition. There is no cap on Operating Expenses of any kind. Tenant's Share is 100% — Alexandria conceded nothing.
+
+**Provenance.** The claim originated in `422_code_status.md`, phrased as: *"Controllable Expenses Cap — capping annual increases on controllable items at **typically** 5%."* The word *typically* is the fingerprint. No one writes "typically" about text they are reading. The clause was a description of what an Operating Expenses section *usually contains in commercial leases generally* — an inference from priors, formatted as an observation of an artifact. This report inherited it, dropped the hedge, and hardened it into a flat assertion. It was then propagated into `Docs/Patent_Supplement_2026_07_14.md` §11 as a canonical example.
+
+**Why it survived three documents.** It travelled in true company — bundled in a list with the exclusions and the reconciliation mechanism, both of which are real and both of which *are* materially absent from the minor hash. It was the right *shape*: a CRE lawyer would expect a controllable-expenses cap adjacent to an exclusions list. And no one read the lease. Everyone read the report about the lease.
+
+**The recursion, stated plainly.** This is an incident report about evidence reaching evaluators without verification. It contained a claim that was never verified against the evidence. The document that argues *citation or it didn't happen* cited a clause that does not exist.
+
+This is not ironic decoration. It establishes that the failure class is **broader than the extraction pipeline**. The pipeline had unverifiable evidence; the build reports had unverifiable claims. The reporting layer had no resolver. The rule the 423 architecture imposes on Gemini — *propose a verbatim quote, or it is not evidence* — was never imposed on ourselves.
+
+**Standing rule, now in CLAUDE.md:**
+
+> A claim about what a document contains requires a verbatim quote and a location, or it must be explicitly marked unverified. Characterizing content without quoting it is where fabrication enters. Never describe what a document of this type *usually* contains; describe what *this* document contains, or say you did not check.
+
+**A second, related process failure surfaced during this investigation:** `build_log/` contains no `NNN_chat_instruction.md` for any step in this arc — 420, 421B, 421C, 422, 422A–D, 423A–C. The instructions were pasted from Chat to Code and never written to disk. **For every step in this arc there is a record of what Code claims it did, and no record of what Code was asked to do.** A status report cannot be audited against a brief that does not exist. Status without instruction is a verdict without a citation. The `NNN_chat_instruction.md` discipline is reinstated as of Step 424.
+
+**What survives, verified against the source on 2026-07-14:**
+- The key-terms table finding (§2c) — Tenant's Share 100%, Building's Share 45.79%, Rent Adjustment 3%, at char ~1,994 on page one. **Confirmed. Real.**
+- The LP-12 boundary-drift finding (§2b) — Landlord's Work access rights and the Condition Precedent are both in the source, adjacent, in Section 2. **Confirmed. Real.**
+- The LP-07 minor-hash gap (§2a, as corrected) — exclusions, reconciliation, and audit rights dropped. **Confirmed. Real, and still material.**
+- **Grok's exoneration (§2d) — unaffected.**
+- **The architectural case for Step 423 — unaffected.**
+
+One clause was fabricated. Everything the architecture rests on is intact.
+
+---
+
+## 10. Recommended Next Step
+
+Write `build_log/423_evidence_assignment_architecture_spec.md`.
 
 This spec should address:
 

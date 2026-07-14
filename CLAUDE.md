@@ -56,58 +56,118 @@ blocker. Model stack: `gpt-5.5`, `claude-sonnet-4-6`, `grok-4.3`, `gemini-3.1-pr
 - **Ask, don't assume.** If an instruction is ambiguous, say so in your status file.
 - **Keep Tzvi in the loop.** If you have questions or encounter decisions during implementation, ask directly in the conversation — don't bury them in the status file.
 - **Step-suffix discipline.** If a step needs a `b`, `c`, `_fix`, or `_fix2` instruction, open with a one-line root-cause note.
+- **No `cam/core/` epistemic changes without explicit authorization.** Infrastructure utilities are a narrow exception; kill shots, ladder, terminal states, and auditor semantics are frozen.
 
 ---
 
-## ⚠️ GIT WORKFLOW — CRITICAL ⚠️
+## REPORTING INTEGRITY — READ BEFORE WRITING ANY STATUS FILE
 
-### Why we push and pull
+The recurring failure in this project is **declared state silently not matching what actually ran**. Status files are where that failure gets laundered into false confidence. These rules exist because a step was marked COMPLETE while its named objective was unmet and its central claim about the codebase was false (see 422A → 422B).
 
-Claude Code runs in its own container. File edits in that container do NOT
-automatically reach Tzvi's Windows machine. The ONLY bridge between Code's
-container and Tzvi's local repo is GitHub: Code pushes, Tzvi pulls.
+### 1. COMPLETE requires executed tests
+A status file may NOT say COMPLETE unless tests were **run** and their **actual output** is pasted in. A table of expected results is an **expectation table** — label it as such. Never file expectations under a heading like "Test Criteria" or "Verification." If you did not run it, write: **NOT RUN.**
 
-**This is non-negotiable. Without the push, the work does not exist for Tzvi.**
+### 2. Claims about code must quote the code
+Do not assert that a code path, bridge, or handler exists. **Open the file, read it, quote the lines.** A claim like "the bridge was already present via `is_applicable()`" is checkable — so check it. Reasoning from what the architecture *ought* to do is how the evidence-assignment defect survived 101 pipeline runs.
 
-### Work directly on main — no worktrees, no branches
+### 3. Name the objective; report against it
+If a step is named for an objective (e.g. "Gate 3 hygiene"), the status file must state whether **that objective** was met. A step that ships adjacent machinery while deferring its named objective is **PARTIAL** or **BLOCKED**, never COMPLETE.
+
+### 4. Distinguish written from wired
+"I added the state / constant / field" is not "the system uses it." Before claiming a change has effect, trace it to the consumer that reads it. If nothing downstream reads it, the change is **inert** — say so.
+
+### 5. Deferred goes at the top
+If you defer part of the brief, put it in the opening summary — not in a "Deferred Issues" list at the bottom where it reads as a footnote.
+
+### 6. Claims about DOCUMENT CONTENT must quote the document
+**Added 2026-07-14 after a fabricated clause propagated through three documents into the patent record.**
+
+Rule 2 covers claims about *code*. This one covers claims about *documents* — leases, artifacts, extraction outputs, JSON results, any text you are analyzing.
+
+**A claim about what a document contains requires a verbatim quote and a location, or it must be explicitly marked UNVERIFIED.**
+
+**Never describe what a document of this type *usually* contains. Describe what *this* document contains, or say you did not check.**
+
+The fingerprint of this failure is hedging vocabulary attached to an assertion of fact: *typically*, *standard*, *generally*, *usually*, *as expected*, *presumably*. **No one writes "typically" about text they are looking at.** If those words appear next to a claim about document content, you are reasoning from priors and reporting it as observation. Stop and open the file.
+
+What happened: a step was asked what differed between two extraction hashes. Instead of quoting the differing text, it described what an Operating Expenses section *usually* contains in commercial leases — including a "Controllable Expenses Cap (typically 5%)" that **does not exist in the Atreca lease.** The claim was inherited by an incident report (which dropped the hedge and made it a flat assertion), and from there into a patent supplement as a canonical example. It survived because it was bundled in a list with two *true* items, it had the shape a domain expert would expect, and nobody read the source.
+
+This is the same failure the 423 architecture exists to prevent, one layer out. CAM requires its extractor to propose verbatim quotes that code resolves against a hashed source — a quote that does not resolve is not evidence. **That rule was never applied to our own analysis.** The reporting layer had no resolver. It does now: you are it.
+
+If you characterize rather than quote, mark it: **"[UNVERIFIED — characterized, not read]"**. That is an acceptable output. A confident fabrication is not.
+
+### 7. Every step needs a written instruction
+**Added 2026-07-14.** `build_log/` contains no `NNN_chat_instruction.md` for Steps 420 through 423C. Those instructions were pasted from Chat and never written to disk. The result: for every step in that arc there is a record of what Code *claims it did*, and no record of what Code *was asked to do*.
+
+**A status report cannot be audited against a brief that does not exist. Status without instruction is a verdict without a citation.**
+
+From Step 424 onward: if you are given a task and no `build_log/NNN_chat_instruction.md` exists for it, **write the instruction to disk first** — verbatim as received, before executing — then proceed. Do not paraphrase it, do not summarize it, do not improve it. It is the brief you will be audited against.
+
+---
+
+## GIT WORKFLOW — CRITICAL
+
+**Corrected 2026-07-14.** This section previously mandated `git add -A` and an unconditional push on every step. Both directly contradicted standing constraints. If you recall this file saying otherwise, you are recalling the old, wrong version.
+
+### Staging — explicit paths ONLY
+
+**`git add .` and `git add -A` from the repo root are PROHIBITED.** The OneDrive `.tmp.driveupload` staging folder sits in the CAM root and is heavily populated; a bulk add sweeps it into the commit.
+
+Stage every path explicitly:
 
 ```bash
 cd "C:\Users\Owner\OneDrive\CAM"
-git checkout main
-git pull origin main
-# edit files
-git add -A
-git commit -m "Step NNN: [short description]"
-git push origin main
+git add cam/adapters/lease_review/lease_extract.py
+git add -f build_log/NNN_status.md
+git commit -m "NNN short description"
 ```
 
-Railway auto-deploys from main. Tzvi pulls from GitHub to sync his local repo.
+**`build_log/` and `Docs/` are both gitignored** — they need `git add -f` with explicit paths. Without `-f` the add silently no-ops and the commit misses the changes.
 
-### The One Rule
-**Every change must be pushed to `main` before a step is marked complete.**
-A step is not done until the commit is on `main` AND the version number in
-`05 Lease Analyzer/static/index.html` is confirmed.
+**Never stage `results/` or `_*_results/` directories.**
 
-### Never Do This
-- ❌ Create a `claude/*` worktree or branch
-- ❌ Edit files anywhere other than `C:\Users\Owner\OneDrive\CAM`
-- ❌ Push to a feature branch and call the step complete
-- ❌ Commit without pushing — the commit is invisible to Tzvi
-- ❌ Declare a step done without verifying the version number in index.html
+### Push — requires preflight AND explicit sanction
+
+**Do NOT push unless Tzvi has explicitly said to push in this session.** Commit locally and stop. "Commit local, do not push" is the default, not the exception.
+
+Before any sanctioned push: run `git status -sb` and `git log origin/main..HEAD --oneline`, show Tzvi what would go up, and wait.
+
+Code and Tzvi share the same filesystem (`C:\Users\Owner\OneDrive\CAM`), so a local commit is immediately visible to him. **A push is a deployment event** — Railway auto-deploys from main — not a sync mechanism.
+
+### Work directly on main — no worktrees, no branches
+
+- Never create a `claude/*` worktree or branch
+- Never edit files outside `C:\Users\Owner\OneDrive\CAM`
+- Never force-push
+
+### Version numbers
+
+The `index.html` version bump applies **only to frontend changes**. Backend, pipeline, investigation, and spec steps do not touch it and are not gated on it.
 
 ### If There Are Merge Conflicts on Main
-Report in the status file under "Decisions Needed" — do not force-push.
+Report under "Decisions Needed" — do not force-push, do not resolve unilaterally.
 
 ---
 
 ## After Every Step
+
+Before writing your closing message, re-read the **Reporting Integrity** rules above and check your status file against them. Specifically: did you *run* the tests, and did you meet the step's *named objective*?
+
 End your message to Tzvi with:
 
 ```
 ✅ Step NNN complete. Status written to build_log/NNN_code_status.md.
-Pushed to main as <SHA>. Run: git pull (in C:\Users\Owner\OneDrive\CAM)
-then hard-refresh browser.
+Committed locally as <SHA>. NOT pushed.
+Tests: <N/N passing — actual result, not expected>
 👉 Tell Chat: "Step NNN is done"
+```
+
+If the named objective was not met, or tests were not run:
+
+```
+⚠️ Step NNN PARTIAL. Status written to build_log/NNN_code_status.md.
+Named objective NOT met: <what>
+👉 Tell Chat: "Step NNN is partial, read the status"
 ```
 
 Or if blocked:
