@@ -1344,6 +1344,66 @@ def run_lease_coverage_only(
             f"Errors: {[e.get('error', '')[:80] for e in meta.get('errors', [])[-3:]]}"
         )
 
+    # ── Extraction completeness gate (422C) ────────────────────────────────────
+    # Gate 3: required LPs with empty tenant_text and no NOT_APPLICABLE provenance
+    # must not reach Stage 5 coverage. Missing required evidence is indistinguishable
+    # from present evidence once it enters coverage assessment — this gate prevents
+    # a confident "missing" verdict from being produced for a provision that simply
+    # was not extracted.
+    #
+    # Canonical (Mode C): abort on any fail_missing. Same doctrine as 421B and the
+    # extraction_failed guard above — compromised evidence must not be indistinguishable
+    # from clean evidence. Uses the same GateAbortError / abort path.
+    #
+    # Non-canonical / debug: allow diagnostic continuation; mark run degraded so
+    # output is never treated as valid legal analysis.
+    from cam.adapters.lease_review.lease_extract import check_extraction_completeness
+    _completeness_results = check_extraction_completeness(
+        extraction["provisions"],
+        extraction.get("deal_overview", {}),
+    )
+    _fail_missing = [r for r in _completeness_results if r["gate_status"] == "fail_missing"]
+    _is_canonical = not meta.get("fallback_used", False)  # same flag the extractor sets
+
+    if _fail_missing:
+        _failed_ids = [r["provision_id"] for r in _fail_missing]
+        _failure_detail = [
+            {
+                "provision_id": r["provision_id"],
+                "tenant_text_len": len(
+                    (next((p.get("tenant_text", "") for p in extraction["provisions"]
+                           if p.get("provision_id") == r["provision_id"]), "") or "")
+                ),
+                "extraction_status": r["status"],
+                "gate_status": r["gate_status"],
+                "known_absent": False,
+                "reason": "Required/applicable LP has empty tenant_text and is not classified NOT_APPLICABLE",
+            }
+            for r in _fail_missing
+        ]
+        if _is_canonical:
+            raise GateAbortError(
+                f"Extraction completeness failure: {len(_fail_missing)} required LP(s) "
+                f"have missing evidence and are not classified NOT_APPLICABLE. "
+                f"Failed LPs: {_failed_ids}. "
+                "Cannot produce a valid legal analysis report from incomplete evidence. "
+                f"Detail: {_failure_detail}"
+            )
+        else:
+            # Non-canonical / debug: mark run degraded, surface failure, allow continuation
+            print(
+                f"[lease_adapter:analyze] COMPLETENESS GATE DEGRADED: {len(_fail_missing)} "
+                f"required LP(s) missing evidence: {_failed_ids}. "
+                "Run marked invalid_for_legal_analysis.",
+                flush=True,
+            )
+            run_metadata = cfg.setdefault("_run_metadata", {})
+            run_metadata["run_degraded"] = True
+            run_metadata["extraction_completeness_failed"] = True
+            run_metadata["invalid_for_legal_analysis"] = True
+            run_metadata["reason_code"] = "required_lp_missing_evidence"
+            run_metadata["completeness_failures"] = _failure_detail
+
     models_used["extractor"] = meta["model"]
     models_used["extractor_provider"] = meta.get("provider", "")
     models_used["extractor_fallback_used"] = meta.get("fallback_used", False)
