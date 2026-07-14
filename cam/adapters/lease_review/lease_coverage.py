@@ -150,6 +150,26 @@ def assess_coverage(
         tenant_text = (prov.get("tenant_text", "") or "") if prov else ""
         ns = ns_signals.get(pid, [])
 
+        # ── Step 2a: Extraction status bridge ─────────────────────────────────
+        # If extraction classified this provision NOT_APPLICABLE (known-absent for
+        # this document type), short-circuit to not_applicable coverage state.
+        # This is the only code path that reads extraction status; is_applicable()
+        # above operates on text clues from the full document and is independent.
+        if prov and prov.get("status") == "NOT_APPLICABLE":
+            _a = _build_assessment(
+                pid=pid, area=area, coverage_state="not_applicable",
+                applicability="not_applicable",
+                evidence_summary=(
+                    prov.get("alignment_notes")
+                    or "Provision classified NOT_APPLICABLE by extraction layer."
+                ),
+                supporting_provisions=[], negative_space=[],
+                elements_found=[], elements_missing=[], tenant_text="",
+            )
+            assessments.append(_a)
+            _emit(_a)
+            continue
+
         # ── Step 2b: Misrouted-extraction guard (Step 298b) ───────────────────
         # For LPs in _GLOBAL_SCAN_LPS, verify the routed text is actually about
         # this LP by checking for at least one anchor keyword. If none are found,

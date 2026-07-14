@@ -99,6 +99,46 @@ def _classify_missing_stub(provision_id: str, deal_overview: dict) -> Tuple[str,
     return "AMBIGUOUS", "Provision not found by extraction model."
 
 
+def check_extraction_completeness(
+    provisions: list,
+    deal_overview: dict,
+) -> List[dict]:
+    """Gate 3: check extraction provisions for evidence completeness.
+
+    Returns one entry per provision with a gate_status:
+        "pass"          — provision has non-empty tenant_text (evidence present)
+        "not_applicable" — empty tenant_text, NOT_APPLICABLE status, known-absent
+        "fail_missing"  — AMBIGUOUS + empty tenant_text + NOT in known-absent set
+                          This is an evidence failure: extraction missed the provision.
+
+    Callers must treat "fail_missing" as a hard gate failure for extraction QC.
+    """
+    results = []
+    raw_type = (deal_overview.get("property_type") or "").strip()
+    doc_type_key = raw_type.lower().split(",")[0].strip() if raw_type else ""
+    known_absent = KNOWN_ABSENT_BY_DOC_TYPE.get(doc_type_key, None)
+
+    for p in provisions:
+        pid = p.get("provision_id", "")
+        has_text = bool((p.get("tenant_text") or "").strip())
+        status = p.get("status", "AMBIGUOUS")
+
+        if has_text:
+            gate_status = "pass"
+        elif status == "NOT_APPLICABLE":
+            gate_status = "not_applicable"
+        elif known_absent is not None and pid in known_absent:
+            # AMBIGUOUS + empty + in known-absent: should have been reclassified;
+            # treat as not_applicable for gate purposes (reclassification upstream)
+            gate_status = "not_applicable"
+        else:
+            # AMBIGUOUS + empty + NOT in known-absent set = evidence failure
+            gate_status = "fail_missing"
+
+        results.append({"provision_id": pid, "gate_status": gate_status, "status": status})
+    return results
+
+
 def _load_schema() -> dict:
     """Load the extraction output JSON schema."""
     with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
@@ -580,6 +620,16 @@ def _run_extraction_call(
                 "definition_changes": "",
             })
 
+    # Reclassify returned-empty AMBIGUOUS provisions: model returned the LP but
+    # with empty tenant_text and AMBIGUOUS status. Apply registry logic — known-absent
+    # provisions become NOT_APPLICABLE; non-known-absent stay AMBIGUOUS (evidence failure).
+    for p in obj["provisions"]:
+        if p.get("status") == "AMBIGUOUS" and not (p.get("tenant_text") or "").strip():
+            _status, _notes = _classify_missing_stub(p["provision_id"], _deal_overview)
+            if _status == "NOT_APPLICABLE":
+                p["status"] = "NOT_APPLICABLE"
+                p["alignment_notes"] = _notes
+
     return {
         "provisions": obj["provisions"],
         "contract_metadata": obj.get("contract_metadata", {}),
@@ -969,6 +1019,14 @@ def extract_provisions_single_doc(
                 "alignment_notes": _notes,
                 "definition_changes": "",
             })
+
+    # Reclassify returned-empty AMBIGUOUS provisions (same logic as dual-doc path).
+    for p in obj["provisions"]:
+        if p.get("status") == "AMBIGUOUS" and not (p.get("tenant_text") or "").strip():
+            _status, _notes = _classify_missing_stub(p["provision_id"], _deal_overview)
+            if _status == "NOT_APPLICABLE":
+                p["status"] = "NOT_APPLICABLE"
+                p["alignment_notes"] = _notes
 
     return {
         "provisions": obj["provisions"],
