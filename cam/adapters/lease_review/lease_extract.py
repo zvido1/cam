@@ -48,6 +48,56 @@ SCHEMA_PATH = Path(__file__).parent / "schemas" / "extraction_schema.json"
 PROMPT_PATH = Path(__file__).parent / "prompts" / "provision_extraction.txt"
 SINGLE_DOC_PROMPT_PATH = Path(__file__).parent / "prompts" / "provision_extraction_single_doc.txt"
 
+# Document-type-scoped known-absent provision sets.
+# Keyed to normalized property_type (lowercase, first token). Values: frozenset of LP IDs.
+# Hard-fail behavior: if property_type resolves to a key NOT in this dict, the stub is
+# classified AMBIGUOUS with an explicit note — never silently allowed through as empty-set.
+KNOWN_ABSENT_BY_DOC_TYPE: Dict[str, frozenset] = {
+    "industrial": frozenset({"LP-20", "LP-21", "LP-23", "LP-31"}),
+    "warehouse": frozenset({"LP-20", "LP-21", "LP-23", "LP-31"}),
+}
+
+_VALID_EXTRACTION_STATUSES = frozenset(
+    {"FOUND_BOTH", "TEMPLATE_ONLY", "TENANT_ONLY", "AMBIGUOUS", "NOT_APPLICABLE"}
+)
+
+
+def _classify_missing_stub(provision_id: str, deal_overview: dict) -> Tuple[str, str]:
+    """Return (status, alignment_notes) for a provision absent from extraction results.
+
+    NOT_APPLICABLE: property_type maps to a known-absent set AND provision_id is in it.
+    Hard-fail (unrecognized type): returns AMBIGUOUS with explicit note.
+    Extraction failure callers must NOT use this — all-models-failed stays AMBIGUOUS.
+    """
+    raw_type = (deal_overview.get("property_type") or "").strip()
+    if not raw_type:
+        return (
+            "AMBIGUOUS",
+            "Provision not found by extraction model. Property type unknown; cannot assess applicability.",
+        )
+    # Normalize: "Industrial, Mixed-Use" → "industrial"
+    doc_type_key = raw_type.lower().split(",")[0].strip()
+    if doc_type_key not in KNOWN_ABSENT_BY_DOC_TYPE:
+        return (
+            "AMBIGUOUS",
+            (
+                f"Provision not found by extraction model. "
+                f"Property type '{raw_type}' has no declared known-absent set; "
+                "cannot classify as NOT_APPLICABLE."
+            ),
+        )
+    if provision_id in KNOWN_ABSENT_BY_DOC_TYPE[doc_type_key]:
+        return (
+            "NOT_APPLICABLE",
+            (
+                f"Provision known-absent for {raw_type} lease type. "
+                "Basis: document-type-driven. "
+                "Decision source: KNOWN_ABSENT_BY_DOC_TYPE registry. "
+                "Not found by extraction model (consistent with known-absent classification)."
+            ),
+        )
+    return "AMBIGUOUS", "Provision not found by extraction model."
+
 
 def _load_schema() -> dict:
     """Load the extraction output JSON schema."""
@@ -102,7 +152,7 @@ def _validate_extraction(obj: dict) -> Tuple[bool, Optional[str]]:
         for key in ["provision_id", "provision_name", "status"]:
             if key not in p:
                 return False, f"provisions[{i}] missing '{key}'"
-        if p["status"] not in ("FOUND_BOTH", "TEMPLATE_ONLY", "TENANT_ONLY", "AMBIGUOUS"):
+        if p["status"] not in _VALID_EXTRACTION_STATUSES:
             return False, f"provisions[{i}] invalid status: {p['status']}"
     return True, None
 
@@ -514,8 +564,10 @@ def _run_extraction_call(
 
     # Ensure all requested provisions are represented in the output
     result_ids = {p["provision_id"] for p in obj.get("provisions", [])}
+    _deal_overview = obj.get("deal_overview", {})
     for prov in provisions:
         if prov["id"] not in result_ids:
+            _status, _notes = _classify_missing_stub(prov["id"], _deal_overview)
             obj["provisions"].append({
                 "provision_id": prov["id"],
                 "provision_name": prov["name"],
@@ -523,8 +575,8 @@ def _run_extraction_call(
                 "tenant_text": "",
                 "template_section_ref": "",
                 "tenant_section_ref": "",
-                "status": "AMBIGUOUS",
-                "alignment_notes": "Provision not found by extraction model.",
+                "status": _status,
+                "alignment_notes": _notes,
                 "definition_changes": "",
             })
 
@@ -902,8 +954,10 @@ def extract_provisions_single_doc(
 
     # Ensure all requested provisions are represented
     result_ids = {p["provision_id"] for p in obj.get("provisions", [])}
+    _deal_overview = obj.get("deal_overview", {})
     for prov in provisions:
         if prov["id"] not in result_ids:
+            _status, _notes = _classify_missing_stub(prov["id"], _deal_overview)
             obj["provisions"].append({
                 "provision_id": prov["id"],
                 "provision_name": prov["name"],
@@ -911,8 +965,8 @@ def extract_provisions_single_doc(
                 "tenant_text": "",
                 "template_section_ref": "",
                 "tenant_section_ref": "",
-                "status": "AMBIGUOUS",
-                "alignment_notes": "Issue area not found by extraction model.",
+                "status": _status,
+                "alignment_notes": _notes,
                 "definition_changes": "",
             })
 

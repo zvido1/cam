@@ -84,8 +84,8 @@
           },
           "status": {
             "type": "string",
-            "enum": ["FOUND_BOTH", "TEMPLATE_ONLY", "TENANT_ONLY", "AMBIGUOUS"],
-            "description": "Alignment status"
+            "enum": ["FOUND_BOTH", "TEMPLATE_ONLY", "TENANT_ONLY", "AMBIGUOUS", "NOT_APPLICABLE"],
+            "description": "Alignment status. NOT_APPLICABLE: provision known-absent for this document type (document-type-driven, not extraction failure). AMBIGUOUS: extraction failed or provision not found and not in known-absent set."
           },
           "alignment_notes": {
             "type": "string",
