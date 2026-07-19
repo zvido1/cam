@@ -2,7 +2,7 @@
 
 **Author:** Chat instance
 **Date:** 2026-07-19
-**Type:** PREREGISTRATION PACKAGE BUILD INSTRUCTION for Claude Code (Part B of 2). **DRAFTING ARTIFACT.** Ratification of THIS document authorizes **BUILD ONLY (zero model calls)** — see §1 two-stage gate. The live run is authorized by a SEPARATE sanction after the built Stage-1 artifacts are reviewed and hashed. [v3 — series alignment, split validation, executable rules, honest preregistration status; supersedes v2.]
+**Type:** PREREGISTRATION PACKAGE BUILD INSTRUCTION for Claude Code (Part B of 2). **DRAFTING ARTIFACT.** Ratification of THIS document authorizes **BUILD ONLY (zero model calls)** — see §1 two-stage gate. The live run is authorized by a SEPARATE sanction after the built Stage-1 artifacts are reviewed and hashed. [v3.1 — v3 + four micro-edits: §0 section refs, series indices in the §8.1 trace schema, runtime seam capture + validation-artifact inventory, cand_06 offset pinned `[3619,3660)`; plus the disagreement-is-not-failure note. Ratifiable after a string/diff check.]
 **Built against:** `build_log/431_partA_governed_selection_spec.md` (v5-final, RATIFIED 2026-07-19, committed `e702bf0`/`f6a362b`). Every mechanism traces to a Part A section; Part B invents no architecture — it builds a preregistration package so no configuration is improvised by the system being measured.
 **Fixture ground truth:** `build_log/430_gate_b_cross_lease.md` §1/§2/§3/§5.
 **Discipline:** read-only; imports, never modifies; no `cam/` file touched; pre-registered series, not massaged.
@@ -15,7 +15,7 @@ Whether the **real frozen A/B/C panel**, governed by the Part A mechanism, produ
 
 **Status (accurate):** This document, once ratified, authorizes construction of the **preregistration package** (the Stage-1 artifacts, §1). **The measurement becomes preregistered only after those Stage-1 artifacts are reviewed, hashed, and SEPARATELY sanctioned for execution.** This instruction pins the deterministic knobs it can pin now (§3: `max_context_chars`, `attempt_ceiling`, versions, the envelope algorithm, the executable matching rules); the exact regex patterns, selector prompt, and output schema are produced as reviewable Stage-1 artifacts and hashed before any run. Ratifying this authorizes **BUILD ONLY, zero model calls** — see §1.
 
-**Mechanism success (§7) is answer-key-independent.** If all three models reach the same honest-but-unexpected answer, the mechanism still succeeded provided the judgment was grounded and governed. Whether any parameter certifies — Atreca's included — is an OUTCOME OBSERVATION (§8), never pass/fail.
+**Mechanism success (§9.1) is answer-key-independent.** If all three models reach the same honest-but-unexpected answer, the mechanism still succeeded provided the judgment was grounded and governed. Whether any parameter certifies — Atreca's included — is an OUTCOME OBSERVATION (§9.2), never pass/fail.
 
 ---
 
@@ -107,7 +107,7 @@ The `forcing case`/description column below is HUMAN-ONLY. It is excluded from t
 | cand_03 | Atreca | `rent_adjustment_pct` | operative | `Rent Adjustment Percentage: 3%` |
 | cand_04 | Atlas | `tenant_share` | proportionate share | `"Proportionate Share" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building.` |
 | cand_05 | Atlas | `base_rent` | definition stub | `"Base Rent" shall mean the annual rent payable as set forth in Section 3.1.` |
-| cand_06 | Atlas | `base_rent` | operative schedule | `$18.50 per rentable square foot per annum` (schedule line; unique-resolve at preflight) |
+| cand_06 | Atlas | `base_rent` | operative schedule | `[3619,3660)` — `$18.50 per rentable square foot per annum` (offset established by Claude Code; re-verify at preflight, §6.2) |
 | cand_07 | Atlas | `rent_adjustment_pct` | approximation | `The above schedule reflects an annual escalation of approximately 3% per annum.` |
 
 **7 candidates. Candidates are lease-specific — NOT multiplied across leases.**
@@ -121,7 +121,7 @@ Record in `431_fixture_preflight.json`:
 - **Full canonical source hash for each lease** (not truncated): Atlas `da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71`; Atreca `7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b` (430 §1).
 - **Canonicalization/normalization profile version**: `canonical_whitespace_v2` (430 §1) — confirmed for both.
 - For **every** candidate (not only cand_06): the exact expected quote, and verification that its offset resolves to that quote against that hash. cand_01–05, 07 offsets from 430 (`[1942,1996)`,`[1695,1815)`,`[2097,2127)`,`[1738,1889)`,`[990,1065)`,`[4248,4327)`) must each re-resolve to the expected quote or the fixture fails.
-- **cand_06 unique resolution**: the `$18.50 ... per annum` schedule line must resolve to a UNIQUE offset against the Atlas hash. Non-unique or non-resolution → cand_06 excluded as fixture-incomplete, case 3 reported stub-only (still a valid observation); run the other six.
+- **cand_06 (now resolved; re-verify, do not re-discover):** offset `[3619,3660)`, full quote `$18.50 per rentable square foot per annum`, full-quote resolution count = 1 (UNIQUE); the bare phrase `per rentable square foot per annum` resolves 5 times (once per lease year), so uniqueness rests entirely on the `$18.50` prefix. Preflight **re-verifies** that `[3619,3660)` resolves to the full quote against the frozen Atlas hash. **If the pinned span fails to re-resolve against the frozen source hash, exclude cand_06 and report fixture drift** (case 3 reported stub-only, still a valid observation); run the other six.
 
 ---
 
@@ -158,7 +158,9 @@ Emit, per parameter result, into the sidecar:
 ```
 certification_trace:
   parameter, lease
-  per_candidate: [ { candidate_id, relevance_ok, basis_match, text_role_ok,
+  series_index                       # 1..5 — this trace certifies ONE parameter-series
+  per_candidate: [ { candidate_id, raw_attempt_index, canonical_attempt_index, series_index,
+                     relevance_ok, basis_match, text_role_ok,
                      value_ok, support_ok, applicability_match,
                      agreement_by_field, field_support_citation_ids,
                      candidate_qualification } ]
@@ -167,6 +169,7 @@ certification_trace:
   prompt_hash, schema_hash, requirement_profiles_hash, config_hash
   final_certification_state
 ```
+**Every candidate contributing to one parameter-series trace MUST carry the same `series_index`** (the trace's top-level `series_index` equals each `per_candidate.series_index`); a mismatch is a cross-series pooling defect and fails validation.
 For any `satisfied` result, the trace MUST mechanically show ONE candidate_id supplied every required property (relevance_ok ∧ basis_match=match ∧ text_role_ok ∧ value_ok ∧ support_ok ∧ applicability_match=applicable, all on that same id). Cross-candidate satisfaction is thereby detectable by inspection of the trace, not by trust.
 
 ### 8.2 Validation is split into two evidence classes (so "independently recomputable" is true, not ceremonial)
@@ -193,6 +196,8 @@ Each criterion in either artifact is a record:
 { criterion_id, status, evidence_artifact, evidence_pointer, details }
 ```
 `evidence_artifact` names where the evidence lives (the sidecar, the manifest, the git status capture, the rendered report); `evidence_pointer` locates it within that artifact. **The report's §9.1 pass/fail table is COPIED FROM `431_validation.json` + `431_repository_seam_check.json`, never authored.** `run_431_selection_measurement.py` (or `validate_431.py`) computes the measurement class; a small seam-checker computes the artifact/seam class from the repo, manifest, and rendered report. Both are reviewable code.
+
+**Runtime seam capture (reconstruction proves nothing).** The harness captures `git status --porcelain cam/` **inside the measurement process, immediately before the first model call and immediately after the final model call**, together with timestamps and the repository commit hash, into a runtime capture record (`431_runtime_seam_capture.json`). The seam checker CONSUMES these captured records; it **may not reconstruct the pre-run `cam/` state after execution** — a clean tree observed afterward is not evidence the tree was clean during the run.
 
 ### 8.3 `completeness_provenance` is set to `status: not_established` (Part A §6.4)
 Part B cannot measure recall, so it cannot establish document completeness. **Therefore NO terminal `unsatisfied_*` may be emitted.** Every no-qualifying-candidate outcome is `review_needed_no_qualifying_candidate`. (Validator checks this.)
@@ -226,6 +231,8 @@ Findings about the models; if all three make the same honest mistake the mechani
 - Whether Atreca's cand_01/02/03 each produced a qualifying single candidate and certified — an OBSERVATION (can the mechanism certify a clean case), NOT a criterion. If not, a recorded finding, not a failure.
 - Envelope sufficiency (§10): char distance from cand_04 to the §3.3 clause; whether the frozen envelope included it; resulting basis classification or `insufficient_context`.
 
+**A high rate of `review_needed_disagreement` is an observed model-agreement result under the frozen panel, not a mechanism failure.** With Role B at provider-default temperature 1, unanimity across three models on six enum fields may be uncommon — and that is itself the finding. The mechanism fails only if disagreement is hidden, discarded, or improperly certified; preserving and routing it is the mechanism working as designed (Part A spine). Do not read a high review-needed rate as malfunction, and do not touch the frozen threshold mid-measurement to reduce it.
+
 **Claim bound (verbatim in report):** reduction-to-practice of governed semantic selection on these four forcing cases only — not general accuracy, not correctness across leases, not elimination of correlated error, not readiness to wire, not closure of Supplement #26 §7's semantic-verifiability boundary.
 
 ---
@@ -244,7 +251,7 @@ cand_04's 22.4% span does not reveal its basis; Atlas §3.3 does (430 §5b): `Te
 ---
 
 ## 12. Files
-Stage 1 (build): `431_selector_prompt.txt`, `431_output_schema.json`, `431_requirement_profiles.json`, `431_measurement_config.json`, `run_431_selection_measurement.py` (+ optional `validate_431.py`), `431_fixture_preflight.json`, `431_config_manifest.json`. Stage 2 (run): `431_selection_measurement_sidecar.json`, `431_selection_measurement.md`. All under `build_log/`. No `cam/` file touched.
+Stage 1 (build): `431_selector_prompt.txt`, `431_output_schema.json`, `431_requirement_profiles.json`, `431_measurement_config.json`, `run_431_selection_measurement.py` (+ optional `validate_431.py` and seam-checker), `431_fixture_preflight.json`, `431_config_manifest.json`. Stage 2 (run): `431_selection_measurement_sidecar.json`, `431_runtime_seam_capture.json` (§8.2, captured in-process), `431_validation.json` (§8.2 measurement class), `431_repository_seam_check.json` (§8.2 artifact/seam class), `431_selection_measurement.md` (report). All under `build_log/`. No `cam/` file touched.
 
 ---
 
@@ -253,4 +260,4 @@ Ratifying THIS document authorizes **Stage 1 build only, zero model calls.** The
 
 ---
 
-*Part B v3 — preregistration package build instruction for governed evidence-selection measurement. Ratifying this authorizes Stage-1 build only (zero model calls); the measurement becomes preregistered and the run sanctioned separately after prompt/schema/profiles/config/fixtures are reviewed and hashed. Five aligned parameter-series per lease/parameter (no cross-series pooling); validation split across sidecar and repo/manifest/report so every mechanism criterion has an evidence pointer; canonical target 105 primary calls (90 if cand_06 excluded).*
+*Part B v3.1 — preregistration package build instruction for governed evidence-selection measurement (v3 + four micro-edits: §0 refs, series indices in the trace schema, runtime seam capture + artifact inventory, cand_06 offset pinned; plus the disagreement-is-not-failure note). Ratifying this authorizes Stage-1 build only (zero model calls); the measurement becomes preregistered and the run sanctioned separately after prompt/schema/profiles/config/fixtures are reviewed and hashed. Five aligned parameter-series per lease/parameter (no cross-series pooling); validation split across sidecar and repo/manifest/report so every mechanism criterion has an evidence pointer; canonical target 105 primary calls (90 if cand_06 excluded).*
