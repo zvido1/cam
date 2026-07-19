@@ -1,0 +1,126 @@
+You are analyzing one passage from a commercial lease.
+
+You will be shown:
+  - an opaque identifier for the passage,
+  - the passage itself,
+  - an identifier for a surrounding block of text from the same document,
+  - that surrounding text, supplied only to help you interpret the passage,
+  - the name of a parameter family.
+
+Your task is to CLASSIFY the passage along the dimensions defined in the output
+schema, and to ground every classification in text you quote verbatim.
+
+You are not being asked whether the passage is correct, adequate, favorable,
+risky, or material. You are not being asked to choose between passages. You are
+not being asked to reach any particular conclusion. You are describing what this
+passage establishes, and what role it plays, on the evidence in front of you.
+
+────────────────────────────────────────────────────────────────────────
+WHAT TO CLASSIFY
+────────────────────────────────────────────────────────────────────────
+
+For the parameter family named below, classify:
+
+1. Whether this passage is genuinely evidence bearing on that parameter family
+   at all (topical relevance — not whether it is sufficient, and not whether it
+   matches any particular requirement).
+
+2. Whether the supplied text shows that the contractual mechanism named by that
+   parameter family operates in this document.
+
+3. What charge basis, if any, the passage establishes the proportion is taken
+   against — where the parameter family is one that has a charge basis. Report
+   what the text establishes. If the text does not establish a basis, say so.
+   If more than one basis is established, report all of them. Do not infer a
+   basis that the quoted text does not state.
+
+4. What scope or denominator the proportion is measured against, where the
+   parameter family has one.
+
+5. The drafting role of the passage.
+
+6. Whether the passage itself carries the numeric quantity for that parameter
+   family, or directs the reader elsewhere for it, or carries neither.
+
+The permitted values for each dimension, and their definitions, are in the
+output schema. Use only those values.
+
+────────────────────────────────────────────────────────────────────────
+GROUNDING RULES — these are the point of the exercise
+────────────────────────────────────────────────────────────────────────
+
+* Quote verbatim. Every quote you supply must appear character-for-character in
+  the text you were given. Do not paraphrase, normalize whitespace, correct
+  apparent typos, or elide with ellipses. A quote that does not match the source
+  exactly will be discarded.
+
+* Keep candidate quotes and context quotes separate. Quotes drawn from the
+  passage go in candidate_citations. Quotes drawn from the surrounding text go
+  in context_citations.
+
+* Ground each field individually. In field_support, list the citation ids that
+  support your answer for each field. If you cannot point to a quote that
+  supports a field, answer "unclear" for that field rather than asserting it.
+  An asserted field with no supporting citation will be discarded, so an
+  ungrounded guess costs you the field and gains nothing.
+
+* Answer only from the text supplied. The surrounding text is a bounded excerpt,
+  not the whole document.
+
+────────────────────────────────────────────────────────────────────────
+WHEN YOU CANNOT TELL — READ THIS BEFORE ANSWERING
+────────────────────────────────────────────────────────────────────────
+
+"insufficient_context" and "unclear" are correct, permitted, fully acceptable
+answers. They are not failures and they are not penalized. They are also not
+preferred — do not reach for them when the text supports a determinate answer.
+Classify what the text establishes; abstain where it does not.
+
+In particular:
+
+* If the language that would establish whether the mechanism operates could lie
+  outside the text you were shown, answer "insufficient_context". Do NOT answer
+  "does_not_support_mechanism".
+
+* "does_not_support_mechanism" means the supplied text affirmatively shows the
+  mechanism does not operate here. It does NOT mean "I did not see it in the
+  excerpt I was given."
+
+* You cannot conclude that something is absent from the lease. You are seeing a
+  bounded excerpt. Absence from your excerpt is not absence from the document.
+
+Guessing is worse than abstaining. A confident answer you cannot quote is the
+one outcome this task is designed to exclude.
+
+────────────────────────────────────────────────────────────────────────
+INPUT
+────────────────────────────────────────────────────────────────────────
+
+PARAMETER FAMILY: {parameter_family_label}
+
+CHARGE BASIS DIMENSION: {charge_basis_applicability}
+CHARGE SCOPE DIMENSION: {charge_scope_applicability}
+
+PASSAGE ID: {candidate_span_id}
+PASSAGE:
+<<<PASSAGE_START>>>
+{candidate_text}
+<<<PASSAGE_END>>>
+
+SURROUNDING TEXT ID: {context_envelope_id}
+SURROUNDING TEXT (for interpretation only; quotes from here go in context_citations):
+<<<CONTEXT_START>>>
+{context_text}
+<<<CONTEXT_END>>>
+
+────────────────────────────────────────────────────────────────────────
+OUTPUT
+────────────────────────────────────────────────────────────────────────
+
+Respond with valid JSON only, conforming exactly to this schema. No prose before
+or after the JSON. No markdown code fences.
+
+Echo candidate_span_id and context_envelope_id back unchanged.
+
+SCHEMA:
+{output_schema}

@@ -1,0 +1,18 @@
+{
+  "_artifact": "431_config_manifest.json",
+  "_purpose": "The reviewed config IS the run config. Any artifact edited after Stage-1 review changes its hash, changes the self-hash, and voids the Stage-2 sanction token (\u00a71).",
+  "generated_utc": "2026-07-19T21:31:36.516298+00:00",
+  "stage": 1,
+  "model_calls_made": 0,
+  "artifact_hashes": {
+    "431_measurement_config.json": "d64e3020033b29f97936ed15162b59528ade5947970535fc562972d1f230f8f0",
+    "431_requirement_profiles.json": "f8806d14de6cb19a655b59b25197696f210a72238e0e773a67d936ddb89ad4ec",
+    "431_output_schema.json": "79a354fb2011bc17af5eaca9e371f12b67f17a17c0ea554f0b6283287b45a8d0",
+    "431_selector_prompt.txt": "4c9dcb1e82a2ed1161896ceb90f68ac8a7da3b683f734880ae07b43f1397c40b",
+    "431_fixture_preflight.json": "1e1002c8f05e5af993da6c70e80881bea809c8fcf6aaf49738daffc83dccbc01",
+    "run_431_selection_measurement.py": "0240eec3b03c93c4484f1ef4c9dc681d47746407bda2002b5a00f78aede6f988"
+  },
+  "manifest_self_hash_of_artifact_hashes": "9e7a2d1cf4e0266dca30e400925824bed7de7b9be1bf831c4044ad8498813a2c",
+  "stage2_sanction_token": "9e7a2d1cf4e0266dca30e400925824bed7de7b9be1bf831c4044ad8498813a2c",
+  "_how_to_sanction": "Stage 2 is invoked as: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>"
+}

@@ -1,0 +1,167 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "431 panelist judgment — one (candidate + envelope) x parameter",
+  "_artifact": "431_output_schema.json",
+  "_authority": "build_log/431_partB_measurement_instruction.md (v3.1, RATIFIED 2026-07-19) §5; contract from Part A §4.1",
+  "_notes": [
+    "additionalProperties:false at every level is the structural enforcement (mirrors the 423C elicitation schema): a verdict, risk, materiality, or provision-id field fails validation rather than being silently accepted.",
+    "Enums are CLOSED. Where a value outside the set is genuinely needed, 'other' + the matching free-text description field is the only escape hatch (Part A §4.1) — never an open list.",
+    "'not_applicable' is schema-fixed for parameters where a dimension is not a meaningful attribute. It is NOT 'none' and NOT 'unclear'.",
+    "field_support maps each substantive semantic field to the citation ids that ground it. Empty support, or support whose quotes do not resolve, invalidates that field for that evaluator (Part A §4.5) — it is not a confidence reduction."
+  ],
+
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "candidate_span_id",
+    "context_envelope_id",
+    "parameter_family_relevance",
+    "candidate_support_state",
+    "text_role",
+    "value_completeness",
+    "charge_basis_components",
+    "charge_scope",
+    "candidate_citations",
+    "context_citations",
+    "field_support",
+    "reason",
+    "confidence"
+  ],
+
+  "properties": {
+    "candidate_span_id": {
+      "type": "string",
+      "description": "The opaque candidate identifier supplied in the payload. Echo it back unchanged."
+    },
+    "context_envelope_id": {
+      "type": "string",
+      "description": "The opaque envelope identifier supplied in the payload. Echo it back unchanged."
+    },
+
+    "parameter_family_relevance": {
+      "type": "string",
+      "enum": ["relevant", "not_relevant", "unclear"],
+      "description": "Is this passage genuinely evidence bearing on the stated parameter family? This is an INCLUSION judgment about topical relevance. It is NOT a judgment about whether the passage matches any required charge basis, and NOT a judgment about whether it is sufficient."
+    },
+
+    "candidate_support_state": {
+      "type": "string",
+      "enum": ["supports_mechanism", "does_not_support_mechanism", "insufficient_context", "unclear"],
+      "description": "Does the supplied text (candidate + envelope ONLY) show that the contractual mechanism named by the parameter family operates in this document? If the establishing language could lie outside the supplied text, answer insufficient_context. Never infer document-wide absence from the bounded text you were given."
+    },
+
+    "text_role": {
+      "type": "string",
+      "enum": ["operative_term", "definition", "narrative", "unclear"],
+      "description": "The drafting role of the candidate passage. operative_term = language that itself creates, imposes, or fixes an obligation, right, or quantity. definition = language that assigns a meaning to a defined term. narrative = language that describes, explains, or comments on other provisions rather than itself creating or fixing anything. unclear = cannot be determined from the supplied text."
+    },
+
+    "value_completeness": {
+      "type": "string",
+      "enum": ["self_contained", "cross_reference_only", "no_value", "unclear"],
+      "description": "Does the candidate passage itself carry the numeric quantity for this parameter family? self_contained = the quantity appears in the candidate text itself. cross_reference_only = the candidate directs the reader elsewhere for the quantity rather than stating it. no_value = neither a quantity nor a direction to one. unclear = cannot be determined."
+    },
+
+    "charge_basis_components": {
+      "description": "Which charge base(s) the candidate establishes the proportion is taken against. Use the array form for share-type parameters. Use the string 'not_applicable' where the payload states this dimension does not apply to the parameter family. 'none' means no basis was found; 'unclear' means it could not be determined. These three are distinct and must not be merged.",
+      "oneOf": [
+        {
+          "type": "array",
+          "uniqueItems": true,
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["operating_expenses", "CAM", "taxes", "insurance", "other"]
+          }
+        },
+        {"type": "string", "enum": ["none", "unclear", "not_applicable"]}
+      ]
+    },
+    "other_basis_description": {
+      "type": "string",
+      "description": "Required only when charge_basis_components includes 'other'. Free text naming the basis actually found."
+    },
+
+    "charge_scope": {
+      "type": "string",
+      "enum": ["building", "project", "premises", "other", "unclear", "not_applicable"],
+      "description": "The denominator/scope the proportion is measured against, where the parameter family has one."
+    },
+    "other_scope_description": {
+      "type": "string",
+      "description": "Required only when charge_scope is 'other'. Free text naming the scope actually found."
+    },
+
+    "candidate_citations": {
+      "type": "array",
+      "description": "Verbatim quotes taken from the CANDIDATE text only. Each quote must appear character-for-character in the candidate text.",
+      "items": {"$ref": "#/definitions/citation"}
+    },
+    "context_citations": {
+      "type": "array",
+      "description": "Verbatim quotes taken from the CONTEXT text only. Each quote must appear character-for-character in the context text.",
+      "items": {"$ref": "#/definitions/citation"}
+    },
+
+    "field_support": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "For each substantive semantic field, the citation ids that ground your judgment on THAT field. A field you assert substantively must list at least one citation id here. If you cannot ground a field in a quote, answer 'unclear' for that field rather than asserting it without support.",
+      "required": [
+        "parameter_family_relevance",
+        "candidate_support_state",
+        "charge_basis_components",
+        "charge_scope",
+        "text_role",
+        "value_completeness"
+      ],
+      "properties": {
+        "parameter_family_relevance": {"$ref": "#/definitions/support_entry"},
+        "candidate_support_state": {"$ref": "#/definitions/support_entry"},
+        "charge_basis_components": {"$ref": "#/definitions/support_entry"},
+        "charge_scope": {"$ref": "#/definitions/support_entry"},
+        "text_role": {"$ref": "#/definitions/support_entry"},
+        "value_completeness": {"$ref": "#/definitions/support_entry"}
+      }
+    },
+
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One to three sentences. Ground each field you assert in the quotes you cited."
+    },
+
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    }
+  },
+
+  "definitions": {
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["citation_id", "quote"],
+      "properties": {
+        "citation_id": {
+          "type": "string",
+          "description": "A short identifier unique within this response, e.g. cc1, xc1. Referenced from field_support."
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Verbatim text copied exactly from the supplied passage. Do not paraphrase, normalize, reformat, or elide with ellipses."
+        }
+      }
+    },
+    "support_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_citation_ids", "context_citation_ids"],
+      "properties": {
+        "candidate_citation_ids": {"type": "array", "items": {"type": "string"}},
+        "context_citation_ids": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}

@@ -1,0 +1,210 @@
+{
+  "_artifact": "431_requirement_profiles.json",
+  "_version": "431_reqprofiles_v1",
+  "_authority": "build_log/431_partB_measurement_instruction.md (v3.1, RATIFIED 2026-07-19) §4",
+
+  "_declaration_of_independence_from_fixtures": [
+    "Each rule below states a GENERAL commercial requirement for the parameter type, expressed as a deterministic computation over the panel's returned classification fields.",
+    "No rule references a fixture, a lease, a candidate id, a document value, or an expected outcome.",
+    "No rule contains a lease literal (no percentage, no dollar figure, no clause number, no party name).",
+    "The reviewer test (§4): can you tell each requirement apart from the outcome we expect on the seeded candidates? If a requirement can only be justified by pointing at what cand_0N should produce, it is an answer key in schema form and is WRONG.",
+    "These profiles are compared against the panel's output by CODE, AFTER blind classification (Part A §4.2 part 2). They are never shown to a model."
+  ],
+
+  "_evaluation_semantics": {
+    "operators": {
+      "set_equals": "returned set equals the literal set exactly (order-insensitive, duplicate-insensitive)",
+      "equals": "scalar equality",
+      "in": "scalar membership in a literal list",
+      "and": "all operands true",
+      "or": "any operand true",
+      "not": "negation",
+      "is_non_empty_set": "returned set has >= 1 member and is not 'none'/'unclear'/'not_applicable'",
+      "field": "read a named field from the merged candidate_semantic_result",
+      "deterministic": "read a code-computed deterministic check, not a model field"
+    },
+    "tri_state_rule": "Any operand whose underlying field is 'unclear', 'not_assessable', or was invalidated by field-grounding failure (Part A §4.5) evaluates the predicate to 'undeterminable', NEVER to false. undeterminable never yields a match and never yields a terminal negative.",
+    "not_applicable_rule": "'not_applicable' is a schema-fixed value meaning the dimension is not a meaningful attribute of this parameter. It is NOT 'none' and NOT 'unclear', and it satisfies a requirement that declares it."
+  },
+
+  "profiles": {
+
+    "tenant_share": {
+      "_requirement_in_one_line": "A tenant's share parameter must state the tenant's proportional share OF OPERATING EXPENSES specifically, as an operative contractual term carrying its own percentage.",
+      "_why_this_is_the_general_requirement_not_an_answer_key": "A share expressed against a different charge base (taxes, CAM, insurance) is a different commercial quantity with a different economic effect on the tenant; a dependency declared for operating-expense exposure is not satisfied by a tax-base share. This holds for any lease, including leases where the opex share is the only share present and the rule is trivially satisfied.",
+
+      "basis_match": {
+        "rule": "match iff charge_basis_components set_equals exactly {operating_expenses}",
+        "computation": {
+          "match": {"set_equals": [{"field": "charge_basis_components"}, ["operating_expenses"]]},
+          "mismatch": "any returned set that is non-empty, fully determined, and NOT exactly {operating_expenses} — including a SUPERSET such as {operating_expenses, taxes} (a blended base is not an operating-expense base)",
+          "undeterminable": "charge_basis_components is unclear, or invalidated by field-grounding failure",
+          "not_applicable": "never for this parameter"
+        }
+      },
+
+      "charge_scope": {
+        "rule": "RECORDED AS METADATA ONLY — does NOT gate qualification in v1",
+        "gates_qualification": false,
+        "_explicit_note": "Stated explicitly rather than left silently either-way (§4). Scope (building vs project vs premises) is captured for observation but no v1 requirement turns on it."
+      },
+
+      "text_role_ok": {
+        "rule": "text_role equals operative_term",
+        "computation": {"equals": [{"field": "text_role"}, "operative_term"]},
+        "_why": "A parameter dependency must be satisfied by a term that operates, not by a definition that points elsewhere or a narrative description of one."
+      },
+
+      "value_ok": {
+        "rule": "value_completeness is self_contained AND the deterministic value-token check passes on this same candidate",
+        "computation": {"and": [
+          {"equals": [{"field": "value_completeness"}, "self_contained"]},
+          {"deterministic": "value_token_present"}
+        ]},
+        "_why": "A share parameter that does not carry its own figure has not supplied the quantity the dependent provision needs."
+      },
+
+      "support_ok": {
+        "rule": "candidate_support_state equals supports_mechanism",
+        "computation": {"equals": [{"field": "candidate_support_state"}, "supports_mechanism"]}
+      },
+
+      "relevance_ok": {
+        "rule": "parameter_family_relevance equals relevant, unanimously across the panel",
+        "computation": {"and": [
+          {"equals": [{"field": "parameter_family_relevance"}, "relevant"]},
+          {"equals": [{"field": "agreement_by_field.parameter_family_relevance"}, "unanimous"]}
+        ]},
+        "_why": "Part A §5.1/§6.3: minority relevance RETAINS evidence but does not CERTIFY."
+      },
+
+      "applicability_match": {
+        "rule": "applicable iff the candidate's identity/support fit the share concept — INDEPENDENT of whether it carries a value",
+        "computation": {"applicable": {"and": [
+          {"is_non_empty_set": {"field": "charge_basis_components"}},
+          {"equals": [{"field": "candidate_support_state"}, "supports_mechanism"]}
+        ]}},
+        "value_ok_is_forbidden_as_an_input": true,
+        "_why": "Part A §6.2: requiring value_ok for applicability is the circularity the review forbade. A candidate may establish that a share mechanism APPLIES in this document while being not_qualified to SATISFY the parameter.",
+        "not_applicable_requires": "completeness_provenance.status == established — otherwise a negative is not_assessable, never not_applicable"
+      }
+    },
+
+    "building_share": {
+      "_status": "DECLARED BUT UNEXERCISED — no candidate is seeded for this parameter (§6.1). Profile present so the parameter set is complete and the omission is visible rather than silent.",
+      "_requirement_in_one_line": "A building's share parameter must state the building's proportional share of PROJECT operating expenses as an operative contractual term carrying its own percentage.",
+      "basis_match": {
+        "rule": "match iff charge_basis_components set_equals exactly {operating_expenses}",
+        "computation": {"match": {"set_equals": [{"field": "charge_basis_components"}, ["operating_expenses"]]}}
+      },
+      "charge_scope": {"rule": "RECORDED AS METADATA ONLY — does NOT gate qualification in v1", "gates_qualification": false},
+      "text_role_ok": {"computation": {"equals": [{"field": "text_role"}, "operative_term"]}},
+      "value_ok": {"computation": {"and": [
+        {"equals": [{"field": "value_completeness"}, "self_contained"]},
+        {"deterministic": "value_token_present"}
+      ]}},
+      "support_ok": {"computation": {"equals": [{"field": "candidate_support_state"}, "supports_mechanism"]}},
+      "relevance_ok": {"computation": {"and": [
+        {"equals": [{"field": "parameter_family_relevance"}, "relevant"]},
+        {"equals": [{"field": "agreement_by_field.parameter_family_relevance"}, "unanimous"]}
+      ]}},
+      "applicability_match": {"computation": {"applicable": {"and": [
+        {"is_non_empty_set": {"field": "charge_basis_components"}},
+        {"equals": [{"field": "candidate_support_state"}, "supports_mechanism"]}
+      ]}}, "value_ok_is_forbidden_as_an_input": true}
+    },
+
+    "base_rent": {
+      "_requirement_in_one_line": "A base rent parameter must be an operative rent term that carries its own rent figure, not a definition that cross-references the figure elsewhere.",
+      "_why_this_is_the_general_requirement_not_an_answer_key": "A downstream provision depending on base rent needs the amount. A definitional stub naming the term while pointing to another section has not supplied it — this is true of any lease drafted with a definitions article, and would equally disqualify a stub in the lease the block was built on.",
+
+      "basis_match": {
+        "rule": "not_applicable — charge basis is not a meaningful attribute of base rent",
+        "schema_fixed_value": "not_applicable",
+        "computation": {"not_applicable": true},
+        "_note": "Per Part A §4.1. Because this is schema-fixed, the field is exempt from the §4.5 field_support grounding requirement."
+      },
+
+      "text_role_ok": {
+        "rule": "text_role equals operative_term",
+        "computation": {"equals": [{"field": "text_role"}, "operative_term"]},
+        "_why": "A definition role, by itself, does not operate to fix the rent."
+      },
+
+      "value_ok": {
+        "rule": "value_completeness is self_contained AND the deterministic value-token check passes on this same candidate",
+        "computation": {"and": [
+          {"equals": [{"field": "value_completeness"}, "self_contained"]},
+          {"deterministic": "value_token_present"}
+        ]},
+        "_consequence": "A candidate classified cross_reference_only or no_value fails this predicate and is not_qualified. This follows from the rule; it is not a per-candidate expectation."
+      },
+
+      "support_ok": {"computation": {"equals": [{"field": "candidate_support_state"}, "supports_mechanism"]}},
+
+      "relevance_ok": {"computation": {"and": [
+        {"equals": [{"field": "parameter_family_relevance"}, "relevant"]},
+        {"equals": [{"field": "agreement_by_field.parameter_family_relevance"}, "unanimous"]}
+      ]}},
+
+      "applicability_match": {
+        "rule": "applicable iff a candidate's text_role names/establishes the base-rent concept as a term of this lease — INDEPENDENT of whether it carries a value",
+        "computation": {"applicable": {"and": [
+          {"in": [{"field": "text_role"}, ["operative_term", "definition"]]},
+          {"not": {"equals": [{"field": "candidate_support_state"}, "does_not_support_mechanism"]}}
+        ]}},
+        "value_ok_is_forbidden_as_an_input": true,
+        "_why": "Part A §6.2 worked example: a definition stub CAN establish that a base-rent mechanism applies in this lease (positive applicability) while being not_qualified to satisfy the parameter. Excluding 'definition' here would recreate the circularity."
+      }
+    },
+
+    "rent_adjustment_pct": {
+      "_requirement_in_one_line": "A rent adjustment parameter must be an operative escalation term carrying its own rate, not a narrative description of a schedule.",
+      "_why_this_is_the_general_requirement_not_an_answer_key": "A contractual escalation rate binds; a sentence describing what a schedule approximately reflects does not create the obligation and may be an inexact summary of it. The distinction between an operative rate and a descriptive aside is a general drafting distinction, not a property of any one document.",
+
+      "basis_match": {
+        "rule": "not_applicable — charge basis is not a meaningful attribute of a rent adjustment rate",
+        "schema_fixed_value": "not_applicable",
+        "computation": {"not_applicable": true},
+        "_note": "Per Part A §4.1. Schema-fixed, therefore exempt from the §4.5 grounding requirement."
+      },
+
+      "text_role_ok": {
+        "rule": "text_role equals operative_term",
+        "computation": {"equals": [{"field": "text_role"}, "operative_term"]},
+        "_consequence": "A candidate classified narrative fails this predicate. This is the case-4 discriminator ENCODED AS A RULE about drafting, not as an expected outcome for any candidate."
+      },
+
+      "value_ok": {
+        "rule": "value_completeness is self_contained AND the deterministic value-token check passes on this same candidate",
+        "computation": {"and": [
+          {"equals": [{"field": "value_completeness"}, "self_contained"]},
+          {"deterministic": "value_token_present"}
+        ]}
+      },
+
+      "support_ok": {"computation": {"equals": [{"field": "candidate_support_state"}, "supports_mechanism"]}},
+
+      "relevance_ok": {"computation": {"and": [
+        {"equals": [{"field": "parameter_family_relevance"}, "relevant"]},
+        {"equals": [{"field": "agreement_by_field.parameter_family_relevance"}, "unanimous"]}
+      ]}},
+
+      "applicability_match": {
+        "rule": "applicable iff a candidate establishes a rent-adjustment mechanism as a term of this lease — INDEPENDENT of whether it carries a value",
+        "computation": {"applicable": {"and": [
+          {"in": [{"field": "text_role"}, ["operative_term", "definition"]]},
+          {"not": {"equals": [{"field": "candidate_support_state"}, "does_not_support_mechanism"]}}
+        ]}},
+        "value_ok_is_forbidden_as_an_input": true
+      }
+    }
+  },
+
+  "_qualification_rule": {
+    "candidate_qualification": "qualified iff relevance_ok AND basis_match in {match, not_applicable} AND text_role_ok AND value_ok AND support_ok — ALL evaluated on the SAME candidate",
+    "cross_candidate_assembly_permitted": false,
+    "certification": "satisfied iff SOME SINGLE candidate is qualified AND applicability_match == applicable; otherwise the outcome is a review_needed_* state per the certification policy",
+    "terminal_negative_gate": "no unsatisfied_* state may be emitted unless completeness_provenance.status == established (this measurement sets not_established, so none may be emitted)"
+  }
+}

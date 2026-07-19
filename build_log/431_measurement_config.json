@@ -1,0 +1,155 @@
+{
+  "_artifact": "431_measurement_config.json",
+  "_stage": "Stage 1 preregistration package — BUILD ONLY, zero model calls",
+  "_authority": "build_log/431_partB_measurement_instruction.md (v3.1, RATIFIED 2026-07-19) §3",
+  "_note": "Every value here is FROZEN by the ratified instruction, not chosen after seeing fixtures. selector_config_hash is meaningful only because these are concrete.",
+
+  "context_policy_version": "431_envelope_v1",
+
+  "envelope": {
+    "max_context_chars": 2000,
+    "algorithm": "block_expand_then_symmetric_char_window",
+    "algorithm_steps": [
+      "1. Start from the candidate span [start_char, end_char) in the canonical text.",
+      "2. If the parser deterministically yields a containing block boundary, expand to that containing block.",
+      "3. Continue adding ADJACENT COMPLETE blocks (alternating outward) while total context length <= max_context_chars.",
+      "4. If no reliable block boundary is available, fall back to a fixed character window of max_context_chars CENTERED on the candidate: allocate half the remaining budget to each side (symmetric).",
+      "5. Truncate at document bounds; set truncated_left / truncated_right accordingly."
+    ],
+    "char_window_allocation": "symmetric",
+    "block_boundary_source": "parser_deterministic_only",
+    "forbidden_expansions": [
+      "by parameter type",
+      "by expected charge basis",
+      "by model request",
+      "tuning the budget to reach a known clause (explicitly forbidden by §10)"
+    ],
+    "records_per_candidate": [
+      "source_document_hash",
+      "primary_start_char",
+      "primary_end_char",
+      "context_start_char",
+      "context_end_char",
+      "boundary_method",
+      "max_context_chars",
+      "context_policy_version",
+      "truncated_left",
+      "truncated_right"
+    ]
+  },
+
+  "attempt_ceiling": 10,
+  "attempt_ceiling_scope": "per candidate",
+  "canonical_target_per_candidate": 5,
+
+  "value_token_detector": {
+    "version": "431_valuetok_v1",
+    "_discipline": "SHAPE ONLY. No lease literal appears in any pattern. These detect the SHAPE of a value token, never a specific figure. A pattern containing a document value (e.g. a specific dollar amount or percentage from either fixture) would be an answer key and is forbidden by §3 and 427 doctrine.",
+    "patterns": {
+      "currency": "\\$\\s?\\d{1,3}(?:,\\d{3})*(?:\\.\\d+)?",
+      "percentage": "\\d+(?:\\.\\d+)?\\s?%",
+      "rate_phrase": "per\\s+rentable\\s+square\\s+foot|per\\s+annum|per\\s+month|per\\s+square\\s+foot"
+    },
+    "rate_requires_adjacent_currency": true,
+    "rate_adjacency_window_chars": 40,
+    "value_token_present_rule": "true iff (currency matches) OR (percentage matches) OR (rate_phrase matches AND a currency token occurs within rate_adjacency_window_chars of it)",
+    "regex_flags": ["IGNORECASE"]
+  },
+
+  "certification_policy": {
+    "version": "431_certpolicy_v1",
+    "agreement_threshold": "unanimous_required",
+    "_threshold_rationale": "Part A §6.3 forbids an implicit majority default. The final threshold is deferred until Part B shows real disagreement distributions; a STRICTER-than-final threshold is safe and preloads nothing. This choice is recorded, not silently defaulted.",
+    "non_unanimous_routes_to": "review_needed_disagreement",
+    "satisfied_requires": [
+      "relevance_ok",
+      "basis_match == match",
+      "text_role_ok",
+      "value_ok",
+      "support_ok",
+      "applicability_match == applicable"
+    ],
+    "satisfied_requires_all_on_same_candidate_id": true,
+    "cross_candidate_assembly_permitted": false,
+    "terminal_negative_requires_completeness_established": true,
+    "completeness_status_this_measurement": "not_established",
+    "_completeness_note": "Part B cannot measure candidate-generation recall (§3.1/§8.3), therefore NO terminal unsatisfied_* may be emitted. Every no-qualifying-candidate outcome is review_needed_no_qualifying_candidate."
+  },
+
+  "panel": {
+    "_source": "imported from cam.adapters.lease_review.lease_coverage_305.EVALUATOR_LINEUP_305 — never redefined here",
+    "roles": ["A", "B", "C"],
+    "canonical_rule": "an attempt is canonical iff actual provider AND actual model equal the frozen primary AND config_hash equals the reviewed config hash",
+    "temperature_truth": "identity-frozen and config-integrity-asserted, NOT uniformly temperature-zero. A and C transmit temperature 0.0; B (gpt-5.5) is in TEMPERATURE_ONLY_DEFAULT_MODELS and runs at provider-default temperature under the documented 415/416 capability exception (omission is logged, not silent).",
+    "no_deterministic_sampling_claim": true,
+    "reproducibility_claim": "identity-frozen panel observed over N=5 canonical attempts per candidate — NOT 'temp 0 therefore identical'"
+  },
+
+  "series": {
+    "canonical_attempts_per_candidate": 5,
+    "indices_recorded": ["raw_attempt_index", "canonical_attempt_index", "series_index"],
+    "certification_rule": "parameter certification for series index k consumes ONLY the kth canonical panel result from each admitted candidate for that lease/parameter",
+    "cross_series_pooling_permitted": false,
+    "cross_candidate_vote_pooling_permitted": false,
+    "shortfall_rule": "if a required candidate lacks canonical index k, that parameter-series result is reported as a canonical-N shortfall — never filled from another series"
+  },
+
+  "parameter_family_labels": {
+    "_discipline": "MODEL-FACING TEXT. These name the parameter family neutrally. None states a required charge basis, a required drafting role, or a required value condition — those are the dimensions being measured and must not appear here. None verbatim-matches a distinctive defined term from either fixture, so no label functions as a string-match hint toward a seeded candidate.",
+    "_dimension_flags_are_schema_fixed": "charge_basis_applicability / charge_scope_applicability are fixed by Part A §4.1 per parameter family (not_applicable where the dimension is not a meaningful attribute). They tell the model which dimensions exist for this family; they assert nothing about the answer.",
+    "tenant_share": {
+      "label": "tenant's share — the proportion of a charge or cost category allocated to the tenant",
+      "charge_basis_applicability": "applies — classify the charge basis this passage establishes",
+      "charge_scope_applicability": "applies — classify the scope the proportion is measured against"
+    },
+    "building_share": {
+      "label": "building's share — the proportion of a charge or cost category allocated to the building within a larger property",
+      "charge_basis_applicability": "applies — classify the charge basis this passage establishes",
+      "charge_scope_applicability": "applies — classify the scope the proportion is measured against"
+    },
+    "base_rent": {
+      "label": "base rent — the recurring rent payable for the premises",
+      "charge_basis_applicability": "does not apply to this parameter family — answer not_applicable",
+      "charge_scope_applicability": "does not apply to this parameter family — answer not_applicable"
+    },
+    "rent_adjustment_pct": {
+      "label": "rent adjustment rate — the periodic rate at which rent changes over the term",
+      "charge_basis_applicability": "does not apply to this parameter family — answer not_applicable",
+      "charge_scope_applicability": "does not apply to this parameter family — answer not_applicable"
+    }
+  },
+
+  "prompt_payload_whitelist": {
+    "_rule": "§5 — the model-facing payload contains ONLY these fields. Anything else is a leak that voids the measurement while the mechanism appears to work perfectly.",
+    "permitted": [
+      "parameter_family_label",
+      "charge_basis_applicability",
+      "charge_scope_applicability",
+      "candidate_span_id (opaque)",
+      "candidate_text (raw)",
+      "context_envelope_id (opaque)",
+      "context_text (deterministic envelope)",
+      "output_schema"
+    ],
+    "forbidden": [
+      "the desired charge basis",
+      "any template or example value",
+      "any instruction to find a particular kind of share",
+      "any statement of a correct answer",
+      "any forcing-case label or number",
+      "any fixture or lease description or name",
+      "any expected text_role or value_completeness",
+      "any correctness hint or grading criterion",
+      "the human 'Candidate (human note)' column from §6.1",
+      "the parameter's internal name (tenant_share / base_rent / etc.)",
+      "any other candidate's text or the existence of competing candidates"
+    ]
+  },
+
+  "execution_gate": {
+    "stage": 1,
+    "model_calls_authorized": 0,
+    "live_run_requires": "separate explicit Stage-2 sanction of the exact hashed artifacts",
+    "harness_default_mode": "build"
+  }
+}

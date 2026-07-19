@@ -1,0 +1,217 @@
+{
+  "_artifact": "431_fixture_preflight.json",
+  "_authority": "431_partB_measurement_instruction.md \u00a76.2",
+  "_discipline": "RE-VERIFY, DO NOT RE-DISCOVER. Offsets are pinned. If a pinned span fails to re-resolve against the frozen hash, the candidate is excluded and fixture drift is reported \u2014 a fresh offset is never absorbed.",
+  "_determinism_note": "This artifact carries NO timestamp by design. It is a pure function of the pinned offsets, the frozen fixtures, and the frozen config, so its hash \u2014 and therefore the Stage-2 sanction token \u2014 is stable under a no-op rebuild and changes ONLY when something real changes. Build time is recorded in the manifest instead, where it does not enter the token. Without this, an incidental rebuild would silently void a token the reviewer had already sanctioned.",
+  "normalization_profile": "canonical_whitespace_v2",
+  "leases": {
+    "atreca": {
+      "source_document_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+      "canonical_text_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+      "frozen_hash_expected": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+      "hash_matches_frozen": true,
+      "canonical_len": 160145,
+      "normalization_profile": "canonical_whitespace_v2"
+    },
+    "atlas": {
+      "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+      "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+      "frozen_hash_expected": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+      "hash_matches_frozen": true,
+      "canonical_len": 31755,
+      "normalization_profile": "canonical_whitespace_v2"
+    }
+  },
+  "candidates": [
+    {
+      "candidate_id": "cand_01",
+      "lease": "atreca",
+      "parameter": "tenant_share",
+      "pinned_offsets": [
+        1942,
+        1996
+      ],
+      "expected_quote": "Tenant's Share of Operating Expenses of Building: 100%",
+      "resolved_text": "Tenant's Share of Operating Expenses of Building: 100%",
+      "offset_reresolves_to_expected_quote": true,
+      "full_quote_occurrence_count": 1,
+      "source_document_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+      "value_token_present": true,
+      "value_token_hits": [
+        "percentage"
+      ],
+      "admitted": true
+    },
+    {
+      "candidate_id": "cand_02",
+      "lease": "atreca",
+      "parameter": "base_rent",
+      "pinned_offsets": [
+        1695,
+        1815
+      ],
+      "expected_quote": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+      "resolved_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+      "offset_reresolves_to_expected_quote": true,
+      "full_quote_occurrence_count": 1,
+      "source_document_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+      "value_token_present": true,
+      "value_token_hits": [
+        "currency",
+        "rate_with_currency"
+      ],
+      "admitted": true
+    },
+    {
+      "candidate_id": "cand_03",
+      "lease": "atreca",
+      "parameter": "rent_adjustment_pct",
+      "pinned_offsets": [
+        2097,
+        2127
+      ],
+      "expected_quote": "Rent Adjustment Percentage: 3%",
+      "resolved_text": "Rent Adjustment Percentage: 3%",
+      "offset_reresolves_to_expected_quote": true,
+      "full_quote_occurrence_count": 1,
+      "source_document_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+      "value_token_present": true,
+      "value_token_hits": [
+        "percentage"
+      ],
+      "admitted": true
+    },
+    {
+      "candidate_id": "cand_04",
+      "lease": "atlas",
+      "parameter": "tenant_share",
+      "pinned_offsets": [
+        1738,
+        1889
+      ],
+      "expected_quote": "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building.",
+      "resolved_text": "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building.",
+      "offset_reresolves_to_expected_quote": true,
+      "full_quote_occurrence_count": 1,
+      "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+      "value_token_present": true,
+      "value_token_hits": [
+        "percentage"
+      ],
+      "admitted": true
+    },
+    {
+      "candidate_id": "cand_05",
+      "lease": "atlas",
+      "parameter": "base_rent",
+      "pinned_offsets": [
+        990,
+        1065
+      ],
+      "expected_quote": "\"Base Rent\" shall mean the annual rent payable as set forth in Section 3.1.",
+      "resolved_text": "\"Base Rent\" shall mean the annual rent payable as set forth in Section 3.1.",
+      "offset_reresolves_to_expected_quote": true,
+      "full_quote_occurrence_count": 1,
+      "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+      "value_token_present": false,
+      "value_token_hits": [],
+      "admitted": true
+    },
+    {
+      "candidate_id": "cand_06",
+      "lease": "atlas",
+      "parameter": "base_rent",
+      "pinned_offsets": [
+        3619,
+        3660
+      ],
+      "expected_quote": "$18.50 per rentable square foot per annum",
+      "resolved_text": "$18.50 per rentable square foot per annum",
+      "offset_reresolves_to_expected_quote": true,
+      "full_quote_occurrence_count": 1,
+      "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+      "unique_resolution_required": true,
+      "unique": true,
+      "uniqueness_note": "Uniqueness rests on the currency prefix; the bare rate phrase recurs once per lease year. Verified at preflight, not assumed.",
+      "value_token_present": true,
+      "value_token_hits": [
+        "currency",
+        "rate_with_currency"
+      ],
+      "admitted": true
+    },
+    {
+      "candidate_id": "cand_07",
+      "lease": "atlas",
+      "parameter": "rent_adjustment_pct",
+      "pinned_offsets": [
+        4248,
+        4327
+      ],
+      "expected_quote": "The above schedule reflects an annual escalation of approximately 3% per annum.",
+      "resolved_text": "The above schedule reflects an annual escalation of approximately 3% per annum.",
+      "offset_reresolves_to_expected_quote": true,
+      "full_quote_occurrence_count": 1,
+      "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+      "value_token_present": true,
+      "value_token_hits": [
+        "percentage"
+      ],
+      "admitted": true
+    }
+  ],
+  "admitted": [
+    "cand_01",
+    "cand_02",
+    "cand_03",
+    "cand_04",
+    "cand_05",
+    "cand_06",
+    "cand_07"
+  ],
+  "excluded": [],
+  "admitted_count": 7,
+  "projected_primary_calls": 105,
+  "all_candidates_admitted": true,
+  "panel_identity_at_build": {
+    "A": {
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-6",
+      "declared_temperature": 0.0,
+      "temperature_transmitted": true,
+      "own_chain": [
+        [
+          "anthropic",
+          "claude-haiku-4-5-20251001"
+        ]
+      ],
+      "own_chain_preserves_panel_identity": false
+    },
+    "B": {
+      "provider": "openai",
+      "model": "gpt-5.5",
+      "declared_temperature": 0.0,
+      "temperature_transmitted": false,
+      "own_chain": [
+        [
+          "openai",
+          "gpt-5.4"
+        ]
+      ],
+      "own_chain_preserves_panel_identity": false
+    },
+    "C": {
+      "provider": "xai",
+      "model": "grok-4.3",
+      "declared_temperature": 0.0,
+      "temperature_transmitted": true,
+      "own_chain": [
+        [
+          "xai",
+          "grok-4.3"
+        ]
+      ],
+      "own_chain_preserves_panel_identity": true
+    }
+  }
+}
