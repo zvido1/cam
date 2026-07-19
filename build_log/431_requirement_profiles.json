@@ -1,7 +1,7 @@
 {
   "_artifact": "431_requirement_profiles.json",
   "_version": "431_reqprofiles_v1",
-  "_authority": "build_log/431_partB_measurement_instruction.md (v3.1, RATIFIED 2026-07-19) §4",
+  "_authority": "build_log/431_partB_measurement_instruction.md (v3.2.1, RATIFIED 2026-07-19, committed fa61660) §4",
 
   "_declaration_of_independence_from_fixtures": [
     "Each rule below states a GENERAL commercial requirement for the parameter type, expressed as a deterministic computation over the panel's returned classification fields.",
