@@ -296,6 +296,45 @@ def merge_panel(judgments: List[dict], parameter: str) -> dict:
 # Requirement comparison + certification (Part A §6)
 # ══════════════════════════════════════════════════════════════════════════════
 
+def _basis_rule(bm_spec: dict, parameter: str) -> Tuple[str, List[str]]:
+    """Resolve (operator, required_members) for a basis_match rule.
+
+    Prefers the explicit `operator` / `required_members` fields. Where a profile
+    does not declare them, the rule is read out of the `computation.match`
+    structure the profile DOES declare — so a profile is executed as written
+    rather than against a silently-empty default.
+
+    This matters concretely: `building_share` declares its rule only as
+    `computation.match = {"set_equals": [<field>, ["operating_expenses"]]}` and is
+    expressly out of scope for the v3.2 amendment (do not edit). Defaulting
+    required_members to [] would make set_equals compare against the empty set,
+    so building_share could never match anything — a latent contradiction of its
+    own declared rule. Reading the literal from the declared computation avoids
+    both editing it and breaking it.
+    """
+    if bm_spec.get("schema_fixed_value") == "not_applicable":
+        return "not_applicable", []
+
+    operator = bm_spec.get("operator")
+    required = bm_spec.get("required_members")
+    if operator and required is not None:
+        return operator, required
+
+    match_spec = (bm_spec.get("computation") or {}).get("match")
+    if isinstance(match_spec, dict) and len(match_spec) == 1:
+        op = next(iter(match_spec))
+        operands = match_spec[op]
+        if isinstance(operands, list) and len(operands) == 2 and isinstance(operands[1], list):
+            return op, operands[1]
+
+    raise ValueError(
+        f"Cannot resolve basis_match rule for {parameter!r}: profile declares neither "
+        f"(operator, required_members) nor a parseable computation.match literal. "
+        f"Refusing to guess — an unresolvable requirement rule must not silently "
+        f"evaluate to mismatch."
+    )
+
+
 def compare_candidate(result: dict, parameter: str, candidate_text: str,
                       profiles: dict, cfg: dict) -> dict:
     """Compare ONE candidate's merged semantic result against the DECLARED
@@ -309,13 +348,33 @@ def compare_candidate(result: dict, parameter: str, candidate_text: str,
     relevance_ok = (result.get("parameter_family_relevance") == "relevant"
                     and agree.get("parameter_family_relevance") == "unanimous")
 
+    # basis_match is EXECUTED FROM THE PROFILE, never hardcoded here: the operator
+    # and its required members are read from 431_requirement_profiles.json so the
+    # reviewed rule is literally the rule that runs (v3.2.1 §4).
+    #
+    # `operator` defaults to set_equals when a profile does not declare one. That
+    # default keeps building_share on exact-equality — its ratified rule, expressly
+    # out of scope for the v3.2 amendment — without this rebuild editing its profile
+    # entry at all.
     basis = result.get("charge_basis_components")
-    if prof["basis_match"].get("schema_fixed_value") == "not_applicable":
+    bm_spec = prof["basis_match"]
+    operator, required = _basis_rule(bm_spec, parameter)
+
+    if bm_spec.get("schema_fixed_value") == "not_applicable":
         basis_match = "not_applicable" if basis == "not_applicable" else "mismatch"
     elif undet("charge_basis_components") or basis in ("none", "unclear", "not_applicable"):
+        # unclear / DISPUTED / grounding-invalid -> undeterminable, NEVER false
         basis_match = "undeterminable"
+    elif not isinstance(basis, list):
+        basis_match = "undeterminable"
+    elif operator == "set_contains":
+        # Inclusion: additional grounded components (taxes, CAM, insurance) are
+        # preserved as semantic identity and do NOT independently cause mismatch.
+        basis_match = "match" if all(m in basis for m in required) else "mismatch"
+    elif operator == "set_equals":
+        basis_match = "match" if sorted(basis) == sorted(required) else "mismatch"
     else:
-        basis_match = "match" if sorted(basis) == ["operating_expenses"] else "mismatch"
+        raise ValueError(f"Unknown basis_match operator {operator!r} in profile for {parameter}")
 
     text_role_ok = (not undet("text_role")) and result.get("text_role") == "operative_term"
     vtp, vtp_hits = value_token_present(candidate_text, cfg)
@@ -598,6 +657,19 @@ def build_stage1() -> None:
         "_purpose": "The reviewed config IS the run config. Any artifact edited after "
                     "Stage-1 review changes its hash, changes the self-hash, and voids "
                     "the Stage-2 sanction token (§1).",
+        "authorizing_instruction": {
+            "document": "build_log/431_partB_measurement_instruction.md",
+            "version": "v3.2.1",
+            "commit": "fa61660",
+            "ratified": "2026-07-19 by Tzvi",
+            "authorizes": "Stage 1 REBUILD only, zero model calls",
+            "basis_match_rule_in_force": "tenant_share: set_contains {operating_expenses} (inclusion, v3.2); building_share: set_equals (unchanged, unseeded)",
+        },
+        "supersedes": {
+            "prior_build_commit": "4386d95",
+            "prior_sanction_token": "9e7a2d1cf4e0266dca30e400925824bed7de7b9be1bf831c4044ad8498813a2c",
+            "status": "VOID for execution — regenerated by this rebuild under v3.2.1",
+        },
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "stage": 1,
         "model_calls_made": 0,

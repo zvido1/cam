@@ -14,6 +14,7 @@
   "_evaluation_semantics": {
     "operators": {
       "set_equals": "returned set equals the literal set exactly (order-insensitive, duplicate-insensitive)",
+      "set_contains": "every member of the literal set is present in the returned set; additional members are permitted and are preserved as semantic identity",
       "equals": "scalar equality",
       "in": "scalar membership in a literal list",
       "and": "all operands true",
@@ -30,17 +31,21 @@
   "profiles": {
 
     "tenant_share": {
-      "_requirement_in_one_line": "A tenant's share parameter must state the tenant's proportional share OF OPERATING EXPENSES specifically, as an operative contractual term carrying its own percentage.",
-      "_why_this_is_the_general_requirement_not_an_answer_key": "A share expressed against a different charge base (taxes, CAM, insurance) is a different commercial quantity with a different economic effect on the tenant; a dependency declared for operating-expense exposure is not satisfied by a tax-base share. This holds for any lease, including leases where the opex share is the only share present and the rule is trivially satisfied.",
+      "_requirement_in_one_line": "A tenant's share parameter must state a tenant's proportional share that applies to OPERATING EXPENSES, as an operative contractual term carrying its own percentage.",
+      "_why_this_is_the_general_requirement_not_an_answer_key": "The ratified parameter is defined as \"Tenant's Share of Operating Expenses percentage\" (PARAMETER_TARGETS, cam/adapters/lease_review/lease_parameter_block.py). That definition requires the percentage to apply to operating expenses; it does NOT state that it must apply ONLY to operating expenses. A share whose grounded basis does not include operating expenses at all is a different commercial quantity and does not satisfy a dependency declared for operating-expense exposure. Requiring exclusivity would add a condition the ratified definition never states.",
 
       "basis_match": {
-        "rule": "match iff charge_basis_components set_equals exactly {operating_expenses}",
+        "rule": "match iff \"operating_expenses\" is a MEMBER of the grounded charge_basis_components set (inclusion, not exact equality)",
+        "operator": "set_contains",
+        "required_members": ["operating_expenses"],
         "computation": {
-          "match": {"set_equals": [{"field": "charge_basis_components"}, ["operating_expenses"]]},
-          "mismatch": "any returned set that is non-empty, fully determined, and NOT exactly {operating_expenses} — including a SUPERSET such as {operating_expenses, taxes} (a blended base is not an operating-expense base)",
-          "undeterminable": "charge_basis_components is unclear, or invalidated by field-grounding failure",
+          "match": {"set_contains": [{"field": "charge_basis_components"}, ["operating_expenses"]]},
+          "mismatch": "a returned set that is fully determined and does NOT contain operating_expenses",
+          "undeterminable": "charge_basis_components is unclear, DISPUTED, none, or invalidated by field-grounding failure — never false, never a terminal negative",
           "not_applicable": "never for this parameter"
-        }
+        },
+        "_additional_components_note": "Additional grounded components (e.g. taxes, CAM, insurance) are PRESERVED as part of the candidate's semantic identity and do NOT independently cause mismatch. A single combined percentage that applies to operating expenses among other charge bases still applies to operating expenses.",
+        "_amendment": "v3.1 -> v3.2 changed this predicate from set_equals to set_contains. Scoped to tenant_share only. The error-profile accounting for this change (what it trades, and the panel-contingent divergence it admits) lives in the v3.2.1 Amendment Record, NOT here — this profile states the requirement, not the measurement's expected outcomes."
       },
 
       "charge_scope": {
