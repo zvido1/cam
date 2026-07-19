@@ -1,0 +1,578 @@
+{
+  "n_runs": 10,
+  "source_document_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+  "canonical_text_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+  "normalization_profile": "canonical_whitespace_v2",
+  "runs": [
+    {
+      "run": 1,
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "canonical": true,
+      "fallback_used": false,
+      "elapsed_sec": 14.7,
+      "degraded": false,
+      "extracted": [
+        "base_rent",
+        "building_share",
+        "rent_adjustment_pct",
+        "tenant_share"
+      ],
+      "parameters": {
+        "tenant_share": {
+          "status": "verified",
+          "start_char": 1942,
+          "end_char": 1996,
+          "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+          "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+        },
+        "building_share": {
+          "status": "verified",
+          "start_char": 1997,
+          "end_char": 2032,
+          "span_text": "Building's Share of Project: 45.79%",
+          "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+        },
+        "rent_adjustment_pct": {
+          "status": "verified",
+          "start_char": 2097,
+          "end_char": 2127,
+          "span_text": "Rent Adjustment Percentage: 3%",
+          "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+        },
+        "base_rent": {
+          "status": "verified",
+          "start_char": 1695,
+          "end_char": 1815,
+          "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+          "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+        }
+      },
+      "attachment": {
+        "LP-02": [
+          "base_rent",
+          "rent_adjustment_pct"
+        ],
+        "LP-07": [
+          "tenant_share",
+          "building_share"
+        ]
+      },
+      "gate_b": "pass",
+      "gate_b_failures": []
+    },
+    {
+      "run": 2,
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "canonical": true,
+      "fallback_used": false,
+      "elapsed_sec": 9.1,
+      "degraded": false,
+      "extracted": [
+        "base_rent",
+        "building_share",
+        "rent_adjustment_pct",
+        "tenant_share"
+      ],
+      "parameters": {
+        "tenant_share": {
+          "status": "verified",
+          "start_char": 1942,
+          "end_char": 1996,
+          "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+          "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+        },
+        "building_share": {
+          "status": "verified",
+          "start_char": 1997,
+          "end_char": 2032,
+          "span_text": "Building's Share of Project: 45.79%",
+          "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+        },
+        "rent_adjustment_pct": {
+          "status": "verified",
+          "start_char": 2097,
+          "end_char": 2127,
+          "span_text": "Rent Adjustment Percentage: 3%",
+          "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+        },
+        "base_rent": {
+          "status": "verified",
+          "start_char": 1695,
+          "end_char": 1815,
+          "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+          "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+        }
+      },
+      "attachment": {
+        "LP-02": [
+          "base_rent",
+          "rent_adjustment_pct"
+        ],
+        "LP-07": [
+          "tenant_share",
+          "building_share"
+        ]
+      },
+      "gate_b": "pass",
+      "gate_b_failures": []
+    },
+    {
+      "run": 3,
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "canonical": true,
+      "fallback_used": false,
+      "elapsed_sec": 8.78,
+      "degraded": false,
+      "extracted": [
+        "base_rent",
+        "building_share",
+        "rent_adjustment_pct",
+        "tenant_share"
+      ],
+      "parameters": {
+        "tenant_share": {
+          "status": "verified",
+          "start_char": 1942,
+          "end_char": 1996,
+          "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+          "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+        },
+        "building_share": {
+          "status": "verified",
+          "start_char": 1997,
+          "end_char": 2032,
+          "span_text": "Building's Share of Project: 45.79%",
+          "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+        },
+        "rent_adjustment_pct": {
+          "status": "verified",
+          "start_char": 2097,
+          "end_char": 2127,
+          "span_text": "Rent Adjustment Percentage: 3%",
+          "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+        },
+        "base_rent": {
+          "status": "verified",
+          "start_char": 1695,
+          "end_char": 1815,
+          "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+          "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+        }
+      },
+      "attachment": {
+        "LP-02": [
+          "base_rent",
+          "rent_adjustment_pct"
+        ],
+        "LP-07": [
+          "tenant_share",
+          "building_share"
+        ]
+      },
+      "gate_b": "pass",
+      "gate_b_failures": []
+    },
+    {
+      "run": 4,
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "canonical": true,
+      "fallback_used": false,
+      "elapsed_sec": 11.05,
+      "degraded": false,
+      "extracted": [
+        "base_rent",
+        "building_share",
+        "rent_adjustment_pct",
+        "tenant_share"
+      ],
+      "parameters": {
+        "tenant_share": {
+          "status": "verified",
+          "start_char": 1942,
+          "end_char": 1996,
+          "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+          "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+        },
+        "building_share": {
+          "status": "verified",
+          "start_char": 1997,
+          "end_char": 2032,
+          "span_text": "Building's Share of Project: 45.79%",
+          "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+        },
+        "rent_adjustment_pct": {
+          "status": "verified",
+          "start_char": 2097,
+          "end_char": 2127,
+          "span_text": "Rent Adjustment Percentage: 3%",
+          "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+        },
+        "base_rent": {
+          "status": "verified",
+          "start_char": 1695,
+          "end_char": 1815,
+          "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+          "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+        }
+      },
+      "attachment": {
+        "LP-02": [
+          "base_rent",
+          "rent_adjustment_pct"
+        ],
+        "LP-07": [
+          "tenant_share",
+          "building_share"
+        ]
+      },
+      "gate_b": "pass",
+      "gate_b_failures": []
+    },
+    {
+      "run": 5,
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "canonical": true,
+      "fallback_used": false,
+      "elapsed_sec": 10.49,
+      "degraded": false,
+      "extracted": [
+        "base_rent",
+        "building_share",
+        "rent_adjustment_pct",
+        "tenant_share"
+      ],
+      "parameters": {
+        "tenant_share": {
+          "status": "verified",
+          "start_char": 1942,
+          "end_char": 1996,
+          "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+          "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+        },
+        "building_share": {
+          "status": "verified",
+          "start_char": 1997,
+          "end_char": 2032,
+          "span_text": "Building's Share of Project: 45.79%",
+          "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+        },
+        "rent_adjustment_pct": {
+          "status": "verified",
+          "start_char": 2097,
+          "end_char": 2127,
+          "span_text": "Rent Adjustment Percentage: 3%",
+          "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+        },
+        "base_rent": {
+          "status": "verified",
+          "start_char": 1695,
+          "end_char": 1815,
+          "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+          "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+        }
+      },
+      "attachment": {
+        "LP-02": [
+          "base_rent",
+          "rent_adjustment_pct"
+        ],
+        "LP-07": [
+          "tenant_share",
+          "building_share"
+        ]
+      },
+      "gate_b": "pass",
+      "gate_b_failures": []
+    },
+    {
+      "run": 6,
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "canonical": true,
+      "fallback_used": false,
+      "elapsed_sec": 9.59,
+      "degraded": false,
+      "extracted": [
+        "base_rent",
+        "building_share",
+        "rent_adjustment_pct",
+        "tenant_share"
+      ],
+      "parameters": {
+        "tenant_share": {
+          "status": "verified",
+          "start_char": 1942,
+          "end_char": 1996,
+          "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+          "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+        },
+        "building_share": {
+          "status": "verified",
+          "start_char": 1997,
+          "end_char": 2032,
+          "span_text": "Building's Share of Project: 45.79%",
+          "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+        },
+        "rent_adjustment_pct": {
+          "status": "verified",
+          "start_char": 2097,
+          "end_char": 2127,
+          "span_text": "Rent Adjustment Percentage: 3%",
+          "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+        },
+        "base_rent": {
+          "status": "verified",
+          "start_char": 1695,
+          "end_char": 1815,
+          "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+          "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+        }
+      },
+      "attachment": {
+        "LP-02": [
+          "base_rent",
+          "rent_adjustment_pct"
+        ],
+        "LP-07": [
+          "tenant_share",
+          "building_share"
+        ]
+      },
+      "gate_b": "pass",
+      "gate_b_failures": []
+    },
+    {
+      "run": 7,
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "canonical": true,
+      "fallback_used": false,
+      "elapsed_sec": 9.47,
+      "degraded": false,
+      "extracted": [
+        "base_rent",
+        "building_share",
+        "rent_adjustment_pct",
+        "tenant_share"
+      ],
+      "parameters": {
+        "tenant_share": {
+          "status": "verified",
+          "start_char": 1942,
+          "end_char": 1996,
+          "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+          "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+        },
+        "building_share": {
+          "status": "verified",
+          "start_char": 1997,
+          "end_char": 2032,
+          "span_text": "Building's Share of Project: 45.79%",
+          "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+        },
+        "rent_adjustment_pct": {
+          "status": "verified",
+          "start_char": 2097,
+          "end_char": 2127,
+          "span_text": "Rent Adjustment Percentage: 3%",
+          "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+        },
+        "base_rent": {
+          "status": "verified",
+          "start_char": 1695,
+          "end_char": 1815,
+          "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+          "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+        }
+      },
+      "attachment": {
+        "LP-02": [
+          "base_rent",
+          "rent_adjustment_pct"
+        ],
+        "LP-07": [
+          "tenant_share",
+          "building_share"
+        ]
+      },
+      "gate_b": "pass",
+      "gate_b_failures": []
+    },
+    {
+      "run": 8,
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "canonical": true,
+      "fallback_used": false,
+      "elapsed_sec": 9.06,
+      "degraded": false,
+      "extracted": [
+        "base_rent",
+        "building_share",
+        "rent_adjustment_pct",
+        "tenant_share"
+      ],
+      "parameters": {
+        "tenant_share": {
+          "status": "verified",
+          "start_char": 1942,
+          "end_char": 1996,
+          "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+          "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+        },
+        "building_share": {
+          "status": "verified",
+          "start_char": 1997,
+          "end_char": 2032,
+          "span_text": "Building's Share of Project: 45.79%",
+          "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+        },
+        "rent_adjustment_pct": {
+          "status": "verified",
+          "start_char": 2097,
+          "end_char": 2127,
+          "span_text": "Rent Adjustment Percentage: 3%",
+          "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+        },
+        "base_rent": {
+          "status": "verified",
+          "start_char": 1695,
+          "end_char": 1815,
+          "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+          "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+        }
+      },
+      "attachment": {
+        "LP-02": [
+          "base_rent",
+          "rent_adjustment_pct"
+        ],
+        "LP-07": [
+          "tenant_share",
+          "building_share"
+        ]
+      },
+      "gate_b": "pass",
+      "gate_b_failures": []
+    },
+    {
+      "run": 9,
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "canonical": true,
+      "fallback_used": false,
+      "elapsed_sec": 10.11,
+      "degraded": false,
+      "extracted": [
+        "base_rent",
+        "building_share",
+        "rent_adjustment_pct",
+        "tenant_share"
+      ],
+      "parameters": {
+        "tenant_share": {
+          "status": "verified",
+          "start_char": 1942,
+          "end_char": 1996,
+          "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+          "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+        },
+        "building_share": {
+          "status": "verified",
+          "start_char": 1997,
+          "end_char": 2032,
+          "span_text": "Building's Share of Project: 45.79%",
+          "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+        },
+        "rent_adjustment_pct": {
+          "status": "verified",
+          "start_char": 2097,
+          "end_char": 2127,
+          "span_text": "Rent Adjustment Percentage: 3%",
+          "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+        },
+        "base_rent": {
+          "status": "verified",
+          "start_char": 1695,
+          "end_char": 1815,
+          "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+          "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+        }
+      },
+      "attachment": {
+        "LP-02": [
+          "base_rent",
+          "rent_adjustment_pct"
+        ],
+        "LP-07": [
+          "tenant_share",
+          "building_share"
+        ]
+      },
+      "gate_b": "pass",
+      "gate_b_failures": []
+    },
+    {
+      "run": 10,
+      "prompt_hash": "bbb1e99d0963887d",
+      "config_hash": "7c2ac3de05b6e9ba",
+      "canonical": true,
+      "fallback_used": false,
+      "elapsed_sec": 9.22,
+      "degraded": false,
+      "extracted": [
+        "base_rent",
+        "building_share",
+        "rent_adjustment_pct",
+        "tenant_share"
+      ],
+      "parameters": {
+        "tenant_share": {
+          "status": "verified",
+          "start_char": 1942,
+          "end_char": 1996,
+          "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+          "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+        },
+        "building_share": {
+          "status": "verified",
+          "start_char": 1997,
+          "end_char": 2032,
+          "span_text": "Building's Share of Project: 45.79%",
+          "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+        },
+        "rent_adjustment_pct": {
+          "status": "verified",
+          "start_char": 2097,
+          "end_char": 2127,
+          "span_text": "Rent Adjustment Percentage: 3%",
+          "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+        },
+        "base_rent": {
+          "status": "verified",
+          "start_char": 1695,
+          "end_char": 1815,
+          "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+          "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+        }
+      },
+      "attachment": {
+        "LP-02": [
+          "base_rent",
+          "rent_adjustment_pct"
+        ],
+        "LP-07": [
+          "tenant_share",
+          "building_share"
+        ]
+      },
+      "gate_b": "pass",
+      "gate_b_failures": []
+    }
+  ]
+}

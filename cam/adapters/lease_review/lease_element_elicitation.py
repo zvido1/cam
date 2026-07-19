@@ -84,6 +84,52 @@ class ElicitationIntegrityError(Exception):
         self.attempt_chain = attempt_chain or []
 
 
+class UnresolvableTargetError(Exception):
+    """Raised (429) when a model-returned `target` label cannot be mapped back
+    to a declared element: no parseable leading `Target N` ordinal, or an
+    ordinal out of range for the element list that was sent.
+
+    Same fail-loud doctrine as ElicitationIntegrityError. An unresolvable
+    target means the model returned something the code cannot map; guessing
+    past it is the 428 failure (silent discard in `extract_parameters`,
+    silent mislabel-and-keep in `resolve_elicited_spans`). Neither is
+    permitted: resolution either succeeds or raises.
+    """
+
+
+_TARGET_ORDINAL_RE = re.compile(r"^\s*Target\s+(\d+)")
+
+
+def resolve_target_ordinal(target_label: str, elements: List[dict]) -> str:
+    """Map a model-returned `target` label back to its `element_id` by parsing
+    the leading `Target N` ordinal (1-indexed, matching the
+    `enumerate(..., start=1)` construction in `_build_target_list_text`).
+
+    The ordinal is the only authoritative part of the label. It is present in
+    both the bare form the schema asks for (`"Target 1"`) and the echoed form
+    the model actually emits (`"Target 1: <description>"`, observed in 424,
+    426 and 428). The description text is never matched, exactly or fuzzily.
+
+    Raises UnresolvableTargetError if no leading ordinal parses or the ordinal
+    is out of range. Never falls back to the raw label.
+    """
+    match = _TARGET_ORDINAL_RE.match(target_label or "")
+    if match is None:
+        raise UnresolvableTargetError(
+            f"Unresolvable target label {target_label!r}: no leading 'Target N' "
+            f"ordinal could be parsed. Expected 'Target N' (optionally followed "
+            f"by a description), with N in 1..{len(elements)}."
+        )
+    ordinal = int(match.group(1))
+    if not 1 <= ordinal <= len(elements):
+        raise UnresolvableTargetError(
+            f"Unresolvable target label {target_label!r}: ordinal {ordinal} is out "
+            f"of range for the {len(elements)} target(s) sent in this call "
+            f"(expected 1..{len(elements)})."
+        )
+    return elements[ordinal - 1]["element_id"]
+
+
 KNOWLEDGE_SCHEMA_PATH = Path(__file__).parent / "schemas" / "retail_lease_knowledge.json"
 PROMPT_PATH = Path(__file__).parent / "prompts" / "element_elicitation.txt"
 OUTPUT_SCHEMA_PATH = Path(__file__).parent / "schemas" / "element_elicitation_schema.json"
@@ -368,12 +414,11 @@ def resolve_elicited_spans(
     `elicit_spans_for_targets`. The model never sees or returns an
     `element_id`.
     """
-    target_to_element = {f"Target {i}": e["element_id"] for i, e in enumerate(elements, start=1)}
     records: List[dict] = []
     counter = 0
     for match in elicitation_result.get("target_matches", []):
         target_label = match.get("target", "")
-        element_id = target_to_element.get(target_label, target_label)
+        element_id = resolve_target_ordinal(target_label, elements)
         for quote in match.get("quotes", []):
             counter += 1
             span = resolve_span(canonical_source, quote=quote, evidence_span_id=f"EV-raw-{counter:06d}")

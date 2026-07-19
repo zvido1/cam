@@ -120,7 +120,10 @@ def extract_parameters(
     turns that absence into a hard failure for a dependent LP; this
     function itself never raises for a missing parameter.
     """
-    from cam.adapters.lease_review.lease_element_elicitation import elicit_spans_for_targets
+    from cam.adapters.lease_review.lease_element_elicitation import (
+        elicit_spans_for_targets,
+        resolve_target_ordinal,
+    )
 
     elements = [
         {"element_id": t["param_name"], "element_label": t["element_label"], "synonyms": t.get("synonyms", [])}
@@ -130,13 +133,10 @@ def extract_parameters(
         canonical_source.canonical_text, elements, canonical=canonical
     )
 
-    target_to_param = {f"Target {i}": e["element_id"] for i, e in enumerate(elements, start=1)}
     parameters: Dict[str, Parameter] = {}
 
     for match in elicitation_result.get("target_matches", []):
-        param_name = target_to_param.get(match.get("target", ""), match.get("target", ""))
-        if param_name not in PARAMETER_NAMES:
-            continue
+        param_name = resolve_target_ordinal(match.get("target", ""), elements)
         if param_name in parameters:
             continue  # first verified quote wins; a parameter is one value, not a list
         for i, quote in enumerate(match.get("quotes", []), start=1):
