@@ -1,0 +1,847 @@
+{
+  "n_runs": 5,
+  "dependency_map": {
+    "LP-02": [
+      "base_rent",
+      "rent_adjustment_pct"
+    ],
+    "LP-07": [
+      "tenant_share",
+      "building_share"
+    ]
+  },
+  "leases": {
+    "atreca": {
+      "slug": "atreca",
+      "path": "C:\\Users\\Owner\\OneDrive\\CAM\\05 Lease Analyzer\\test_data\\tenants\\atreca_eastjamie_southsf_lease.txt",
+      "raw_chars": 160244,
+      "runs": [
+        {
+          "run": 1,
+          "source_document_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "canonical_text_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "canonical_len": 160145,
+          "prompt_hash": "bbb1e99d0963887d",
+          "config_hash": "7c2ac3de05b6e9ba",
+          "canonical": true,
+          "fallback_used": false,
+          "elapsed_sec": 26.46,
+          "parameters": {
+            "tenant_share": {
+              "status": "verified",
+              "start_char": 1942,
+              "end_char": 1996,
+              "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+              "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+            },
+            "building_share": {
+              "status": "verified",
+              "start_char": 1997,
+              "end_char": 2032,
+              "span_text": "Building's Share of Project: 45.79%",
+              "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+            },
+            "rent_adjustment_pct": {
+              "status": "verified",
+              "start_char": 2097,
+              "end_char": 2127,
+              "span_text": "Rent Adjustment Percentage: 3%",
+              "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+            },
+            "base_rent": {
+              "status": "verified",
+              "start_char": 1695,
+              "end_char": 1815,
+              "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+              "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+            }
+          },
+          "check_gate_b": [
+            {
+              "lp_id": "LP-02",
+              "dependency": "base_rent",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-02",
+              "dependency": "rent_adjustment_pct",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "tenant_share",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "building_share",
+              "gate_status": "pass"
+            }
+          ],
+          "enforce_gate_b_report_mode": {
+            "gate_status": "pass",
+            "failures": []
+          }
+        },
+        {
+          "run": 2,
+          "source_document_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "canonical_text_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "canonical_len": 160145,
+          "prompt_hash": "bbb1e99d0963887d",
+          "config_hash": "7c2ac3de05b6e9ba",
+          "canonical": true,
+          "fallback_used": false,
+          "elapsed_sec": 10.06,
+          "parameters": {
+            "tenant_share": {
+              "status": "verified",
+              "start_char": 1942,
+              "end_char": 1996,
+              "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+              "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+            },
+            "building_share": {
+              "status": "verified",
+              "start_char": 1997,
+              "end_char": 2032,
+              "span_text": "Building's Share of Project: 45.79%",
+              "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+            },
+            "rent_adjustment_pct": {
+              "status": "verified",
+              "start_char": 2097,
+              "end_char": 2127,
+              "span_text": "Rent Adjustment Percentage: 3%",
+              "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+            },
+            "base_rent": {
+              "status": "verified",
+              "start_char": 1695,
+              "end_char": 1815,
+              "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+              "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+            }
+          },
+          "check_gate_b": [
+            {
+              "lp_id": "LP-02",
+              "dependency": "base_rent",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-02",
+              "dependency": "rent_adjustment_pct",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "tenant_share",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "building_share",
+              "gate_status": "pass"
+            }
+          ],
+          "enforce_gate_b_report_mode": {
+            "gate_status": "pass",
+            "failures": []
+          }
+        },
+        {
+          "run": 3,
+          "source_document_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "canonical_text_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "canonical_len": 160145,
+          "prompt_hash": "bbb1e99d0963887d",
+          "config_hash": "7c2ac3de05b6e9ba",
+          "canonical": true,
+          "fallback_used": false,
+          "elapsed_sec": 10.78,
+          "parameters": {
+            "tenant_share": {
+              "status": "verified",
+              "start_char": 1942,
+              "end_char": 1996,
+              "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+              "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+            },
+            "building_share": {
+              "status": "verified",
+              "start_char": 1997,
+              "end_char": 2032,
+              "span_text": "Building's Share of Project: 45.79%",
+              "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+            },
+            "rent_adjustment_pct": {
+              "status": "verified",
+              "start_char": 2097,
+              "end_char": 2127,
+              "span_text": "Rent Adjustment Percentage: 3%",
+              "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+            },
+            "base_rent": {
+              "status": "verified",
+              "start_char": 1695,
+              "end_char": 1815,
+              "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+              "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+            }
+          },
+          "check_gate_b": [
+            {
+              "lp_id": "LP-02",
+              "dependency": "base_rent",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-02",
+              "dependency": "rent_adjustment_pct",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "tenant_share",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "building_share",
+              "gate_status": "pass"
+            }
+          ],
+          "enforce_gate_b_report_mode": {
+            "gate_status": "pass",
+            "failures": []
+          }
+        },
+        {
+          "run": 4,
+          "source_document_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "canonical_text_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "canonical_len": 160145,
+          "prompt_hash": "bbb1e99d0963887d",
+          "config_hash": "7c2ac3de05b6e9ba",
+          "canonical": true,
+          "fallback_used": false,
+          "elapsed_sec": 12.21,
+          "parameters": {
+            "tenant_share": {
+              "status": "verified",
+              "start_char": 1942,
+              "end_char": 1996,
+              "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+              "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+            },
+            "building_share": {
+              "status": "verified",
+              "start_char": 1997,
+              "end_char": 2032,
+              "span_text": "Building's Share of Project: 45.79%",
+              "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+            },
+            "rent_adjustment_pct": {
+              "status": "verified",
+              "start_char": 2097,
+              "end_char": 2127,
+              "span_text": "Rent Adjustment Percentage: 3%",
+              "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+            },
+            "base_rent": {
+              "status": "verified",
+              "start_char": 1695,
+              "end_char": 1815,
+              "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+              "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+            }
+          },
+          "check_gate_b": [
+            {
+              "lp_id": "LP-02",
+              "dependency": "base_rent",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-02",
+              "dependency": "rent_adjustment_pct",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "tenant_share",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "building_share",
+              "gate_status": "pass"
+            }
+          ],
+          "enforce_gate_b_report_mode": {
+            "gate_status": "pass",
+            "failures": []
+          }
+        },
+        {
+          "run": 5,
+          "source_document_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "canonical_text_hash": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "canonical_len": 160145,
+          "prompt_hash": "bbb1e99d0963887d",
+          "config_hash": "7c2ac3de05b6e9ba",
+          "canonical": true,
+          "fallback_used": false,
+          "elapsed_sec": 10.16,
+          "parameters": {
+            "tenant_share": {
+              "status": "verified",
+              "start_char": 1942,
+              "end_char": 1996,
+              "span_text": "Tenant's Share of Operating Expenses of Building: 100%",
+              "elicited_target": "Target 1: Tenant's Share of Operating Expenses percentage"
+            },
+            "building_share": {
+              "status": "verified",
+              "start_char": 1997,
+              "end_char": 2032,
+              "span_text": "Building's Share of Project: 45.79%",
+              "elicited_target": "Target 2: Building's Share of Project Operating Expenses percentage"
+            },
+            "rent_adjustment_pct": {
+              "status": "verified",
+              "start_char": 2097,
+              "end_char": 2127,
+              "span_text": "Rent Adjustment Percentage: 3%",
+              "elicited_target": "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+            },
+            "base_rent": {
+              "status": "verified",
+              "start_char": 1695,
+              "end_char": 1815,
+              "span_text": "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof.",
+              "elicited_target": "Target 4: Base Rent amount stated in the key-terms block"
+            }
+          },
+          "check_gate_b": [
+            {
+              "lp_id": "LP-02",
+              "dependency": "base_rent",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-02",
+              "dependency": "rent_adjustment_pct",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "tenant_share",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "building_share",
+              "gate_status": "pass"
+            }
+          ],
+          "enforce_gate_b_report_mode": {
+            "gate_status": "pass",
+            "failures": []
+          }
+        }
+      ],
+      "per_parameter": {
+        "tenant_share": {
+          "resolution_rate": "5/5",
+          "resolved_runs": 5,
+          "offsets": [
+            [
+              1942,
+              1996
+            ]
+          ],
+          "offset_stable": true,
+          "distinct_span_texts": 1,
+          "span_texts": [
+            "Tenant's Share of Operating Expenses of Building: 100%"
+          ],
+          "elicited_targets": [
+            "Target 1: Tenant's Share of Operating Expenses percentage"
+          ]
+        },
+        "building_share": {
+          "resolution_rate": "5/5",
+          "resolved_runs": 5,
+          "offsets": [
+            [
+              1997,
+              2032
+            ]
+          ],
+          "offset_stable": true,
+          "distinct_span_texts": 1,
+          "span_texts": [
+            "Building's Share of Project: 45.79%"
+          ],
+          "elicited_targets": [
+            "Target 2: Building's Share of Project Operating Expenses percentage"
+          ]
+        },
+        "rent_adjustment_pct": {
+          "resolution_rate": "5/5",
+          "resolved_runs": 5,
+          "offsets": [
+            [
+              2097,
+              2127
+            ]
+          ],
+          "offset_stable": true,
+          "distinct_span_texts": 1,
+          "span_texts": [
+            "Rent Adjustment Percentage: 3%"
+          ],
+          "elicited_targets": [
+            "Target 3: Rent Adjustment Percentage (annual escalation rate)"
+          ]
+        },
+        "base_rent": {
+          "resolution_rate": "5/5",
+          "resolved_runs": 5,
+          "offsets": [
+            [
+              1695,
+              1815
+            ]
+          ],
+          "offset_stable": true,
+          "distinct_span_texts": 1,
+          "span_texts": [
+            "Base Rent:\n$3.75 per rentable square foot of the Premises per month, subject to adjustment pursuant to Section 4 hereof."
+          ],
+          "elicited_targets": [
+            "Target 4: Base Rent amount stated in the key-terms block"
+          ]
+        }
+      }
+    },
+    "atlas": {
+      "slug": "atlas",
+      "path": "C:\\Users\\Owner\\OneDrive\\CAM\\05 Lease Analyzer\\test_data\\tenants\\atlas_meridian_warehouse_lease.txt",
+      "raw_chars": 31755,
+      "runs": [
+        {
+          "run": 1,
+          "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+          "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+          "canonical_len": 31755,
+          "prompt_hash": "bbb1e99d0963887d",
+          "config_hash": "7c2ac3de05b6e9ba",
+          "canonical": true,
+          "fallback_used": false,
+          "elapsed_sec": 22.72,
+          "parameters": {
+            "tenant_share": {
+              "status": "verified",
+              "start_char": 1738,
+              "end_char": 1889,
+              "span_text": "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building.",
+              "elicited_target": "Target 1"
+            },
+            "rent_adjustment_pct": {
+              "status": "verified",
+              "start_char": 4248,
+              "end_char": 4327,
+              "span_text": "The above schedule reflects an annual escalation of approximately 3% per annum.",
+              "elicited_target": "Target 3"
+            },
+            "base_rent": {
+              "status": "verified",
+              "start_char": 990,
+              "end_char": 1065,
+              "span_text": "\"Base Rent\" shall mean the annual rent payable as set forth in Section 3.1.",
+              "elicited_target": "Target 4"
+            }
+          },
+          "check_gate_b": [
+            {
+              "lp_id": "LP-02",
+              "dependency": "base_rent",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-02",
+              "dependency": "rent_adjustment_pct",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "tenant_share",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "building_share",
+              "gate_status": "fail"
+            }
+          ],
+          "enforce_gate_b_report_mode": {
+            "gate_status": "degraded",
+            "failures": [
+              {
+                "lp_id": "LP-07",
+                "dependency": "building_share",
+                "gate_status": "fail"
+              }
+            ]
+          }
+        },
+        {
+          "run": 2,
+          "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+          "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+          "canonical_len": 31755,
+          "prompt_hash": "bbb1e99d0963887d",
+          "config_hash": "7c2ac3de05b6e9ba",
+          "canonical": true,
+          "fallback_used": false,
+          "elapsed_sec": 21.4,
+          "parameters": {
+            "tenant_share": {
+              "status": "verified",
+              "start_char": 1738,
+              "end_char": 1889,
+              "span_text": "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building.",
+              "elicited_target": "Target 1"
+            },
+            "rent_adjustment_pct": {
+              "status": "verified",
+              "start_char": 4248,
+              "end_char": 4327,
+              "span_text": "The above schedule reflects an annual escalation of approximately 3% per annum.",
+              "elicited_target": "Target 3"
+            },
+            "base_rent": {
+              "status": "verified",
+              "start_char": 990,
+              "end_char": 1065,
+              "span_text": "\"Base Rent\" shall mean the annual rent payable as set forth in Section 3.1.",
+              "elicited_target": "Target 4"
+            }
+          },
+          "check_gate_b": [
+            {
+              "lp_id": "LP-02",
+              "dependency": "base_rent",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-02",
+              "dependency": "rent_adjustment_pct",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "tenant_share",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "building_share",
+              "gate_status": "fail"
+            }
+          ],
+          "enforce_gate_b_report_mode": {
+            "gate_status": "degraded",
+            "failures": [
+              {
+                "lp_id": "LP-07",
+                "dependency": "building_share",
+                "gate_status": "fail"
+              }
+            ]
+          }
+        },
+        {
+          "run": 3,
+          "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+          "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+          "canonical_len": 31755,
+          "prompt_hash": "bbb1e99d0963887d",
+          "config_hash": "7c2ac3de05b6e9ba",
+          "canonical": true,
+          "fallback_used": false,
+          "elapsed_sec": 22.9,
+          "parameters": {
+            "tenant_share": {
+              "status": "verified",
+              "start_char": 1738,
+              "end_char": 1889,
+              "span_text": "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building.",
+              "elicited_target": "Target 1"
+            },
+            "rent_adjustment_pct": {
+              "status": "verified",
+              "start_char": 4248,
+              "end_char": 4327,
+              "span_text": "The above schedule reflects an annual escalation of approximately 3% per annum.",
+              "elicited_target": "Target 3"
+            },
+            "base_rent": {
+              "status": "verified",
+              "start_char": 990,
+              "end_char": 1065,
+              "span_text": "\"Base Rent\" shall mean the annual rent payable as set forth in Section 3.1.",
+              "elicited_target": "Target 4"
+            }
+          },
+          "check_gate_b": [
+            {
+              "lp_id": "LP-02",
+              "dependency": "base_rent",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-02",
+              "dependency": "rent_adjustment_pct",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "tenant_share",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "building_share",
+              "gate_status": "fail"
+            }
+          ],
+          "enforce_gate_b_report_mode": {
+            "gate_status": "degraded",
+            "failures": [
+              {
+                "lp_id": "LP-07",
+                "dependency": "building_share",
+                "gate_status": "fail"
+              }
+            ]
+          }
+        },
+        {
+          "run": 4,
+          "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+          "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+          "canonical_len": 31755,
+          "prompt_hash": "bbb1e99d0963887d",
+          "config_hash": "7c2ac3de05b6e9ba",
+          "canonical": true,
+          "fallback_used": false,
+          "elapsed_sec": 21.58,
+          "parameters": {
+            "tenant_share": {
+              "status": "verified",
+              "start_char": 1738,
+              "end_char": 1889,
+              "span_text": "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building.",
+              "elicited_target": "Target 1"
+            },
+            "rent_adjustment_pct": {
+              "status": "verified",
+              "start_char": 4248,
+              "end_char": 4327,
+              "span_text": "The above schedule reflects an annual escalation of approximately 3% per annum.",
+              "elicited_target": "Target 3"
+            },
+            "base_rent": {
+              "status": "verified",
+              "start_char": 990,
+              "end_char": 1065,
+              "span_text": "\"Base Rent\" shall mean the annual rent payable as set forth in Section 3.1.",
+              "elicited_target": "Target 4"
+            }
+          },
+          "check_gate_b": [
+            {
+              "lp_id": "LP-02",
+              "dependency": "base_rent",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-02",
+              "dependency": "rent_adjustment_pct",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "tenant_share",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "building_share",
+              "gate_status": "fail"
+            }
+          ],
+          "enforce_gate_b_report_mode": {
+            "gate_status": "degraded",
+            "failures": [
+              {
+                "lp_id": "LP-07",
+                "dependency": "building_share",
+                "gate_status": "fail"
+              }
+            ]
+          }
+        },
+        {
+          "run": 5,
+          "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+          "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+          "canonical_len": 31755,
+          "prompt_hash": "bbb1e99d0963887d",
+          "config_hash": "7c2ac3de05b6e9ba",
+          "canonical": true,
+          "fallback_used": false,
+          "elapsed_sec": 25.75,
+          "parameters": {
+            "tenant_share": {
+              "status": "verified",
+              "start_char": 1738,
+              "end_char": 1889,
+              "span_text": "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building.",
+              "elicited_target": "Target 1"
+            },
+            "rent_adjustment_pct": {
+              "status": "verified",
+              "start_char": 4248,
+              "end_char": 4327,
+              "span_text": "The above schedule reflects an annual escalation of approximately 3% per annum.",
+              "elicited_target": "Target 3"
+            },
+            "base_rent": {
+              "status": "verified",
+              "start_char": 990,
+              "end_char": 1065,
+              "span_text": "\"Base Rent\" shall mean the annual rent payable as set forth in Section 3.1.",
+              "elicited_target": "Target 4"
+            }
+          },
+          "check_gate_b": [
+            {
+              "lp_id": "LP-02",
+              "dependency": "base_rent",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-02",
+              "dependency": "rent_adjustment_pct",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "tenant_share",
+              "gate_status": "pass"
+            },
+            {
+              "lp_id": "LP-07",
+              "dependency": "building_share",
+              "gate_status": "fail"
+            }
+          ],
+          "enforce_gate_b_report_mode": {
+            "gate_status": "degraded",
+            "failures": [
+              {
+                "lp_id": "LP-07",
+                "dependency": "building_share",
+                "gate_status": "fail"
+              }
+            ]
+          }
+        }
+      ],
+      "per_parameter": {
+        "tenant_share": {
+          "resolution_rate": "5/5",
+          "resolved_runs": 5,
+          "offsets": [
+            [
+              1738,
+              1889
+            ]
+          ],
+          "offset_stable": true,
+          "distinct_span_texts": 1,
+          "span_texts": [
+            "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building."
+          ],
+          "elicited_targets": [
+            "Target 1"
+          ]
+        },
+        "building_share": {
+          "resolution_rate": "0/5",
+          "resolved_runs": 0,
+          "offsets": [],
+          "offset_stable": true,
+          "distinct_span_texts": 0,
+          "span_texts": [],
+          "elicited_targets": [],
+          "miss_classification": {
+            "classification": "absent_by_structure",
+            "declared_needles_probed": [
+              "Building's Share of Project Operating Expenses percentage",
+              "Building's Share of Project"
+            ],
+            "declared_hits": [],
+            "alias_needles_probed": [
+              "Building's Share",
+              "Project Operating Expenses",
+              "Building's Proportionate Share"
+            ],
+            "alias_hits": []
+          }
+        },
+        "rent_adjustment_pct": {
+          "resolution_rate": "5/5",
+          "resolved_runs": 5,
+          "offsets": [
+            [
+              4248,
+              4327
+            ]
+          ],
+          "offset_stable": true,
+          "distinct_span_texts": 1,
+          "span_texts": [
+            "The above schedule reflects an annual escalation of approximately 3% per annum."
+          ],
+          "elicited_targets": [
+            "Target 3"
+          ]
+        },
+        "base_rent": {
+          "resolution_rate": "5/5",
+          "resolved_runs": 5,
+          "offsets": [
+            [
+              990,
+              1065
+            ]
+          ],
+          "offset_stable": true,
+          "distinct_span_texts": 1,
+          "span_texts": [
+            "\"Base Rent\" shall mean the annual rent payable as set forth in Section 3.1."
+          ],
+          "elicited_targets": [
+            "Target 4"
+          ]
+        }
+      }
+    }
+  }
+}
