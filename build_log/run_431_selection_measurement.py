@@ -508,7 +508,7 @@ def run_preflight(sources: dict, cfg: dict) -> dict:
 
     result = {
         "_artifact": "431_fixture_preflight.json",
-        "_authority": "431_partB_measurement_instruction.md §6.2",
+        "_authority": "431_partB_measurement_instruction.md (v3.2.1, RATIFIED 2026-07-19, committed fa61660) §6.2",
         "_discipline": "RE-VERIFY, DO NOT RE-DISCOVER. Offsets are pinned. If a pinned span "
                        "fails to re-resolve against the frozen hash, the candidate is excluded "
                        "and fixture drift is reported — a fresh offset is never absorbed.",

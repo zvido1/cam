@@ -1,6 +1,6 @@
 {
   "_artifact": "431_fixture_preflight.json",
-  "_authority": "431_partB_measurement_instruction.md \u00a76.2",
+  "_authority": "431_partB_measurement_instruction.md (v3.2.1, RATIFIED 2026-07-19, committed fa61660) \u00a76.2",
   "_discipline": "RE-VERIFY, DO NOT RE-DISCOVER. Offsets are pinned. If a pinned span fails to re-resolve against the frozen hash, the candidate is excluded and fixture drift is reported \u2014 a fresh offset is never absorbed.",
   "_determinism_note": "This artifact carries NO timestamp by design. It is a pure function of the pinned offsets, the frozen fixtures, and the frozen config, so its hash \u2014 and therefore the Stage-2 sanction token \u2014 is stable under a no-op rebuild and changes ONLY when something real changes. Build time is recorded in the manifest instead, where it does not enter the token. Without this, an incidental rebuild would silently void a token the reviewer had already sanctioned.",
   "normalization_profile": "canonical_whitespace_v2",
