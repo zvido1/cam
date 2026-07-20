@@ -28,11 +28,16 @@ For the parameter family named below, classify:
 2. Whether the supplied text shows that the contractual mechanism named by that
    parameter family operates in this document.
 
-3. What charge basis, if any, the passage establishes the proportion is taken
-   against — where the parameter family is one that has a charge basis. Report
-   what the text establishes. If the text does not establish a basis, say so.
-   If more than one basis is established, report all of them. Do not infer a
-   basis that the quoted text does not state.
+3. Which charge base(s) THIS passage's OWN value applies to — where the
+   parameter family is one that has a charge basis. Include a base ONLY when the
+   supplied text links this passage's value to it. A base merely mentioned or
+   defined nearby, or a base that a DIFFERENT value expression governs, does NOT
+   count — co-location is not application. If the value applies to more than one
+   base, report all of them. If the text does not link this value to any base,
+   say so. Do not infer a base the quoted text does not link to this value. In
+   field_support for this field, cite the text that establishes the link between
+   this value and each base — not two separate quotes, one for the value and one
+   for the category.
 
 4. What scope or denominator the proportion is measured against, where the
    parameter family has one.
@@ -89,8 +94,11 @@ In particular:
 * You cannot conclude that something is absent from the lease. You are seeing a
   bounded excerpt. Absence from your excerpt is not absence from the document.
 
-Guessing is worse than abstaining. A confident answer you cannot quote is the
-one outcome this task is designed to exclude.
+A field you cannot ground in a quote must be answered "unclear" for that field —
+grounding is required (see the grounding rules above). Beyond that requirement,
+neither a determinate classification nor an abstention is preferred over the
+other: classify determinately when the supplied text grounds a determinate
+answer, and answer "insufficient_context"/"unclear" when it does not.
 
 ────────────────────────────────────────────────────────────────────────
 INPUT

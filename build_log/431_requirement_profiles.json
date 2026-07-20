@@ -1,7 +1,7 @@
 {
   "_artifact": "431_requirement_profiles.json",
   "_version": "431_reqprofiles_v1",
-  "_authority": "build_log/431_partB_measurement_instruction.md (v3.2.1, RATIFIED 2026-07-19, committed fa61660) §4",
+  "_authority": "build_log/431_partB_measurement_instruction.md (v3.3, RATIFIED 2026-07-19, committed 38785e7) §4",
 
   "_declaration_of_independence_from_fixtures": [
     "Each rule below states a GENERAL commercial requirement for the parameter type, expressed as a deterministic computation over the panel's returned classification fields.",
@@ -35,17 +35,18 @@
       "_why_this_is_the_general_requirement_not_an_answer_key": "The ratified parameter is defined as \"Tenant's Share of Operating Expenses percentage\" (PARAMETER_TARGETS, cam/adapters/lease_review/lease_parameter_block.py). That definition requires the percentage to apply to operating expenses; it does NOT state that it must apply ONLY to operating expenses. A share whose grounded basis does not include operating expenses at all is a different commercial quantity and does not satisfy a dependency declared for operating-expense exposure. Requiring exclusivity would add a condition the ratified definition never states.",
 
       "basis_match": {
-        "rule": "match iff \"operating_expenses\" is a MEMBER of the grounded charge_basis_components set (inclusion, not exact equality)",
+        "rule": "match iff \"operating_expenses\" is a MEMBER of the grounded value_applies_to_charge_basis_components set (inclusion, not exact equality)",
         "operator": "set_contains",
         "required_members": ["operating_expenses"],
         "computation": {
-          "match": {"set_contains": [{"field": "charge_basis_components"}, ["operating_expenses"]]},
+          "match": {"set_contains": [{"field": "value_applies_to_charge_basis_components"}, ["operating_expenses"]]},
           "mismatch": "a returned set that is fully determined and does NOT contain operating_expenses",
-          "undeterminable": "charge_basis_components is unclear, DISPUTED, none, or invalidated by field-grounding failure — never false, never a terminal negative",
+          "undeterminable": "value_applies_to_charge_basis_components is unclear, DISPUTED, none, or invalidated by field-grounding failure — never false, never a terminal negative",
           "not_applicable": "never for this parameter"
         },
         "_additional_components_note": "Additional grounded components (e.g. taxes, CAM, insurance) are PRESERVED as part of the candidate's semantic identity and do NOT independently cause mismatch. A single combined percentage that applies to operating expenses among other charge bases still applies to operating expenses.",
-        "_amendment": "v3.1 -> v3.2 changed this predicate from set_equals to set_contains. Scoped to tenant_share only. The error-profile accounting for this change (what it trades, and the panel-contingent divergence it admits) lives in the v3.2.1 Amendment Record, NOT here — this profile states the requirement, not the measurement's expected outcomes."
+        "_relation_bearing_note": "v3.3: the field this operates on, value_applies_to_charge_basis_components, carries ONLY the bases this candidate's OWN value applies to (established by cited value-to-basis linkage), NOT bases merely co-mentioned in context and NOT bases governed by a different value expression. Membership in this field is therefore 'the value applies to operating_expenses', a checkable claim — not 'operating_expenses appears near the value', a co-location artifact. A candidate whose value-to-basis linkage is not citation-grounded has its field invalidated by §4.5 grounding failure and routes to undeterminable (never match).",
+        "_amendment": "v3.1 -> v3.2 changed this predicate from set_equals to set_contains. v3.3 renamed the underlying field to the relation-bearing value_applies_to_charge_basis_components (from the pre-v3.3 co-occurrence field name) to close the co-occurrence-false-match defect (blind Review B + GPT informed audit); the set_contains predicate is unchanged, only the field it reads is now relation-bearing. Scoped to tenant_share. The error-profile accounting lives in the v3.2.1/v3.3 Amendment Records, NOT here — this profile states the requirement, not the measurement's expected outcomes."
       },
 
       "charge_scope": {
@@ -86,7 +87,7 @@
       "applicability_match": {
         "rule": "applicable iff the candidate's identity/support fit the share concept — INDEPENDENT of whether it carries a value",
         "computation": {"applicable": {"and": [
-          {"is_non_empty_set": {"field": "charge_basis_components"}},
+          {"is_non_empty_set": {"field": "value_applies_to_charge_basis_components"}},
           {"equals": [{"field": "candidate_support_state"}, "supports_mechanism"]}
         ]}},
         "value_ok_is_forbidden_as_an_input": true,
@@ -99,8 +100,8 @@
       "_status": "DECLARED BUT UNEXERCISED — no candidate is seeded for this parameter (§6.1). Profile present so the parameter set is complete and the omission is visible rather than silent.",
       "_requirement_in_one_line": "A building's share parameter must state the building's proportional share of PROJECT operating expenses as an operative contractual term carrying its own percentage.",
       "basis_match": {
-        "rule": "match iff charge_basis_components set_equals exactly {operating_expenses}",
-        "computation": {"match": {"set_equals": [{"field": "charge_basis_components"}, ["operating_expenses"]]}}
+        "rule": "match iff value_applies_to_charge_basis_components set_equals exactly {operating_expenses}",
+        "computation": {"match": {"set_equals": [{"field": "value_applies_to_charge_basis_components"}, ["operating_expenses"]]}}
       },
       "charge_scope": {"rule": "RECORDED AS METADATA ONLY — does NOT gate qualification in v1", "gates_qualification": false},
       "text_role_ok": {"computation": {"equals": [{"field": "text_role"}, "operative_term"]}},
@@ -114,7 +115,7 @@
         {"equals": [{"field": "agreement_by_field.parameter_family_relevance"}, "unanimous"]}
       ]}},
       "applicability_match": {"computation": {"applicable": {"and": [
-        {"is_non_empty_set": {"field": "charge_basis_components"}},
+        {"is_non_empty_set": {"field": "value_applies_to_charge_basis_components"}},
         {"equals": [{"field": "candidate_support_state"}, "supports_mechanism"]}
       ]}}, "value_ok_is_forbidden_as_an_input": true}
     },

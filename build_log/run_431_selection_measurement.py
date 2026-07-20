@@ -1,7 +1,7 @@
 """
 Step 431 Part B — Governed evidence-selection measurement harness.
 
-STAGE 1 ARTIFACT. Built under BUILD-ONLY authorization (Part B v3.2.1 §1, §13):
+STAGE 1 ARTIFACT. Built under BUILD-ONLY authorization (Part B v3.3 §1, §13):
 this file makes ZERO model calls as committed. The live run requires a SEPARATE
 Stage-2 sanction of the exact hashed artifacts.
 
@@ -14,7 +14,7 @@ call fires by default, by accident, or by a truthy flag.
 Discipline (Part B §2): READ-ONLY. Imports from cam/, never modifies. No cam/
 file is created, modified, or deleted. Nothing is wired.
 
-Authority: build_log/431_partB_measurement_instruction.md (v3.2.1, RATIFIED, committed fa61660).
+Authority: build_log/431_partB_measurement_instruction.md (v3.3, RATIFIED, committed 38785e7).
 Every mechanism here traces to a Part A / Part B section; this harness invents
 no architecture.
 """
@@ -91,12 +91,12 @@ FROZEN_LEASE_HASHES = {
 # Fields whose grounding is schema-fixed and therefore exempt from the §4.5
 # field_support requirement (Part A §4.1: not_applicable is schema-fixed).
 SCHEMA_FIXED_NOT_APPLICABLE = {
-    "base_rent": {"charge_basis_components", "charge_scope"},
-    "rent_adjustment_pct": {"charge_basis_components", "charge_scope"},
+    "base_rent": {"value_applies_to_charge_basis_components", "charge_scope"},
+    "rent_adjustment_pct": {"value_applies_to_charge_basis_components", "charge_scope"},
 }
 
 SEMANTIC_FIELDS = [
-    "parameter_family_relevance", "candidate_support_state", "charge_basis_components",
+    "parameter_family_relevance", "candidate_support_state", "value_applies_to_charge_basis_components",
     "charge_scope", "text_role", "value_completeness",
 ]
 
@@ -285,8 +285,8 @@ def merge_panel(judgments: List[dict], parameter: str) -> dict:
         if isinstance(merged[field], tuple):
             merged[field] = list(merged[field])
     return {
-        "charge_basis_components": merged.get("charge_basis_components"),
-        **{k: merged[k] for k in SEMANTIC_FIELDS if k != "charge_basis_components"},
+        "value_applies_to_charge_basis_components": merged.get("value_applies_to_charge_basis_components"),
+        **{k: merged[k] for k in SEMANTIC_FIELDS if k != "value_applies_to_charge_basis_components"},
         "agreement_by_field": agreement,
         "per_panelist": judgments,
     }
@@ -350,19 +350,20 @@ def compare_candidate(result: dict, parameter: str, candidate_text: str,
 
     # basis_match is EXECUTED FROM THE PROFILE, never hardcoded here: the operator
     # and its required members are read from 431_requirement_profiles.json so the
-    # reviewed rule is literally the rule that runs (v3.2.1 §4).
+    # reviewed rule is literally the rule that runs (§4). The field read is the
+    # relation-bearing value_applies_to_charge_basis_components (v3.3).
     #
     # `operator` defaults to set_equals when a profile does not declare one. That
     # default keeps building_share on exact-equality — its ratified rule, expressly
     # out of scope for the v3.2 amendment — without this rebuild editing its profile
     # entry at all.
-    basis = result.get("charge_basis_components")
+    basis = result.get("value_applies_to_charge_basis_components")
     bm_spec = prof["basis_match"]
     operator, required = _basis_rule(bm_spec, parameter)
 
     if bm_spec.get("schema_fixed_value") == "not_applicable":
         basis_match = "not_applicable" if basis == "not_applicable" else "mismatch"
-    elif undet("charge_basis_components") or basis in ("none", "unclear", "not_applicable"):
+    elif undet("value_applies_to_charge_basis_components") or basis in ("none", "unclear", "not_applicable"):
         # unclear / DISPUTED / grounding-invalid -> undeterminable, NEVER false
         basis_match = "undeterminable"
     elif not isinstance(basis, list):
@@ -438,6 +439,136 @@ def certify(per_candidate: List[dict], cfg: dict) -> str:
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Relation-bearing contract — build-time deterministic tests (v3.3 §5)
+# Zero model calls. Synthetic constructed classifications, NOT fixtures, no lease
+# text. They assert the profile+validator ENFORCE the relation-bearing contract.
+# Passing all four is a Stage-1 build gate; any failure halts the build.
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _synthetic_result(basis, *, relevance="relevant", agreement="unanimous"):
+    """Construct a minimal merged candidate_semantic_result carrying a given
+    value_applies_to_charge_basis_components. Every non-basis field is set to a
+    neutral qualifying value so ONLY the basis field drives basis_match — the
+    test isolates the relation-bearing rule, nothing else."""
+    return {
+        "value_applies_to_charge_basis_components": basis,
+        "parameter_family_relevance": relevance,
+        "candidate_support_state": "supports_mechanism",
+        "text_role": "operative_term",
+        "value_completeness": "self_contained",
+        "charge_scope": "building",
+        "agreement_by_field": {
+            "parameter_family_relevance": agreement,
+            "value_applies_to_charge_basis_components": agreement,
+            "candidate_support_state": agreement, "text_role": agreement,
+            "value_completeness": agreement, "charge_scope": agreement,
+        },
+    }
+
+
+def run_relationship_tests(profiles: dict, cfg: dict) -> List[dict]:
+    """The four §5 relationship tests. Each record carries the synthetic input,
+    the EXPECTED value_applies_to_charge_basis_components, the EXPECTED
+    basis_match, the §5 clause it implements, and the ACTUAL result — so a
+    reviewer can check the assertion is CORRECT, not merely green."""
+    # A candidate_text carrying a percentage token, so value_ok is not what fails
+    # these tests — they isolate basis_match. Generic shape, no lease literal.
+    ctext = "the applicable rate is 10% per annum"
+    results: List[dict] = []
+
+    def record(name, clause, desc, expected_field, expected_bm, actual_bm, extra=None):
+        rec = {
+            "name": name,
+            "s5_clause": clause,
+            "synthetic_input": desc,
+            "expected_value_applies_to_charge_basis_components": expected_field,
+            "expected_basis_match": expected_bm,
+            "actual_basis_match": actual_bm,
+            "pass": actual_bm == expected_bm,
+        }
+        if extra:
+            rec.update(extra)
+        results.append(rec)
+
+    # Test (a) — §5.1: combined percentage grounded as applying to opex + taxes.
+    fa = ["operating_expenses", "taxes"]
+    bm = compare_candidate(_synthetic_result(fa), "tenant_share", ctext, profiles, cfg)["basis_match"]
+    record("a_combined_opex_taxes", "§5 test 1",
+           "one combined percentage whose OWN value is grounded as applying to operating_expenses AND taxes",
+           fa, "match", bm)
+
+    # Test (b) — §5.2: separate opex and tax percentages; the TAX candidate is
+    # under test, so opex is a SIBLING value's basis, not this value's.
+    fb = ["taxes"]
+    bm = compare_candidate(_synthetic_result(fb), "tenant_share", ctext, profiles, cfg)["basis_match"]
+    record("b_sibling_tax_candidate", "§5 test 2",
+           "tax candidate under test; opex belongs to a separate (sibling) value expression, so this value's field is [taxes]",
+           fb, "mismatch", bm)
+
+    # Test (c) — §5.3: tax percentage with an opex clause merely nearby; no
+    # value-to-basis linkage to opex, so opex is NOT added to this value's field.
+    fc = ["taxes"]
+    bm = compare_candidate(_synthetic_result(fc), "tenant_share", ctext, profiles, cfg)["basis_match"]
+    record("c_comention_no_linkage", "§5 test 3",
+           "tax value with an operating-expense clause co-located but NOT linked to this value; opex must not be added -> field [taxes]",
+           fc, "mismatch", bm,
+           extra={"_note": "same rule branch as test (b) ([taxes]->mismatch) reached from the co-mention scenario; "
+                           "the model, not the rule, is responsible for NOT adding opex without linkage (prompt §5); "
+                           "this test confirms the rule excludes opex whenever it is absent from the field"})
+
+    # Test (d) — §5.4: value-to-basis linkage NOT citation-grounded. Exercised
+    # through the actual §4.5 grounding path: a per-panelist judgment asserts
+    # opex but supplies EMPTY field_support for the basis field -> the field is
+    # invalidated to 'unclear' -> basis_match routes to 'undeterminable'.
+    ungrounded_judgment = {
+        "value_applies_to_charge_basis_components": ["operating_expenses"],
+        "parameter_family_relevance": "relevant",
+        "candidate_support_state": "supports_mechanism",
+        "text_role": "operative_term",
+        "value_completeness": "self_contained",
+        "charge_scope": "building",
+        "candidate_citations": [], "context_citations": [],
+        "field_support": {
+            "value_applies_to_charge_basis_components": {"candidate_citation_ids": [], "context_citation_ids": []},
+            "parameter_family_relevance": {"candidate_citation_ids": [], "context_citation_ids": []},
+            "candidate_support_state": {"candidate_citation_ids": [], "context_citation_ids": []},
+            "text_role": {"candidate_citation_ids": [], "context_citation_ids": []},
+            "value_completeness": {"candidate_citation_ids": [], "context_citation_ids": []},
+            "charge_scope": {"candidate_citation_ids": [], "context_citation_ids": []},
+        },
+    }
+    grounded = apply_field_grounding(ungrounded_judgment, "tenant_share", ctext, "")
+    field_after_grounding = grounded.get("value_applies_to_charge_basis_components")
+    bm = compare_candidate(_synthetic_result(field_after_grounding), "tenant_share", ctext, profiles, cfg)["basis_match"]
+    record("d_ungrounded_linkage", "§5 test 4",
+           "opex asserted but the basis field's field_support is EMPTY (no value-to-basis citation); §4.5 invalidates the field to 'unclear'",
+           "unclear (post-grounding-invalidation)", "undeterminable", bm,
+           extra={"field_after_grounding_invalidation": field_after_grounding,
+                  "_grounding_note": "the deterministic check enforces citation PRESENCE/resolution; whether a present "
+                                     "citation semantically establishes the linkage is model-governed, not code-verified (doctrine)"})
+    return results
+
+
+def sweep_stale_field_name() -> dict:
+    """Halt condition: no bare pre-v3.3 field name `charge_basis_components` may
+    survive in the MODEL-FACING artifacts (schema, prompt) or the profiles. The
+    new name contains the old as a substring, so match the old name ONLY when it
+    is not immediately preceded by `value_applies_to_` (a genuine stale token)."""
+    stale = re.compile(r"(?<!value_applies_to_)charge_basis_components")
+    targets = {
+        "431_output_schema.json": SCHEMA_PATH,
+        "431_selector_prompt.txt": PROMPT_PATH,
+        "431_requirement_profiles.json": PROFILES_PATH,
+    }
+    hits = {}
+    for name, path in targets.items():
+        found = stale.findall(path.read_text(encoding="utf-8"))
+        if found:
+            hits[name] = len(found)
+    return {"clean": not hits, "stale_hits": hits}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # THE GATED CALL SITE — no model call fires without Stage-2 sanction
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -508,7 +639,7 @@ def run_preflight(sources: dict, cfg: dict) -> dict:
 
     result = {
         "_artifact": "431_fixture_preflight.json",
-        "_authority": "431_partB_measurement_instruction.md (v3.2.1, RATIFIED 2026-07-19, committed fa61660) §6.2",
+        "_authority": "431_partB_measurement_instruction.md (v3.3, RATIFIED 2026-07-19, committed 38785e7) §6.2",
         "_discipline": "RE-VERIFY, DO NOT RE-DISCOVER. Offsets are pinned. If a pinned span "
                        "fails to re-resolve against the frozen hash, the candidate is excluded "
                        "and fixture drift is reported — a fresh offset is never absorbed.",
@@ -602,7 +733,7 @@ def build_stage1() -> None:
     artifacts = load_artifacts()
     cfg = artifacts["config"]
 
-    print("[1/4] importing frozen panel (import, never modify)...")
+    print("[1/6] importing frozen panel (import, never modify)...")
     from cam.adapters.lease_review.lease_coverage_305 import (
         EVALUATOR_LINEUP_305, _call_single_evaluator_305,  # noqa: F401
     )
@@ -624,10 +755,10 @@ def build_stage1() -> None:
               f"temp_transmitted={p['temperature_transmitted']} "
               f"self_retry_canonical={p['own_chain_preserves_panel_identity']}")
 
-    print("[2/4] building canonical sources (canonical_whitespace_v2)...")
+    print("[2/6] building canonical sources (canonical_whitespace_v2)...")
     sources = build_sources()
 
-    print("[3/4] running deterministic preflight (§6.2)...")
+    print("[3/6] running deterministic preflight (§6.2)...")
     preflight = run_preflight(sources, cfg)
     preflight["panel_identity_at_build"] = panel
     PREFLIGHT_PATH.write_text(json.dumps(preflight, indent=2), encoding="utf-8")
@@ -639,7 +770,29 @@ def build_stage1() -> None:
     print(f"      admitted={preflight['admitted_count']}/7  "
           f"projected primary calls={preflight['projected_primary_calls']}")
 
-    print("[4/4] writing config manifest...")
+    print("[4/6] running v3.3 relationship-contract tests (build gate)...")
+    rel_tests = run_relationship_tests(artifacts["profiles"], cfg)
+    for r in rel_tests:
+        print(f"      [{'PASS' if r['pass'] else 'FAIL'}] {r['name']} ({r['s5_clause']}): "
+              f"expect basis_match={r['expected_basis_match']}, got {r['actual_basis_match']}")
+    if not all(r["pass"] for r in rel_tests):
+        failed = [r["name"] for r in rel_tests if not r["pass"]]
+        raise SystemExit(
+            f"BUILD HALTED (§5 gate): relationship-contract tests failed: {failed}. "
+            "The relation-bearing contract is not correctly enforced by the profile+validator; "
+            "no manifest or sanction token is produced."
+        )
+
+    print("[5/6] sweeping model-facing artifacts + profiles for stale field name...")
+    sweep = sweep_stale_field_name()
+    print(f"      stale 'charge_basis_components' occurrences: {sweep['stale_hits'] or 'none'}")
+    if not sweep["clean"]:
+        raise SystemExit(
+            f"BUILD HALTED: stale pre-v3.3 field name 'charge_basis_components' survives in "
+            f"{sweep['stale_hits']}. The schema-wide rename is incomplete; no token is produced."
+        )
+
+    print("[6/6] writing config manifest...")
     files = {
         "431_measurement_config.json": CONFIG_PATH,
         "431_requirement_profiles.json": PROFILES_PATH,
@@ -659,17 +812,33 @@ def build_stage1() -> None:
                     "the Stage-2 sanction token (§1).",
         "authorizing_instruction": {
             "document": "build_log/431_partB_measurement_instruction.md",
-            "version": "v3.2.1",
-            "commit": "fa61660",
+            "version": "v3.3",
+            "commit": "38785e7",
             "ratified": "2026-07-19 by Tzvi",
             "authorizes": "Stage 1 REBUILD only, zero model calls",
-            "basis_match_rule_in_force": "tenant_share: set_contains {operating_expenses} (inclusion, v3.2); building_share: set_equals (unchanged, unseeded)",
+            "contract_field": "value_applies_to_charge_basis_components (relation-bearing, v3.3)",
+            "basis_match_rule_in_force": "tenant_share: set_contains {operating_expenses} over the relation-bearing field (inclusion); building_share: set_equals (unchanged, unseeded, amendment debt)",
+            "relationship_tests_gate": "four build-time deterministic relationship tests (§5) must pass or the build halts",
         },
         "supersedes": {
-            "prior_build_commit": "4386d95",
-            "prior_sanction_token": "9e7a2d1cf4e0266dca30e400925824bed7de7b9be1bf831c4044ad8498813a2c",
-            "status": "VOID for execution — regenerated by this rebuild under v3.2.1",
+            "prior_build_commit": "5954e6e",
+            "prior_sanction_tokens_void": [
+                "9e7a2d1cf4e0266dca30e400925824bed7de7b9be1bf831c4044ad8498813a2c",
+                "5ed0c5cc34e285fb10945a223c7aebae03879afd5fd7b6e4e96eb6ddd2dfc48a",
+                "ecbf512d11c258861ac87e81436bd313027a43a936d62211a0a4868c8d2b9718",
+                "0ebb93ba50a8fd24dd0f11fc6aad3d4725c65f2beedbcb6a154be6f650b44e7e",
+                "ccf03284a5eb4410bc6486b7d81aee3850bf3359888876ea2e6fea0ff8b483f0",
+            ],
+            "status": "VOID for execution — prior package encoded the pre-v3.3 field charge_basis_components; regenerated by this rebuild under v3.3",
         },
+        "relationship_tests_v3_3": {
+            "_purpose": "The four §5 relationship-contract tests, recorded with expected outcomes so "
+                        "the informed audit can verify each assertion is CORRECT, not merely green. "
+                        "Deterministic: a function of the hashed profiles+harness+config, re-runnable.",
+            "all_passed": all(r["pass"] for r in rel_tests),
+            "tests": rel_tests,
+        },
+        "field_name_sweep": sweep,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "stage": 1,
         "model_calls_made": 0,

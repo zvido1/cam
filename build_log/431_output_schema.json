@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "431 panelist judgment — one (candidate + envelope) x parameter",
   "_artifact": "431_output_schema.json",
-  "_authority": "build_log/431_partB_measurement_instruction.md (v3.2.1, RATIFIED 2026-07-19, committed fa61660) §5; contract from Part A §4.1",
+  "_authority": "build_log/431_partB_measurement_instruction.md (v3.3, RATIFIED 2026-07-19, committed 38785e7) §5; contract from Part A §4.1",
   "_notes": [
     "additionalProperties:false at every level is the structural enforcement (mirrors the 423C elicitation schema): a verdict, risk, materiality, or provision-id field fails validation rather than being silently accepted.",
     "Enums are CLOSED. Where a value outside the set is genuinely needed, 'other' + the matching free-text description field is the only escape hatch (Part A §4.1) — never an open list.",
@@ -19,7 +19,7 @@
     "candidate_support_state",
     "text_role",
     "value_completeness",
-    "charge_basis_components",
+    "value_applies_to_charge_basis_components",
     "charge_scope",
     "candidate_citations",
     "context_citations",
@@ -62,8 +62,8 @@
       "description": "Does the candidate passage itself carry the numeric quantity for this parameter family? self_contained = the quantity appears in the candidate text itself. cross_reference_only = the candidate directs the reader elsewhere for the quantity rather than stating it. no_value = neither a quantity nor a direction to one. unclear = cannot be determined."
     },
 
-    "charge_basis_components": {
-      "description": "Which charge base(s) the candidate establishes the proportion is taken against. Use the array form for share-type parameters. Use the string 'not_applicable' where the payload states this dimension does not apply to the parameter family. 'none' means no basis was found; 'unclear' means it could not be determined. These three are distinct and must not be merged.",
+    "value_applies_to_charge_basis_components": {
+      "description": "The charge base(s) that THIS candidate's OWN value expression is directly applied to, established by cited text that links this value to those bases. Include a base ONLY when the supplied text shows this candidate's value governs it; do NOT include a base merely mentioned or defined nearby, and do NOT include a base that a DIFFERENT value expression governs. Co-location is not application. Use the array form for share-type parameters. Use 'not_applicable' where the payload states this dimension does not apply to the parameter family. 'none' means the value applies to no identifiable charge base. 'unclear' means the value-to-basis relationship could not be determined from the supplied text. These are distinct and must not be merged.",
       "oneOf": [
         {
           "type": "array",
@@ -79,7 +79,7 @@
     },
     "other_basis_description": {
       "type": "string",
-      "description": "Required only when charge_basis_components includes 'other'. Free text naming the basis actually found."
+      "description": "Required only when value_applies_to_charge_basis_components includes 'other'. Free text naming the basis actually found."
     },
 
     "charge_scope": {
@@ -106,11 +106,11 @@
     "field_support": {
       "type": "object",
       "additionalProperties": false,
-      "description": "For each substantive semantic field, the citation ids that ground your judgment on THAT field. A field you assert substantively must list at least one citation id here. If you cannot ground a field in a quote, answer 'unclear' for that field rather than asserting it without support.",
+      "description": "For each substantive semantic field, the citation ids that ground your judgment on THAT field. A field you assert substantively must list at least one citation id here. If you cannot ground a field in a quote, answer 'unclear' for that field rather than asserting it without support. For value_applies_to_charge_basis_components specifically: the cited text must establish the VALUE-TO-BASIS RELATIONSHIP — that this candidate's own value applies to each listed base. Two separate citations, one showing the value and one showing the charge category exists somewhere, do NOT establish the relationship; if you have no citation linking the value to a base, that base does not belong in the field.",
       "required": [
         "parameter_family_relevance",
         "candidate_support_state",
-        "charge_basis_components",
+        "value_applies_to_charge_basis_components",
         "charge_scope",
         "text_role",
         "value_completeness"
@@ -118,7 +118,7 @@
       "properties": {
         "parameter_family_relevance": {"$ref": "#/definitions/support_entry"},
         "candidate_support_state": {"$ref": "#/definitions/support_entry"},
-        "charge_basis_components": {"$ref": "#/definitions/support_entry"},
+        "value_applies_to_charge_basis_components": {"$ref": "#/definitions/support_entry"},
         "charge_scope": {"$ref": "#/definitions/support_entry"},
         "text_role": {"$ref": "#/definitions/support_entry"},
         "value_completeness": {"$ref": "#/definitions/support_entry"}

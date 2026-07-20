@@ -1,7 +1,7 @@
 {
   "_artifact": "431_measurement_config.json",
   "_stage": "Stage 1 preregistration package — BUILD ONLY, zero model calls",
-  "_authority": "build_log/431_partB_measurement_instruction.md (v3.2.1, RATIFIED 2026-07-19, committed fa61660) §3",
+  "_authority": "build_log/431_partB_measurement_instruction.md (v3.3, RATIFIED 2026-07-19, committed 38785e7) §3",
   "_note": "Every value here is FROZEN by the ratified instruction, not chosen after seeing fixtures. selector_config_hash is meaningful only because these are concrete.",
 
   "context_policy_version": "431_envelope_v1",
