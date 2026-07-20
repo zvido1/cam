@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "431 panelist judgment — one (candidate + envelope) x parameter",
   "_artifact": "431_output_schema.json",
-  "_authority": "build_log/431_partB_measurement_instruction.md (v3.1, RATIFIED 2026-07-19) §5; contract from Part A §4.1",
+  "_authority": "build_log/431_partB_measurement_instruction.md (v3.2.1, RATIFIED 2026-07-19, committed fa61660) §5; contract from Part A §4.1",
   "_notes": [
     "additionalProperties:false at every level is the structural enforcement (mirrors the 423C elicitation schema): a verdict, risk, materiality, or provision-id field fails validation rather than being silently accepted.",
     "Enums are CLOSED. Where a value outside the set is genuinely needed, 'other' + the matching free-text description field is the only escape hatch (Part A §4.1) — never an open list.",

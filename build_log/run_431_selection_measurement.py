@@ -1,7 +1,7 @@
 """
 Step 431 Part B — Governed evidence-selection measurement harness.
 
-STAGE 1 ARTIFACT. Built under BUILD-ONLY authorization (Part B v3.1 §1, §13):
+STAGE 1 ARTIFACT. Built under BUILD-ONLY authorization (Part B v3.2.1 §1, §13):
 this file makes ZERO model calls as committed. The live run requires a SEPARATE
 Stage-2 sanction of the exact hashed artifacts.
 
@@ -14,7 +14,7 @@ call fires by default, by accident, or by a truthy flag.
 Discipline (Part B §2): READ-ONLY. Imports from cam/, never modifies. No cam/
 file is created, modified, or deleted. Nothing is wired.
 
-Authority: build_log/431_partB_measurement_instruction.md (v3.1, RATIFIED).
+Authority: build_log/431_partB_measurement_instruction.md (v3.2.1, RATIFIED, committed fa61660).
 Every mechanism here traces to a Part A / Part B section; this harness invents
 no architecture.
 """
