@@ -111,6 +111,24 @@ class PreflightError(RuntimeError):
     """Raised when a fixture fails preflight (§6.2, §11 stop seam)."""
 
 
+class MeasurementIntegrityHalt(RuntimeError):
+    """HARD HALT (§11 stop seam) — a 416 config-integrity violation fired mid-measurement.
+
+    Step 434 ruling: a config-integrity violation means the FROZEN generation config
+    was about to be silently altered (the silent-config-drift class 415/416 exist to
+    prevent). The measurement is ABORTED, never silently degraded to a fallback. This
+    is deliberately NOT a provider-error subclass, so the own-chain/pool traversal's
+    `except Exception` cannot absorb it into fallback — it propagates to the top."""
+
+
+def _is_config_integrity_violation(exc: Exception) -> bool:
+    """True iff `exc` is the 416 config-integrity assertion. `_check_generation_integrity`
+    (cam/core/provider_router.py) raises FatalProviderError whose message begins
+    `config_integrity_violation`. Matched by MESSAGE so it is robust to any adapter
+    re-wrapping the exception type before it reaches the harness."""
+    return "config_integrity_violation" in str(exc)
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Artifact loading + hashing
 # ══════════════════════════════════════════════════════════════════════════════
@@ -708,36 +726,6 @@ def _strip_code_fence(raw: str) -> str:
     return r
 
 
-def _assert_call_integrity(target) -> dict:
-    """FIX V3 (Step 433) — invoke the REAL cam.core 416 config-integrity assertion on
-    the outbound generation config, so EVERY 431 call is checked regardless of
-    provider.
-
-    Why this exists: OpenAI/Anthropic/xAI adapters run `_check_generation_integrity`
-    inside `.call()`, but `GoogleGenAIAdapter.call()` does NOT (verified in
-    cam/core/provider_router.py). Since the call path uses `adapter.call(...)`
-    directly, a pool-fallback Gemini request would otherwise fire with no 416 check —
-    the exact silent-config-drift class 415/416 exists to prevent. Invoking the
-    assertion here closes that gap UNIFORMLY, before any provider request.
-
-    Not a reimplementation: `_check_generation_integrity` is IMPORTED from cam.core
-    and called. Only the outbound-param VIEW is assembled here, mirroring the
-    adapters' own temperature decision with the SAME capability map
-    (TEMPERATURE_ONLY_DEFAULT_MODELS). Raises FatalProviderError (from cam.core) if a
-    declared evaluator-critical parameter is silently dropped."""
-    from cam.core.provider_router import _check_generation_integrity, TEMPERATURE_ONLY_DEFAULT_MODELS
-    if target.model in TEMPERATURE_ONLY_DEFAULT_MODELS:
-        params = {"max_tokens": target.max_output_tokens}
-        temp_omit_reason = (
-            f"model={target.model!r} in TEMPERATURE_ONLY_DEFAULT_MODELS; provider-default "
-            f"temperature governs (documented 415/416 capability exception)."
-        )
-    else:
-        params = {"max_tokens": target.max_output_tokens, "temperature": target.temperature}
-        temp_omit_reason = None
-    return _check_generation_integrity(target, params, temp_omit_reason)
-
-
 def _provider_call(provider: str, model: str, evaluator_cfg: dict, role: str,
                    candidate: Dict[str, Any], payload: str) -> Tuple[dict, dict]:
     """One real provider call through cam.core.provider_router — the SAME primitives
@@ -745,13 +733,19 @@ def _provider_call(provider: str, model: str, evaluator_cfg: dict, role: str,
     Returns (parsed_judgment, call_meta). Raises on empty/parse failure so the
     caller's fallback traversal classifies it exactly like the 305 path.
 
-    Temperature: ModelTarget carries the frozen declared temperature (0.0). The
-    ADAPTER decides transmission via TEMPERATURE_ONLY_DEFAULT_MODELS — gpt-5.5 is
-    in that set, so temperature is OMITTED (provider default governs) and the
-    omission is LOGGED by the integrity check, not silently dropped (§3 configuration
-    truth). FIX V3: the real 416 integrity assertion is invoked HERE (via
-    _assert_call_integrity) before the call, guaranteeing the check runs for every
-    provider — including Gemini, whose adapter does not self-check.
+    Temperature + 416 config integrity: ModelTarget carries the frozen declared
+    temperature (0.0). The ADAPTER decides transmission via
+    TEMPERATURE_ONLY_DEFAULT_MODELS and runs the REAL `_check_generation_integrity`
+    on the ACTUAL outbound payload — OpenAIAdapter (`_call_once`), AnthropicAdapter
+    (`call`), and XAIAdapter (`call`) all self-check, so the canonical A/B/C panel
+    inherits 416 by calling `adapter.call(...)` (verified against
+    cam/core/provider_router.py; Step 434). We do NOT re-invoke a mirrored check here
+    — that was the withdrawn 433 approach, which rested on a partly-false "bypass"
+    premise and checked a reconstructed view rather than the real payload. If the
+    adapter's 416 assertion fires (FatalProviderError, message begins
+    `config_integrity_violation`), it propagates to call_panelist, which HARD-HALTS
+    the measurement (Step 434 ruling) rather than degrading. The real per-call
+    integrity record is captured from `adapter.last_integrity` for provenance.
     """
     from cam.core.provider_router import (
         ModelTarget, ProviderRouter, RouterConfig, TEMPERATURE_ONLY_DEFAULT_MODELS,
@@ -764,17 +758,12 @@ def _provider_call(provider: str, model: str, evaluator_cfg: dict, role: str,
         temperature=evaluator_cfg.get("temperature", 0.0),
         timeout_sec=evaluator_cfg.get("timeout_sec", 300.0),
     )
-    # FIX V3 (Step 433): run the REAL 416 config-integrity assertion on the outbound
-    # config BEFORE any provider machinery is obtained — uniform across providers
-    # (Gemini's adapter does not self-check). Raises FatalProviderError on silent
-    # temperature/token drift, aborting before the adapter/client is even built.
-    integrity_record = _assert_call_integrity(target)
-
     router = ProviderRouter([target], RouterConfig())
     adapter = router._get_adapter(provider)
 
     # The selector prompt is the entire model-facing text; no separate system
     # channel (keeps the payload EXACTLY the §5 whitelist — nothing appended).
+    # The adapter runs the real 416 integrity check on the actual outbound payload.
     raw = adapter.call("", payload, target) or ""
     usage = getattr(adapter, "last_usage", None)
     adapter_integrity = getattr(adapter, "last_integrity", None)
@@ -786,8 +775,7 @@ def _provider_call(provider: str, model: str, evaluator_cfg: dict, role: str,
         "usage": usage,
         "temperature_declared": target.temperature,
         "temperature_transmitted": temp_transmitted,
-        "integrity_record": integrity_record,        # V3: guaranteed pre-call 416 assertion
-        "temperature_integrity": adapter_integrity,  # adapter self-check (OpenAI surfaces this)
+        "temperature_integrity": adapter_integrity,  # REAL adapter 416 record (OpenAI/xAI surface this)
     }
 
     stripped = _strip_code_fence(raw)
@@ -887,8 +875,7 @@ def call_panelist(role: str, candidate: Dict[str, Any], envelope: dict, candidat
             "fallback_reason": fallback_reason,
             "temperature_declared": call_meta.get("temperature_declared"),
             "temperature_transmitted": call_meta.get("temperature_transmitted"),
-            "temperature_integrity": call_meta.get("temperature_integrity"),
-            "integrity_record": call_meta.get("integrity_record"),  # V3 provenance (metadata, not raw text)
+            "temperature_integrity": call_meta.get("temperature_integrity"),  # REAL adapter 416 record
             "usage": call_meta.get("usage"),
             "judgment": grounded,          # the ONLY thing certification reads
             "attempts": attempts,          # audit layer — retains raw_response per attempt
@@ -906,6 +893,17 @@ def call_panelist(role: str, candidate: Dict[str, Any], envelope: dict, candidat
                              "raw_response": call_meta["raw_response"], "error": None})
             return _finalize(provider, model, label, judgment, call_meta, is_fb, fb_reason)
         except Exception as e:
+            # FIX (Step 434): a 416 config-integrity violation is a HARD HALT, never a
+            # fallback. Absorbing it into the traversal would silently degrade the
+            # frozen panel on a config bug — the exact drift 415/416 exist to catch.
+            # Detected before classification and robust to adapter exception re-wrapping.
+            if _is_config_integrity_violation(e):
+                raise MeasurementIntegrityHalt(
+                    f"HARD HALT (§11): config-integrity violation on {provider}/{model} for "
+                    f"{candidate['id']}/role {role}: {e}. The frozen generation config was about "
+                    f"to be silently altered — the measurement is ABORTED, not degraded to a "
+                    f"fallback. This is a config bug, not a provider outage."
+                ) from e
             reason = _classify_failure(str(e), model)
             attempt_failures.append({"provider": provider, "model": model,
                                      "reason": reason, "error": str(e)})
@@ -932,6 +930,12 @@ def call_panelist(role: str, candidate: Dict[str, Any], envelope: dict, candidat
                              "raw_response": call_meta["raw_response"], "error": None})
             return _finalize(provider, model, label, judgment, call_meta, True, fb_reason)
         except Exception as e:
+            # Step 434: same hard-halt on a config-integrity violation in the pool path.
+            if _is_config_integrity_violation(e):
+                raise MeasurementIntegrityHalt(
+                    f"HARD HALT (§11): config-integrity violation on pool {provider}/{model} for "
+                    f"{candidate['id']}/role {role}: {e}. Measurement ABORTED, not degraded."
+                ) from e
             reason = _classify_failure(str(e), model)
             attempt_failures.append({"provider": provider, "model": model,
                                      "reason": reason, "error": str(e)})
@@ -1490,13 +1494,17 @@ def build_stage1() -> None:
                 {"token": "833fd43e7197d95c60e4b7080810764c33b4a4bd4edbbbe86390036b9f4fcacc",
                  "role": "Step-432 executable package (call path v1)",
                  "status": "SUPERSEDED-FOR-EXECUTION — NOT void",
-                 "superseded_by_step": "433 — GPT scoped-audit fixes V3 (uniform 416 integrity assertion) + F2 (strip raw_response from certification path)"},
+                 "superseded_by_step": "433 — scoped-audit fixes F2 (strip raw_response from certification path) + V3 mirror integrity check (later withdrawn) + import time"},
+                {"token": "9c2cc8e157627d880068c6bb380c09e00c0ae0321fbac52253b268326b7dc9cd",
+                 "role": "Step-433 executable package (F2 + V3 mirror + import time)",
+                 "status": "SUPERSEDED-FOR-EXECUTION — NOT void",
+                 "superseded_by_step": "434 — WITHDREW the 433 V3 mirror (premise partly false; adapters self-check the real payload) and REPLACED it with the ruled fix: a 416 config-integrity violation HARD-HALTS the measurement instead of degrading to fallback"},
             ],
             "current_executable_token": self_hash,
-            "authorizing_step": "433 — 431 Part B Stage-2 call-path fixes (V3 + F2)",
+            "authorizing_step": "434 — config-integrity HARD-HALT (V3 mirror withdrawn); F2 retained",
             "semantic_artifacts_byte_identical_to_65556ee": True,
-            "run_still_gated_by": "delta re-audit of the V3+F2 fix diff + separate explicit Tzvi "
-                                  "sanction of THIS new token (per brief; no run in Step 433)",
+            "run_still_gated_by": "re-audit of the 434 diff + separate explicit Tzvi sanction of THIS "
+                                  "new token (no run in Step 434)",
         },
         "field_name_sweep": sweep,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
@@ -1547,8 +1555,18 @@ def main() -> None:
     # Stage-2 live run. Gated: _assert_stage2 (inside run_stage2 and every call)
     # rejects any invocation whose --stage2-sanction does not match the committed
     # manifest self-hash. Fires ~90–105 primary calls. Not invoked by the build
-    # step that ships this file (Step 432 delivers the call path for audit only).
-    run_stage2(args.stage2_sanction)
+    # step that ships this file. A 416 config-integrity violation propagates as a
+    # MeasurementIntegrityHalt (Step 434) — abort with a clear banner, never degrade.
+    try:
+        run_stage2(args.stage2_sanction)
+    except MeasurementIntegrityHalt as e:
+        print("\n" + "=" * 78, file=sys.stderr)
+        print("MEASUREMENT HALTED — 416 CONFIG-INTEGRITY VIOLATION (§11 stop seam)", file=sys.stderr)
+        print(str(e), file=sys.stderr)
+        print("No result is emitted. Fix the config drift and re-run; do NOT work around it.",
+              file=sys.stderr)
+        print("=" * 78, file=sys.stderr)
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

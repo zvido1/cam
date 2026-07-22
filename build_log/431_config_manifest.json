@@ -87,19 +87,25 @@
         "token": "833fd43e7197d95c60e4b7080810764c33b4a4bd4edbbbe86390036b9f4fcacc",
         "role": "Step-432 executable package (call path v1)",
         "status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void",
-        "superseded_by_step": "433 \u2014 GPT scoped-audit fixes V3 (uniform 416 integrity assertion) + F2 (strip raw_response from certification path)"
+        "superseded_by_step": "433 \u2014 scoped-audit fixes F2 (strip raw_response from certification path) + V3 mirror integrity check (later withdrawn) + import time"
+      },
+      {
+        "token": "9c2cc8e157627d880068c6bb380c09e00c0ae0321fbac52253b268326b7dc9cd",
+        "role": "Step-433 executable package (F2 + V3 mirror + import time)",
+        "status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void",
+        "superseded_by_step": "434 \u2014 WITHDREW the 433 V3 mirror (premise partly false; adapters self-check the real payload) and REPLACED it with the ruled fix: a 416 config-integrity violation HARD-HALTS the measurement instead of degrading to fallback"
       }
     ],
-    "current_executable_token": "9c2cc8e157627d880068c6bb380c09e00c0ae0321fbac52253b268326b7dc9cd",
-    "authorizing_step": "433 \u2014 431 Part B Stage-2 call-path fixes (V3 + F2)",
+    "current_executable_token": "48054981045fc1a5f37e8b235d3cccb10586d3a04fa35eaf4a36b6a41f375487",
+    "authorizing_step": "434 \u2014 config-integrity HARD-HALT (V3 mirror withdrawn); F2 retained",
     "semantic_artifacts_byte_identical_to_65556ee": true,
-    "run_still_gated_by": "delta re-audit of the V3+F2 fix diff + separate explicit Tzvi sanction of THIS new token (per brief; no run in Step 433)"
+    "run_still_gated_by": "re-audit of the 434 diff + separate explicit Tzvi sanction of THIS new token (no run in Step 434)"
   },
   "field_name_sweep": {
     "clean": true,
     "stale_hits": {}
   },
-  "generated_utc": "2026-07-22T15:47:19.582275+00:00",
+  "generated_utc": "2026-07-22T16:04:21.225516+00:00",
   "stage": "1-build-of-executable-package",
   "package_type": "executable (Stage-2 call path implemented; fires calls ONLY under --mode run + matching --stage2-sanction)",
   "model_calls_made_at_build": 0,
@@ -109,9 +115,9 @@
     "431_output_schema.json": "3925001ce9b444a92b5164576770256784d2e8cec5fc94bbaaa7d7beccd6dd11",
     "431_selector_prompt.txt": "3a146f4122dddf09f8de984662685789ee6aee6a3276509d91fc5818a63e0007",
     "431_fixture_preflight.json": "033163026a7d14a8fc051184e02de4c3790db11c711d406cead3de2fc02fc79d",
-    "run_431_selection_measurement.py": "e8bf3ad8d95d43454ec301195a9fa31551d825dad46a774f99d953fc5c67bb61"
+    "run_431_selection_measurement.py": "bd0ee8cdc945b0995b5ccc8de32989c1890baf3df3972e1d53e1e1bcb9df10fa"
   },
-  "manifest_self_hash_of_artifact_hashes": "9c2cc8e157627d880068c6bb380c09e00c0ae0321fbac52253b268326b7dc9cd",
-  "stage2_sanction_token": "9c2cc8e157627d880068c6bb380c09e00c0ae0321fbac52253b268326b7dc9cd",
+  "manifest_self_hash_of_artifact_hashes": "48054981045fc1a5f37e8b235d3cccb10586d3a04fa35eaf4a36b6a41f375487",
+  "stage2_sanction_token": "48054981045fc1a5f37e8b235d3cccb10586d3a04fa35eaf4a36b6a41f375487",
   "_how_to_sanction": "Stage 2 is invoked as: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>"
 }
