@@ -50,6 +50,8 @@ SIDECAR_PATH = BUILD_LOG / "431_selection_measurement_sidecar.json"
 RUNTIME_SEAM_PATH = BUILD_LOG / "431_runtime_seam_capture.json"
 VALIDATION_PATH = BUILD_LOG / "431_validation.json"
 SEAM_CHECK_PATH = BUILD_LOG / "431_repository_seam_check.json"
+FATAL_PATH = BUILD_LOG / "431_fatal_run_error.json"        # Step 439: terminal fatal-run record
+REPORT_PATH = BUILD_LOG / "431_selection_measurement.md"   # §9 report (emits the Role-C note)
 
 LEASES = {
     "atreca": CAM_ROOT / "05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt",
@@ -815,6 +817,7 @@ def call_panelist(role: str, candidate: Dict[str, Any], envelope: dict, candidat
     from cam.adapters.lease_review.lease_coverage_305 import (
         EVALUATOR_LINEUP_305, _classify_failure, _is_transient_failure,
     )
+    from cam.core.provider_router import FatalProviderError
     _assert_stage2(mode, sanction)
 
     evaluator_cfg = EVALUATOR_LINEUP_305[role]
@@ -892,11 +895,26 @@ def call_panelist(role: str, candidate: Dict[str, Any], envelope: dict, candidat
             attempts.append({"provider": provider, "model": model, "parse_ok": True,
                              "raw_response": call_meta["raw_response"], "error": None})
             return _finalize(provider, model, label, judgment, call_meta, is_fb, fb_reason)
+        except FatalProviderError as e:
+            # FIX 1a (Step 439): a FatalProviderError that reaches us TYPED is fatal to
+            # the WHOLE RUN, immediately — never a degraded attempt, never fallback. This
+            # covers the PROPAGATING paths: Anthropic (role A, :471-472) and xAI (role C,
+            # :770-771) both `except FatalProviderError: raise`, and xAI also maps auth
+            # errors to FatalProviderError. (OpenAI/role B WRAPS its integrity fatal into
+            # a generic ProviderError — that path is caught by the config_integrity_violation
+            # message-halt in the `except Exception` below.) `ProviderPermanentError` does
+            # NOT exist in cam (Step 435), so it is omitted from the tuple. Annotate the
+            # exception with role/candidate/provider/model for the run_stage2 terminal record.
+            e._role_431, e._candidate_431 = role, candidate["id"]
+            e._provider_431, e._model_431 = provider, model
+            raise
         except Exception as e:
             # FIX (Step 434): a 416 config-integrity violation is a HARD HALT, never a
             # fallback. Absorbing it into the traversal would silently degrade the
             # frozen panel on a config bug — the exact drift 415/416 exist to catch.
-            # Detected before classification and robust to adapter exception re-wrapping.
+            # Detected before classification and robust to adapter exception re-wrapping
+            # (OpenAI/role B wraps the integrity FatalProviderError into a generic
+            # ProviderError; this message-match halts it — quoted from Step 434, unaltered).
             if _is_config_integrity_violation(e):
                 raise MeasurementIntegrityHalt(
                     f"HARD HALT (§11): config-integrity violation on {provider}/{model} for "
@@ -929,6 +947,11 @@ def call_panelist(role: str, candidate: Dict[str, Any], envelope: dict, candidat
             attempts.append({"provider": provider, "model": model, "parse_ok": True,
                              "raw_response": call_meta["raw_response"], "error": None})
             return _finalize(provider, model, label, judgment, call_meta, True, fb_reason)
+        except FatalProviderError as e:
+            # FIX 1a (Step 439): same fatal-to-whole-run halt on the pool path.
+            e._role_431, e._candidate_431 = role, candidate["id"]
+            e._provider_431, e._model_431 = provider, model
+            raise
         except Exception as e:
             # Step 434: same hard-halt on a config-integrity violation in the pool path.
             if _is_config_integrity_violation(e):
@@ -1125,6 +1148,58 @@ def _load_profiles_cached() -> dict:
     return _PROFILES_CACHE["profiles"]
 
 
+# ── Report language (Step 439 Condition 2) — EMITTED in the §9 report, not just sidecar ──
+# Verbatim per the GPT ruling. States the Role-C situation as a STRUCTURAL ABSENCE (the
+# guarded omission mode is impossible for grok), not a skipped check. Backed by the
+# Step 435-read/3105902 code trace (438) proving grok transmits temperature=0 by every path.
+ROLE_C_INTEGRITY_REPORT_LANGUAGE = (
+    "Role C (grok-4.3, canonical self-retry role) ran without omission-guard integrity "
+    "instrumentation because the guarded condition — conditional temperature omission "
+    "(TEMPERATURE_ONLY_DEFAULT_MODELS) — is structurally impossible for grok-4.3 (not in the "
+    "omit-set; transmits temperature=0 unconditionally, verified by code trace, "
+    "Step 435-read/3105902). This is a structural absence of a needed check, NOT a skipped check."
+)
+
+
+def render_report(sidecar: dict) -> None:
+    """Write the §9 report (431_selection_measurement.md) from the sidecar. This is a
+    Stage-2 RUN output; NOT invoked at build. It EMITS the Condition-2 Role-C language
+    (not merely records it in the sidecar). The full §9.1/§9.2 tables are copied from
+    431_validation.json + 431_repository_seam_check.json when those are produced; this
+    renderer emits the fixed §9 framing + the required Role-C integrity note now.
+    """
+    traces = sidecar.get("certification_traces", [])
+    lines: List[str] = []
+    lines.append("# Step 431 Part B — Governed Evidence-Selection Measurement — Report (§9)\n")
+    lines.append(f"- config_hash: `{sidecar.get('config_hash')}`")
+    lines.append(f"- admitted candidates: {sidecar.get('admitted_candidates')}")
+    lines.append(f"- completeness: not_established (no terminal `unsatisfied_*` may be emitted, §8.3)\n")
+    lines.append("## §9 Panel integrity — adapter-level config-integrity asymmetry\n")
+    lines.append(
+        "All three canonical adapters invoke `_check_generation_integrity` on the real outbound "
+        "payload (Anthropic, OpenAI, xAI). Fatal propagation is NOT uniform: Anthropic (role A) and "
+        "xAI (role C) propagate `FatalProviderError` typed; OpenAI (role B) WRAPS its integrity "
+        "fatal into a generic `ProviderError` (message preserved). The harness halts on a fatal via "
+        "the exception type for A/C and via the `config_integrity_violation` message-match for the "
+        "OpenAI-wrapped case; either way a config-integrity violation aborts the whole run (§11), "
+        "never degrades to a fallback. The only adapter WITHOUT the integrity assertion is Google, "
+        "used solely as a degraded pool fallback (never a canonical role).\n")
+    lines.append("### Role C (grok-4.3) — structural absence, not a skipped check\n")
+    lines.append(sidecar.get("role_c_integrity_note", ROLE_C_INTEGRITY_REPORT_LANGUAGE) + "\n")
+    lines.append(
+        "**Claim bound:** a `satisfied` result on a parameter whose certification depends on a "
+        "canonical Role-C panel is certified under a Role-C call whose transmitted config is "
+        "recorded (`adapter.last_integrity`) AND cannot drift (temperature=0 by construction) — "
+        "there is no unguarded-drift exposure to caveat.\n")
+    lines.append("## §9.1 / §9.2 per-parameter results\n")
+    for t in traces:
+        lines.append(
+            f"- {t['parameter']} ({t['lease']}), series {t['series_index']}: "
+            f"{t['final_certification_state']} (completeness: "
+            f"{t['completeness_provenance']['status']})")
+    REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 def run_stage2(sanction: str) -> None:
     """Live Stage-2 measurement. Gated; fires the ~90–105 primary calls. Implemented
     for the scoped audit; NOT invoked by this step (build mode only). Every mechanism
@@ -1153,20 +1228,67 @@ def run_stage2(sanction: str) -> None:
     # ── Runtime seam capture: IMMEDIATELY before the first model call (§8.2) ──
     seam_before = capture_cam_seam("before_first_model_call")
 
+    # FIX 1a terminal-fatal machinery (Step 439): the candidate loop is the ONLY thing
+    # between the two seam captures. A fatal (raw FatalProviderError from A/C, or a
+    # MeasurementIntegrityHalt from OpenAI's wrapped config-integrity) is fatal to the
+    # WHOLE RUN — call_panelist re-raised it immediately, so NO fallback followed it.
+    # We persist a terminal fatal-run-error record, then re-raise; `finally` always
+    # closes the audit surfaces (seam_after + partial sidecar) so nothing is lost.
+    from cam.core.provider_router import FatalProviderError
     series_by_id: Dict[str, dict] = {}
-    for cand in admitted:
-        series_by_id[cand["id"]] = run_candidate_series(
-            cand, sources[cand["lease"]], cfg, schema_text, prompt_template,
-            config_hash, sanction,
-        )
+    active_candidate: Optional[str] = None
+    fatal_occurred = False
+    try:
+        for cand in admitted:
+            active_candidate = cand["id"]
+            series_by_id[cand["id"]] = run_candidate_series(
+                cand, sources[cand["lease"]], cfg, schema_text, prompt_template,
+                config_hash, sanction,
+            )
+        active_candidate = None
+    except (FatalProviderError, MeasurementIntegrityHalt) as e:
+        fatal_occurred = True
+        terminal = {
+            "_artifact": "431_fatal_run_error.json",
+            "_meaning": "The measurement HALTED on a fatal/config-integrity condition (§11). "
+                        "No fallback was attempted after the fatal; no result is emitted.",
+            "fatal_exception_type": type(e).__name__,
+            "fatal_message": str(e),
+            "role_active_at_fatal": getattr(e, "_role_431", None),
+            "candidate_active_at_fatal": getattr(e, "_candidate_431", active_candidate),
+            "requested_provider": getattr(e, "_provider_431", None),
+            "requested_model": getattr(e, "_model_431", None),
+            "candidates_fully_completed_before_fatal": sorted(series_by_id.keys()),
+            "earlier_calls_completed": len(series_by_id) > 0,
+            "no_fallback_attempted_after_fatal": True,
+            "partial_sidecar_path": str(SIDECAR_PATH),
+            "runtime_seam_path": str(RUNTIME_SEAM_PATH),
+            "sanction_token": sanction,
+            "config_hash": config_hash,
+        }
+        FATAL_PATH.write_text(json.dumps(terminal, indent=2), encoding="utf-8")
+        print(f"FATAL: measurement halted; terminal record written: {FATAL_PATH.name}", flush=True)
+        raise
+    finally:
+        # ── Runtime seam capture: IMMEDIATELY after the final model call (§8.2) ──
+        seam_after = capture_cam_seam("after_last_model_call")
+        RUNTIME_SEAM_PATH.write_text(json.dumps(
+            {"before_first_model_call": seam_before, "after_last_model_call": seam_after,
+             "fatal_occurred": fatal_occurred}, indent=2), encoding="utf-8")
+        if fatal_occurred:
+            # Persist whatever partial audit exists so the fatal run is inspectable.
+            SIDECAR_PATH.write_text(json.dumps({
+                "_artifact": "431_selection_measurement_sidecar.json",
+                "_partial": True,
+                "_reason": "run halted on a fatal condition — see 431_fatal_run_error.json",
+                "stage": 2, "sanction_token": sanction, "config_hash": config_hash,
+                "artifact_hashes": hashes, "admitted_candidates": sorted(admitted_ids),
+                "series": series_by_id,
+                "runtime_seam": {"before_first_model_call": seam_before,
+                                 "after_last_model_call": seam_after},
+            }, indent=2), encoding="utf-8")
 
-    # ── Runtime seam capture: IMMEDIATELY after the final model call (§8.2) ──
-    seam_after = capture_cam_seam("after_last_model_call")
-    RUNTIME_SEAM_PATH.write_text(json.dumps(
-        {"before_first_model_call": seam_before, "after_last_model_call": seam_after},
-        indent=2), encoding="utf-8")
-
-    # Certification per (lease, parameter) across its admitted candidates, per series.
+    # ── Normal path (no fatal): certification + full sidecar + report ──
     cert_traces: List[dict] = []
     by_lease_param: Dict[Tuple[str, str], List[dict]] = {}
     for cand in admitted:
@@ -1180,7 +1302,7 @@ def run_stage2(sanction: str) -> None:
 
     sidecar = {
         "_artifact": "431_selection_measurement_sidecar.json",
-        "_authority": "431_partB_measurement_instruction.md v3.3 §7/§8; call path Step 432",
+        "_authority": "431_partB_measurement_instruction.md v3.3 §7/§8; call path Step 432/439",
         "stage": 2,
         "sanction_token": sanction,
         "config_hash": config_hash,
@@ -1190,9 +1312,12 @@ def run_stage2(sanction: str) -> None:
         "certification_traces": cert_traces,
         "runtime_seam": {"before_first_model_call": seam_before,
                          "after_last_model_call": seam_after},
+        "role_c_integrity_note": ROLE_C_INTEGRITY_REPORT_LANGUAGE,  # also emitted in the report (§9)
     }
     SIDECAR_PATH.write_text(json.dumps(sidecar, indent=2), encoding="utf-8")
     print(f"sidecar written: {SIDECAR_PATH.name}")
+    render_report(sidecar)
+    print(f"report written: {REPORT_PATH.name}")
 
 
 def verify_call_path_wired(cfg: dict, sources: dict) -> dict:
@@ -1499,12 +1624,17 @@ def build_stage1() -> None:
                  "role": "Step-433 executable package (F2 + V3 mirror + import time)",
                  "status": "SUPERSEDED-FOR-EXECUTION — NOT void",
                  "superseded_by_step": "434 — WITHDREW the 433 V3 mirror (premise partly false; adapters self-check the real payload) and REPLACED it with the ruled fix: a 416 config-integrity violation HARD-HALTS the measurement instead of degrading to fallback"},
+                {"token": "48054981045fc1a5f37e8b235d3cccb10586d3a04fa35eaf4a36b6a41f375487",
+                 "role": "Step-434 executable package (config-integrity message-halt; F2)",
+                 "status": "SUPERSEDED-FOR-EXECUTION — NOT void",
+                 "superseded_by_step": "439 — collapsed final scope: added FIX 1a (type-based `except FatalProviderError: raise` halts the propagating A/C paths; ProviderPermanentError omitted — does not exist, Step 435); kept the 434 OpenAI config_integrity_violation message-halt for the wrapping B path; added run_stage2 terminal-fatal record + partial-sidecar/seam-in-finally; added §9 report emission of the Role-C structural-absence note (Step 435-read/3105902); F2 retained. Role-C omission-guard requirement DISSOLVED (438)."},
             ],
             "current_executable_token": self_hash,
-            "authorizing_step": "434 — config-integrity HARD-HALT (V3 mirror withdrawn); F2 retained",
+            "authorizing_step": "439 — collapsed final scope (FIX 1a + 434 message-halt + terminal-fatal + report + F2)",
+            "_token_tracking_note": "The Step-439 instruction referenced superseding token 'd0293605', which does NOT match this harness's actual lineage. The actual prior committed token was 48054981 (Step 434). This chain reflects the REAL token lineage from the committed harness, not the instruction's referenced value.",
             "semantic_artifacts_byte_identical_to_65556ee": True,
-            "run_still_gated_by": "re-audit of the 434 diff + separate explicit Tzvi sanction of THIS "
-                                  "new token (no run in Step 434)",
+            "run_still_gated_by": "final assembled-scope re-audit (GPT Condition 3) + separate explicit "
+                                  "Tzvi sanction of THIS new token (no run in Step 439)",
         },
         "field_name_sweep": sweep,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
@@ -1555,16 +1685,19 @@ def main() -> None:
     # Stage-2 live run. Gated: _assert_stage2 (inside run_stage2 and every call)
     # rejects any invocation whose --stage2-sanction does not match the committed
     # manifest self-hash. Fires ~90–105 primary calls. Not invoked by the build
-    # step that ships this file. A 416 config-integrity violation propagates as a
-    # MeasurementIntegrityHalt (Step 434) — abort with a clear banner, never degrade.
+    # step that ships this file. A fatal — a raw FatalProviderError propagated by the
+    # A/C paths (FIX 1a, Step 439) OR a MeasurementIntegrityHalt from OpenAI's wrapped
+    # config-integrity (Step 434) — aborts the whole run with a clear banner, never
+    # degrades. The terminal record + partial audit are already persisted by run_stage2.
+    from cam.core.provider_router import FatalProviderError
     try:
         run_stage2(args.stage2_sanction)
-    except MeasurementIntegrityHalt as e:
+    except (MeasurementIntegrityHalt, FatalProviderError) as e:
         print("\n" + "=" * 78, file=sys.stderr)
-        print("MEASUREMENT HALTED — 416 CONFIG-INTEGRITY VIOLATION (§11 stop seam)", file=sys.stderr)
-        print(str(e), file=sys.stderr)
-        print("No result is emitted. Fix the config drift and re-run; do NOT work around it.",
-              file=sys.stderr)
+        print("MEASUREMENT HALTED — FATAL / CONFIG-INTEGRITY CONDITION (§11 stop seam)", file=sys.stderr)
+        print(f"{type(e).__name__}: {e}", file=sys.stderr)
+        print(f"Terminal record: {FATAL_PATH.name}. No result is emitted. Fix the cause and re-run; "
+              "do NOT work around it.", file=sys.stderr)
         print("=" * 78, file=sys.stderr)
         raise SystemExit(2)
 
