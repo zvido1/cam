@@ -99,20 +99,26 @@
         "token": "48054981045fc1a5f37e8b235d3cccb10586d3a04fa35eaf4a36b6a41f375487",
         "role": "Step-434 executable package (config-integrity message-halt; F2)",
         "status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void",
-        "superseded_by_step": "439 \u2014 collapsed final scope: added FIX 1a (type-based `except FatalProviderError: raise` halts the propagating A/C paths; ProviderPermanentError omitted \u2014 does not exist, Step 435); kept the 434 OpenAI config_integrity_violation message-halt for the wrapping B path; added run_stage2 terminal-fatal record + partial-sidecar/seam-in-finally; added \u00a79 report emission of the Role-C structural-absence note (Step 435-read/3105902); F2 retained. Role-C omission-guard requirement DISSOLVED (438)."
+        "superseded_by_step": "439 \u2014 collapsed final scope: added FIX 1a (type-based `except FatalProviderError: raise` halts the propagating A/C paths; ProviderPermanentError omitted \u2014 does not exist, Step 435); kept the 434 OpenAI config_integrity_violation message-halt for the wrapping B path; added run_stage2 terminal-fatal record + partial-sidecar/seam-in-finally; added \u00a79 report emission; F2 retained."
+      },
+      {
+        "token": "ce284b55950a1ce152e312eb96b0276933e0cb0fa8fb574f7051742515e6fa0f",
+        "role": "Step-439 executable package (FIX 1a + terminal-fatal + report + F2)",
+        "status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void",
+        "superseded_by_step": "440-fix \u2014 report-language ONLY: replaced the byte-wrong Role-C \u00a79 heading+paragraph ('structural absence of a needed check') with the accurate wording (xAI DOES invoke the shared _check_generation_integrity at provider_router.py:764, records last_integrity; only the conditional-temperature-omission branch is structurally inapplicable to grok). No mechanism/fatal-handling/F2/semantic-artifact change."
       }
     ],
-    "current_executable_token": "ce284b55950a1ce152e312eb96b0276933e0cb0fa8fb574f7051742515e6fa0f",
-    "authorizing_step": "439 \u2014 collapsed final scope (FIX 1a + 434 message-halt + terminal-fatal + report + F2)",
-    "_token_tracking_note": "The Step-439 instruction referenced superseding token 'd0293605', which does NOT match this harness's actual lineage. The actual prior committed token was 48054981 (Step 434). This chain reflects the REAL token lineage from the committed harness, not the instruction's referenced value.",
+    "current_executable_token": "8d14543ada608b5eac53e38105788885ff28fff619c2e7821c25c673f2e6917f",
+    "authorizing_step": "440-fix \u2014 Role-C \u00a79 report-language correction ONLY (heading + paragraph)",
+    "_token_tracking_note": "Earlier instructions referenced a token 'd0293605' that never matched this harness's actual lineage (it appears only in flag-notes, never as a computed manifest self-hash). This chain reflects the REAL committed token lineage.",
     "semantic_artifacts_byte_identical_to_65556ee": true,
-    "run_still_gated_by": "final assembled-scope re-audit (GPT Condition 3) + separate explicit Tzvi sanction of THIS new token (no run in Step 439)"
+    "run_still_gated_by": "final delta audit + separate explicit Tzvi sanction of THIS new token (no run in Step 440-fix)"
   },
   "field_name_sweep": {
     "clean": true,
     "stale_hits": {}
   },
-  "generated_utc": "2026-07-22T22:21:32.929135+00:00",
+  "generated_utc": "2026-07-22T23:39:43.333342+00:00",
   "stage": "1-build-of-executable-package",
   "package_type": "executable (Stage-2 call path implemented; fires calls ONLY under --mode run + matching --stage2-sanction)",
   "model_calls_made_at_build": 0,
@@ -122,9 +128,9 @@
     "431_output_schema.json": "3925001ce9b444a92b5164576770256784d2e8cec5fc94bbaaa7d7beccd6dd11",
     "431_selector_prompt.txt": "3a146f4122dddf09f8de984662685789ee6aee6a3276509d91fc5818a63e0007",
     "431_fixture_preflight.json": "033163026a7d14a8fc051184e02de4c3790db11c711d406cead3de2fc02fc79d",
-    "run_431_selection_measurement.py": "7df98f92dcae6719bf2905421addc4a59feabdb176592232bf17fd5891f4492c"
+    "run_431_selection_measurement.py": "ae665f16029a2462ef5cb2d7f71c1fe91863d532f33c1616403a4bfcc7b6802d"
   },
-  "manifest_self_hash_of_artifact_hashes": "ce284b55950a1ce152e312eb96b0276933e0cb0fa8fb574f7051742515e6fa0f",
-  "stage2_sanction_token": "ce284b55950a1ce152e312eb96b0276933e0cb0fa8fb574f7051742515e6fa0f",
+  "manifest_self_hash_of_artifact_hashes": "8d14543ada608b5eac53e38105788885ff28fff619c2e7821c25c673f2e6917f",
+  "stage2_sanction_token": "8d14543ada608b5eac53e38105788885ff28fff619c2e7821c25c673f2e6917f",
   "_how_to_sanction": "Stage 2 is invoked as: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>"
 }

@@ -1148,16 +1148,19 @@ def _load_profiles_cached() -> dict:
     return _PROFILES_CACHE["profiles"]
 
 
-# ── Report language (Step 439 Condition 2) — EMITTED in the §9 report, not just sidecar ──
-# Verbatim per the GPT ruling. States the Role-C situation as a STRUCTURAL ABSENCE (the
-# guarded omission mode is impossible for grok), not a skipped check. Backed by the
-# Step 435-read/3105902 code trace (438) proving grok transmits temperature=0 by every path.
+# ── Report language (Step 440-fix Condition 2) — EMITTED in the §9 report, not just sidecar ──
+# Corrected per the Step 440/441 definitive read: xAI DOES invoke the shared module-level
+# _check_generation_integrity (provider_router.py:764) and records last_integrity (:765). The
+# accurate statement is that Role C runs the shared check; only the CONDITIONAL-TEMPERATURE-OMISSION
+# branch is structurally inapplicable to grok (outside TEMPERATURE_ONLY_DEFAULT_MODELS; temperature
+# transmitted explicitly as 0, verified Step 435-read/3105902). The prior "structural absence of a
+# needed check" wording was byte-wrong and is replaced.
 ROLE_C_INTEGRITY_REPORT_LANGUAGE = (
-    "Role C (grok-4.3, canonical self-retry role) ran without omission-guard integrity "
-    "instrumentation because the guarded condition — conditional temperature omission "
-    "(TEMPERATURE_ONLY_DEFAULT_MODELS) — is structurally impossible for grok-4.3 (not in the "
-    "omit-set; transmits temperature=0 unconditionally, verified by code trace, "
-    "Step 435-read/3105902). This is a structural absence of a needed check, NOT a skipped check."
+    "Role C (`grok-4.3`, canonical self-retry role) invokes the shared module-level outbound "
+    "generation-integrity check and records the resulting integrity metadata. Its configured "
+    "temperature is transmitted explicitly as `0`, and the xAI call path re-raises fatal integrity "
+    "failures. Grok is outside `TEMPERATURE_ONLY_DEFAULT_MODELS`, so the "
+    "conditional-temperature-omission branch is structurally inapplicable to Role C."
 )
 
 
@@ -1184,7 +1187,7 @@ def render_report(sidecar: dict) -> None:
         "OpenAI-wrapped case; either way a config-integrity violation aborts the whole run (§11), "
         "never degrades to a fallback. The only adapter WITHOUT the integrity assertion is Google, "
         "used solely as a degraded pool fallback (never a canonical role).\n")
-    lines.append("### Role C (grok-4.3) — structural absence, not a skipped check\n")
+    lines.append("### Role C (grok-4.3) — shared integrity checking and structurally inapplicable omission branch\n")
     lines.append(sidecar.get("role_c_integrity_note", ROLE_C_INTEGRITY_REPORT_LANGUAGE) + "\n")
     lines.append(
         "**Claim bound:** a `satisfied` result on a parameter whose certification depends on a "
@@ -1627,14 +1630,18 @@ def build_stage1() -> None:
                 {"token": "48054981045fc1a5f37e8b235d3cccb10586d3a04fa35eaf4a36b6a41f375487",
                  "role": "Step-434 executable package (config-integrity message-halt; F2)",
                  "status": "SUPERSEDED-FOR-EXECUTION — NOT void",
-                 "superseded_by_step": "439 — collapsed final scope: added FIX 1a (type-based `except FatalProviderError: raise` halts the propagating A/C paths; ProviderPermanentError omitted — does not exist, Step 435); kept the 434 OpenAI config_integrity_violation message-halt for the wrapping B path; added run_stage2 terminal-fatal record + partial-sidecar/seam-in-finally; added §9 report emission of the Role-C structural-absence note (Step 435-read/3105902); F2 retained. Role-C omission-guard requirement DISSOLVED (438)."},
+                 "superseded_by_step": "439 — collapsed final scope: added FIX 1a (type-based `except FatalProviderError: raise` halts the propagating A/C paths; ProviderPermanentError omitted — does not exist, Step 435); kept the 434 OpenAI config_integrity_violation message-halt for the wrapping B path; added run_stage2 terminal-fatal record + partial-sidecar/seam-in-finally; added §9 report emission; F2 retained."},
+                {"token": "ce284b55950a1ce152e312eb96b0276933e0cb0fa8fb574f7051742515e6fa0f",
+                 "role": "Step-439 executable package (FIX 1a + terminal-fatal + report + F2)",
+                 "status": "SUPERSEDED-FOR-EXECUTION — NOT void",
+                 "superseded_by_step": "440-fix — report-language ONLY: replaced the byte-wrong Role-C §9 heading+paragraph ('structural absence of a needed check') with the accurate wording (xAI DOES invoke the shared _check_generation_integrity at provider_router.py:764, records last_integrity; only the conditional-temperature-omission branch is structurally inapplicable to grok). No mechanism/fatal-handling/F2/semantic-artifact change."},
             ],
             "current_executable_token": self_hash,
-            "authorizing_step": "439 — collapsed final scope (FIX 1a + 434 message-halt + terminal-fatal + report + F2)",
-            "_token_tracking_note": "The Step-439 instruction referenced superseding token 'd0293605', which does NOT match this harness's actual lineage. The actual prior committed token was 48054981 (Step 434). This chain reflects the REAL token lineage from the committed harness, not the instruction's referenced value.",
+            "authorizing_step": "440-fix — Role-C §9 report-language correction ONLY (heading + paragraph)",
+            "_token_tracking_note": "Earlier instructions referenced a token 'd0293605' that never matched this harness's actual lineage (it appears only in flag-notes, never as a computed manifest self-hash). This chain reflects the REAL committed token lineage.",
             "semantic_artifacts_byte_identical_to_65556ee": True,
-            "run_still_gated_by": "final assembled-scope re-audit (GPT Condition 3) + separate explicit "
-                                  "Tzvi sanction of THIS new token (no run in Step 439)",
+            "run_still_gated_by": "final delta audit + separate explicit Tzvi sanction of THIS new "
+                                  "token (no run in Step 440-fix)",
         },
         "field_name_sweep": sweep,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
