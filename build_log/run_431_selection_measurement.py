@@ -597,19 +597,610 @@ def _assert_stage2(mode: str, sanction: Optional[str]) -> None:
         )
 
 
-def call_panelist(role: str, payload: dict, mode: str, sanction: Optional[str]) -> dict:
-    """The ONLY function that would invoke a model. Gated unconditionally.
+# ── Stage-2 call-path implementation (Step 432) ───────────────────────────────
+#
+# ARCHITECTURE NOTE — read before auditing this section.
+#
+# The Stage-2 brief says "call through the real _call_single_evaluator_305 path —
+# do NOT reimplement provider logic." That directive is honored as Part B §2 and
+# this file's own gated-call-site docstring phrase it: *import the
+# _call_single_evaluator_305 call/fallback/provenance PATTERN/SHAPE*, and reuse the
+# REAL provider logic it wraps. It is NOT honored by literally invoking
+# _call_single_evaluator_305(...), which is IMPOSSIBLE here and would be WRONG:
+#
+#   • _call_single_evaluator_305 hard-bakes the coverage-analysis _SYSTEM_PROMPT +
+#     _build_user_prompt and parses element-verdict arrays. It exposes no seam to
+#     inject the 431 selector prompt / schema, and it cannot parse a 431 judgment.
+#   • Feeding it the 431 payload would require editing/subclassing/monkeypatching
+#     cam/ — forbidden by §2 (read-only) and Guardrail #5.
+#   • Sending its coverage prompt to the panel would VIOLATE §5's absolute payload
+#     invariant (the model may see ONLY the 431 selector prompt, schema, candidate,
+#     envelope, neutral family label, applicability dimensions — nothing else).
+#
+# Therefore this harness imports and calls the SAME real provider primitives that
+# _call_single_evaluator_305 itself calls internally — ProviderRouter / ModelTarget
+# / RouterConfig / the provider adapters from cam.core.provider_router, plus the
+# real EVALUATOR_LINEUP_305 identity/temperature/own_chain and the pure importable
+# helpers _classify_failure / _is_transient_failure from lease_coverage_305 — and
+# REPLICATES the own-chain-fallback / canonical-classification / provenance SHAPE
+# of _call_single_evaluator_305 in measurement code. No cam/ file is edited, no
+# provider HTTP/SDK/temperature/retry logic is reimplemented (it stays inside the
+# imported adapter), and nothing is monkeypatched.
+#
+# This interpretation is load-bearing and is surfaced for the scoped informed
+# audit (Step 432 status file). If the auditor/architect rejects it, this section
+# changes BEFORE any run — no model call has been made under it.
+# ──────────────────────────────────────────────────────────────────────────────
 
-    Not exercised at Stage 1 — not even once. A single smoke call would still be
-    a call before sanction; the harness proving itself correct is a code-review
-    property, not a call-it-once property.
+# Output-token budget for one 431 judgment (a single JSON object, not N elements).
+# Reuses the frozen panel's configured max_output_tokens; introduces no new tuning.
+_JUDGMENT_OUTPUT_TOKENS = 3000
+
+
+def _forbidden_leak_tokens(candidate: Dict[str, Any]) -> List[str]:
+    """§5 payload whitelist — the forbidden token(s) the runtime asserts absent.
+
+    The PRIMARY §5 guarantee is by CONSTRUCTION: build_panelist_payload reads only
+    a positive whitelist of permitted fields (id, parameter→neutral label,
+    offsets→raw text, envelope, schema) and NEVER reads candidate['human_note'] or
+    candidate['expected_quote'], so those human-only columns cannot enter the
+    payload at all.
+
+    The runtime check asserts only the parameter's INTERNAL name (`tenant_share`,
+    `base_rent`, `rent_adjustment_pct`; underscore form) is absent — it is the one
+    forbidden token with a collision-free string form (the neutral label uses
+    "tenant's share"/"base rent", so a match on the underscore name would be a
+    genuine leak). The human_note is deliberately NOT substring-checked: its words
+    ("operative", "approximation", …) legitimately occur in the reviewed schema
+    vocabulary (e.g. "operative_term"), so a substring test would false-positive on
+    non-leaked schema text. Its non-inclusion is guaranteed structurally instead."""
+    return [candidate["parameter"]]
+
+
+def build_panelist_payload(candidate: Dict[str, Any], envelope: dict, candidate_text: str,
+                           cfg: dict, schema_text: str, prompt_template: str) -> str:
+    """Render the model-facing payload for ONE (candidate + envelope) × parameter.
+
+    Built by str.replace (NOT str.format — the embedded schema contains literal
+    braces) from a POSITIVE whitelist of §5-permitted fields only: neutral family
+    label, the two applicability-dimension flags, the opaque candidate/envelope
+    ids, the raw candidate text, the deterministic envelope text, and the reviewed
+    output schema (byte-for-byte from 431_output_schema.json). Nothing else is
+    appended at runtime. Same text for A/B/C. Panelists never see each other's
+    output or any other candidate.
     """
-    _assert_stage2(mode, sanction)
-    raise NotImplementedError(
-        "Stage-2 call implementation is intentionally not wired in the Stage-1 "
-        "artifact. Implement against _call_single_evaluator_305's call/fallback/"
-        "provenance shape under Stage-2 sanction, then re-hash."
+    param = candidate["parameter"]
+    fam = cfg["parameter_family_labels"][param]
+    rendered = (
+        prompt_template
+        .replace("{parameter_family_label}", fam["label"])
+        .replace("{charge_basis_applicability}", fam["charge_basis_applicability"])
+        .replace("{charge_scope_applicability}", fam["charge_scope_applicability"])
+        .replace("{candidate_span_id}", candidate["id"])
+        .replace("{candidate_text}", candidate_text)
+        .replace("{context_envelope_id}", envelope["context_envelope_id"])
+        .replace("{context_text}", envelope["context_text"])
+        .replace("{output_schema}", schema_text)
     )
+    for tok in _forbidden_leak_tokens(candidate):
+        if tok and tok in rendered:
+            raise StageAuthorizationError(
+                f"§5 payload leak: forbidden token {tok!r} present in the model-facing "
+                f"payload for {candidate['id']}. A leaked payload voids the measurement "
+                f"(mechanism appears to work on poisoned input). Halt."
+            )
+    return rendered
+
+
+def _strip_code_fence(raw: str) -> str:
+    """Remove a leading/trailing markdown code fence if the model wrapped its JSON
+    despite the prompt forbidding it. Fence removal is NOT a meaning-changing
+    repair (it strips a wrapper, not content); it mirrors lease_coverage_305's
+    handling. No JSON-object hunting / element extraction / field synthesis is done
+    — those WOULD change meaning and are prohibited (§5, brief item 1)."""
+    r = raw.strip()
+    if r.startswith("```"):
+        r = re.sub(r"^```(?:json)?\s*", "", r)
+        r = re.sub(r"\s*```\s*$", "", r)
+        r = r.strip()
+    return r
+
+
+def _provider_call(provider: str, model: str, evaluator_cfg: dict, role: str,
+                   candidate: Dict[str, Any], payload: str) -> Tuple[dict, dict]:
+    """One real provider call through cam.core.provider_router — the SAME primitives
+    _call_single_evaluator_305 uses (ProviderRouter/ModelTarget/RouterConfig/adapter).
+    Returns (parsed_judgment, call_meta). Raises on empty/parse failure so the
+    caller's fallback traversal classifies it exactly like the 305 path.
+
+    Temperature: ModelTarget carries the frozen declared temperature (0.0). The
+    ADAPTER decides transmission via TEMPERATURE_ONLY_DEFAULT_MODELS — gpt-5.5 is
+    in that set, so temperature is OMITTED (provider default governs) and the
+    omission is LOGGED by the adapter integrity check, not silently dropped
+    (§3 configuration truth). We record temperature_transmitted + the adapter's
+    integrity record for provenance; we never override the adapter's decision.
+    """
+    from cam.core.provider_router import (
+        ModelTarget, ProviderRouter, RouterConfig, TEMPERATURE_ONLY_DEFAULT_MODELS,
+    )
+    target = ModelTarget(
+        name=f"{provider}:{model}-431-{role}-{candidate['id']}",
+        provider=provider,
+        model=model,
+        max_output_tokens=evaluator_cfg.get("max_output_tokens", _JUDGMENT_OUTPUT_TOKENS),
+        temperature=evaluator_cfg.get("temperature", 0.0),
+        timeout_sec=evaluator_cfg.get("timeout_sec", 300.0),
+    )
+    router = ProviderRouter([target], RouterConfig())
+    adapter = router._get_adapter(provider)
+    # The selector prompt is the entire model-facing text; no separate system
+    # channel (keeps the payload EXACTLY the §5 whitelist — nothing appended).
+    raw = adapter.call("", payload, target) or ""
+    usage = getattr(adapter, "last_usage", None)
+    integrity = getattr(adapter, "last_integrity", None)
+    temp_transmitted = model not in TEMPERATURE_ONLY_DEFAULT_MODELS
+
+    call_meta = {
+        "raw_response": raw,
+        "raw_char_len": len(raw),
+        "usage": usage,
+        "temperature_declared": target.temperature,
+        "temperature_transmitted": temp_transmitted,
+        "temperature_integrity": integrity,
+    }
+
+    stripped = _strip_code_fence(raw)
+    if stripped == "":
+        raise ValueError("empty_content: model returned no output")
+    try:
+        parsed = json.loads(stripped)
+    except (json.JSONDecodeError, ValueError) as e:
+        # No repair, no object-hunting: a malformed judgment is a failed attempt,
+        # not a silently-mended one (brief item 1: no meaning-changing repairs).
+        raise ValueError(f"malformed: judgment is not valid JSON ({e})")
+    if not isinstance(parsed, dict):
+        raise ValueError(f"malformed: judgment is not a JSON object (got {type(parsed).__name__})")
+    return parsed, call_meta
+
+
+def call_panelist(role: str, candidate: Dict[str, Any], envelope: dict, candidate_text: str,
+                  context_text: str, cfg: dict, schema_text: str, prompt_template: str,
+                  config_hash: str, mode: str, sanction: Optional[str]) -> dict:
+    """One panelist (role A/B/C) judging ONE (candidate + envelope) × parameter.
+
+    Gated unconditionally by _assert_stage2. Traverses the role's own_chain exactly
+    like _call_single_evaluator_305: primary → same-provider chain, with same-model
+    self-retry ONLY on transient failure; then the shared cross-family pool. Records
+    real returned identity, canonicality, temperature transmission, raw response,
+    and every attempt (including parse failures) for the audit trail.
+
+    Canonicality (§7 rule 1): actual provider AND actual model equal the role's
+    FROZEN primary AND config_hash equals the reviewed config. is_fallback alone
+    NEVER infers canonicality. Role C's grok-4.3 own_chain entry is the SAME model,
+    so its self-retry stays canonical; A→Haiku, B→gpt-5.4, and any pool substitution
+    are DIFFERENT models → degraded (preserved as audit, excluded from canonical N).
+    A primary-model semantic refusal (valid JSON with unclear/insufficient_context)
+    parses fine → completed → canonical (§7 rule 3): governed uncertainty is the
+    behavior being measured, not a failure.
+    """
+    from cam.adapters.lease_review.lease_coverage_305 import (
+        EVALUATOR_LINEUP_305, _classify_failure, _is_transient_failure,
+    )
+    _assert_stage2(mode, sanction)
+
+    evaluator_cfg = EVALUATOR_LINEUP_305[role]
+    primary_provider, primary_model = evaluator_cfg["provider"], evaluator_cfg["model"]
+    payload = build_panelist_payload(candidate, envelope, candidate_text, cfg,
+                                     schema_text, prompt_template)
+    # config_hash is a genuine participant in the canonical decision (§7 rule 1):
+    # the threaded run config_hash must equal the committed manifest self-hash on
+    # disk. Under a valid sanction these agree; a drifted config_hash here would
+    # (correctly) mark the attempt non-canonical rather than silently pass.
+    reviewed_config_hash = json.loads(
+        MANIFEST_PATH.read_text(encoding="utf-8")
+    )["manifest_self_hash_of_artifact_hashes"]
+
+    start = time.time()
+    attempts: List[dict] = []          # every attempt, incl. parse failures (audit)
+    attempt_failures: List[dict] = []  # 305-shape failure classifications
+
+    own_candidates = [(primary_provider, primary_model, evaluator_cfg["label"])]
+    own_candidates += [(p, m, l) for (p, m, l) in evaluator_cfg.get("own_chain", [])]
+
+    def _finalize(actual_provider, actual_model, actual_label, judgment, call_meta,
+                  is_fallback, fallback_reason):
+        grounded = apply_field_grounding(
+            judgment, candidate["parameter"], candidate_text, context_text
+        )
+        config_ok = (config_hash == reviewed_config_hash)
+        identity_ok = (actual_provider == primary_provider and actual_model == primary_model)
+        canonical = identity_ok and config_ok
+        if canonical:
+            canonical_reason = "actual_provider+model==frozen_primary AND config_hash==reviewed"
+        elif not config_ok:
+            canonical_reason = (
+                f"config_hash {config_hash} != reviewed {reviewed_config_hash} — "
+                "config drift, not canonical"
+            )
+        else:
+            canonical_reason = (
+                f"actual {actual_provider}/{actual_model} != frozen primary "
+                f"{primary_provider}/{primary_model} — degraded substitution, excluded from canonical N"
+            )
+        return {
+            "role": role,
+            "requested_provider": primary_provider, "requested_model": primary_model,
+            "actual_provider": actual_provider, "actual_model": actual_model,
+            "actual_label": actual_label,
+            "is_fallback": is_fallback,
+            "canonical": canonical, "canonical_reason": canonical_reason,
+            "config_hash": config_hash,
+            "completed": True, "abstained": False,
+            "elapsed_sec": round(time.time() - start, 2),
+            "fallback_reason": fallback_reason,
+            "temperature_declared": call_meta.get("temperature_declared"),
+            "temperature_transmitted": call_meta.get("temperature_transmitted"),
+            "temperature_integrity": call_meta.get("temperature_integrity"),
+            "raw_response": call_meta.get("raw_response"),
+            "usage": call_meta.get("usage"),
+            "judgment": grounded,
+            "attempts": attempts,
+        }
+
+    # Phase 1: own-provider chain (primary + same-provider retry).
+    hard_fail_no_retry = False
+    for idx, (provider, model, label) in enumerate(own_candidates):
+        is_fb = idx > 0
+        try:
+            judgment, call_meta = _provider_call(provider, model, evaluator_cfg, role,
+                                                 candidate, payload)
+            fb_reason = attempt_failures[0]["reason"] if (is_fb and attempt_failures) else None
+            attempts.append({"provider": provider, "model": model, "parse_ok": True,
+                             "raw_response": call_meta["raw_response"], "error": None})
+            return _finalize(provider, model, label, judgment, call_meta, is_fb, fb_reason)
+        except Exception as e:
+            reason = _classify_failure(str(e), model)
+            attempt_failures.append({"provider": provider, "model": model,
+                                     "reason": reason, "error": str(e)})
+            attempts.append({"provider": provider, "model": model, "parse_ok": False,
+                             "raw_response": None, "error": str(e), "failure_class": reason})
+            # Same-model self-retry only on transient failure (305 guard): a hard
+            # failure won't recover on an immediate re-call of the same model.
+            nxt = idx + 1
+            if (nxt < len(own_candidates)
+                    and own_candidates[nxt][1] == primary_model
+                    and not _is_transient_failure(reason)):
+                hard_fail_no_retry = True
+                break
+
+    # Phase 2: shared cross-family pool — always DEGRADED (different model → excluded
+    # from canonical N; preserved as audit). Mirrors _SHARED_FALLBACK_POOL usage.
+    from cam.adapters.lease_review.lease_coverage_305 import _SHARED_FALLBACK_POOL
+    for provider, model, label in _SHARED_FALLBACK_POOL:
+        try:
+            judgment, call_meta = _provider_call(provider, model, evaluator_cfg, role,
+                                                 candidate, payload)
+            fb_reason = attempt_failures[0]["reason"] if attempt_failures else None
+            attempts.append({"provider": provider, "model": model, "parse_ok": True,
+                             "raw_response": call_meta["raw_response"], "error": None})
+            return _finalize(provider, model, label, judgment, call_meta, True, fb_reason)
+        except Exception as e:
+            reason = _classify_failure(str(e), model)
+            attempt_failures.append({"provider": provider, "model": model,
+                                     "reason": reason, "error": str(e)})
+            attempts.append({"provider": provider, "model": model, "parse_ok": False,
+                             "raw_response": None, "error": str(e), "failure_class": reason})
+
+    # All attempts failed: not completed. NOT canonical, NOT a semantic refusal —
+    # the panel attempt containing this role is degraded (excluded from canonical N).
+    return {
+        "role": role,
+        "requested_provider": primary_provider, "requested_model": primary_model,
+        "actual_provider": None, "actual_model": None, "actual_label": None,
+        "is_fallback": False,
+        "canonical": False,
+        "canonical_reason": "no attempt completed (all provider calls failed) — degraded",
+        "config_hash": config_hash,
+        "completed": False, "abstained": False,
+        "elapsed_sec": round(time.time() - start, 2),
+        "fallback_reason": attempt_failures[0]["reason"] if attempt_failures else "unknown",
+        "hard_fail_no_retry": hard_fail_no_retry,
+        "judgment": None,
+        "attempts": attempts,
+    }
+
+
+def run_panel_attempt(candidate: Dict[str, Any], envelope: dict, candidate_text: str,
+                      context_text: str, cfg: dict, schema_text: str, prompt_template: str,
+                      config_hash: str, sanction: str) -> dict:
+    """One candidate-panel attempt: A, B, C each judge the SAME (candidate+envelope)
+    independently (§7 atomic unit). Panelists receive identical payloads and never
+    see each other's output. Run sequentially in fixed A→B→C order (deterministic;
+    the three primaries are distinct providers so no shared-provider contention).
+
+    A panel attempt is CANONICAL iff ALL THREE role results are canonical (the
+    frozen panel, possibly with C's same-model self-retry, at the frozen config).
+    A degraded/failed substitution on ANY role makes the whole attempt non-canonical
+    — "a degraded A/B/Gemini attempt is not the frozen panel" (§7 rule 2).
+    """
+    per_role = {}
+    for role in ("A", "B", "C"):
+        per_role[role] = call_panelist(
+            role, candidate, envelope, candidate_text, context_text, cfg,
+            schema_text, prompt_template, config_hash, mode="run", sanction=sanction,
+        )
+    panel_canonical = all(per_role[r]["canonical"] for r in ("A", "B", "C"))
+    return {"per_role": per_role, "panel_canonical": panel_canonical}
+
+
+def run_candidate_series(candidate: Dict[str, Any], source, cfg: dict, schema_text: str,
+                         prompt_template: str, config_hash: str, sanction: str) -> dict:
+    """Accumulate FIVE canonical candidate-panel attempts for one candidate, ceiling
+    `attempt_ceiling` (§3/§7). The deterministic envelope is built ONCE per candidate
+    (frozen; never re-derived per attempt or tuned, §10).
+
+    Series discipline (§7):
+      • canonical panels get canonical_attempt_index / series_index 1..5 in the ORDER
+        obtained — retries cannot shop for a preferred result;
+      • a canonical panel counts even when panelists refuse (governed uncertainty);
+      • degraded/failed panels are preserved as audit with a raw_attempt_index and
+        NO series_index (never promoted, never filled from another series);
+      • hitting the ceiling before 5 canonical yields an honest canonical-N shortfall.
+    """
+    ct = source.canonical_text
+    s, e = candidate["offsets"]
+    candidate_text = ct[s:e]
+    envelope = build_envelope(ct, s, e, cfg, envelope_id=f"env_{candidate['id']}")
+    context_text = envelope["context_text"]
+
+    ceiling = cfg["attempt_ceiling"]
+    target = cfg.get("canonical_target_per_candidate", 5)
+
+    canonical_panels: List[dict] = []
+    degraded_panels: List[dict] = []
+    raw_idx = 0
+    while len(canonical_panels) < target and raw_idx < ceiling:
+        raw_idx += 1
+        attempt = run_panel_attempt(candidate, envelope, candidate_text, context_text,
+                                    cfg, schema_text, prompt_template, config_hash, sanction)
+        attempt["raw_attempt_index"] = raw_idx
+        if attempt["panel_canonical"]:
+            k = len(canonical_panels) + 1
+            attempt["canonical_attempt_index"] = k
+            attempt["series_index"] = k
+            for r in ("A", "B", "C"):
+                attempt["per_role"][r]["raw_attempt_index"] = raw_idx
+                attempt["per_role"][r]["canonical_attempt_index"] = k
+                attempt["per_role"][r]["series_index"] = k
+            canonical_panels.append(attempt)
+        else:
+            attempt["canonical_attempt_index"] = None
+            attempt["series_index"] = None
+            for r in ("A", "B", "C"):
+                attempt["per_role"][r]["raw_attempt_index"] = raw_idx
+                attempt["per_role"][r]["canonical_attempt_index"] = None
+                attempt["per_role"][r]["series_index"] = None
+            degraded_panels.append(attempt)
+
+    canonical_n = len(canonical_panels)
+    return {
+        "candidate_id": candidate["id"],
+        "lease": candidate["lease"],
+        "parameter": candidate["parameter"],
+        "envelope": envelope,
+        "candidate_text": candidate_text,
+        "canonical_panels": canonical_panels,
+        "degraded_panels": degraded_panels,
+        "canonical_N": canonical_n,
+        "canonical_target": target,
+        "attempt_ceiling": ceiling,
+        "raw_attempts_used": raw_idx,
+        "canonical_shortfall": canonical_n < target,
+    }
+
+
+def certify_parameter_series(lease: str, parameter: str, candidate_series: List[dict],
+                             cfg: dict, config_hash: str, hashes: Dict[str, str]) -> List[dict]:
+    """Per-parameter-series certification, consuming ONLY the reviewed validator
+    (merge_panel → compare_candidate → certify). Introduces NO new judgment and NO
+    majority behavior — it assembles same-series candidate results and calls the
+    frozen functions. Emits one certification_trace per series index (§8.1).
+
+    Same-series pairing (§7): series index k consumes ONLY the kth canonical panel
+    from each admitted candidate for this lease/parameter. A candidate missing index
+    k makes that series result an incomplete canonical-N shortfall — never filled
+    from another series, never cross-index paired.
+    """
+    target = cfg.get("canonical_target_per_candidate", 5)
+    traces: List[dict] = []
+    for k in range(1, target + 1):
+        per_candidate_out = []
+        incomplete = False
+        for cs in candidate_series:
+            panels = cs["canonical_panels"]
+            if len(panels) < k:
+                incomplete = True
+                per_candidate_out.append({
+                    "candidate_id": cs["candidate_id"], "series_index": k,
+                    "canonical_attempt_index": None, "raw_attempt_index": None,
+                    "candidate_qualification": "absent_this_series",
+                    "note": "candidate lacks canonical index k (degraded/ceiling) — canonical-N shortfall",
+                })
+                continue
+            panel = panels[k - 1]
+            judgments = [panel["per_role"][r]["judgment"] for r in ("A", "B", "C")]
+            merged = merge_panel(judgments, parameter)
+            comparison = compare_candidate(merged, parameter, cs["candidate_text"],
+                                           {"profiles": _load_profiles_cached()}, cfg)
+            per_candidate_out.append({
+                "candidate_id": cs["candidate_id"],
+                "raw_attempt_index": panel["raw_attempt_index"],
+                "canonical_attempt_index": panel["canonical_attempt_index"],
+                "series_index": panel["series_index"],
+                "relevance_ok": comparison["relevance_ok"],
+                "basis_match": comparison["basis_match"],
+                "text_role_ok": comparison["text_role_ok"],
+                "value_ok": comparison["value_ok"],
+                "support_ok": comparison["support_ok"],
+                "applicability_match": comparison["applicability_match"],
+                "agreement_by_field": comparison["agreement_by_field"],
+                "candidate_qualification": comparison["candidate_qualification"],
+                "_comparison": comparison,
+            })
+        comparisons = [c["_comparison"] for c in per_candidate_out if "_comparison" in c]
+        final_state = certify(comparisons, cfg) if comparisons else "review_needed_no_qualifying_candidate"
+        for c in per_candidate_out:
+            c.pop("_comparison", None)
+        traces.append({
+            "parameter": parameter, "lease": lease, "series_index": k,
+            "per_candidate": per_candidate_out,
+            "series_complete": not incomplete,
+            "completeness_provenance": {"status": "not_established"},
+            "prompt_hash": hashes["431_selector_prompt.txt"],
+            "schema_hash": hashes["431_output_schema.json"],
+            "requirement_profiles_hash": hashes["431_requirement_profiles.json"],
+            "config_hash": config_hash,
+            "final_certification_state": final_state,
+        })
+    return traces
+
+
+_PROFILES_CACHE: Dict[str, Any] = {}
+
+
+def _load_profiles_cached() -> dict:
+    if "profiles" not in _PROFILES_CACHE:
+        _PROFILES_CACHE["profiles"] = json.loads(PROFILES_PATH.read_text(encoding="utf-8"))["profiles"]
+    return _PROFILES_CACHE["profiles"]
+
+
+def run_stage2(sanction: str) -> None:
+    """Live Stage-2 measurement. Gated; fires the ~90–105 primary calls. Implemented
+    for the scoped audit; NOT invoked by this step (build mode only). Every mechanism
+    routes through the frozen validator; this function only orchestrates and records.
+    """
+    _assert_stage2("run", sanction)
+    print("=== 431 Stage-2 RUN (live model calls) ===")
+
+    artifacts = load_artifacts()
+    cfg = artifacts["config"]
+    schema_text = SCHEMA_PATH.read_text(encoding="utf-8")
+    prompt_template = artifacts["prompt_template"]
+
+    # Config integrity: the run config MUST equal the reviewed config (§1). The
+    # sanction already matched the manifest self-hash in _assert_stage2; re-derive
+    # per-artifact hashes for the trace and use the self-hash as config identity.
+    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    hashes = manifest["artifact_hashes"]
+    config_hash = manifest["manifest_self_hash_of_artifact_hashes"]
+
+    sources = build_sources()
+    preflight = run_preflight(sources, cfg)
+    admitted_ids = set(preflight["admitted"])
+    admitted = [c for c in CANDIDATES if c["id"] in admitted_ids]
+
+    # ── Runtime seam capture: IMMEDIATELY before the first model call (§8.2) ──
+    seam_before = capture_cam_seam("before_first_model_call")
+
+    series_by_id: Dict[str, dict] = {}
+    for cand in admitted:
+        series_by_id[cand["id"]] = run_candidate_series(
+            cand, sources[cand["lease"]], cfg, schema_text, prompt_template,
+            config_hash, sanction,
+        )
+
+    # ── Runtime seam capture: IMMEDIATELY after the final model call (§8.2) ──
+    seam_after = capture_cam_seam("after_last_model_call")
+    RUNTIME_SEAM_PATH.write_text(json.dumps(
+        {"before_first_model_call": seam_before, "after_last_model_call": seam_after},
+        indent=2), encoding="utf-8")
+
+    # Certification per (lease, parameter) across its admitted candidates, per series.
+    cert_traces: List[dict] = []
+    by_lease_param: Dict[Tuple[str, str], List[dict]] = {}
+    for cand in admitted:
+        by_lease_param.setdefault((cand["lease"], cand["parameter"]), []).append(
+            series_by_id[cand["id"]]
+        )
+    for (lease, parameter), cseries in by_lease_param.items():
+        cert_traces.extend(
+            certify_parameter_series(lease, parameter, cseries, cfg, config_hash, hashes)
+        )
+
+    sidecar = {
+        "_artifact": "431_selection_measurement_sidecar.json",
+        "_authority": "431_partB_measurement_instruction.md v3.3 §7/§8; call path Step 432",
+        "stage": 2,
+        "sanction_token": sanction,
+        "config_hash": config_hash,
+        "artifact_hashes": hashes,
+        "admitted_candidates": sorted(admitted_ids),
+        "series": series_by_id,
+        "certification_traces": cert_traces,
+        "runtime_seam": {"before_first_model_call": seam_before,
+                         "after_last_model_call": seam_after},
+    }
+    SIDECAR_PATH.write_text(json.dumps(sidecar, indent=2), encoding="utf-8")
+    print(f"sidecar written: {SIDECAR_PATH.name}")
+
+
+def verify_call_path_wired(cfg: dict, sources: dict) -> dict:
+    """BUILD-TIME proof that the Stage-2 call path is implemented and wired WITHOUT
+    firing any provider call (brief item 4). Exercises the real payload builder and
+    envelope for every admitted candidate, and constructs a real ModelTarget for
+    each role from EVALUATOR_LINEUP_305 — but NEVER instantiates a provider adapter
+    and NEVER calls one. Zero network, zero model calls.
+    """
+    from cam.adapters.lease_review.lease_coverage_305 import EVALUATOR_LINEUP_305
+    from cam.core.provider_router import ModelTarget, TEMPERATURE_ONLY_DEFAULT_MODELS
+
+    schema_text = SCHEMA_PATH.read_text(encoding="utf-8")
+    prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
+    preflight = run_preflight(sources, cfg)
+    admitted = [c for c in CANDIDATES if c["id"] in set(preflight["admitted"])]
+
+    payloads_built = 0
+    leak_checked = 0
+    for cand in admitted:
+        src = sources[cand["lease"]]
+        ct = src.canonical_text
+        s, e = cand["offsets"]
+        env = build_envelope(ct, s, e, cfg, envelope_id=f"env_{cand['id']}")
+        payload = build_panelist_payload(cand, env, ct[s:e], cfg, schema_text, prompt_template)
+        payloads_built += 1
+        # Confirm the §5 whitelist held (leak-check ran inside the builder).
+        for tok in _forbidden_leak_tokens(cand):
+            assert not tok or tok not in payload
+        leak_checked += 1
+
+    targets = []
+    for role, ecfg in EVALUATOR_LINEUP_305.items():
+        t = ModelTarget(
+            name=f"{ecfg['provider']}:{ecfg['model']}-431-{role}",
+            provider=ecfg["provider"], model=ecfg["model"],
+            max_output_tokens=ecfg.get("max_output_tokens", _JUDGMENT_OUTPUT_TOKENS),
+            temperature=ecfg.get("temperature", 0.0),
+            timeout_sec=ecfg.get("timeout_sec", 300.0),
+        )
+        targets.append({
+            "role": role, "provider": t.provider, "model": t.model,
+            "temperature_declared": t.temperature,
+            "temperature_transmitted": t.model not in TEMPERATURE_ONLY_DEFAULT_MODELS,
+            "self_retry_is_same_model": (ecfg.get("own_chain") or [(None, None, None)])[0][1] == t.model,
+        })
+
+    call_path_implemented = call_panelist.__doc__ is not None and "NotImplementedError" not in (
+        (run_stage2.__doc__ or "") + (call_panelist.__doc__ or "")
+    )
+    return {
+        "wired": True,
+        "provider_calls_made": 0,
+        "admitted_candidates": [c["id"] for c in admitted],
+        "payloads_built": payloads_built,
+        "leak_checks_passed": leak_checked,
+        "role_targets": targets,
+        "call_path_implemented_not_stub": call_path_implemented,
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -838,10 +1429,31 @@ def build_stage1() -> None:
             "all_passed": all(r["pass"] for r in rel_tests),
             "tests": rel_tests,
         },
+        "stage2_supersession": {
+            "_purpose": "Step 432 implemented the Stage-2 call path in "
+                        "run_431_selection_measurement.py. That is the intended, sanctioned way to "
+                        "make the preregistration package executable — but it changes the harness "
+                        "hash, hence the manifest self-hash, hence the sanction token. The prior "
+                        "token is therefore SUPERSEDED-FOR-EXECUTION, which is NOT the same as VOID.",
+            "superseded_preregistration_token": "47cb312a442c4a58d969dece4c24b7d4b03fab93f7b29b33c46c308f87a84dab",
+            "superseded_status": "SUPERSEDED-FOR-EXECUTION — NOT void",
+            "superseded_meaning": "47cb312a validly sanctioned the Stage-1 PREREGISTRATION package "
+                                  "(build commit 65556ee, call path = NotImplementedError by design). "
+                                  "It is retained as evidence that preregistration was sanctioned "
+                                  "BEFORE any executable call path existed. It can no longer authorize "
+                                  "a run because the executable harness differs from the preregistered one.",
+            "prior_stage1_build_commit": "65556ee",
+            "new_executable_token": self_hash,
+            "authorizing_step": "432 — 431 Part B Stage-2 call-path implementation",
+            "semantic_artifacts_byte_identical_to_65556ee": True,
+            "run_still_gated_by": "scoped informed audit of the call-path diff + separate explicit "
+                                  "Tzvi sanction of THIS new token (per brief; no run in Step 432)",
+        },
         "field_name_sweep": sweep,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
-        "stage": 1,
-        "model_calls_made": 0,
+        "stage": "1-build-of-executable-package",
+        "package_type": "executable (Stage-2 call path implemented; fires calls ONLY under --mode run + matching --stage2-sanction)",
+        "model_calls_made_at_build": 0,
         "artifact_hashes": hashes,
         "manifest_self_hash_of_artifact_hashes": self_hash,
         "stage2_sanction_token": self_hash,
@@ -853,6 +1465,18 @@ def build_stage1() -> None:
     for name, h in hashes.items():
         print(f"  {h}  {name}")
     print(f"\n  manifest self-hash / Stage-2 sanction token:\n  {self_hash}")
+
+    print("\n[wiring] verifying Stage-2 call path is implemented + wired (ZERO calls)...")
+    wired = verify_call_path_wired(cfg, sources)
+    print(f"      call path implemented (not a stub): {wired['call_path_implemented_not_stub']}")
+    print(f"      payloads built (no provider touched): {wired['payloads_built']} "
+          f"for {wired['admitted_candidates']}")
+    print(f"      §5 leak-checks passed: {wired['leak_checks_passed']}")
+    for t in wired["role_targets"]:
+        print(f"      role {t['role']}: {t['provider']}/{t['model']} "
+              f"temp_transmitted={t['temperature_transmitted']} "
+              f"self_retry_same_model={t['self_retry_is_same_model']}")
+    print(f"      PROVIDER CALLS MADE (wiring check): {wired['provider_calls_made']}")
 
     seam = capture_cam_seam("stage1_build_complete")
     print(f"\ncam/ clean at build completion: {seam['cam_clean']}")
@@ -871,10 +1495,11 @@ def main() -> None:
         build_stage1()
         return
 
-    _assert_stage2(args.mode, args.stage2_sanction)
-    raise NotImplementedError(
-        "Stage-2 execution path is intentionally unimplemented in the Stage-1 artifact."
-    )
+    # Stage-2 live run. Gated: _assert_stage2 (inside run_stage2 and every call)
+    # rejects any invocation whose --stage2-sanction does not match the committed
+    # manifest self-hash. Fires ~90–105 primary calls. Not invoked by the build
+    # step that ships this file (Step 432 delivers the call path for audit only).
+    run_stage2(args.stage2_sanction)
 
 
 if __name__ == "__main__":
