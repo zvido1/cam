@@ -27,6 +27,8 @@ import json
 import re
 import subprocess
 import sys
+import time  # used by call_panelist provenance (elapsed_sec); added Step 433 — the
+             # call path was never exercised before, so the missing import was latent.
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -706,6 +708,36 @@ def _strip_code_fence(raw: str) -> str:
     return r
 
 
+def _assert_call_integrity(target) -> dict:
+    """FIX V3 (Step 433) — invoke the REAL cam.core 416 config-integrity assertion on
+    the outbound generation config, so EVERY 431 call is checked regardless of
+    provider.
+
+    Why this exists: OpenAI/Anthropic/xAI adapters run `_check_generation_integrity`
+    inside `.call()`, but `GoogleGenAIAdapter.call()` does NOT (verified in
+    cam/core/provider_router.py). Since the call path uses `adapter.call(...)`
+    directly, a pool-fallback Gemini request would otherwise fire with no 416 check —
+    the exact silent-config-drift class 415/416 exists to prevent. Invoking the
+    assertion here closes that gap UNIFORMLY, before any provider request.
+
+    Not a reimplementation: `_check_generation_integrity` is IMPORTED from cam.core
+    and called. Only the outbound-param VIEW is assembled here, mirroring the
+    adapters' own temperature decision with the SAME capability map
+    (TEMPERATURE_ONLY_DEFAULT_MODELS). Raises FatalProviderError (from cam.core) if a
+    declared evaluator-critical parameter is silently dropped."""
+    from cam.core.provider_router import _check_generation_integrity, TEMPERATURE_ONLY_DEFAULT_MODELS
+    if target.model in TEMPERATURE_ONLY_DEFAULT_MODELS:
+        params = {"max_tokens": target.max_output_tokens}
+        temp_omit_reason = (
+            f"model={target.model!r} in TEMPERATURE_ONLY_DEFAULT_MODELS; provider-default "
+            f"temperature governs (documented 415/416 capability exception)."
+        )
+    else:
+        params = {"max_tokens": target.max_output_tokens, "temperature": target.temperature}
+        temp_omit_reason = None
+    return _check_generation_integrity(target, params, temp_omit_reason)
+
+
 def _provider_call(provider: str, model: str, evaluator_cfg: dict, role: str,
                    candidate: Dict[str, Any], payload: str) -> Tuple[dict, dict]:
     """One real provider call through cam.core.provider_router — the SAME primitives
@@ -716,9 +748,10 @@ def _provider_call(provider: str, model: str, evaluator_cfg: dict, role: str,
     Temperature: ModelTarget carries the frozen declared temperature (0.0). The
     ADAPTER decides transmission via TEMPERATURE_ONLY_DEFAULT_MODELS — gpt-5.5 is
     in that set, so temperature is OMITTED (provider default governs) and the
-    omission is LOGGED by the adapter integrity check, not silently dropped
-    (§3 configuration truth). We record temperature_transmitted + the adapter's
-    integrity record for provenance; we never override the adapter's decision.
+    omission is LOGGED by the integrity check, not silently dropped (§3 configuration
+    truth). FIX V3: the real 416 integrity assertion is invoked HERE (via
+    _assert_call_integrity) before the call, guaranteeing the check runs for every
+    provider — including Gemini, whose adapter does not self-check.
     """
     from cam.core.provider_router import (
         ModelTarget, ProviderRouter, RouterConfig, TEMPERATURE_ONLY_DEFAULT_MODELS,
@@ -731,13 +764,20 @@ def _provider_call(provider: str, model: str, evaluator_cfg: dict, role: str,
         temperature=evaluator_cfg.get("temperature", 0.0),
         timeout_sec=evaluator_cfg.get("timeout_sec", 300.0),
     )
+    # FIX V3 (Step 433): run the REAL 416 config-integrity assertion on the outbound
+    # config BEFORE any provider machinery is obtained — uniform across providers
+    # (Gemini's adapter does not self-check). Raises FatalProviderError on silent
+    # temperature/token drift, aborting before the adapter/client is even built.
+    integrity_record = _assert_call_integrity(target)
+
     router = ProviderRouter([target], RouterConfig())
     adapter = router._get_adapter(provider)
+
     # The selector prompt is the entire model-facing text; no separate system
     # channel (keeps the payload EXACTLY the §5 whitelist — nothing appended).
     raw = adapter.call("", payload, target) or ""
     usage = getattr(adapter, "last_usage", None)
-    integrity = getattr(adapter, "last_integrity", None)
+    adapter_integrity = getattr(adapter, "last_integrity", None)
     temp_transmitted = model not in TEMPERATURE_ONLY_DEFAULT_MODELS
 
     call_meta = {
@@ -746,7 +786,8 @@ def _provider_call(provider: str, model: str, evaluator_cfg: dict, role: str,
         "usage": usage,
         "temperature_declared": target.temperature,
         "temperature_transmitted": temp_transmitted,
-        "temperature_integrity": integrity,
+        "integrity_record": integrity_record,        # V3: guaranteed pre-call 416 assertion
+        "temperature_integrity": adapter_integrity,  # adapter self-check (OpenAI surfaces this)
     }
 
     stripped = _strip_code_fence(raw)
@@ -827,6 +868,12 @@ def call_panelist(role: str, candidate: Dict[str, Any], envelope: dict, candidat
                 f"actual {actual_provider}/{actual_model} != frozen primary "
                 f"{primary_provider}/{primary_model} — degraded substitution, excluded from canonical N"
             )
+        # FIX F2 (Step 433): the certified per-role object carries NO raw_response.
+        # Certification consumes ONLY `judgment` (parsed + grounded). The raw model
+        # text is retained solely in the AUDIT layer — `attempts[]` here (and thus,
+        # for non-canonical attempts, inside degraded_panels). This guarantees raw
+        # model/lease text can never flow into merge_panel / compare_candidate /
+        # certify or into the certification_trace.
         return {
             "role": role,
             "requested_provider": primary_provider, "requested_model": primary_model,
@@ -841,10 +888,10 @@ def call_panelist(role: str, candidate: Dict[str, Any], envelope: dict, candidat
             "temperature_declared": call_meta.get("temperature_declared"),
             "temperature_transmitted": call_meta.get("temperature_transmitted"),
             "temperature_integrity": call_meta.get("temperature_integrity"),
-            "raw_response": call_meta.get("raw_response"),
+            "integrity_record": call_meta.get("integrity_record"),  # V3 provenance (metadata, not raw text)
             "usage": call_meta.get("usage"),
-            "judgment": grounded,
-            "attempts": attempts,
+            "judgment": grounded,          # the ONLY thing certification reads
+            "attempts": attempts,          # audit layer — retains raw_response per attempt
         }
 
     # Phase 1: own-provider chain (primary + same-provider retry).
@@ -1430,24 +1477,26 @@ def build_stage1() -> None:
             "tests": rel_tests,
         },
         "stage2_supersession": {
-            "_purpose": "Step 432 implemented the Stage-2 call path in "
-                        "run_431_selection_measurement.py. That is the intended, sanctioned way to "
-                        "make the preregistration package executable — but it changes the harness "
-                        "hash, hence the manifest self-hash, hence the sanction token. The prior "
-                        "token is therefore SUPERSEDED-FOR-EXECUTION, which is NOT the same as VOID.",
-            "superseded_preregistration_token": "47cb312a442c4a58d969dece4c24b7d4b03fab93f7b29b33c46c308f87a84dab",
-            "superseded_status": "SUPERSEDED-FOR-EXECUTION — NOT void",
-            "superseded_meaning": "47cb312a validly sanctioned the Stage-1 PREREGISTRATION package "
-                                  "(build commit 65556ee, call path = NotImplementedError by design). "
-                                  "It is retained as evidence that preregistration was sanctioned "
-                                  "BEFORE any executable call path existed. It can no longer authorize "
-                                  "a run because the executable harness differs from the preregistered one.",
-            "prior_stage1_build_commit": "65556ee",
-            "new_executable_token": self_hash,
-            "authorizing_step": "432 — 431 Part B Stage-2 call-path implementation",
+            "_purpose": "Executable-package token lineage. Each token below was a VALID sanction of "
+                        "its package and is retained as evidence — SUPERSEDED-FOR-EXECUTION is NOT the "
+                        "same as VOID (contrast the pre-v3.3 tokens in 'supersedes', which ARE void). "
+                        "A superseded token can no longer authorize a run only because the harness hash "
+                        "changed; the semantic artifacts stayed byte-identical to 65556ee throughout.",
+            "chain": [
+                {"token": "47cb312a442c4a58d969dece4c24b7d4b03fab93f7b29b33c46c308f87a84dab",
+                 "role": "Stage-1 PREREGISTRATION package (build 65556ee; call path = NotImplementedError by design)",
+                 "status": "SUPERSEDED-FOR-EXECUTION — NOT void",
+                 "superseded_by_step": "432 — implemented the Stage-2 call path"},
+                {"token": "833fd43e7197d95c60e4b7080810764c33b4a4bd4edbbbe86390036b9f4fcacc",
+                 "role": "Step-432 executable package (call path v1)",
+                 "status": "SUPERSEDED-FOR-EXECUTION — NOT void",
+                 "superseded_by_step": "433 — GPT scoped-audit fixes V3 (uniform 416 integrity assertion) + F2 (strip raw_response from certification path)"},
+            ],
+            "current_executable_token": self_hash,
+            "authorizing_step": "433 — 431 Part B Stage-2 call-path fixes (V3 + F2)",
             "semantic_artifacts_byte_identical_to_65556ee": True,
-            "run_still_gated_by": "scoped informed audit of the call-path diff + separate explicit "
-                                  "Tzvi sanction of THIS new token (per brief; no run in Step 432)",
+            "run_still_gated_by": "delta re-audit of the V3+F2 fix diff + separate explicit Tzvi "
+                                  "sanction of THIS new token (per brief; no run in Step 433)",
         },
         "field_name_sweep": sweep,
         "generated_utc": datetime.now(timezone.utc).isoformat(),

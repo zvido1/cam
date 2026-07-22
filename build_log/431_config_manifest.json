@@ -75,21 +75,31 @@
     ]
   },
   "stage2_supersession": {
-    "_purpose": "Step 432 implemented the Stage-2 call path in run_431_selection_measurement.py. That is the intended, sanctioned way to make the preregistration package executable \u2014 but it changes the harness hash, hence the manifest self-hash, hence the sanction token. The prior token is therefore SUPERSEDED-FOR-EXECUTION, which is NOT the same as VOID.",
-    "superseded_preregistration_token": "47cb312a442c4a58d969dece4c24b7d4b03fab93f7b29b33c46c308f87a84dab",
-    "superseded_status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void",
-    "superseded_meaning": "47cb312a validly sanctioned the Stage-1 PREREGISTRATION package (build commit 65556ee, call path = NotImplementedError by design). It is retained as evidence that preregistration was sanctioned BEFORE any executable call path existed. It can no longer authorize a run because the executable harness differs from the preregistered one.",
-    "prior_stage1_build_commit": "65556ee",
-    "new_executable_token": "833fd43e7197d95c60e4b7080810764c33b4a4bd4edbbbe86390036b9f4fcacc",
-    "authorizing_step": "432 \u2014 431 Part B Stage-2 call-path implementation",
+    "_purpose": "Executable-package token lineage. Each token below was a VALID sanction of its package and is retained as evidence \u2014 SUPERSEDED-FOR-EXECUTION is NOT the same as VOID (contrast the pre-v3.3 tokens in 'supersedes', which ARE void). A superseded token can no longer authorize a run only because the harness hash changed; the semantic artifacts stayed byte-identical to 65556ee throughout.",
+    "chain": [
+      {
+        "token": "47cb312a442c4a58d969dece4c24b7d4b03fab93f7b29b33c46c308f87a84dab",
+        "role": "Stage-1 PREREGISTRATION package (build 65556ee; call path = NotImplementedError by design)",
+        "status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void",
+        "superseded_by_step": "432 \u2014 implemented the Stage-2 call path"
+      },
+      {
+        "token": "833fd43e7197d95c60e4b7080810764c33b4a4bd4edbbbe86390036b9f4fcacc",
+        "role": "Step-432 executable package (call path v1)",
+        "status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void",
+        "superseded_by_step": "433 \u2014 GPT scoped-audit fixes V3 (uniform 416 integrity assertion) + F2 (strip raw_response from certification path)"
+      }
+    ],
+    "current_executable_token": "9c2cc8e157627d880068c6bb380c09e00c0ae0321fbac52253b268326b7dc9cd",
+    "authorizing_step": "433 \u2014 431 Part B Stage-2 call-path fixes (V3 + F2)",
     "semantic_artifacts_byte_identical_to_65556ee": true,
-    "run_still_gated_by": "scoped informed audit of the call-path diff + separate explicit Tzvi sanction of THIS new token (per brief; no run in Step 432)"
+    "run_still_gated_by": "delta re-audit of the V3+F2 fix diff + separate explicit Tzvi sanction of THIS new token (per brief; no run in Step 433)"
   },
   "field_name_sweep": {
     "clean": true,
     "stale_hits": {}
   },
-  "generated_utc": "2026-07-22T15:02:49.921284+00:00",
+  "generated_utc": "2026-07-22T15:47:19.582275+00:00",
   "stage": "1-build-of-executable-package",
   "package_type": "executable (Stage-2 call path implemented; fires calls ONLY under --mode run + matching --stage2-sanction)",
   "model_calls_made_at_build": 0,
@@ -99,9 +109,9 @@
     "431_output_schema.json": "3925001ce9b444a92b5164576770256784d2e8cec5fc94bbaaa7d7beccd6dd11",
     "431_selector_prompt.txt": "3a146f4122dddf09f8de984662685789ee6aee6a3276509d91fc5818a63e0007",
     "431_fixture_preflight.json": "033163026a7d14a8fc051184e02de4c3790db11c711d406cead3de2fc02fc79d",
-    "run_431_selection_measurement.py": "7c7b345bbbd417d9083d2491e58d57190d5a21f4bd520895c3266b71c41bc863"
+    "run_431_selection_measurement.py": "e8bf3ad8d95d43454ec301195a9fa31551d825dad46a774f99d953fc5c67bb61"
   },
-  "manifest_self_hash_of_artifact_hashes": "833fd43e7197d95c60e4b7080810764c33b4a4bd4edbbbe86390036b9f4fcacc",
-  "stage2_sanction_token": "833fd43e7197d95c60e4b7080810764c33b4a4bd4edbbbe86390036b9f4fcacc",
+  "manifest_self_hash_of_artifact_hashes": "9c2cc8e157627d880068c6bb380c09e00c0ae0321fbac52253b268326b7dc9cd",
+  "stage2_sanction_token": "9c2cc8e157627d880068c6bb380c09e00c0ae0321fbac52253b268326b7dc9cd",
   "_how_to_sanction": "Stage 2 is invoked as: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>"
 }
