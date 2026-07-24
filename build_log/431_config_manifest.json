@@ -112,14 +112,21 @@
         "role": "Step-440-fix executable package (corrected Role-C \u00a79 language)",
         "status": "UNSANCTIONED / SUPERSEDED-FOR-EXECUTION \u2014 NOT void; retained as historical machine-local evidence only",
         "superseded_by_step": "441 \u2014 line-ending determinism + committed-blob token derivation. 8d14543a and ALL earlier tokens were derived from Windows working-tree bytes under core.autocrlf=true and are NOT independently reproducible from the repository's LF-normalized Git blobs; from this package identity is derived from committed Git-blob bytes under path-pinned LF."
+      },
+      {
+        "token": "541989ef06213907716d2a613a26465f9571dd1e9e8c0d516b0405117f985a93",
+        "role": "Step-441 executable package (committed-blob-derived token, reproducible; commit binding was an IN-MANIFEST parent-proxy `head_at_build_time`)",
+        "status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void; token derivation was sound (blob-anchored, reproduced from committed blobs), but the commit-binding mechanism was broken",
+        "superseded_by_step": "441-fix2 \u2014 the manifest stored the PARENT commit (f9048ed) as `head_at_build_time`; the runtime `head == head_at_build_time` check is structurally ALWAYS-FALSE once the containing commit exists (run-time HEAD is the containing commit, not the parent). Commit binding moved OUT of the package manifest to an external signed annotated sanction tag (Construction A / Option 3). Removing the parent-proxy field changed the harness bytes, so the token recomputes."
       }
     ],
-    "current_executable_token": "541989ef06213907716d2a613a26465f9571dd1e9e8c0d516b0405117f985a93",
-    "authorizing_step": "441 \u2014 line-ending determinism + committed-blob-derived token (repository-verifiable execution identity)",
+    "current_executable_token": "0b98c6fa3a3cf098d243fd90573cda582482c00bf5c6723a4e76a975d5e89164",
+    "authorizing_step": "441-fix2 \u2014 Construction A / Option 3: manifest carries no commit SHA; run-commit\u2194token binding via an external signed annotated sanction tag created after commit P",
     "_provenance_line_ending_correction": "Tokens generated before the line-ending correction were derived from Windows working-tree bytes under core.autocrlf=true. They remain evidence of local sanction-to-execution drift gating on that checkout, but they are not independently reproducible from the repository's LF-normalized Git blobs.",
-    "_provenance_committed_blob_identity": "Beginning with this package, artifact identity is derived from committed Git-blob bytes under path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes exactly equal the pinned committed blobs and that the repository commit matches the manifest.",
-    "semantic_artifacts_content_identical_to_65556ee": "content-identical (parsed JSON / prompt text / preflight all equal); differs from the 65556ee manifest's recorded hashes ONLY by CRLF\u2192LF normalization, proven newline-only in the 441 evidence.",
-    "run_still_gated_by": "scoped delta audit + separate explicit Tzvi sanction of THIS new token (no run in Step 441)"
+    "_provenance_committed_blob_identity": "Beginning with the Step-441 package, artifact identity is derived from committed Git-blob bytes under path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes exactly equal the pinned committed blobs and the blobs at HEAD, for every artifact.",
+    "_provenance_commit_binding_correction": "Step 441 attempted to bind the run-commit inside the package manifest via `head_at_build_time`, which stored the PARENT commit \u2014 a proxy that can never satisfy a `HEAD == stored-commit` check once the containing commit exists (a manifest inside commit C cannot name C). Step 441-fix2 removes any commit SHA from the package manifest and binds the run-commit to the token through a SEPARATE, post-commit, signed annotated tag pointing at the package commit P. Earlier tokens are not retroactively rescued; the correction applies from this package forward.",
+    "semantic_artifacts_content_identical_to_65556ee": "content-identical (parsed JSON / prompt text / preflight all equal); the five reviewed semantic artifacts are byte-identical to the 65556ee blobs (git diff 65556ee..P over those five paths is empty).",
+    "run_still_gated_by": "scoped delta audit + a signed annotated sanction tag (Tzvi's key) binding commit P to THIS token; the runtime HALTS until that tag exists (no run in Step 441-fix2)"
   },
   "line_ending_policy": {
     "gitattributes_paths_eol_lf": [
@@ -134,8 +141,12 @@
     "artifact_hash_basis": "SHA-256 of committed-blob-equivalent bytes (LF-normalized)",
     "reproducible_from_committed_blobs": true
   },
-  "head_at_build_time": "f9048ed2bc16ee55295bb7878ec051b703a91a70",
-  "_head_at_build_time_note": "The commit HEAD pointed at when the build ran (the parent of the commit that will contain this manifest). A manifest cannot pin the SHA of its own containing commit (self-reference); the runtime gate instead enforces that HEAD:<git_path> blob == committed_blob_sha256 for EVERY artifact \u2014 proving the running commit contains exactly the sanctioned bytes, which is content-addressed and stronger than a commit label.",
+  "_commit_binding": {
+    "construction": "A / Option 3 (Step 441-fix2)",
+    "commit_sha_in_this_manifest": null,
+    "explanation": "This package manifest carries NO commit SHA \u2014 not the containing commit (self-reference is impossible: a manifest inside commit C cannot contain C) and not a parent proxy (the Step-441 `head_at_build_time` stored the PARENT commit, so the runtime `head == head_at_build_time` check was structurally always-false once the containing commit existed). The run-commit \u2194 token binding lives in an EXTERNAL SIGNED ANNOTATED TAG, created AFTER the package commit P and pointing at it; the runtime reads the sanctioned commit identity from that tag (verify_signed_sanction_binding), never from any field here.",
+    "runtime_reads_commit_identity_from": "signed annotated sanction tag pointing at HEAD"
+  },
   "committed_blob_binding": {
     "431_measurement_config.json": {
       "git_path": "build_log/431_measurement_config.json",
@@ -159,14 +170,14 @@
     },
     "run_431_selection_measurement.py": {
       "git_path": "build_log/run_431_selection_measurement.py",
-      "committed_blob_sha256": "e4f9848469f383c23ca491f5387c4d950c5128bdd354cf1d568ec0a2ff144e22"
+      "committed_blob_sha256": "30f10e3a8233fe9429342a93b5c9e70f158880433152e735c731a4968531984d"
     }
   },
   "field_name_sweep": {
     "clean": true,
     "stale_hits": {}
   },
-  "generated_utc": "2026-07-24T13:48:00.805330+00:00",
+  "generated_utc": "2026-07-24T23:13:43.298505+00:00",
   "stage": "1-build-of-executable-package",
   "package_type": "executable (Stage-2 call path implemented; fires calls ONLY under --mode run + matching --stage2-sanction)",
   "model_calls_made_at_build": 0,
@@ -176,9 +187,9 @@
     "431_output_schema.json": "a9724730044357131cec19e81558a0e05a9460d1a3588f9ef9d520e47d26d4b2",
     "431_selector_prompt.txt": "3a146f4122dddf09f8de984662685789ee6aee6a3276509d91fc5818a63e0007",
     "431_fixture_preflight.json": "080eb3ed9fca215d8e65faa3dafaa451536de974d7ccb53fbbda16af26ad8770",
-    "run_431_selection_measurement.py": "e4f9848469f383c23ca491f5387c4d950c5128bdd354cf1d568ec0a2ff144e22"
+    "run_431_selection_measurement.py": "30f10e3a8233fe9429342a93b5c9e70f158880433152e735c731a4968531984d"
   },
-  "manifest_self_hash_of_artifact_hashes": "541989ef06213907716d2a613a26465f9571dd1e9e8c0d516b0405117f985a93",
-  "stage2_sanction_token": "541989ef06213907716d2a613a26465f9571dd1e9e8c0d516b0405117f985a93",
-  "_how_to_sanction": "Stage 2 is invoked as: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>"
+  "manifest_self_hash_of_artifact_hashes": "0b98c6fa3a3cf098d243fd90573cda582482c00bf5c6723a4e76a975d5e89164",
+  "stage2_sanction_token": "0b98c6fa3a3cf098d243fd90573cda582482c00bf5c6723a4e76a975d5e89164",
+  "_how_to_sanction": "Two conditions, BOTH required (Construction A / Option 3): (1) invoke: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>; (2) a signed annotated tag (Tzvi's key), created AFTER commit P and pointing at P, must embed `token: <this hash>` and `package_commit: <P>`. The runtime gate reads the sanctioned commit identity from that tag and HALTS if no such valid signed tag points at HEAD. The manifest itself contains NO commit SHA."
 }

@@ -1244,35 +1244,133 @@ def render_report(sidecar: dict) -> None:
     write_lf(REPORT_PATH, "\n".join(lines) + "\n")
 
 
+# ── Construction A / Option-3 commit binding (Step 441-fix2) ────────────────────────────
+# The package manifest carries NO commit SHA. The run-commit ↔ token binding lives OUTSIDE
+# the package, in a SIGNED ANNOTATED TAG created AFTER the package commit exists and pointing
+# at it. A tag is an out-of-tree ref: it can name commit P from outside P without changing
+# P's tree/hash, so it escapes the self-reference that made the Step-441 in-manifest
+# `head_at_build_time` (a stored PARENT-proxy) structurally un-satisfiable. The runtime reads
+# the sanctioned commit identity from this tag — never from a field inside the package commit.
+
+def _git(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", *args], cwd=str(CAM_ROOT), capture_output=True, text=True)
+
+
+def _tags_pointing_at(commit: str) -> List[str]:
+    out = _git("tag", "--points-at", commit).stdout
+    return [t.strip() for t in out.splitlines() if t.strip()]
+
+
+def _tag_object_type(tag: str) -> str:
+    return _git("cat-file", "-t", tag).stdout.strip()
+
+
+def _tag_peeled_commit(tag: str) -> Optional[str]:
+    r = _git("rev-list", "-n", "1", tag)
+    v = r.stdout.strip()
+    return v if r.returncode == 0 and v else None
+
+
+def _tag_signature_verifies(tag: str) -> bool:
+    # `git tag -v` verifies the GPG/SSH signature over the annotated-tag object; exit 0 iff
+    # the signature is present AND valid. An unsigned or tampered tag yields a non-zero exit.
+    return _git("tag", "-v", tag).returncode == 0
+
+
+def _tag_body(tag: str) -> str:
+    r = _git("cat-file", "-p", tag)
+    return r.stdout if r.returncode == 0 else ""
+
+
+def _tag_field(body: str, key: str) -> Optional[str]:
+    for line in body.splitlines():
+        s = line.strip()
+        if s.lower().startswith(key.lower() + ":"):
+            return s.split(":", 1)[1].strip()
+    return None
+
+
+def verify_signed_sanction_binding(head: str, token: str) -> dict:
+    """Read the run-commit ↔ token binding from the EXTERNAL signed sanction tag (never from
+    the package manifest). HALTS unless exactly one annotated tag points at HEAD whose
+    signature verifies, whose peeled target == HEAD, and whose embedded `token:` == the
+    manifest token. Returns the binding evidence on success.
+    """
+    candidates = _tags_pointing_at("HEAD")
+    valid: List[dict] = []
+    rejected: List[str] = []
+    for tag in candidates:
+        if _tag_object_type(tag) != "tag":
+            rejected.append(f"{tag}: lightweight tag (not annotated) — carries no signature/metadata")
+            continue
+        peeled = _tag_peeled_commit(tag)
+        if peeled != head:
+            rejected.append(f"{tag}: peeled target {str(peeled)[:12]} != HEAD {head[:12]}")
+            continue
+        if not _tag_signature_verifies(tag):
+            rejected.append(f"{tag}: signature does NOT verify (git tag -v exit != 0)")
+            continue
+        body = _tag_body(tag)
+        tag_token = _tag_field(body, "token")
+        tag_commit = _tag_field(body, "package_commit")
+        if tag_token != token:
+            rejected.append(f"{tag}: embedded token {str(tag_token)[:12]} != manifest token {token[:12]}")
+            continue
+        if tag_commit is not None and tag_commit != head:
+            rejected.append(f"{tag}: embedded package_commit {str(tag_commit)[:12]} != HEAD {head[:12]}")
+            continue
+        valid.append({"tag": tag, "peeled_commit": peeled, "embedded_token": tag_token})
+    if len(valid) != 1:
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Construction A / Option 3): the run-commit is NOT bound to this package "
+            "by a valid signed sanction tag. A run is authorized ONLY by a signed annotated tag "
+            "(created AFTER the package commit) that points at HEAD "
+            f"({head[:12]}) and embeds this manifest token ({token[:12]}). "
+            f"Valid tags found: {len(valid)}; tags pointing at HEAD: {candidates or '[none]'}."
+            + ("\nRejections:\n  - " + "\n  - ".join(rejected) if rejected else "")
+        )
+    return valid[0]
+
+
 def verify_repository_execution_identity(manifest: dict) -> dict:
-    """Step 441 runtime gate — HALT (MeasurementIntegrityHalt) before the first provider
-    call unless the executed bytes provably equal the reviewed, committed bytes under the
-    pinned LF policy. Establishes repository-verifiable execution identity.
+    """Runtime gate — HALT (MeasurementIntegrityHalt) before the first provider call unless
+    BOTH guarantees hold. Establishes repository-verifiable execution identity + a non-circular
+    commit binding (Construction A / Option 3, Step 441-fix2).
 
-    Per package artifact it enforces (HARD, halt on any mismatch):
-        working-tree LF-sha256 == manifest.committed_blob_sha256 == sha256(HEAD:git_path)
-    plus: the package working tree is clean; the .gitattributes LF pin holds (no CRLF in
-    the working-tree bytes); every artifact path resolves INSIDE this repository.
+    (1) CONTENT identity (unchanged, load-bearing): per package artifact,
+            working-tree LF-sha256 == manifest.committed_blob_sha256 == sha256(HEAD:git_path)
+        plus the package tree is clean, the .gitattributes LF pin holds (no CRLF), and every
+        artifact path resolves INSIDE this repository.
 
-    Commit binding: it records the current HEAD and whether it equals the manifest's
-    `package_commit_at_build`. A literal 'HEAD == the manifest's own commit' is NOT
-    enforceable because a manifest cannot contain the SHA of the commit that includes it
-    (self-reference); the AUTHORITATIVE, enforced guarantee is instead that the blobs at
-    HEAD (`HEAD:git_path`) equal the manifest hashes for every artifact — which proves the
-    running commit contains exactly the sanctioned bytes, and is content-addressed (a
-    commit label can be moved; blob content cannot be faked). `head_matches_package_commit`
-    is recorded for provenance, not used to halt.
+    (2) COMMIT binding: the run-commit ↔ token binding is NOT a field inside the package
+        manifest. A manifest committed inside commit C cannot name C (self-reference); the
+        Step-441 attempt stored the PARENT commit as `head_at_build_time`, so its
+        `head == head_at_build_time` check was structurally ALWAYS-FALSE once the containing
+        commit existed. Instead the binding lives in an EXTERNAL SIGNED ANNOTATED TAG created
+        AFTER the package commit and pointing at it; the runtime reads the sanctioned commit
+        identity from that tag (verify_signed_sanction_binding). This manifest therefore MUST
+        carry no commit SHA — enforced below.
     """
     binding = manifest.get("committed_blob_binding") or {}
     recorded = manifest.get("artifact_hashes") or {}
+    token = (manifest.get("stage2_sanction_token")
+             or manifest.get("manifest_self_hash_of_artifact_hashes"))
     if not binding:
         raise MeasurementIntegrityHalt(
-            "HARD HALT (Step 441): manifest carries no committed_blob_binding; execution "
-            "identity cannot be verified. This manifest predates the line-ending correction."
+            "HARD HALT: manifest carries no committed_blob_binding; execution identity "
+            "cannot be verified."
         )
+    # Construction A invariant: the package manifest must NOT carry any commit SHA. A
+    # self-referential commit field is exactly the defect this step removes.
+    for forbidden in ("head_at_build_time", "pinned_commit", "package_commit", "containing_commit"):
+        if forbidden in manifest:
+            raise MeasurementIntegrityHalt(
+                f"HARD HALT (Construction A): package manifest carries a self-referential commit "
+                f"field '{forbidden}'. The package manifest MUST hold no commit SHA; commit "
+                "binding lives only in the external signed sanction tag."
+            )
     repo_root = CAM_ROOT.resolve()
-    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(CAM_ROOT),
-                          capture_output=True, text=True).stdout.strip()
+    head = _git("rev-parse", "HEAD").stdout.strip()
     problems: List[str] = []
     for name, b in binding.items():
         gp = b["git_path"]
@@ -1298,25 +1396,27 @@ def verify_repository_execution_identity(manifest: dict) -> dict:
         if recorded.get(name) != rec:
             problems.append(f"{name}: manifest artifact_hashes[{name}] != committed_blob_binding")
     pkg_paths = [b["git_path"] for b in binding.values()]
-    dirty = subprocess.run(["git", "status", "--porcelain", "--"] + pkg_paths,
-                           cwd=str(CAM_ROOT), capture_output=True, text=True).stdout.strip()
+    dirty = _git("status", "--porcelain", "--", *pkg_paths).stdout.strip()
     if dirty:
         problems.append(f"package working tree is NOT clean:\n{dirty}")
     if problems:
         raise MeasurementIntegrityHalt(
-            "HARD HALT (§11, Step 441): repository execution identity check FAILED — the "
-            "executed bytes do not provably equal the reviewed committed blobs under pinned "
-            "LF. No provider call is made. Problems:\n  - " + "\n  - ".join(problems)
+            "HARD HALT (§11): repository CONTENT-identity check FAILED — the executed bytes do "
+            "not provably equal the reviewed committed blobs under pinned LF. No provider call "
+            "is made. Problems:\n  - " + "\n  - ".join(problems)
         )
-    build_head = manifest.get("head_at_build_time")
+    # Content identity holds. Now bind the run-commit to this token via the external signed tag.
+    tag_binding = verify_signed_sanction_binding(head, token)
     return {
         "head": head,
-        "head_at_build_time": build_head,
-        "head_matches_package_commit": (head == build_head),  # informational; not a halt condition
+        "commit_bound_via_signed_tag": tag_binding["tag"],
+        "sanction_tag_peeled_commit": tag_binding["peeled_commit"],
+        "commit_binding_source": "external signed annotated tag (Construction A / Option 3) — "
+                                 "NOT a field inside the package manifest",
         "all_artifacts_verified": True,
         "verified_artifacts": list(binding.keys()),
-        "note": "authoritative guarantee = HEAD:blob == working-tree-LF == manifest for every "
-                "artifact (content-addressed); see function docstring re: commit self-reference.",
+        "note": "content identity = HEAD:blob == working-tree-LF == manifest per artifact; "
+                "commit identity = signed tag pointing at HEAD embedding this token.",
     }
 
 
@@ -1340,14 +1440,17 @@ def run_stage2(sanction: str) -> None:
     hashes = manifest["artifact_hashes"]
     config_hash = manifest["manifest_self_hash_of_artifact_hashes"]
 
-    # ── Step 441 runtime blob-equality gate — BEFORE any provider call ──
-    # HALTS unless the executed working-tree bytes provably equal the manifest's
-    # committed-blob hashes AND the blobs at HEAD, the package tree is clean, and the
-    # LF pin holds. Establishes repository-verifiable execution identity.
+    # ── Step 441-fix2 runtime gate — BEFORE any provider call ──
+    # HALTS unless (1) the executed working-tree bytes provably equal the manifest's
+    # committed-blob hashes AND the blobs at HEAD (content identity), the package tree is
+    # clean, and the LF pin holds; AND (2) HEAD is bound to this token by a valid signed
+    # sanction tag (Construction A / Option 3 — commit identity read from the tag, never
+    # from a self-referential field inside the package manifest).
     repo_identity = verify_repository_execution_identity(manifest)
-    print(f"[441] repository execution identity verified: {len(repo_identity['verified_artifacts'])} "
-          f"artifacts; HEAD={repo_identity['head'][:12]} "
-          f"head_matches_package_commit={repo_identity['head_matches_package_commit']}")
+    print(f"[441-fix2] repository execution identity verified: "
+          f"{len(repo_identity['verified_artifacts'])} artifacts; "
+          f"HEAD={repo_identity['head'][:12]} "
+          f"commit_bound_via_signed_tag={repo_identity['commit_bound_via_signed_tag']}")
 
     sources = build_sources()
     preflight = run_preflight(sources, cfg)
@@ -1708,8 +1811,10 @@ def build_stage1() -> None:
     # Bind git path + committed-blob (LF) hash for every artifact. `committed_blob_sha256`
     # is the SHA-256 of the to-be-committed LF bytes (== the Git blob once committed under
     # eol=lf). The runtime gate recomputes HEAD:<path> fresh and requires it to equal this.
-    _head_at_build = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(CAM_ROOT),
-                                    capture_output=True, text=True).stdout.strip()
+    # Step 441-fix2 (Construction A): the manifest deliberately records NO commit SHA — a
+    # manifest inside commit C cannot name C, and storing the PARENT as a proxy (the Step-441
+    # `head_at_build_time`) made the runtime `head == head_at_build_time` check always-false.
+    # Commit binding moves entirely to an external signed sanction tag created AFTER commit P.
     committed_blob_binding = {
         name: {
             "git_path": f"build_log/{name}",
@@ -1781,38 +1886,57 @@ def build_stage1() -> None:
                  "role": "Step-440-fix executable package (corrected Role-C §9 language)",
                  "status": "UNSANCTIONED / SUPERSEDED-FOR-EXECUTION — NOT void; retained as historical machine-local evidence only",
                  "superseded_by_step": "441 — line-ending determinism + committed-blob token derivation. 8d14543a and ALL earlier tokens were derived from Windows working-tree bytes under core.autocrlf=true and are NOT independently reproducible from the repository's LF-normalized Git blobs; from this package identity is derived from committed Git-blob bytes under path-pinned LF."},
+                {"token": "541989ef06213907716d2a613a26465f9571dd1e9e8c0d516b0405117f985a93",
+                 "role": "Step-441 executable package (committed-blob-derived token, reproducible; commit binding was an IN-MANIFEST parent-proxy `head_at_build_time`)",
+                 "status": "SUPERSEDED-FOR-EXECUTION — NOT void; token derivation was sound (blob-anchored, reproduced from committed blobs), but the commit-binding mechanism was broken",
+                 "superseded_by_step": "441-fix2 — the manifest stored the PARENT commit (f9048ed) as `head_at_build_time`; the runtime `head == head_at_build_time` check is structurally ALWAYS-FALSE once the containing commit exists (run-time HEAD is the containing commit, not the parent). Commit binding moved OUT of the package manifest to an external signed annotated sanction tag (Construction A / Option 3). Removing the parent-proxy field changed the harness bytes, so the token recomputes."},
             ],
             "current_executable_token": self_hash,
-            "authorizing_step": "441 — line-ending determinism + committed-blob-derived token (repository-verifiable execution identity)",
+            "authorizing_step": "441-fix2 — Construction A / Option 3: manifest carries no commit SHA; run-commit↔token binding via an external signed annotated sanction tag created after commit P",
             "_provenance_line_ending_correction": (
                 "Tokens generated before the line-ending correction were derived from Windows working-tree bytes "
                 "under core.autocrlf=true. They remain evidence of local sanction-to-execution drift gating on that "
                 "checkout, but they are not independently reproducible from the repository's LF-normalized Git blobs."
             ),
             "_provenance_committed_blob_identity": (
-                "Beginning with this package, artifact identity is derived from committed Git-blob bytes under "
-                "path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes exactly "
-                "equal the pinned committed blobs and that the repository commit matches the manifest."
+                "Beginning with the Step-441 package, artifact identity is derived from committed Git-blob bytes "
+                "under path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes "
+                "exactly equal the pinned committed blobs and the blobs at HEAD, for every artifact."
+            ),
+            "_provenance_commit_binding_correction": (
+                "Step 441 attempted to bind the run-commit inside the package manifest via `head_at_build_time`, "
+                "which stored the PARENT commit — a proxy that can never satisfy a `HEAD == stored-commit` check "
+                "once the containing commit exists (a manifest inside commit C cannot name C). Step 441-fix2 removes "
+                "any commit SHA from the package manifest and binds the run-commit to the token through a SEPARATE, "
+                "post-commit, signed annotated tag pointing at the package commit P. Earlier tokens are not "
+                "retroactively rescued; the correction applies from this package forward."
             ),
             "semantic_artifacts_content_identical_to_65556ee": (
-                "content-identical (parsed JSON / prompt text / preflight all equal); differs from the 65556ee "
-                "manifest's recorded hashes ONLY by CRLF→LF normalization, proven newline-only in the 441 evidence."
+                "content-identical (parsed JSON / prompt text / preflight all equal); the five reviewed semantic "
+                "artifacts are byte-identical to the 65556ee blobs (git diff 65556ee..P over those five paths is empty)."
             ),
-            "run_still_gated_by": "scoped delta audit + separate explicit Tzvi sanction of THIS new token (no run in Step 441)",
+            "run_still_gated_by": "scoped delta audit + a signed annotated sanction tag (Tzvi's key) binding commit P to THIS token; the runtime HALTS until that tag exists (no run in Step 441-fix2)",
         },
         "line_ending_policy": {
             "gitattributes_paths_eol_lf": [f"build_log/{n}" for n in files] + [".gitattributes (repo root)"],
             "artifact_hash_basis": "SHA-256 of committed-blob-equivalent bytes (LF-normalized)",
             "reproducible_from_committed_blobs": True,
         },
-        "head_at_build_time": _head_at_build,
-        "_head_at_build_time_note": "The commit HEAD pointed at when the build ran (the parent of the "
-                                    "commit that will contain this manifest). A manifest cannot pin the "
-                                    "SHA of its own containing commit (self-reference); the runtime gate "
-                                    "instead enforces that HEAD:<git_path> blob == committed_blob_sha256 "
-                                    "for EVERY artifact — proving the running commit contains exactly the "
-                                    "sanctioned bytes, which is content-addressed and stronger than a "
-                                    "commit label.",
+        "_commit_binding": {
+            "construction": "A / Option 3 (Step 441-fix2)",
+            "commit_sha_in_this_manifest": None,
+            "explanation": "This package manifest carries NO commit SHA — not the containing "
+                           "commit (self-reference is impossible: a manifest inside commit C "
+                           "cannot contain C) and not a parent proxy (the Step-441 "
+                           "`head_at_build_time` stored the PARENT commit, so the runtime "
+                           "`head == head_at_build_time` check was structurally always-false "
+                           "once the containing commit existed). The run-commit ↔ token "
+                           "binding lives in an EXTERNAL SIGNED ANNOTATED TAG, created AFTER the "
+                           "package commit P and pointing at it; the runtime reads the sanctioned "
+                           "commit identity from that tag (verify_signed_sanction_binding), never "
+                           "from any field here.",
+            "runtime_reads_commit_identity_from": "signed annotated sanction tag pointing at HEAD",
+        },
         "committed_blob_binding": committed_blob_binding,
         "field_name_sweep": sweep,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
@@ -1822,7 +1946,14 @@ def build_stage1() -> None:
         "artifact_hashes": hashes,
         "manifest_self_hash_of_artifact_hashes": self_hash,
         "stage2_sanction_token": self_hash,
-        "_how_to_sanction": "Stage 2 is invoked as: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>",
+        "_how_to_sanction": (
+            "Two conditions, BOTH required (Construction A / Option 3): "
+            "(1) invoke: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>; "
+            "(2) a signed annotated tag (Tzvi's key), created AFTER commit P and pointing at P, "
+            "must embed `token: <this hash>` and `package_commit: <P>`. The runtime gate reads the "
+            "sanctioned commit identity from that tag and HALTS if no such valid signed tag points "
+            "at HEAD. The manifest itself contains NO commit SHA."
+        ),
     }
     write_lf(MANIFEST_PATH, json.dumps(manifest, indent=2))
 
