@@ -1,0 +1,12 @@
+# Step 441 — path-scoped line-ending policy for the Step-431 Stage-2 execution package ONLY.
+# These files' identity (manifest artifact hashes + sanction token) is derived from their
+# committed Git-blob bytes under pinned LF line endings, so the token is reproducible from the
+# repository by a third party regardless of checkout platform (Windows autocrlf will NOT re-CRLF
+# these paths). Scoped to the 431 package only — the rest of the repository is NOT renormalized.
+/build_log/431_measurement_config.json        text eol=lf
+/build_log/431_requirement_profiles.json      text eol=lf
+/build_log/431_output_schema.json             text eol=lf
+/build_log/431_selector_prompt.txt            text eol=lf
+/build_log/431_fixture_preflight.json         text eol=lf
+/build_log/431_config_manifest.json           text eol=lf
+/build_log/run_431_selection_measurement.py   text eol=lf

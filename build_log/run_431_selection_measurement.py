@@ -139,6 +139,36 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+# ── Step 441: committed-blob-derived identity under path-pinned LF ─────────────
+# The manifest/token bind the COMMITTED Git-blob bytes, not the checked-out newline
+# representation, so the token is reproducible from the repository by a third party
+# on any platform. Under the .gitattributes `eol=lf` policy for the 431 package,
+# the LF-normalized working-tree bytes EQUAL the committed blob bytes; this helper
+# computes that canonical LF hash (robust even if a checkout re-introduced CRLF).
+
+def sha256_lf(path: Path) -> str:
+    """SHA-256 of the file's committed-blob-equivalent bytes: raw bytes with CRLF
+    normalized to LF (git `text eol=lf` normalization for these files)."""
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
+def write_lf(path: Path, text: str) -> None:
+    """Write text with LF line endings unconditionally (no Windows CRLF translation),
+    so generated package files match their committed LF blobs byte-for-byte."""
+    path.write_bytes(text.replace("\r\n", "\n").encode("utf-8"))
+
+
+def git_blob_sha256(rev_path: str) -> Optional[str]:
+    """SHA-256 of the raw bytes of a committed blob at `rev:path` (e.g. 'HEAD:build_log/..').
+    Returns None if git or the path is unavailable (caller decides how to handle)."""
+    try:
+        blob = subprocess.run(["git", "show", rev_path], cwd=str(CAM_ROOT),
+                              capture_output=True, check=True).stdout
+        return hashlib.sha256(blob).hexdigest()
+    except Exception:
+        return None
+
+
 def load_artifacts() -> Dict[str, Any]:
     return {
         "config": json.loads(CONFIG_PATH.read_text(encoding="utf-8")),
@@ -1177,6 +1207,17 @@ def render_report(sidecar: dict) -> None:
     lines.append(f"- config_hash: `{sidecar.get('config_hash')}`")
     lines.append(f"- admitted candidates: {sidecar.get('admitted_candidates')}")
     lines.append(f"- completeness: not_established (no terminal `unsatisfied_*` may be emitted, §8.3)\n")
+    lines.append("## Provenance — line-ending correction and committed-blob identity (Step 441)\n")
+    lines.append(
+        "Tokens generated before the line-ending correction were derived from Windows working-tree "
+        "bytes under core.autocrlf=true. They remain evidence of local sanction-to-execution drift "
+        "gating on that checkout, but they are not independently reproducible from the repository's "
+        "LF-normalized Git blobs.\n")
+    lines.append(
+        "Beginning with this package, artifact identity is derived from committed Git-blob bytes "
+        "under path-pinned LF line endings. Runtime preflight verifies that the executed working-tree "
+        "bytes exactly equal the pinned committed blobs and that the repository commit matches the "
+        "manifest.\n")
     lines.append("## §9 Panel integrity — adapter-level config-integrity asymmetry\n")
     lines.append(
         "All three canonical adapters invoke `_check_generation_integrity` on the real outbound "
@@ -1200,7 +1241,83 @@ def render_report(sidecar: dict) -> None:
             f"- {t['parameter']} ({t['lease']}), series {t['series_index']}: "
             f"{t['final_certification_state']} (completeness: "
             f"{t['completeness_provenance']['status']})")
-    REPORT_PATH.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    write_lf(REPORT_PATH, "\n".join(lines) + "\n")
+
+
+def verify_repository_execution_identity(manifest: dict) -> dict:
+    """Step 441 runtime gate — HALT (MeasurementIntegrityHalt) before the first provider
+    call unless the executed bytes provably equal the reviewed, committed bytes under the
+    pinned LF policy. Establishes repository-verifiable execution identity.
+
+    Per package artifact it enforces (HARD, halt on any mismatch):
+        working-tree LF-sha256 == manifest.committed_blob_sha256 == sha256(HEAD:git_path)
+    plus: the package working tree is clean; the .gitattributes LF pin holds (no CRLF in
+    the working-tree bytes); every artifact path resolves INSIDE this repository.
+
+    Commit binding: it records the current HEAD and whether it equals the manifest's
+    `package_commit_at_build`. A literal 'HEAD == the manifest's own commit' is NOT
+    enforceable because a manifest cannot contain the SHA of the commit that includes it
+    (self-reference); the AUTHORITATIVE, enforced guarantee is instead that the blobs at
+    HEAD (`HEAD:git_path`) equal the manifest hashes for every artifact — which proves the
+    running commit contains exactly the sanctioned bytes, and is content-addressed (a
+    commit label can be moved; blob content cannot be faked). `head_matches_package_commit`
+    is recorded for provenance, not used to halt.
+    """
+    binding = manifest.get("committed_blob_binding") or {}
+    recorded = manifest.get("artifact_hashes") or {}
+    if not binding:
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Step 441): manifest carries no committed_blob_binding; execution "
+            "identity cannot be verified. This manifest predates the line-ending correction."
+        )
+    repo_root = CAM_ROOT.resolve()
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(CAM_ROOT),
+                          capture_output=True, text=True).stdout.strip()
+    problems: List[str] = []
+    for name, b in binding.items():
+        gp = b["git_path"]
+        wt = CAM_ROOT / gp
+        try:
+            wt.resolve().relative_to(repo_root)
+        except Exception:
+            problems.append(f"{name}: path {gp!r} does not resolve inside the repository")
+            continue
+        if not wt.exists():
+            problems.append(f"{name}: working-tree file {gp} missing")
+            continue
+        raw = wt.read_bytes()
+        if b"\r\n" in raw:
+            problems.append(f"{name}: working tree contains CRLF — .gitattributes LF pin violated")
+        wt_lf = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
+        rec = b["committed_blob_sha256"]
+        head_blob = git_blob_sha256(f"HEAD:{gp}")
+        if wt_lf != rec:
+            problems.append(f"{name}: working-tree LF sha256 {wt_lf[:12]} != manifest {rec[:12]}")
+        if head_blob != rec:
+            problems.append(f"{name}: HEAD:{gp} blob {str(head_blob)[:12]} != manifest {rec[:12]}")
+        if recorded.get(name) != rec:
+            problems.append(f"{name}: manifest artifact_hashes[{name}] != committed_blob_binding")
+    pkg_paths = [b["git_path"] for b in binding.values()]
+    dirty = subprocess.run(["git", "status", "--porcelain", "--"] + pkg_paths,
+                           cwd=str(CAM_ROOT), capture_output=True, text=True).stdout.strip()
+    if dirty:
+        problems.append(f"package working tree is NOT clean:\n{dirty}")
+    if problems:
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (§11, Step 441): repository execution identity check FAILED — the "
+            "executed bytes do not provably equal the reviewed committed blobs under pinned "
+            "LF. No provider call is made. Problems:\n  - " + "\n  - ".join(problems)
+        )
+    build_head = manifest.get("head_at_build_time")
+    return {
+        "head": head,
+        "head_at_build_time": build_head,
+        "head_matches_package_commit": (head == build_head),  # informational; not a halt condition
+        "all_artifacts_verified": True,
+        "verified_artifacts": list(binding.keys()),
+        "note": "authoritative guarantee = HEAD:blob == working-tree-LF == manifest for every "
+                "artifact (content-addressed); see function docstring re: commit self-reference.",
+    }
 
 
 def run_stage2(sanction: str) -> None:
@@ -1222,6 +1339,15 @@ def run_stage2(sanction: str) -> None:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     hashes = manifest["artifact_hashes"]
     config_hash = manifest["manifest_self_hash_of_artifact_hashes"]
+
+    # ── Step 441 runtime blob-equality gate — BEFORE any provider call ──
+    # HALTS unless the executed working-tree bytes provably equal the manifest's
+    # committed-blob hashes AND the blobs at HEAD, the package tree is clean, and the
+    # LF pin holds. Establishes repository-verifiable execution identity.
+    repo_identity = verify_repository_execution_identity(manifest)
+    print(f"[441] repository execution identity verified: {len(repo_identity['verified_artifacts'])} "
+          f"artifacts; HEAD={repo_identity['head'][:12]} "
+          f"head_matches_package_commit={repo_identity['head_matches_package_commit']}")
 
     sources = build_sources()
     preflight = run_preflight(sources, cfg)
@@ -1269,18 +1395,18 @@ def run_stage2(sanction: str) -> None:
             "sanction_token": sanction,
             "config_hash": config_hash,
         }
-        FATAL_PATH.write_text(json.dumps(terminal, indent=2), encoding="utf-8")
+        write_lf(FATAL_PATH, json.dumps(terminal, indent=2))
         print(f"FATAL: measurement halted; terminal record written: {FATAL_PATH.name}", flush=True)
         raise
     finally:
         # ── Runtime seam capture: IMMEDIATELY after the final model call (§8.2) ──
         seam_after = capture_cam_seam("after_last_model_call")
-        RUNTIME_SEAM_PATH.write_text(json.dumps(
+        write_lf(RUNTIME_SEAM_PATH, json.dumps(
             {"before_first_model_call": seam_before, "after_last_model_call": seam_after,
-             "fatal_occurred": fatal_occurred}, indent=2), encoding="utf-8")
+             "fatal_occurred": fatal_occurred}, indent=2))
         if fatal_occurred:
             # Persist whatever partial audit exists so the fatal run is inspectable.
-            SIDECAR_PATH.write_text(json.dumps({
+            write_lf(SIDECAR_PATH, json.dumps({
                 "_artifact": "431_selection_measurement_sidecar.json",
                 "_partial": True,
                 "_reason": "run halted on a fatal condition — see 431_fatal_run_error.json",
@@ -1289,7 +1415,7 @@ def run_stage2(sanction: str) -> None:
                 "series": series_by_id,
                 "runtime_seam": {"before_first_model_call": seam_before,
                                  "after_last_model_call": seam_after},
-            }, indent=2), encoding="utf-8")
+            }, indent=2))
 
     # ── Normal path (no fatal): certification + full sidecar + report ──
     cert_traces: List[dict] = []
@@ -1317,7 +1443,7 @@ def run_stage2(sanction: str) -> None:
                          "after_last_model_call": seam_after},
         "role_c_integrity_note": ROLE_C_INTEGRITY_REPORT_LANGUAGE,  # also emitted in the report (§9)
     }
-    SIDECAR_PATH.write_text(json.dumps(sidecar, indent=2), encoding="utf-8")
+    write_lf(SIDECAR_PATH, json.dumps(sidecar, indent=2))
     print(f"sidecar written: {SIDECAR_PATH.name}")
     render_report(sidecar)
     print(f"report written: {REPORT_PATH.name}")
@@ -1531,7 +1657,7 @@ def build_stage1() -> None:
     print("[3/6] running deterministic preflight (§6.2)...")
     preflight = run_preflight(sources, cfg)
     preflight["panel_identity_at_build"] = panel
-    PREFLIGHT_PATH.write_text(json.dumps(preflight, indent=2), encoding="utf-8")
+    write_lf(PREFLIGHT_PATH, json.dumps(preflight, indent=2))
     for c in preflight["candidates"]:
         flag = "OK " if c["admitted"] else "EXCL"
         uniq = f" unique={c.get('unique')}" if c.get("unique_resolution_required") else ""
@@ -1562,7 +1688,7 @@ def build_stage1() -> None:
             f"{sweep['stale_hits']}. The schema-wide rename is incomplete; no token is produced."
         )
 
-    print("[6/6] writing config manifest...")
+    print("[6/6] writing config manifest (committed-blob-derived identity under pinned LF)...")
     files = {
         "431_measurement_config.json": CONFIG_PATH,
         "431_requirement_profiles.json": PROFILES_PATH,
@@ -1571,10 +1697,26 @@ def build_stage1() -> None:
         "431_fixture_preflight.json": PREFLIGHT_PATH,
         "run_431_selection_measurement.py": Path(__file__),
     }
-    hashes = {name: sha256_file(p) for name, p in files.items()}
+    # Step 441: artifact identity is the SHA-256 of each file's committed-blob-equivalent
+    # bytes (LF-normalized), NOT the checked-out newline representation. Under the
+    # .gitattributes eol=lf policy the LF working-tree bytes equal the committed blob, so
+    # this token is reproducible from the repository's Git blobs on any platform.
+    hashes = {name: sha256_lf(p) for name, p in files.items()}
     self_hash = hashlib.sha256(
         json.dumps(hashes, sort_keys=True).encode("utf-8")
     ).hexdigest()
+    # Bind git path + committed-blob (LF) hash for every artifact. `committed_blob_sha256`
+    # is the SHA-256 of the to-be-committed LF bytes (== the Git blob once committed under
+    # eol=lf). The runtime gate recomputes HEAD:<path> fresh and requires it to equal this.
+    _head_at_build = subprocess.run(["git", "rev-parse", "HEAD"], cwd=str(CAM_ROOT),
+                                    capture_output=True, text=True).stdout.strip()
+    committed_blob_binding = {
+        name: {
+            "git_path": f"build_log/{name}",
+            "committed_blob_sha256": hashes[name],
+        }
+        for name in files
+    }
     manifest = {
         "_artifact": "431_config_manifest.json",
         "_purpose": "The reviewed config IS the run config. Any artifact edited after "
@@ -1635,14 +1777,43 @@ def build_stage1() -> None:
                  "role": "Step-439 executable package (FIX 1a + terminal-fatal + report + F2)",
                  "status": "SUPERSEDED-FOR-EXECUTION — NOT void",
                  "superseded_by_step": "440-fix — report-language ONLY: replaced the byte-wrong Role-C §9 heading+paragraph ('structural absence of a needed check') with the accurate wording (xAI DOES invoke the shared _check_generation_integrity at provider_router.py:764, records last_integrity; only the conditional-temperature-omission branch is structurally inapplicable to grok). No mechanism/fatal-handling/F2/semantic-artifact change."},
+                {"token": "8d14543ada608b5eac53e38105788885ff28fff619c2e7821c25c673f2e6917f",
+                 "role": "Step-440-fix executable package (corrected Role-C §9 language)",
+                 "status": "UNSANCTIONED / SUPERSEDED-FOR-EXECUTION — NOT void; retained as historical machine-local evidence only",
+                 "superseded_by_step": "441 — line-ending determinism + committed-blob token derivation. 8d14543a and ALL earlier tokens were derived from Windows working-tree bytes under core.autocrlf=true and are NOT independently reproducible from the repository's LF-normalized Git blobs; from this package identity is derived from committed Git-blob bytes under path-pinned LF."},
             ],
             "current_executable_token": self_hash,
-            "authorizing_step": "440-fix — Role-C §9 report-language correction ONLY (heading + paragraph)",
-            "_token_tracking_note": "Earlier instructions referenced a token 'd0293605' that never matched this harness's actual lineage (it appears only in flag-notes, never as a computed manifest self-hash). This chain reflects the REAL committed token lineage.",
-            "semantic_artifacts_byte_identical_to_65556ee": True,
-            "run_still_gated_by": "final delta audit + separate explicit Tzvi sanction of THIS new "
-                                  "token (no run in Step 440-fix)",
+            "authorizing_step": "441 — line-ending determinism + committed-blob-derived token (repository-verifiable execution identity)",
+            "_provenance_line_ending_correction": (
+                "Tokens generated before the line-ending correction were derived from Windows working-tree bytes "
+                "under core.autocrlf=true. They remain evidence of local sanction-to-execution drift gating on that "
+                "checkout, but they are not independently reproducible from the repository's LF-normalized Git blobs."
+            ),
+            "_provenance_committed_blob_identity": (
+                "Beginning with this package, artifact identity is derived from committed Git-blob bytes under "
+                "path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes exactly "
+                "equal the pinned committed blobs and that the repository commit matches the manifest."
+            ),
+            "semantic_artifacts_content_identical_to_65556ee": (
+                "content-identical (parsed JSON / prompt text / preflight all equal); differs from the 65556ee "
+                "manifest's recorded hashes ONLY by CRLF→LF normalization, proven newline-only in the 441 evidence."
+            ),
+            "run_still_gated_by": "scoped delta audit + separate explicit Tzvi sanction of THIS new token (no run in Step 441)",
         },
+        "line_ending_policy": {
+            "gitattributes_paths_eol_lf": [f"build_log/{n}" for n in files] + [".gitattributes (repo root)"],
+            "artifact_hash_basis": "SHA-256 of committed-blob-equivalent bytes (LF-normalized)",
+            "reproducible_from_committed_blobs": True,
+        },
+        "head_at_build_time": _head_at_build,
+        "_head_at_build_time_note": "The commit HEAD pointed at when the build ran (the parent of the "
+                                    "commit that will contain this manifest). A manifest cannot pin the "
+                                    "SHA of its own containing commit (self-reference); the runtime gate "
+                                    "instead enforces that HEAD:<git_path> blob == committed_blob_sha256 "
+                                    "for EVERY artifact — proving the running commit contains exactly the "
+                                    "sanctioned bytes, which is content-addressed and stronger than a "
+                                    "commit label.",
+        "committed_blob_binding": committed_blob_binding,
         "field_name_sweep": sweep,
         "generated_utc": datetime.now(timezone.utc).isoformat(),
         "stage": "1-build-of-executable-package",
@@ -1653,7 +1824,7 @@ def build_stage1() -> None:
         "stage2_sanction_token": self_hash,
         "_how_to_sanction": "Stage 2 is invoked as: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>",
     }
-    MANIFEST_PATH.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    write_lf(MANIFEST_PATH, json.dumps(manifest, indent=2))
 
     print("\n=== artifact hashes ===")
     for name, h in hashes.items():

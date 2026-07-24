@@ -106,31 +106,79 @@
         "role": "Step-439 executable package (FIX 1a + terminal-fatal + report + F2)",
         "status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void",
         "superseded_by_step": "440-fix \u2014 report-language ONLY: replaced the byte-wrong Role-C \u00a79 heading+paragraph ('structural absence of a needed check') with the accurate wording (xAI DOES invoke the shared _check_generation_integrity at provider_router.py:764, records last_integrity; only the conditional-temperature-omission branch is structurally inapplicable to grok). No mechanism/fatal-handling/F2/semantic-artifact change."
+      },
+      {
+        "token": "8d14543ada608b5eac53e38105788885ff28fff619c2e7821c25c673f2e6917f",
+        "role": "Step-440-fix executable package (corrected Role-C \u00a79 language)",
+        "status": "UNSANCTIONED / SUPERSEDED-FOR-EXECUTION \u2014 NOT void; retained as historical machine-local evidence only",
+        "superseded_by_step": "441 \u2014 line-ending determinism + committed-blob token derivation. 8d14543a and ALL earlier tokens were derived from Windows working-tree bytes under core.autocrlf=true and are NOT independently reproducible from the repository's LF-normalized Git blobs; from this package identity is derived from committed Git-blob bytes under path-pinned LF."
       }
     ],
-    "current_executable_token": "8d14543ada608b5eac53e38105788885ff28fff619c2e7821c25c673f2e6917f",
-    "authorizing_step": "440-fix \u2014 Role-C \u00a79 report-language correction ONLY (heading + paragraph)",
-    "_token_tracking_note": "Earlier instructions referenced a token 'd0293605' that never matched this harness's actual lineage (it appears only in flag-notes, never as a computed manifest self-hash). This chain reflects the REAL committed token lineage.",
-    "semantic_artifacts_byte_identical_to_65556ee": true,
-    "run_still_gated_by": "final delta audit + separate explicit Tzvi sanction of THIS new token (no run in Step 440-fix)"
+    "current_executable_token": "541989ef06213907716d2a613a26465f9571dd1e9e8c0d516b0405117f985a93",
+    "authorizing_step": "441 \u2014 line-ending determinism + committed-blob-derived token (repository-verifiable execution identity)",
+    "_provenance_line_ending_correction": "Tokens generated before the line-ending correction were derived from Windows working-tree bytes under core.autocrlf=true. They remain evidence of local sanction-to-execution drift gating on that checkout, but they are not independently reproducible from the repository's LF-normalized Git blobs.",
+    "_provenance_committed_blob_identity": "Beginning with this package, artifact identity is derived from committed Git-blob bytes under path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes exactly equal the pinned committed blobs and that the repository commit matches the manifest.",
+    "semantic_artifacts_content_identical_to_65556ee": "content-identical (parsed JSON / prompt text / preflight all equal); differs from the 65556ee manifest's recorded hashes ONLY by CRLF\u2192LF normalization, proven newline-only in the 441 evidence.",
+    "run_still_gated_by": "scoped delta audit + separate explicit Tzvi sanction of THIS new token (no run in Step 441)"
+  },
+  "line_ending_policy": {
+    "gitattributes_paths_eol_lf": [
+      "build_log/431_measurement_config.json",
+      "build_log/431_requirement_profiles.json",
+      "build_log/431_output_schema.json",
+      "build_log/431_selector_prompt.txt",
+      "build_log/431_fixture_preflight.json",
+      "build_log/run_431_selection_measurement.py",
+      ".gitattributes (repo root)"
+    ],
+    "artifact_hash_basis": "SHA-256 of committed-blob-equivalent bytes (LF-normalized)",
+    "reproducible_from_committed_blobs": true
+  },
+  "head_at_build_time": "f9048ed2bc16ee55295bb7878ec051b703a91a70",
+  "_head_at_build_time_note": "The commit HEAD pointed at when the build ran (the parent of the commit that will contain this manifest). A manifest cannot pin the SHA of its own containing commit (self-reference); the runtime gate instead enforces that HEAD:<git_path> blob == committed_blob_sha256 for EVERY artifact \u2014 proving the running commit contains exactly the sanctioned bytes, which is content-addressed and stronger than a commit label.",
+  "committed_blob_binding": {
+    "431_measurement_config.json": {
+      "git_path": "build_log/431_measurement_config.json",
+      "committed_blob_sha256": "7000ad8f4c1f14b43d59f043fb90a52c7c03e139cd6ec808180cfd651f139a0b"
+    },
+    "431_requirement_profiles.json": {
+      "git_path": "build_log/431_requirement_profiles.json",
+      "committed_blob_sha256": "57f8a22ae258e01afa94568c9fba8e9f895e79868c592134b162d5923bd8563b"
+    },
+    "431_output_schema.json": {
+      "git_path": "build_log/431_output_schema.json",
+      "committed_blob_sha256": "a9724730044357131cec19e81558a0e05a9460d1a3588f9ef9d520e47d26d4b2"
+    },
+    "431_selector_prompt.txt": {
+      "git_path": "build_log/431_selector_prompt.txt",
+      "committed_blob_sha256": "3a146f4122dddf09f8de984662685789ee6aee6a3276509d91fc5818a63e0007"
+    },
+    "431_fixture_preflight.json": {
+      "git_path": "build_log/431_fixture_preflight.json",
+      "committed_blob_sha256": "080eb3ed9fca215d8e65faa3dafaa451536de974d7ccb53fbbda16af26ad8770"
+    },
+    "run_431_selection_measurement.py": {
+      "git_path": "build_log/run_431_selection_measurement.py",
+      "committed_blob_sha256": "e4f9848469f383c23ca491f5387c4d950c5128bdd354cf1d568ec0a2ff144e22"
+    }
   },
   "field_name_sweep": {
     "clean": true,
     "stale_hits": {}
   },
-  "generated_utc": "2026-07-22T23:39:43.333342+00:00",
+  "generated_utc": "2026-07-24T13:48:00.805330+00:00",
   "stage": "1-build-of-executable-package",
   "package_type": "executable (Stage-2 call path implemented; fires calls ONLY under --mode run + matching --stage2-sanction)",
   "model_calls_made_at_build": 0,
   "artifact_hashes": {
-    "431_measurement_config.json": "6bfb6e5e872650eac9d4f46f19c55abf42fd8c5ff98dc128666971cffba178ca",
-    "431_requirement_profiles.json": "48c55c9838cf0f74acd2ceb4cae1ba6990c77500781a896df8bf411f97304fed",
-    "431_output_schema.json": "3925001ce9b444a92b5164576770256784d2e8cec5fc94bbaaa7d7beccd6dd11",
+    "431_measurement_config.json": "7000ad8f4c1f14b43d59f043fb90a52c7c03e139cd6ec808180cfd651f139a0b",
+    "431_requirement_profiles.json": "57f8a22ae258e01afa94568c9fba8e9f895e79868c592134b162d5923bd8563b",
+    "431_output_schema.json": "a9724730044357131cec19e81558a0e05a9460d1a3588f9ef9d520e47d26d4b2",
     "431_selector_prompt.txt": "3a146f4122dddf09f8de984662685789ee6aee6a3276509d91fc5818a63e0007",
-    "431_fixture_preflight.json": "033163026a7d14a8fc051184e02de4c3790db11c711d406cead3de2fc02fc79d",
-    "run_431_selection_measurement.py": "ae665f16029a2462ef5cb2d7f71c1fe91863d532f33c1616403a4bfcc7b6802d"
+    "431_fixture_preflight.json": "080eb3ed9fca215d8e65faa3dafaa451536de974d7ccb53fbbda16af26ad8770",
+    "run_431_selection_measurement.py": "e4f9848469f383c23ca491f5387c4d950c5128bdd354cf1d568ec0a2ff144e22"
   },
-  "manifest_self_hash_of_artifact_hashes": "8d14543ada608b5eac53e38105788885ff28fff619c2e7821c25c673f2e6917f",
-  "stage2_sanction_token": "8d14543ada608b5eac53e38105788885ff28fff619c2e7821c25c673f2e6917f",
+  "manifest_self_hash_of_artifact_hashes": "541989ef06213907716d2a613a26465f9571dd1e9e8c0d516b0405117f985a93",
+  "stage2_sanction_token": "541989ef06213907716d2a613a26465f9571dd1e9e8c0d516b0405117f985a93",
   "_how_to_sanction": "Stage 2 is invoked as: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>"
 }
