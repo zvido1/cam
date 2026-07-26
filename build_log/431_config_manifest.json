@@ -124,12 +124,19 @@
         "role": "Step-441-fix2 executable package (Construction A: manifest carries no commit SHA; commit binding via external signed tag)",
         "status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void; commit-binding topology was correct, but the signature TRUST ANCHOR was not committed at the package commit",
         "superseded_by_step": "442 \u2014 the allowed-signers file did not exist at the package commit (added only in a descendant commit) and `gpg.ssh.allowedSignersFile` was a machine-local .git/config path, so `git tag -v` resolved its trust anchor from configuration rather than from bytes committed at P. A third party checking out P alone could not identify the authorized key. Step 442 commits the allowed-signers file, the standalone public key, and an authorization policy AT the package commit, binds all three into the token, materializes the verification anchor from HEAD blobs, and enforces the authorized key/principal/namespace explicitly."
+      },
+      {
+        "token": "8389e9651438e72707eadd63a1e69a17a78035ea36ea75de640d8dcd76a2a071",
+        "role": "Step-442 executable package (committed trust anchor + explicit key enforcement)",
+        "status": "SUPERSEDED-FOR-EXECUTION \u2014 NOT void; anchor and key enforcement were sound, but the runtime still let the manifest decide WHAT to verify",
+        "superseded_by_step": "443 \u2014 MANIFEST-TRUST BYPASS: run_stage2 loaded the manifest from the WORKING TREE and the gate enumerated artifacts from its committed_blob_binding. Deleting an entry (e.g. the harness) from the working-tree copy while leaving the token field intact shrank the verification scope, so a MODIFIED harness could execute under a valid signed tag \u2014 executed bytes != sanctioned bytes. 443 hardcodes the nine-artifact scope in the harness, reads the manifest only from HEAD (requiring the working-tree copy to be byte-identical), recomputes the token at run time from the nine HEAD blobs, and requires four-way token equality (recomputed == committed manifest == --stage2-sanction == signed-tag body)."
       }
     ],
-    "current_executable_token": "8389e9651438e72707eadd63a1e69a17a78035ea36ea75de640d8dcd76a2a071",
-    "authorizing_step": "442 \u2014 Construction A / Option 3 + committed trust anchor: manifest carries no commit SHA; run-commit\u2194token binding via an external signed annotated sanction tag, verified against a one-key anchor materialized from committed HEAD blobs",
+    "current_executable_token": "bb1c40b1e37a0d14d865c48526724c04184a00d0c18ebde8126733df4697c477",
+    "authorizing_step": "443 \u2014 manifest-trust bypass closed: hardcoded artifact scope, HEAD-only manifest, runtime token recomputation from committed blobs, four-way token equality; 442 committed trust anchor + explicit key enforcement preserved",
     "_provenance_line_ending_correction": "Tokens generated before the line-ending correction were derived from Windows working-tree bytes under core.autocrlf=true. They remain evidence of local sanction-to-execution drift gating on that checkout, but they are not independently reproducible from the repository's LF-normalized Git blobs.",
     "_provenance_committed_blob_identity": "Beginning with the Step-441 package, artifact identity is derived from committed Git-blob bytes under path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes exactly equal the pinned committed blobs and the blobs at HEAD, for every artifact.",
+    "_provenance_manifest_trust_correction": "Through Step 442 the runtime consumed a WORKING-TREE copy of this manifest and used its committed_blob_binding to enumerate what to verify. That made the manifest trusted to define its own verification scope: removing an artifact entry (while leaving the token field intact) shrank the checked set, so a modified artifact could execute under an otherwise valid signed tag. From Step 443 the artifact set is hardcoded in the harness, this manifest is read only from the committed HEAD blob (the working-tree copy must be byte-identical), the token is recomputed at run time from the nine committed blobs, and the recorded hashes here are treated as claims checked against that recomputation rather than as inputs to it.",
     "_provenance_trust_anchor_correction": "Through Step 441-fix2 the sanction tag's signature was verified with whatever allowed-signers file the local `gpg.ssh.allowedSignersFile` config happened to point at, and that file was not committed at the package commit. The commit-binding topology was non-circular, but the trust anchor was configuration rather than content: a third party checking out the package commit alone could not identify the authorized public key. From Step 442 the allowed-signers file, the standalone public key, and an authorization policy are committed AT the package commit, are hashed into the package token, and the runtime materializes a one-key verification anchor from the committed HEAD blobs with explicit `-c` overrides, never inheriting ambient configuration.",
     "_provenance_commit_binding_correction": "Step 441 attempted to bind the run-commit inside the package manifest via `head_at_build_time`, which stored the PARENT commit \u2014 a proxy that can never satisfy a `HEAD == stored-commit` check once the containing commit exists (a manifest inside commit C cannot name C). Step 441-fix2 removes any commit SHA from the package manifest and binds the run-commit to the token through a SEPARATE, post-commit, signed annotated tag pointing at the package commit P. Earlier tokens are not retroactively rescued; the correction applies from this package forward.",
     "semantic_artifacts_content_identical_to_65556ee": "content-identical (parsed JSON / prompt text / preflight all equal); the five reviewed semantic artifacts are byte-identical to the 65556ee blobs (git diff 65556ee..P over those five paths is empty).",
@@ -180,7 +187,7 @@
     },
     "run_431_selection_measurement.py": {
       "git_path": "build_log/run_431_selection_measurement.py",
-      "committed_blob_sha256": "21b8f0f6ce5c56088948f8b23167d24dc030fb34f67d7427ae685adaa303b018"
+      "committed_blob_sha256": "d07190a522a67ac917ce3997cf2d7d03e7e360b46da1744d4070424a1a459135"
     },
     "431_sanction_allowed_signers": {
       "git_path": "build_log/431_sanction_allowed_signers",
@@ -199,7 +206,7 @@
     "clean": true,
     "stale_hits": {}
   },
-  "generated_utc": "2026-07-26T03:23:31.620610+00:00",
+  "generated_utc": "2026-07-26T04:47:48.136715+00:00",
   "stage": "1-build-of-executable-package",
   "package_type": "executable (Stage-2 call path implemented; fires calls ONLY under --mode run + matching --stage2-sanction)",
   "model_calls_made_at_build": 0,
@@ -209,12 +216,12 @@
     "431_output_schema.json": "a9724730044357131cec19e81558a0e05a9460d1a3588f9ef9d520e47d26d4b2",
     "431_selector_prompt.txt": "3a146f4122dddf09f8de984662685789ee6aee6a3276509d91fc5818a63e0007",
     "431_fixture_preflight.json": "080eb3ed9fca215d8e65faa3dafaa451536de974d7ccb53fbbda16af26ad8770",
-    "run_431_selection_measurement.py": "21b8f0f6ce5c56088948f8b23167d24dc030fb34f67d7427ae685adaa303b018",
+    "run_431_selection_measurement.py": "d07190a522a67ac917ce3997cf2d7d03e7e360b46da1744d4070424a1a459135",
     "431_sanction_allowed_signers": "f0d2db7374ed8e6a0a5cc727f82794af9ad16c70b2532d6878a4706c337217d6",
     "431_sanction_key.pub": "e0b26fd7f79e933db44deecca6820037cd950760ec1e5c4421e217a5963bb9b9",
     "431_sanction_policy.json": "e78b5ffcfbd6a48afa674c91d971531179a2c5cdd22c6de5c87f7029d0f056d0"
   },
-  "manifest_self_hash_of_artifact_hashes": "8389e9651438e72707eadd63a1e69a17a78035ea36ea75de640d8dcd76a2a071",
-  "stage2_sanction_token": "8389e9651438e72707eadd63a1e69a17a78035ea36ea75de640d8dcd76a2a071",
+  "manifest_self_hash_of_artifact_hashes": "bb1c40b1e37a0d14d865c48526724c04184a00d0c18ebde8126733df4697c477",
+  "stage2_sanction_token": "bb1c40b1e37a0d14d865c48526724c04184a00d0c18ebde8126733df4697c477",
   "_how_to_sanction": "Two conditions, BOTH required (Construction A / Option 3 + Step 442): (1) invoke: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>; (2) an ANNOTATED tag signed by the authorized sanction key, created AFTER the package commit and pointing at it, embedding `token: <this hash>`, `package_commit: <that commit>`, `authorized_principal:` and `sanction_key_fingerprint:` matching 431_sanction_policy.json. The runtime verifies the signature against a one-key anchor materialized from HEAD:build_log/431_sanction_allowed_signers (never from .git/config) and HALTS if no such tag points at HEAD. The manifest itself contains NO commit SHA."
 }

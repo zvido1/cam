@@ -60,6 +60,30 @@ SANCTION_POLICY_PATH = BUILD_LOG / "431_sanction_policy.json"
 ALLOWED_SIGNERS_GITPATH = "build_log/431_sanction_allowed_signers"
 SANCTION_KEY_GITPATH = "build_log/431_sanction_key.pub"
 SANCTION_POLICY_GITPATH = "build_log/431_sanction_policy.json"
+MANIFEST_GITPATH = "build_log/431_config_manifest.json"
+
+CRLF_BYTES = b"\r\n"
+LF_BYTES = b"\n"
+
+# ── Step 443: the package artifact set is HARDCODED HERE, not read from the manifest ──
+# Until 443 the runtime enumerated artifacts from the manifest's committed_blob_binding, and
+# run_stage2 loaded that manifest from the WORKING TREE. Deleting an entry (e.g. the harness)
+# from the working-tree copy while leaving the token field intact shrank the verification set,
+# so a MODIFIED harness could execute under a valid signed tag. Scope is therefore fixed in
+# code: the manifest can no longer decide what gets verified, only make claims that are checked
+# against the committed blobs. Changing this dict changes the harness bytes, which changes the
+# harness blob hash, which changes the token, which voids every existing sanction.
+EXPECTED_PACKAGE_ARTIFACTS: Dict[str, str] = {
+    "431_measurement_config.json": "build_log/431_measurement_config.json",
+    "431_requirement_profiles.json": "build_log/431_requirement_profiles.json",
+    "431_output_schema.json": "build_log/431_output_schema.json",
+    "431_selector_prompt.txt": "build_log/431_selector_prompt.txt",
+    "431_fixture_preflight.json": "build_log/431_fixture_preflight.json",
+    "run_431_selection_measurement.py": "build_log/run_431_selection_measurement.py",
+    "431_sanction_allowed_signers": "build_log/431_sanction_allowed_signers",
+    "431_sanction_key.pub": "build_log/431_sanction_key.pub",
+    "431_sanction_policy.json": "build_log/431_sanction_policy.json",
+}
 
 # ── Stage-2 outputs (produced only under sanction) ────────────────────────────
 SIDECAR_PATH = BUILD_LOG / "431_selection_measurement_sidecar.json"
@@ -653,15 +677,16 @@ def _assert_stage2(mode: str, sanction: Optional[str]) -> None:
             "run is authorized only by a SEPARATE explicit sanction of the exact "
             "hashed Stage-1 artifacts."
         )
-    if not MANIFEST_PATH.exists():
-        raise StageAuthorizationError("Manifest missing; cannot verify Stage-2 sanction.")
-    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    expected = manifest.get("manifest_self_hash_of_artifact_hashes")
+    # Step 443: compare the supplied sanction against the token RECOMPUTED from the committed
+    # HEAD blobs of the hardcoded nine artifacts — not against a working-tree manifest field.
+    # (Pre-443 this read MANIFEST_PATH from the working tree, so editing that file could make
+    # an arbitrary sanction string "match".) The full gate re-checks this independently.
+    _, expected = recompute_token_from_head()
     if sanction != expected:
         raise StageAuthorizationError(
-            f"Stage-2 sanction mismatch. Supplied {sanction!r} != committed manifest "
-            f"{expected!r}. An artifact edited after Stage-1 review VOIDS the "
-            "measurement and requires re-review (§1)."
+            f"Stage-2 sanction mismatch. Supplied {sanction!r} != token recomputed from the "
+            f"committed HEAD blobs {expected!r}. An artifact edited after Stage-1 review VOIDS "
+            "the measurement and requires re-review (§1)."
         )
 
 
@@ -874,9 +899,9 @@ def call_panelist(role: str, candidate: Dict[str, Any], envelope: dict, candidat
     # the threaded run config_hash must equal the committed manifest self-hash on
     # disk. Under a valid sanction these agree; a drifted config_hash here would
     # (correctly) mark the attempt non-canonical rather than silently pass.
-    reviewed_config_hash = json.loads(
-        MANIFEST_PATH.read_text(encoding="utf-8")
-    )["manifest_self_hash_of_artifact_hashes"]
+    # Step 443: read this from the COMMITTED manifest blob at HEAD, not the working-tree file,
+    # so an edited working-tree manifest cannot influence the canonicality decision either.
+    reviewed_config_hash = load_head_manifest()[0]["manifest_self_hash_of_artifact_hashes"]
 
     start = time.time()
     attempts: List[dict] = []          # every attempt, incl. parse failures (audit)
@@ -1366,6 +1391,41 @@ def _tag_field(body: str, key: str) -> Optional[str]:
     return None
 
 
+def load_head_manifest() -> Tuple[dict, bytes]:
+    """Step 443: the AUTHORITATIVE manifest is the committed blob at HEAD, never the
+    working-tree file. Returns (parsed, raw_bytes)."""
+    raw = _git_blob_bytes(f"HEAD:{MANIFEST_GITPATH}")
+    if raw is None:
+        raise MeasurementIntegrityHalt(
+            f"HARD HALT (Step 443): no committed manifest at HEAD:{MANIFEST_GITPATH}. The package "
+            "manifest must be committed; a working-tree-only manifest cannot authorize a run."
+        )
+    try:
+        return json.loads(raw.decode("utf-8")), raw
+    except Exception as e:
+        raise MeasurementIntegrityHalt(
+            f"HARD HALT (Step 443): committed manifest at HEAD is unparseable: {e}")
+
+
+def recompute_token_from_head() -> Tuple[Dict[str, str], str]:
+    """Step 443: recompute the package token from the committed HEAD blobs of the hardcoded
+    nine artifacts. Hashes recorded in the manifest are NEVER used as inputs — they are claims
+    checked against this result. Mirrors the build-time derivation exactly:
+    sha256 of each artifact's LF-normalized committed bytes, then sha256 of
+    json.dumps(hashes, sort_keys=True)."""
+    hashes: Dict[str, str] = {}
+    for name, gp in EXPECTED_PACKAGE_ARTIFACTS.items():
+        raw = _git_blob_bytes(f"HEAD:{gp}")
+        if raw is None:
+            raise MeasurementIntegrityHalt(
+                f"HARD HALT (Step 443): package artifact {name} is not committed at HEAD:{gp}. "
+                "Every sanctioned artifact must exist in the running commit."
+            )
+        hashes[name] = hashlib.sha256(raw.replace(CRLF_BYTES, LF_BYTES)).hexdigest()
+    token = hashlib.sha256(json.dumps(hashes, sort_keys=True).encode("utf-8")).hexdigest()
+    return hashes, token
+
+
 def load_committed_trust_anchor() -> dict:
     """Step 442 (a)-(d): establish the trust anchor from COMMITTED CONTENT at HEAD.
 
@@ -1518,36 +1578,53 @@ def verify_signed_sanction_binding(head: str, token: str) -> dict:
     return valid[0]
 
 
-def verify_repository_execution_identity(manifest: dict) -> dict:
+def verify_repository_execution_identity(sanction_token: Optional[str] = None) -> dict:
     """Runtime gate — HALT (MeasurementIntegrityHalt) before the first provider call unless
-    BOTH guarantees hold. Establishes repository-verifiable execution identity + a non-circular
-    commit binding (Construction A / Option 3, Step 441-fix2).
+    every guarantee below holds.
 
-    (1) CONTENT identity (unchanged, load-bearing): per package artifact,
-            working-tree LF-sha256 == manifest.committed_blob_sha256 == sha256(HEAD:git_path)
-        plus the package tree is clean, the .gitattributes LF pin holds (no CRLF), and every
-        artifact path resolves INSIDE this repository.
+    Step 443 — MANIFEST-TRUST BYPASS CLOSED. Until 443 this function received the manifest
+    as a parameter, and run_stage2 loaded it from the WORKING TREE. The manifest decided
+    WHAT to verify (it was iterated to enumerate artifacts), so editing the working-tree copy
+    — e.g. deleting the harness entry from committed_blob_binding while leaving the token
+    field intact — shrank the verification set and let a MODIFIED harness execute under a
+    valid signed tag. Executed bytes != sanctioned bytes. The manifest is now never trusted
+    to decide scope:
 
-    (2) COMMIT binding: the run-commit ↔ token binding is NOT a field inside the package
-        manifest. A manifest committed inside commit C cannot name C (self-reference); the
-        Step-441 attempt stored the PARENT commit as `head_at_build_time`, so its
-        `head == head_at_build_time` check was structurally ALWAYS-FALSE once the containing
-        commit existed. Instead the binding lives in an EXTERNAL SIGNED ANNOTATED TAG created
-        AFTER the package commit and pointing at it; the runtime reads the sanctioned commit
-        identity from that tag (verify_signed_sanction_binding). This manifest therefore MUST
-        carry no commit SHA — enforced below.
+    (0) SCOPE is hardcoded. EXPECTED_PACKAGE_ARTIFACTS (name -> git path) is compiled into
+        this file. The manifest cannot shrink, extend, or re-point it.
+    (1) The AUTHORITATIVE manifest is the committed blob HEAD:<manifest path>, never the
+        working-tree file. The working-tree copy is additionally required to be byte-identical
+        to that blob, so tampering is reported rather than silently ignored.
+    (2) The token is RECOMPUTED at run time from the nine HEAD:<path> blobs. Hashes recorded
+        in the manifest are treated as claims to be checked, never as inputs.
+    (3) CONTENT identity per artifact: working-tree LF-sha256 == sha256(HEAD:git_path) ==
+        recomputed hash == the hash recorded in the manifest; clean package tree; LF pin
+        (no CRLF); every path resolves INSIDE this repository.
+    (4) COMMIT binding: the run-commit <-> token binding is NOT a field inside the package
+        manifest (a manifest inside commit C cannot name C). It lives in an EXTERNAL SIGNED
+        ANNOTATED TAG pointing at HEAD, verified against the committed one-key trust anchor.
+    (5) FOUR-WAY token equality: recomputed(HEAD blobs) == committed-manifest token ==
+        CLI --stage2-sanction == signed-tag embedded token. Any inequality halts.
     """
-    binding = manifest.get("committed_blob_binding") or {}
-    recorded = manifest.get("artifact_hashes") or {}
-    token = (manifest.get("stage2_sanction_token")
-             or manifest.get("manifest_self_hash_of_artifact_hashes"))
-    if not binding:
+    # ── (1) authoritative manifest = the COMMITTED blob, not the working tree ──
+    manifest, manifest_blob = load_head_manifest()
+    wt_manifest = MANIFEST_PATH.read_bytes() if MANIFEST_PATH.exists() else None
+    if wt_manifest is None:
         raise MeasurementIntegrityHalt(
-            "HARD HALT: manifest carries no committed_blob_binding; execution identity "
-            "cannot be verified."
+            "HARD HALT (Step 443): working-tree manifest is missing while a committed manifest "
+            "exists at HEAD. Refusing to run against an indeterminate package state."
         )
-    # Construction A invariant: the package manifest must NOT carry any commit SHA. A
-    # self-referential commit field is exactly the defect this step removes.
+    if wt_manifest.replace(b"\r\n", b"\n") != manifest_blob:
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Step 443): working-tree manifest bytes DIFFER from "
+            f"HEAD:{MANIFEST_GITPATH}. The committed blob is authoritative and was used for "
+            "verification; the divergence itself voids the run (an edited working-tree manifest "
+            "is the manifest-trust bypass this check exists to stop).\n"
+            f"  working-tree sha256 (LF): {hashlib.sha256(wt_manifest.replace(CRLF_BYTES, LF_BYTES)).hexdigest()}\n"
+            f"  HEAD blob   sha256      : {hashlib.sha256(manifest_blob).hexdigest()}"
+        )
+
+    # Construction A invariant: the package manifest must NOT carry any commit SHA.
     for forbidden in ("head_at_build_time", "pinned_commit", "package_commit", "containing_commit"):
         if forbidden in manifest:
             raise MeasurementIntegrityHalt(
@@ -1555,11 +1632,44 @@ def verify_repository_execution_identity(manifest: dict) -> dict:
                 f"field '{forbidden}'. The package manifest MUST hold no commit SHA; commit "
                 "binding lives only in the external signed sanction tag."
             )
+
+    binding = manifest.get("committed_blob_binding") or {}
+    recorded = manifest.get("artifact_hashes") or {}
+
+    # ── (0) the artifact SET is fixed by this file, not by the manifest ──
+    expected_names = set(EXPECTED_PACKAGE_ARTIFACTS)
+    if set(binding) != expected_names:
+        missing = sorted(expected_names - set(binding))
+        extra = sorted(set(binding) - expected_names)
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Step 443): committed_blob_binding does not match the hardcoded "
+            f"{len(expected_names)}-artifact package set. A binding that omits an artifact "
+            "shrinks the verification scope (the manifest-trust bypass); one that adds an "
+            "artifact is not the sanctioned package.\n"
+            f"  missing from binding: {missing or '[none]'}\n"
+            f"  unexpected in binding: {extra or '[none]'}"
+        )
+    if set(recorded) != expected_names:
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Step 443): artifact_hashes keys do not match the hardcoded package set.\n"
+            f"  missing: {sorted(expected_names - set(recorded)) or '[none]'}\n"
+            f"  unexpected: {sorted(set(recorded) - expected_names) or '[none]'}"
+        )
+    for name, gp in EXPECTED_PACKAGE_ARTIFACTS.items():
+        claimed = (binding[name] or {}).get("git_path")
+        if claimed != gp:
+            raise MeasurementIntegrityHalt(
+                f"HARD HALT (Step 443): binding git_path for {name!r} is {claimed!r}, expected "
+                f"{gp!r}. The manifest may not re-point an artifact at different bytes."
+            )
+
+    # ── (2) recompute the token from the committed HEAD blobs; do not trust recorded hashes ──
+    recomputed_hashes, recomputed_token = recompute_token_from_head()
+
     repo_root = CAM_ROOT.resolve()
     head = _git("rev-parse", "HEAD").stdout.strip()
     problems: List[str] = []
-    for name, b in binding.items():
-        gp = b["git_path"]
+    for name, gp in EXPECTED_PACKAGE_ARTIFACTS.items():
         wt = CAM_ROOT / gp
         try:
             wt.resolve().relative_to(repo_root)
@@ -1570,18 +1680,24 @@ def verify_repository_execution_identity(manifest: dict) -> dict:
             problems.append(f"{name}: working-tree file {gp} missing")
             continue
         raw = wt.read_bytes()
-        if b"\r\n" in raw:
+        if CRLF_BYTES in raw:
             problems.append(f"{name}: working tree contains CRLF — .gitattributes LF pin violated")
-        wt_lf = hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest()
-        rec = b["committed_blob_sha256"]
+        wt_lf = hashlib.sha256(raw.replace(CRLF_BYTES, LF_BYTES)).hexdigest()
+        rec = recomputed_hashes[name]                      # authoritative: from HEAD blob
         head_blob = git_blob_sha256(f"HEAD:{gp}")
         if wt_lf != rec:
-            problems.append(f"{name}: working-tree LF sha256 {wt_lf[:12]} != manifest {rec[:12]}")
+            problems.append(f"{name}: working-tree LF sha256 {wt_lf[:12]} != HEAD blob {rec[:12]}")
         if head_blob != rec:
-            problems.append(f"{name}: HEAD:{gp} blob {str(head_blob)[:12]} != manifest {rec[:12]}")
+            problems.append(f"{name}: HEAD:{gp} blob {str(head_blob)[:12]} != recomputed {rec[:12]}")
+        # the manifest's CLAIMS are checked against the recomputed truth, never used as input
         if recorded.get(name) != rec:
-            problems.append(f"{name}: manifest artifact_hashes[{name}] != committed_blob_binding")
-    pkg_paths = [b["git_path"] for b in binding.values()]
+            problems.append(f"{name}: manifest artifact_hashes claims {str(recorded.get(name))[:12]} "
+                            f"but HEAD blob is {rec[:12]}")
+        if (binding[name] or {}).get("committed_blob_sha256") != rec:
+            problems.append(f"{name}: manifest committed_blob_binding claims "
+                            f"{str((binding[name] or {}).get('committed_blob_sha256'))[:12]} "
+                            f"but HEAD blob is {rec[:12]}")
+    pkg_paths = list(EXPECTED_PACKAGE_ARTIFACTS.values()) + [MANIFEST_GITPATH]
     dirty = _git("status", "--porcelain", "--", *pkg_paths).stdout.strip()
     if dirty:
         problems.append(f"package working tree is NOT clean:\n{dirty}")
@@ -1591,22 +1707,50 @@ def verify_repository_execution_identity(manifest: dict) -> dict:
             "not provably equal the reviewed committed blobs under pinned LF. No provider call "
             "is made. Problems:\n  - " + "\n  - ".join(problems)
         )
-    # Content identity holds. Now bind the run-commit to this token via the external signed tag.
-    tag_binding = verify_signed_sanction_binding(head, token)
+
+    # ── (5) FOUR-WAY token equality ──
+    manifest_token = manifest.get("stage2_sanction_token")
+    manifest_self = manifest.get("manifest_self_hash_of_artifact_hashes")
+    if manifest_token != recomputed_token or manifest_self != recomputed_token:
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Step 443): committed-manifest token does not equal the token recomputed "
+            "from the HEAD blobs of the nine package artifacts. The manifest's token field is a "
+            "claim; the recomputed value is the fact.\n"
+            f"  recomputed from HEAD blobs        : {recomputed_token}\n"
+            f"  manifest stage2_sanction_token    : {manifest_token}\n"
+            f"  manifest self_hash_of_artifact_..: {manifest_self}"
+        )
+    if sanction_token is not None and sanction_token != recomputed_token:
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Step 443): --stage2-sanction does not equal the token recomputed from the "
+            "HEAD blobs.\n"
+            f"  supplied --stage2-sanction : {sanction_token}\n"
+            f"  recomputed from HEAD blobs : {recomputed_token}"
+        )
+    # Content identity holds. Bind the run-commit to the RECOMPUTED token via the signed tag.
+    tag_binding = verify_signed_sanction_binding(head, recomputed_token)
     return {
         "head": head,
+        "recomputed_token": recomputed_token,
+        "token_sources_agree": ["recomputed(HEAD blobs)", "committed manifest",
+                                "--stage2-sanction" if sanction_token is not None else
+                                "--stage2-sanction (not supplied to this call)",
+                                "signed tag body"],
         "commit_bound_via_signed_tag": tag_binding["tag"],
         "sanction_tag_peeled_commit": tag_binding["peeled_commit"],
         "sanction_key_fingerprint": tag_binding["sanction_key_fingerprint"],
         "authorized_principal": tag_binding["authorized_principal"],
         "trust_anchor_source": tag_binding["anchor_source"],
+        "manifest_source": f"HEAD:{MANIFEST_GITPATH} (committed blob; working-tree copy verified "
+                           "byte-identical)",
+        "artifact_scope_source": "EXPECTED_PACKAGE_ARTIFACTS hardcoded in the harness",
         "commit_binding_source": "external signed annotated tag (Construction A / Option 3) — "
                                  "NOT a field inside the package manifest",
         "all_artifacts_verified": True,
-        "verified_artifacts": list(binding.keys()),
-        "note": "content identity = HEAD:blob == working-tree-LF == manifest per artifact; "
-                "commit identity = signed tag pointing at HEAD embedding this token, verified "
-                "against a one-key anchor materialized from the committed HEAD blob.",
+        "verified_artifacts": list(EXPECTED_PACKAGE_ARTIFACTS),
+        "note": "scope hardcoded; manifest read from HEAD; token recomputed from HEAD blobs; "
+                "four-way token equality; commit identity from a signed tag verified against a "
+                "one-key anchor materialized from the committed HEAD blob.",
     }
 
 
@@ -1623,24 +1767,26 @@ def run_stage2(sanction: str) -> None:
     schema_text = SCHEMA_PATH.read_text(encoding="utf-8")
     prompt_template = artifacts["prompt_template"]
 
-    # Config integrity: the run config MUST equal the reviewed config (§1). The
-    # sanction already matched the manifest self-hash in _assert_stage2; re-derive
-    # per-artifact hashes for the trace and use the self-hash as config identity.
-    manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    hashes = manifest["artifact_hashes"]
-    config_hash = manifest["manifest_self_hash_of_artifact_hashes"]
-
-    # ── Step 441-fix2 runtime gate — BEFORE any provider call ──
-    # HALTS unless (1) the executed working-tree bytes provably equal the manifest's
-    # committed-blob hashes AND the blobs at HEAD (content identity), the package tree is
-    # clean, and the LF pin holds; AND (2) HEAD is bound to this token by a valid signed
-    # sanction tag (Construction A / Option 3 — commit identity read from the tag, never
-    # from a self-referential field inside the package manifest).
-    repo_identity = verify_repository_execution_identity(manifest)
-    print(f"[441-fix2] repository execution identity verified: "
+    # ── Step 443 runtime gate — BEFORE any provider call, and BEFORE the manifest is read ──
+    # Ordering matters: the gate runs FIRST and derives everything from committed HEAD blobs.
+    # It halts unless the artifact scope matches the hardcoded set, the committed manifest is
+    # authoritative (working-tree copy byte-identical), every artifact's working-tree bytes
+    # equal its HEAD blob, the package tree is clean under the LF pin, the token recomputed
+    # from those blobs equals the manifest token AND the supplied --stage2-sanction, and a
+    # signed sanction tag verified against the committed one-key anchor points at HEAD and
+    # embeds that same token.
+    repo_identity = verify_repository_execution_identity(sanction)
+    print(f"[443] repository execution identity verified: "
           f"{len(repo_identity['verified_artifacts'])} artifacts; "
           f"HEAD={repo_identity['head'][:12]} "
+          f"token={repo_identity['recomputed_token'][:12]} (recomputed from HEAD blobs) "
           f"commit_bound_via_signed_tag={repo_identity['commit_bound_via_signed_tag']}")
+
+    # Config identity for the trace comes from the VERIFIED committed manifest, not the
+    # working-tree file. The gate above already proved the two are byte-identical.
+    manifest, _ = load_head_manifest()
+    hashes = manifest["artifact_hashes"]
+    config_hash = repo_identity["recomputed_token"]
 
     sources = build_sources()
     preflight = run_preflight(sources, cfg)
@@ -2091,9 +2237,13 @@ def build_stage1() -> None:
                  "role": "Step-441-fix2 executable package (Construction A: manifest carries no commit SHA; commit binding via external signed tag)",
                  "status": "SUPERSEDED-FOR-EXECUTION — NOT void; commit-binding topology was correct, but the signature TRUST ANCHOR was not committed at the package commit",
                  "superseded_by_step": "442 — the allowed-signers file did not exist at the package commit (added only in a descendant commit) and `gpg.ssh.allowedSignersFile` was a machine-local .git/config path, so `git tag -v` resolved its trust anchor from configuration rather than from bytes committed at P. A third party checking out P alone could not identify the authorized key. Step 442 commits the allowed-signers file, the standalone public key, and an authorization policy AT the package commit, binds all three into the token, materializes the verification anchor from HEAD blobs, and enforces the authorized key/principal/namespace explicitly."},
+                {"token": "8389e9651438e72707eadd63a1e69a17a78035ea36ea75de640d8dcd76a2a071",
+                 "role": "Step-442 executable package (committed trust anchor + explicit key enforcement)",
+                 "status": "SUPERSEDED-FOR-EXECUTION — NOT void; anchor and key enforcement were sound, but the runtime still let the manifest decide WHAT to verify",
+                 "superseded_by_step": "443 — MANIFEST-TRUST BYPASS: run_stage2 loaded the manifest from the WORKING TREE and the gate enumerated artifacts from its committed_blob_binding. Deleting an entry (e.g. the harness) from the working-tree copy while leaving the token field intact shrank the verification scope, so a MODIFIED harness could execute under a valid signed tag — executed bytes != sanctioned bytes. 443 hardcodes the nine-artifact scope in the harness, reads the manifest only from HEAD (requiring the working-tree copy to be byte-identical), recomputes the token at run time from the nine HEAD blobs, and requires four-way token equality (recomputed == committed manifest == --stage2-sanction == signed-tag body)."},
             ],
             "current_executable_token": self_hash,
-            "authorizing_step": "442 — Construction A / Option 3 + committed trust anchor: manifest carries no commit SHA; run-commit↔token binding via an external signed annotated sanction tag, verified against a one-key anchor materialized from committed HEAD blobs",
+            "authorizing_step": "443 — manifest-trust bypass closed: hardcoded artifact scope, HEAD-only manifest, runtime token recomputation from committed blobs, four-way token equality; 442 committed trust anchor + explicit key enforcement preserved",
             "_provenance_line_ending_correction": (
                 "Tokens generated before the line-ending correction were derived from Windows working-tree bytes "
                 "under core.autocrlf=true. They remain evidence of local sanction-to-execution drift gating on that "
@@ -2103,6 +2253,16 @@ def build_stage1() -> None:
                 "Beginning with the Step-441 package, artifact identity is derived from committed Git-blob bytes "
                 "under path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes "
                 "exactly equal the pinned committed blobs and the blobs at HEAD, for every artifact."
+            ),
+            "_provenance_manifest_trust_correction": (
+                "Through Step 442 the runtime consumed a WORKING-TREE copy of this manifest and used its "
+                "committed_blob_binding to enumerate what to verify. That made the manifest trusted to define "
+                "its own verification scope: removing an artifact entry (while leaving the token field intact) "
+                "shrank the checked set, so a modified artifact could execute under an otherwise valid signed "
+                "tag. From Step 443 the artifact set is hardcoded in the harness, this manifest is read only "
+                "from the committed HEAD blob (the working-tree copy must be byte-identical), the token is "
+                "recomputed at run time from the nine committed blobs, and the recorded hashes here are treated "
+                "as claims checked against that recomputation rather than as inputs to it."
             ),
             "_provenance_trust_anchor_correction": (
                 "Through Step 441-fix2 the sanction tag's signature was verified with whatever allowed-signers "
