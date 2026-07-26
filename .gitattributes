@@ -11,8 +11,16 @@
 /build_log/431_config_manifest.json           text eol=lf
 /build_log/run_431_selection_measurement.py   text eol=lf
 
-# Step 441-fix3 — sanction verification/attestation artifacts. LF-pinned so the draft
-# sanction message signed by Tzvi is byte-identical to its recorded SHA-256 on any checkout,
-# and the allowed-signers file verifies consistently. Not hashed into the package token.
-/build_log/431_sanction_message_draft.txt     text eol=lf
+# Step 442 — authorization artifacts. These are RUNTIME LOAD-BEARING and are hashed into
+# the package token: the runtime trust anchor is materialized from these committed blobs,
+# never inherited from .git/config. LF-pinned so their committed bytes (and therefore the
+# token and the anchor) are identical on any checkout platform.
 /build_log/431_sanction_allowed_signers       text eol=lf
+/build_log/431_sanction_key.pub               text eol=lf
+/build_log/431_sanction_policy.json           text eol=lf
+
+# Step 441-fix3 — sanction MESSAGE artifacts (provenance only; NOT in token derivation and
+# NOT in the runtime gate). LF-pinned so the message signed by Tzvi is byte-identical to its
+# recorded SHA-256 on any checkout.
+/build_log/431_sanction_message_draft.txt     text eol=lf
+/build_log/431_sanction_message_template.txt  text eol=lf

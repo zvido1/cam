@@ -22,11 +22,13 @@ no architecture.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import re
 import subprocess
 import sys
+import tempfile
 import time  # used by call_panelist provenance (elapsed_sec); added Step 433 — the
              # call path was never exercised before, so the missing import was latent.
 from datetime import datetime, timezone
@@ -44,6 +46,20 @@ SCHEMA_PATH = BUILD_LOG / "431_output_schema.json"
 PROMPT_PATH = BUILD_LOG / "431_selector_prompt.txt"
 PREFLIGHT_PATH = BUILD_LOG / "431_fixture_preflight.json"
 MANIFEST_PATH = BUILD_LOG / "431_config_manifest.json"
+
+# ── Step 442 authorization artifacts (runtime load-bearing; hashed into the token) ──
+# The trust anchor must be CONTENT at the package commit, not configuration inherited
+# from .git/config. These three files are committed AT P', pinned eol=lf, bound in
+# committed_blob_binding, hashed into artifact_hashes, and re-verified by the runtime
+# gate (three-way blob equality + clean tree) exactly like the other package artifacts.
+ALLOWED_SIGNERS_PATH = BUILD_LOG / "431_sanction_allowed_signers"
+SANCTION_KEY_PATH = BUILD_LOG / "431_sanction_key.pub"
+SANCTION_POLICY_PATH = BUILD_LOG / "431_sanction_policy.json"
+
+# Git paths (relative) of the authorization artifacts, read from HEAD at run time.
+ALLOWED_SIGNERS_GITPATH = "build_log/431_sanction_allowed_signers"
+SANCTION_KEY_GITPATH = "build_log/431_sanction_key.pub"
+SANCTION_POLICY_GITPATH = "build_log/431_sanction_policy.json"
 
 # ── Stage-2 outputs (produced only under sanction) ────────────────────────────
 SIDECAR_PATH = BUILD_LOG / "431_selection_measurement_sidecar.json"
@@ -1271,10 +1287,70 @@ def _tag_peeled_commit(tag: str) -> Optional[str]:
     return v if r.returncode == 0 and v else None
 
 
-def _tag_signature_verifies(tag: str) -> bool:
-    # `git tag -v` verifies the GPG/SSH signature over the annotated-tag object; exit 0 iff
-    # the signature is present AND valid. An unsigned or tampered tag yields a non-zero exit.
-    return _git("tag", "-v", tag).returncode == 0
+def _git_blob_bytes(rev_path: str) -> Optional[bytes]:
+    """Raw bytes of a committed blob at `rev:path`. Returns None if unavailable."""
+    r = subprocess.run(["git", "show", rev_path], cwd=str(CAM_ROOT), capture_output=True)
+    return r.stdout if r.returncode == 0 else None
+
+
+def _ssh_fingerprint_sha256(pubkey_line: str) -> Optional[str]:
+    """SHA256:<base64> fingerprint computed from the SSH public-key BLOB itself (the same
+    value `ssh-keygen -lf` prints). Computed here rather than parsed out of any tool's
+    human-readable output, so enforcement never depends on prose."""
+    for tok in pubkey_line.split():
+        if tok.startswith("AAAA"):
+            try:
+                raw = base64.b64decode(tok, validate=True)
+            except Exception:
+                return None
+            digest = hashlib.sha256(raw).digest()
+            return "SHA256:" + base64.b64encode(digest).decode("ascii").rstrip("=")
+    return None
+
+
+_KEYTYPE_PREFIXES = ("ssh-", "ecdsa-", "sk-ssh-", "sk-ecdsa-")
+
+
+def _parse_allowed_signers(text: str) -> List[dict]:
+    """Parse an OpenSSH allowed-signers file into {principal, namespaces, key} entries.
+    Comments/blank lines ignored. `key` is the full 'type base64 [comment]' key line."""
+    out: List[dict] = []
+    for line in text.splitlines():
+        s = line.strip()
+        if not s or s.startswith("#"):
+            continue
+        toks = s.split()
+        if len(toks) < 2:
+            continue
+        principal, rest = toks[0], toks[1:]
+        namespaces = None
+        key_at = None
+        for i, t in enumerate(rest):
+            if t.startswith("namespaces="):
+                namespaces = t.split("=", 1)[1].strip('"')
+            elif t.startswith(_KEYTYPE_PREFIXES):
+                key_at = i
+                break
+        if key_at is None:
+            continue
+        out.append({"principal": principal, "namespaces": namespaces,
+                    "key": " ".join(rest[key_at:])})
+    return out
+
+
+def _tag_signature_verifies(tag: str, anchor_path: str) -> Tuple[bool, str]:
+    """Verify the annotated tag's SSH signature against an EXPLICIT allowed-signers anchor.
+
+    The anchor is passed with `-c` overrides so verification can NEVER fall back to an
+    ambient gpg.ssh.allowedSignersFile from .git/config or a user/global config — the
+    trust anchor is the committed blob materialized by the caller, and nothing else.
+    Returns (ok, combined-output). Exit 0 iff the signature is present, valid, and made
+    by a key present in `anchor_path`.
+    """
+    r = _git("-c", "gpg.format=ssh",
+             "-c", f"gpg.ssh.allowedSignersFile={anchor_path}",
+             "tag", "-v", tag)
+    return r.returncode == 0, (r.stdout or "") + (r.stderr or "")
 
 
 def _tag_body(tag: str) -> str:
@@ -1290,42 +1366,152 @@ def _tag_field(body: str, key: str) -> Optional[str]:
     return None
 
 
-def verify_signed_sanction_binding(head: str, token: str) -> dict:
-    """Read the run-commit ↔ token binding from the EXTERNAL signed sanction tag (never from
-    the package manifest). HALTS unless exactly one annotated tag points at HEAD whose
-    signature verifies, whose peeled target == HEAD, and whose embedded `token:` == the
-    manifest token. Returns the binding evidence on success.
+def load_committed_trust_anchor() -> dict:
+    """Step 442 (a)-(d): establish the trust anchor from COMMITTED CONTENT at HEAD.
+
+    Reads the allowed-signers file, the standalone public key, and the authorization policy
+    as blobs from HEAD — never from the working tree and never from .git/config. Then:
+      (a) parses the sole authorized public key out of the committed allowed-signers file;
+      (b) computes that key's SHA-256 fingerprint from the key blob itself;
+      (c) requires it to equal the committed policy's authorized_fingerprint;
+      (d) requires the committed principal and namespaces="git" to match the policy.
+    HALTS on any mismatch. Returns the verified anchor.
     """
+    anchor_raw = _git_blob_bytes(f"HEAD:{ALLOWED_SIGNERS_GITPATH}")
+    policy_raw = _git_blob_bytes(f"HEAD:{SANCTION_POLICY_GITPATH}")
+    keyfile_raw = _git_blob_bytes(f"HEAD:{SANCTION_KEY_GITPATH}")
+    missing = [p for p, b in ((ALLOWED_SIGNERS_GITPATH, anchor_raw),
+                              (SANCTION_POLICY_GITPATH, policy_raw),
+                              (SANCTION_KEY_GITPATH, keyfile_raw)) if b is None]
+    if missing:
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Step 442): the committed trust anchor is missing at HEAD: "
+            + ", ".join(missing) + ". Authorization artifacts MUST be committed in the package "
+            "commit; a trust anchor supplied by .git/config or the working tree is not accepted."
+        )
+    try:
+        policy = json.loads(policy_raw.decode("utf-8"))
+    except Exception as e:
+        raise MeasurementIntegrityHalt(f"HARD HALT (Step 442): committed policy is unparseable: {e}")
+
+    want_fp = policy.get("authorized_fingerprint")
+    want_principal = policy.get("authorized_principal")
+    want_ns = policy.get("allowed_namespace")
+    if not (want_fp and want_principal and want_ns):
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Step 442): committed policy lacks authorized_fingerprint / "
+            "authorized_principal / allowed_namespace."
+        )
+
+    # (a) sole authorized key
+    entries = _parse_allowed_signers(anchor_raw.decode("utf-8"))
+    if len(entries) != 1:
+        raise MeasurementIntegrityHalt(
+            f"HARD HALT (Step 442): committed allowed-signers must contain EXACTLY ONE authorized "
+            f"key; found {len(entries)}. A multi-key anchor cannot establish which key signed."
+        )
+    entry = entries[0]
+
+    # (b)+(c) fingerprint computed from the key blob, compared to the committed policy
+    fp = _ssh_fingerprint_sha256(entry["key"])
+    if fp is None:
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Step 442): could not compute a fingerprint from the committed "
+            "allowed-signers key material."
+        )
+    if fp != want_fp:
+        raise MeasurementIntegrityHalt(
+            f"HARD HALT (Step 442): committed allowed-signers key fingerprint {fp} != policy "
+            f"authorized_fingerprint {want_fp}. The trust anchor does not match the policy."
+        )
+
+    # (d) principal + namespace
+    if entry["principal"] != want_principal:
+        raise MeasurementIntegrityHalt(
+            f"HARD HALT (Step 442): allowed-signers principal {entry['principal']!r} != policy "
+            f"authorized_principal {want_principal!r}."
+        )
+    if (entry["namespaces"] or "") != want_ns:
+        raise MeasurementIntegrityHalt(
+            f"HARD HALT (Step 442): allowed-signers namespaces={entry['namespaces']!r} != policy "
+            f"allowed_namespace {want_ns!r}. The git namespace must be pinned."
+        )
+
+    # the standalone committed public key must be the SAME key (no divergent third copy)
+    key_fp = _ssh_fingerprint_sha256(keyfile_raw.decode("utf-8"))
+    if key_fp != want_fp:
+        raise MeasurementIntegrityHalt(
+            f"HARD HALT (Step 442): committed {SANCTION_KEY_GITPATH} fingerprint {key_fp} != policy "
+            f"authorized_fingerprint {want_fp}."
+        )
+    return {"principal": entry["principal"], "namespaces": entry["namespaces"],
+            "key": entry["key"], "fingerprint": fp, "policy": policy,
+            "anchor_bytes": anchor_raw}
+
+
+def verify_signed_sanction_binding(head: str, token: str) -> dict:
+    """Read the run-commit ↔ token binding from the EXTERNAL signed sanction tag, verified
+    against the COMMITTED trust anchor (Step 442). HALTS unless exactly one annotated tag
+    points at HEAD that satisfies every condition below.
+
+    Why this is sound without parsing git's success prose: the anchor used for verification
+    is a file containing ONLY the single authorized key, whose fingerprint was independently
+    recomputed from the committed key blob and matched against the committed policy. Under a
+    one-key trust anchor, `git tag -v` exiting 0 means the signature validated against THAT
+    key — so success necessarily implies the tag came from the authorized key. No parsing of
+    "Good ... signature" text is involved, and no ambient config can widen the anchor.
+    """
+    anchor = load_committed_trust_anchor()                     # (a)-(d)
+    want_fp = anchor["fingerprint"]
+    want_principal = anchor["principal"]
+
     candidates = _tags_pointing_at("HEAD")
     valid: List[dict] = []
     rejected: List[str] = []
-    for tag in candidates:
-        if _tag_object_type(tag) != "tag":
-            rejected.append(f"{tag}: lightweight tag (not annotated) — carries no signature/metadata")
-            continue
-        peeled = _tag_peeled_commit(tag)
-        if peeled != head:
-            rejected.append(f"{tag}: peeled target {str(peeled)[:12]} != HEAD {head[:12]}")
-            continue
-        if not _tag_signature_verifies(tag):
-            rejected.append(f"{tag}: signature does NOT verify (git tag -v exit != 0)")
-            continue
-        body = _tag_body(tag)
-        tag_token = _tag_field(body, "token")
-        tag_commit = _tag_field(body, "package_commit")
-        if tag_token != token:
-            rejected.append(f"{tag}: embedded token {str(tag_token)[:12]} != manifest token {token[:12]}")
-            continue
-        if tag_commit is not None and tag_commit != head:
-            rejected.append(f"{tag}: embedded package_commit {str(tag_commit)[:12]} != HEAD {head[:12]}")
-            continue
-        valid.append({"tag": tag, "peeled_commit": peeled, "embedded_token": tag_token})
+    # (f) materialize the one-key anchor from the COMMITTED bytes; used for every candidate.
+    with tempfile.TemporaryDirectory() as td:
+        anchor_path = str(Path(td) / "allowed_signers")
+        Path(anchor_path).write_bytes(anchor["anchor_bytes"])
+        for tag in candidates:
+            if _tag_object_type(tag) != "tag":
+                rejected.append(f"{tag}: lightweight tag (not annotated) — carries no signature/metadata")
+                continue
+            peeled = _tag_peeled_commit(tag)
+            if peeled != head:
+                rejected.append(f"{tag}: peeled target {str(peeled)[:12]} != HEAD {head[:12]}")
+                continue
+            ok, out = _tag_signature_verifies(tag, anchor_path)
+            if not ok:
+                rejected.append(f"{tag}: signature does NOT verify against the committed one-key "
+                                f"anchor ({out.strip().splitlines()[-1] if out.strip() else 'exit != 0'})")
+                continue
+            body = _tag_body(tag)
+            tag_token = _tag_field(body, "token")
+            tag_commit = _tag_field(body, "package_commit")
+            tag_principal = _tag_field(body, "authorized_principal")
+            tag_fp = _tag_field(body, "sanction_key_fingerprint")
+            if tag_token != token:
+                rejected.append(f"{tag}: embedded token {str(tag_token)[:12]} != manifest token {token[:12]}")
+                continue
+            if tag_commit != head:
+                rejected.append(f"{tag}: embedded package_commit {str(tag_commit)[:12]} != HEAD {head[:12]}")
+                continue
+            # (e) the tag body must self-declare the SAME principal/fingerprint as the policy
+            if tag_principal != want_principal:
+                rejected.append(f"{tag}: tag authorized_principal {tag_principal!r} != policy {want_principal!r}")
+                continue
+            if tag_fp != want_fp:
+                rejected.append(f"{tag}: tag sanction_key_fingerprint {tag_fp} != policy {want_fp}")
+                continue
+            valid.append({"tag": tag, "peeled_commit": peeled, "embedded_token": tag_token,
+                          "authorized_principal": tag_principal, "sanction_key_fingerprint": tag_fp,
+                          "anchor_source": f"HEAD:{ALLOWED_SIGNERS_GITPATH} (committed blob)"})
     if len(valid) != 1:
         raise MeasurementIntegrityHalt(
-            "HARD HALT (Construction A / Option 3): the run-commit is NOT bound to this package "
-            "by a valid signed sanction tag. A run is authorized ONLY by a signed annotated tag "
-            "(created AFTER the package commit) that points at HEAD "
-            f"({head[:12]}) and embeds this manifest token ({token[:12]}). "
+            "HARD HALT (Construction A / Option 3 + Step 442): the run-commit is NOT bound to this "
+            "package by a valid signed sanction tag. A run is authorized ONLY by an annotated tag "
+            f"signed by {want_fp} ({want_principal}), pointing at HEAD ({head[:12]}), embedding "
+            f"this manifest token ({token[:12]}) and package_commit == HEAD. "
             f"Valid tags found: {len(valid)}; tags pointing at HEAD: {candidates or '[none]'}."
             + ("\nRejections:\n  - " + "\n  - ".join(rejected) if rejected else "")
         )
@@ -1411,12 +1597,16 @@ def verify_repository_execution_identity(manifest: dict) -> dict:
         "head": head,
         "commit_bound_via_signed_tag": tag_binding["tag"],
         "sanction_tag_peeled_commit": tag_binding["peeled_commit"],
+        "sanction_key_fingerprint": tag_binding["sanction_key_fingerprint"],
+        "authorized_principal": tag_binding["authorized_principal"],
+        "trust_anchor_source": tag_binding["anchor_source"],
         "commit_binding_source": "external signed annotated tag (Construction A / Option 3) — "
                                  "NOT a field inside the package manifest",
         "all_artifacts_verified": True,
         "verified_artifacts": list(binding.keys()),
         "note": "content identity = HEAD:blob == working-tree-LF == manifest per artifact; "
-                "commit identity = signed tag pointing at HEAD embedding this token.",
+                "commit identity = signed tag pointing at HEAD embedding this token, verified "
+                "against a one-key anchor materialized from the committed HEAD blob.",
     }
 
 
@@ -1799,6 +1989,13 @@ def build_stage1() -> None:
         "431_selector_prompt.txt": PROMPT_PATH,
         "431_fixture_preflight.json": PREFLIGHT_PATH,
         "run_431_selection_measurement.py": Path(__file__),
+        # Step 442: the authorization artifacts are part of the package identity. Binding
+        # them into the token means the trust anchor itself cannot be swapped without
+        # invalidating the token — an attacker who substitutes a different authorized key
+        # changes artifact_hashes, changes the self-hash, and voids the sanction.
+        "431_sanction_allowed_signers": ALLOWED_SIGNERS_PATH,
+        "431_sanction_key.pub": SANCTION_KEY_PATH,
+        "431_sanction_policy.json": SANCTION_POLICY_PATH,
     }
     # Step 441: artifact identity is the SHA-256 of each file's committed-blob-equivalent
     # bytes (LF-normalized), NOT the checked-out newline representation. Under the
@@ -1890,9 +2087,13 @@ def build_stage1() -> None:
                  "role": "Step-441 executable package (committed-blob-derived token, reproducible; commit binding was an IN-MANIFEST parent-proxy `head_at_build_time`)",
                  "status": "SUPERSEDED-FOR-EXECUTION — NOT void; token derivation was sound (blob-anchored, reproduced from committed blobs), but the commit-binding mechanism was broken",
                  "superseded_by_step": "441-fix2 — the manifest stored the PARENT commit (f9048ed) as `head_at_build_time`; the runtime `head == head_at_build_time` check is structurally ALWAYS-FALSE once the containing commit exists (run-time HEAD is the containing commit, not the parent). Commit binding moved OUT of the package manifest to an external signed annotated sanction tag (Construction A / Option 3). Removing the parent-proxy field changed the harness bytes, so the token recomputes."},
+                {"token": "0b98c6fa3a3cf098d243fd90573cda582482c00bf5c6723a4e76a975d5e89164",
+                 "role": "Step-441-fix2 executable package (Construction A: manifest carries no commit SHA; commit binding via external signed tag)",
+                 "status": "SUPERSEDED-FOR-EXECUTION — NOT void; commit-binding topology was correct, but the signature TRUST ANCHOR was not committed at the package commit",
+                 "superseded_by_step": "442 — the allowed-signers file did not exist at the package commit (added only in a descendant commit) and `gpg.ssh.allowedSignersFile` was a machine-local .git/config path, so `git tag -v` resolved its trust anchor from configuration rather than from bytes committed at P. A third party checking out P alone could not identify the authorized key. Step 442 commits the allowed-signers file, the standalone public key, and an authorization policy AT the package commit, binds all three into the token, materializes the verification anchor from HEAD blobs, and enforces the authorized key/principal/namespace explicitly."},
             ],
             "current_executable_token": self_hash,
-            "authorizing_step": "441-fix2 — Construction A / Option 3: manifest carries no commit SHA; run-commit↔token binding via an external signed annotated sanction tag created after commit P",
+            "authorizing_step": "442 — Construction A / Option 3 + committed trust anchor: manifest carries no commit SHA; run-commit↔token binding via an external signed annotated sanction tag, verified against a one-key anchor materialized from committed HEAD blobs",
             "_provenance_line_ending_correction": (
                 "Tokens generated before the line-ending correction were derived from Windows working-tree bytes "
                 "under core.autocrlf=true. They remain evidence of local sanction-to-execution drift gating on that "
@@ -1902,6 +2103,16 @@ def build_stage1() -> None:
                 "Beginning with the Step-441 package, artifact identity is derived from committed Git-blob bytes "
                 "under path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes "
                 "exactly equal the pinned committed blobs and the blobs at HEAD, for every artifact."
+            ),
+            "_provenance_trust_anchor_correction": (
+                "Through Step 441-fix2 the sanction tag's signature was verified with whatever allowed-signers "
+                "file the local `gpg.ssh.allowedSignersFile` config happened to point at, and that file was not "
+                "committed at the package commit. The commit-binding topology was non-circular, but the trust "
+                "anchor was configuration rather than content: a third party checking out the package commit "
+                "alone could not identify the authorized public key. From Step 442 the allowed-signers file, the "
+                "standalone public key, and an authorization policy are committed AT the package commit, are "
+                "hashed into the package token, and the runtime materializes a one-key verification anchor from "
+                "the committed HEAD blobs with explicit `-c` overrides, never inheriting ambient configuration."
             ),
             "_provenance_commit_binding_correction": (
                 "Step 441 attempted to bind the run-commit inside the package manifest via `head_at_build_time`, "
@@ -1947,12 +2158,14 @@ def build_stage1() -> None:
         "manifest_self_hash_of_artifact_hashes": self_hash,
         "stage2_sanction_token": self_hash,
         "_how_to_sanction": (
-            "Two conditions, BOTH required (Construction A / Option 3): "
+            "Two conditions, BOTH required (Construction A / Option 3 + Step 442): "
             "(1) invoke: --mode run --stage2-sanction <manifest_self_hash_of_artifact_hashes>; "
-            "(2) a signed annotated tag (Tzvi's key), created AFTER commit P and pointing at P, "
-            "must embed `token: <this hash>` and `package_commit: <P>`. The runtime gate reads the "
-            "sanctioned commit identity from that tag and HALTS if no such valid signed tag points "
-            "at HEAD. The manifest itself contains NO commit SHA."
+            "(2) an ANNOTATED tag signed by the authorized sanction key, created AFTER the package "
+            "commit and pointing at it, embedding `token: <this hash>`, `package_commit: <that "
+            "commit>`, `authorized_principal:` and `sanction_key_fingerprint:` matching "
+            "431_sanction_policy.json. The runtime verifies the signature against a one-key anchor "
+            "materialized from HEAD:build_log/431_sanction_allowed_signers (never from .git/config) "
+            "and HALTS if no such tag points at HEAD. The manifest itself contains NO commit SHA."
         ),
     }
     write_lf(MANIFEST_PATH, json.dumps(manifest, indent=2))

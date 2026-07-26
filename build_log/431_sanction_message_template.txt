@@ -1,0 +1,17 @@
+Stage-2 sanction -- Step 431 governed-selection executable package (Construction A / Option 3)
+package_commit: <PACKAGE_COMMIT_SHA>
+token: <TOKEN_SHA256>
+manifest_self_hash: <MANIFEST_SELF_HASH>
+authorized_principal: zvido@yahoo.com
+sanction_key_fingerprint: SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs
+artifact_blob_sha256:
+  431_measurement_config.json: <SHA256>
+  431_requirement_profiles.json: <SHA256>
+  431_output_schema.json: <SHA256>
+  431_selector_prompt.txt: <SHA256>
+  431_fixture_preflight.json: <SHA256>
+  run_431_selection_measurement.py: <SHA256>
+  431_sanction_allowed_signers: <SHA256>
+  431_sanction_key.pub: <SHA256>
+  431_sanction_policy.json: <SHA256>
+statement: Stage 2 authorized only for this exact package at commit <PACKAGE_COMMIT_SHA>.
