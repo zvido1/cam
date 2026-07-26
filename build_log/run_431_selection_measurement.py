@@ -35,7 +35,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-CAM_ROOT = Path(r"C:\Users\Owner\OneDrive\CAM")
+# Step 444: CAM_ROOT is DERIVED from this file's location, not hardcoded. The sanctioned run
+# executes from a dedicated detached git worktree at the package commit; a hardcoded path would
+# make the gate inspect the main checkout's HEAD/status while Python imported cam/* from the
+# worktree (or vice versa), so the repository-local imports would not be bound to the tag
+# target at all. Deriving the root ties git inspection, sys.path, and artifact reads to the
+# SAME tree — the one this harness file was loaded from.
+CAM_ROOT = Path(__file__).resolve().parent.parent
 BUILD_LOG = CAM_ROOT / "build_log"
 sys.path.insert(0, str(CAM_ROOT))
 
@@ -1708,6 +1714,38 @@ def verify_repository_execution_identity(sanction_token: Optional[str] = None) -
             "is made. Problems:\n  - " + "\n  - ".join(problems)
         )
 
+    # ── (4b) WHOLE-TREE cleanliness (Step 444) ──
+    # The nine package artifacts are not the whole of what executes. Python imports
+    # repository-local modules (cam/core/provider_router.py and its transitive imports) from
+    # the working tree via sys.path, and the measurement reads fixture inputs from the tree.
+    # With all nine artifacts pristine and a valid tag, a MODIFIED cam/core module would still
+    # execute — sanctioned package, unsanctioned dependencies. Rather than enumerate a
+    # dependency closure (easy to get subtly incomplete, and silently wrong when it is), this
+    # requires the ENTIRE repository to be clean: no modifications, no untracked files anywhere.
+    # Combined with running from a detached worktree at the package commit, that binds every
+    # tracked repository-local import to the tag target and prevents an untracked file from
+    # shadowing a sanctioned module on sys.path.
+    #
+    # NOTE (deliberate): this check is expected to FAIL in a developer's main checkout, which
+    # normally carries in-progress edits and untracked scratch output. That is not a bug to be
+    # narrowed away — it is the reason the sanctioned run executes from a dedicated worktree.
+    tree_status = _git("status", "--porcelain", "--untracked-files=all").stdout.rstrip("\n")
+    if tree_status.strip():
+        entries = [ln for ln in tree_status.splitlines() if ln.strip()]
+        shown = "\n  ".join(entries[:40])
+        more = f"\n  ... and {len(entries) - 40} more" if len(entries) > 40 else ""
+        raise MeasurementIntegrityHalt(
+            "HARD HALT (Step 444): the repository working tree is NOT clean. `git status "
+            "--porcelain --untracked-files=all` must be EMPTY over the WHOLE repository before "
+            "any provider call, because the harness imports repository-local modules from this "
+            "tree — a modified or untracked file outside the nine package artifacts can change "
+            "what actually executes.\n"
+            f"  tree: {CAM_ROOT}\n"
+            f"  offending entries ({len(entries)}):\n  {shown}{more}\n"
+            "  Run the sanctioned measurement from a dedicated detached worktree at the package "
+            "commit (git worktree add --detach <path> <package-commit>), which starts clean."
+        )
+
     # ── (5) FOUR-WAY token equality ──
     manifest_token = manifest.get("stage2_sanction_token")
     manifest_self = manifest.get("manifest_self_hash_of_artifact_hashes")
@@ -1748,8 +1786,11 @@ def verify_repository_execution_identity(sanction_token: Optional[str] = None) -
                                  "NOT a field inside the package manifest",
         "all_artifacts_verified": True,
         "verified_artifacts": list(EXPECTED_PACKAGE_ARTIFACTS),
+        "whole_tree_clean": True,
+        "execution_tree": str(CAM_ROOT),
         "note": "scope hardcoded; manifest read from HEAD; token recomputed from HEAD blobs; "
-                "four-way token equality; commit identity from a signed tag verified against a "
+                "four-way token equality; whole-tree cleanliness binds repository-local imports "
+                "to the running commit; commit identity from a signed tag verified against a "
                 "one-key anchor materialized from the committed HEAD blob.",
     }
 
@@ -2237,13 +2278,17 @@ def build_stage1() -> None:
                  "role": "Step-441-fix2 executable package (Construction A: manifest carries no commit SHA; commit binding via external signed tag)",
                  "status": "SUPERSEDED-FOR-EXECUTION — NOT void; commit-binding topology was correct, but the signature TRUST ANCHOR was not committed at the package commit",
                  "superseded_by_step": "442 — the allowed-signers file did not exist at the package commit (added only in a descendant commit) and `gpg.ssh.allowedSignersFile` was a machine-local .git/config path, so `git tag -v` resolved its trust anchor from configuration rather than from bytes committed at P. A third party checking out P alone could not identify the authorized key. Step 442 commits the allowed-signers file, the standalone public key, and an authorization policy AT the package commit, binds all three into the token, materializes the verification anchor from HEAD blobs, and enforces the authorized key/principal/namespace explicitly."},
+                {"token": "bb1c40b1e37a0d14d865c48526724c04184a00d0c18ebde8126733df4697c477",
+                 "role": "Step-443 executable package (manifest-trust bypass closed: hardcoded scope, HEAD-only manifest, runtime token recomputation, four-way token equality)",
+                 "status": "SUPERSEDED-FOR-EXECUTION - NOT void; package-artifact verification was sound, but repository-local EXECUTION DEPENDENCIES were unverified",
+                 "superseded_by_step": "444 - the gate verified the nine package artifacts but not the repository-local modules the harness imports (cam/core/provider_router.py and its transitive imports), which Python loads from the working tree. With all nine artifacts pristine and a valid tag, a modified local module still executed. 444 requires `git status --porcelain --untracked-files=all` to be EMPTY over the whole repository, derives CAM_ROOT from the harness file location, and runs the measurement from a dedicated detached worktree at the package commit."},
                 {"token": "8389e9651438e72707eadd63a1e69a17a78035ea36ea75de640d8dcd76a2a071",
                  "role": "Step-442 executable package (committed trust anchor + explicit key enforcement)",
                  "status": "SUPERSEDED-FOR-EXECUTION — NOT void; anchor and key enforcement were sound, but the runtime still let the manifest decide WHAT to verify",
                  "superseded_by_step": "443 — MANIFEST-TRUST BYPASS: run_stage2 loaded the manifest from the WORKING TREE and the gate enumerated artifacts from its committed_blob_binding. Deleting an entry (e.g. the harness) from the working-tree copy while leaving the token field intact shrank the verification scope, so a MODIFIED harness could execute under a valid signed tag — executed bytes != sanctioned bytes. 443 hardcodes the nine-artifact scope in the harness, reads the manifest only from HEAD (requiring the working-tree copy to be byte-identical), recomputes the token at run time from the nine HEAD blobs, and requires four-way token equality (recomputed == committed manifest == --stage2-sanction == signed-tag body)."},
             ],
             "current_executable_token": self_hash,
-            "authorizing_step": "443 — manifest-trust bypass closed: hardcoded artifact scope, HEAD-only manifest, runtime token recomputation from committed blobs, four-way token equality; 442 committed trust anchor + explicit key enforcement preserved",
+            "authorizing_step": "444 — repository-local execution dependencies bound: whole-tree cleanliness (git status --porcelain --untracked-files=all must be empty) + derived CAM_ROOT + dedicated detached-worktree execution; 442 trust anchor/key enforcement and 443 hardcoded scope, HEAD-manifest authority, runtime token recomputation and four-way token equality all preserved",
             "_provenance_line_ending_correction": (
                 "Tokens generated before the line-ending correction were derived from Windows working-tree bytes "
                 "under core.autocrlf=true. They remain evidence of local sanction-to-execution drift gating on that "
@@ -2253,6 +2298,19 @@ def build_stage1() -> None:
                 "Beginning with the Step-441 package, artifact identity is derived from committed Git-blob bytes "
                 "under path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes "
                 "exactly equal the pinned committed blobs and the blobs at HEAD, for every artifact."
+            ),
+            "_provenance_execution_dependency_binding": (
+                "Through Step 443 the gate verified the nine package artifacts but not the repository-local "
+                "modules the harness imports (cam/core/provider_router.py and its transitive imports), which "
+                "Python loads from the working tree via sys.path. With all nine artifacts pristine and a valid "
+                "sanction tag, a modified local module would still execute. From Step 444 the gate additionally "
+                "requires `git status --porcelain --untracked-files=all` to be EMPTY over the WHOLE repository, "
+                "and CAM_ROOT is derived from the harness file's own location so git inspection, sys.path and "
+                "artifact reads all resolve to the same tree. The sanctioned run executes from a dedicated "
+                "detached worktree at the package commit, which starts clean; that binds every tracked "
+                "repository-local import to the tag target and stops an untracked file from shadowing a "
+                "sanctioned module. An enumerated dependency closure was deliberately NOT used: it is easy to "
+                "make subtly incomplete and silently wrong when it is."
             ),
             "_provenance_manifest_trust_correction": (
                 "Through Step 442 the runtime consumed a WORKING-TREE copy of this manifest and used its "
