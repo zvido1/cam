@@ -22,5 +22,5 @@
 # Step 441-fix3 — sanction MESSAGE artifacts (provenance only; NOT in token derivation and
 # NOT in the runtime gate). LF-pinned so the message signed by Tzvi is byte-identical to its
 # recorded SHA-256 on any checkout.
-/build_log/431_sanction_message_draft.txt     text eol=lf
+/build_log/431_sanction_message.txt           text eol=lf
 /build_log/431_sanction_message_template.txt  text eol=lf
