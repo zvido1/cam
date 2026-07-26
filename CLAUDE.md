@@ -108,6 +108,10 @@ From Step 424 onward: if you are given a task and no `build_log/NNN_chat_instruc
 
 *Why this exists:* the Step-431 preregistration listed `431_validation.json` and `431_repository_seam_check.json` as unconditional Stage-2 outputs while marking their producers "(+ optional `validate_431.py` and seam-checker)" in §12, and omitting them from §1's Stage-1 artifact list entirely. Neither producer was built, so neither product could exist. §8.2 forbids authoring the §9.1 table in their place, so §9.1 became **unproducible** — discovered only *after* 108 live provider calls had been spent. The package passed every hash, signature, scope and cleanliness gate; none of those gates asks whether a specified output has a producer.
 
+**Companion clause — predicate reachability.** Every specified predicate must be traced to a reachable satisfying assignment under the package's own declared field values. A predicate that cannot be satisfied by any conforming input halts the sanction.
+
+*Why this exists:* Part B §8.1 requires `basis_match=match` on the qualifying candidate, while Part B §4 declares `value_applies_to_charge_basis_components = not_applicable` for `base_rent` and `rent_adjustment_pct` — making the §8.1 conjunction **unsatisfiable for those parameter types**: no conforming input can ever produce `basis_match=match` where the basis field is schema-fixed to `not_applicable`. No hash, signature, scope, or cleanliness gate asks whether a specified success state is reachable. A census of products (Rule 8) would not have caught this; only a census of predicates does.
+
 ---
 
 ## GIT WORKFLOW — CRITICAL
