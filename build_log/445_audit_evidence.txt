@@ -1,0 +1,703 @@
+STEP 445 AUDIT EVIDENCE -- lease fixtures tracked and token-bound (nine -> eleven artifacts)
+Package commit P4 = d679eec8525fa672724a012f7d1fac0d0d8e7620
+Token T4          = ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca
+Q-prep4 commit    = 779cc887ce0875ea3d50f6d52485217974e4828c
+Sanction message SHA-256 = 685d9dfe60cd9de5f808803ddee5507e8d6e15f1109f78c0b79de1a4c7674ec6
+OBSOLETE, never signed: 56bce9e9 (444), 84e6aab4 (443), 3de7329c (442)
+
+## 1. Repo state
+
+$ git rev-parse HEAD
+779cc887ce0875ea3d50f6d52485217974e4828c
+
+$ git status --short
+ M build_log/398_code_status.md
+ M build_log/399_code_status.md
+ M build_log/406_code_status.md
+ M build_log/407_code_status.md
+?? "05 Lease Analyzer/_389_results/"
+?? "05 Lease Analyzer/_391_results/"
+?? "05 Lease Analyzer/_417_results/"
+?? "05 Lease Analyzer/_418c_results/"
+?? "05 Lease Analyzer/_419_results/"
+?? "05 Lease Analyzer/_422_results/"
+
+$ git log --oneline -4
+779cc88 445 Q-prep: exact unsigned sanction message naming P4=d679eec (eleven artifacts) + 56bce9e9 OBSOLETE
+d679eec 445: track both lease fixtures and bind them into the package (nine -> eleven artifacts)
+78179ed 444: audit evidence file (command-then-literal-output, executed not transcribed)
+74d0c8d 444 Q-prep: exact unsigned sanction message naming P'''=6a32d47 + prior messages OBSOLETE
+
+## 2. Both leases are TRACKED at P4 (directory still ignored)
+
+$ git ls-tree -r --name-only d679eec8525fa672724a012f7d1fac0d0d8e7620 -- '05 Lease Analyzer/test_data/tenants/'
+05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt
+05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt
+05 Lease Analyzer/test_data/tenants/atreca_industrial_rd_sancarlos_lease.txt
+05 Lease Analyzer/test_data/tenants/bokf_oklahoma_tower_lease.txt
+05 Lease Analyzer/test_data/tenants/divall_wendys_mtpleasant_lease.txt
+05 Lease Analyzer/test_data/tenants/everbridge_northlake_pasadena_lease.txt
+05 Lease Analyzer/test_data/tenants/ncino_parkerfarm_wilmington_lease.txt
+05 Lease Analyzer/test_data/tenants/quanterix_crosby_bedford_lease.txt
+05 Lease Analyzer/test_data/tenants/solidpower_thornton_industrial_lease.txt
+
+$ git show d679eec8525fa672724a012f7d1fac0d0d8e7620:'05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt' | head -4
+# SOURCE FIXTURE - Atreca, Inc. / ARE-East Jamie Court, LLC (Alexandria Real Estate Equities) lab/office lease
+# 450 East Jamie Court, South San Francisco, CA. Effective Date 2019-07-17.
+# Real executed commercial lease, filed as SEC EX-10.18 (source: a19-13139_1ex10d18.htm).
+# Accession: 0001104659-19-041460  CIK: 1532346
+
+$ git show d679eec8525fa672724a012f7d1fac0d0d8e7620:'05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt' | head -4
+WAREHOUSE LEASE AGREEMENT
+
+THIS WAREHOUSE LEASE AGREEMENT (this "Lease") is made and entered into as of March 1, 2026, by and between ATLAS INDUSTRIAL PROPERTIES LLC, a New York limited liability company, having an address at 4400 Industry Avenue, Suite 200, Brooklyn, New York 11232 ("Landlord"), and MERIDIAN LOGISTICS SOLUTIONS INC., a New York corporation, having an address at 200 Commerce Street, Brooklyn, New York 11201 ("Tenant").
+
+$ git show d679eec8525fa672724a012f7d1fac0d0d8e7620:'05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt' | wc -c
+160244
+
+$ git show d679eec8525fa672724a012f7d1fac0d0d8e7620:'05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt' | wc -c
+31755
+
+$ git show d679eec8525fa672724a012f7d1fac0d0d8e7620:'05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt' | sha256sum
+e049ee63a4e2f475c133b65ceb7a454b4570e59ec288a39b37129740b200d04d *-
+
+$ git show d679eec8525fa672724a012f7d1fac0d0d8e7620:'05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt' | sha256sum
+da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71 *-
+
+$ git check-ignore -v '05 Lease Analyzer/test_data/tenants/T-01_clean.txt'
+.gitignore:51:05 Lease Analyzer/test_data/	05 Lease Analyzer/test_data/tenants/T-01_clean.txt
+
+$ git show d679eec8525fa672724a012f7d1fac0d0d8e7620:.gitattributes | tail -9
+# still match FROZEN_LEASE_HASHES pinned at Step 430.
+"/05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt"  text eol=lf
+"/05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt"  text eol=lf
+
+# Step 441-fix3 — sanction MESSAGE artifacts (provenance only; NOT in token derivation and
+# NOT in the runtime gate). LF-pinned so the message signed by Tzvi is byte-identical to its
+# recorded SHA-256 on any checkout.
+/build_log/431_sanction_message.txt           text eol=lf
+/build_log/431_sanction_message_template.txt  text eol=lf
+
+## 3. FROZEN_LEASE_HASHES vs committed blobs (brief item 4)
+
+$ cat C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/frozen_check.py
+"""FROZEN_LEASE_HASHES vs the COMMITTED blobs at the package commit.
+
+Reconstructs each lease from its committed blob at P4, runs the real canonicalization path
+(parse_document -> build_canonical_source/NORMALIZATION_PROFILE_V2), and compares
+source_document_hash to the value pinned at Step 430. Also proves the hash is invariant under
+CRLF<->LF, i.e. the eol=lf pin did not change reviewed fixture content.
+"""
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, ".")
+from cam.adapters.lease_review.lease_parser import parse_document
+from cam.adapters.lease_review.lease_evidence_spans import (
+    build_canonical_source, NORMALIZATION_PROFILE_V2,
+)
+
+P = sys.argv[1] if len(sys.argv) > 1 else "HEAD"
+FROZEN = {"atreca": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b",
+          "atlas": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71"}
+GP = {"atreca": "05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt",
+      "atlas": "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt"}
+CRLF, LF = b"\r\n", b"\n"
+td = Path(tempfile.mkdtemp())
+
+
+def sdh(path, slug):
+    return build_canonical_source(
+        parse_document(str(path)), run_id="431-" + slug,
+        normalization_profile=NORMALIZATION_PROFILE_V2).source_document_hash
+
+
+allok = True
+for slug, gp in GP.items():
+    blob = subprocess.run(["git", "show", P + ":" + gp], capture_output=True, check=True).stdout
+    lf = td / (slug + "_lf.txt")
+    lf.write_bytes(blob.replace(CRLF, LF))
+    crlf = td / (slug + "_crlf.txt")
+    crlf.write_bytes(blob.replace(CRLF, LF).replace(LF, CRLF))
+    h_lf, h_crlf = sdh(lf, slug), sdh(crlf, slug)
+    ok = h_lf == h_crlf == FROZEN[slug]
+    allok &= ok
+    print(slug + ":")
+    print("  git path                   :", gp)
+    print("  committed blob bytes       :", len(blob), " CRLF in blob:", blob.count(CRLF))
+    print("  source_document_hash (LF)  :", h_lf)
+    print("  source_document_hash (CRLF):", h_crlf)
+    print("  FROZEN_LEASE_HASHES (430)  :", FROZEN[slug])
+    print("  invariant under CRLF<->LF  :", h_lf == h_crlf)
+    print("  MATCHES FROZEN             :", ok)
+print()
+print("ALL LEASES MATCH FROZEN_LEASE_HASHES AND ARE NEWLINE-INVARIANT:", allok)
+
+$ python C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/frozen_check.py d679eec8525fa672724a012f7d1fac0d0d8e7620
+atreca:
+  git path                   : 05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt
+  committed blob bytes       : 160244  CRLF in blob: 0
+  source_document_hash (LF)  : 7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b
+  source_document_hash (CRLF): 7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b
+  FROZEN_LEASE_HASHES (430)  : 7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b
+  invariant under CRLF<->LF  : True
+  MATCHES FROZEN             : True
+atlas:
+  git path                   : 05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt
+  committed blob bytes       : 31755  CRLF in blob: 0
+  source_document_hash (LF)  : da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71
+  source_document_hash (CRLF): da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71
+  FROZEN_LEASE_HASHES (430)  : da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71
+  invariant under CRLF<->LF  : True
+  MATCHES FROZEN             : True
+
+ALL LEASES MATCH FROZEN_LEASE_HASHES AND ARE NEWLINE-INVARIANT: True
+
+## 4. Eleven-artifact token recomputation from HEAD blobs
+
+$ cat C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/token_table11.py
+"""Recompute the package token independently from the COMMITTED blobs at the package commit.
+
+Eleven artifacts (Step 445: the two lease fixtures are now token-bound). Reads only
+`git show <rev>:<path>`; does not import or call the harness. Replicates the committed
+derivation: sha256 of each artifact's LF-normalized committed bytes, then sha256 of
+json.dumps(hashes, sort_keys=True).
+"""
+import hashlib
+import json
+import subprocess
+import sys
+
+P = sys.argv[1] if len(sys.argv) > 1 else "HEAD"
+BL = "build_log/"
+LEASE_DIR = "05 Lease Analyzer/test_data/tenants/"
+NAMES = [
+    "431_measurement_config.json",
+    "431_requirement_profiles.json",
+    "431_output_schema.json",
+    "431_selector_prompt.txt",
+    "431_fixture_preflight.json",
+    "run_431_selection_measurement.py",
+    "431_sanction_allowed_signers",
+    "431_sanction_key.pub",
+    "431_sanction_policy.json",
+    "atreca_eastjamie_southsf_lease.txt",
+    "atlas_meridian_warehouse_lease.txt",
+]
+
+
+def gitpath(name):
+    return (LEASE_DIR + name) if name.endswith("_lease.txt") else (BL + name)
+
+
+def blob(path):
+    return subprocess.run(["git", "show", P + ":" + path],
+                          capture_output=True, check=True).stdout
+
+
+man = json.loads(blob(BL + "431_config_manifest.json"))
+expected = man["stage2_sanction_token"]
+hashes = {n: hashlib.sha256(blob(gitpath(n)).replace(b"\r\n", b"\n")).hexdigest() for n in NAMES}
+self_hash_input = json.dumps(hashes, sort_keys=True)
+derived = hashlib.sha256(self_hash_input.encode("utf-8")).hexdigest()
+
+print("EXACT self-hash input bytes (json.dumps(hashes, sort_keys=True)):")
+print(self_hash_input)
+print()
+print("byte length of self-hash input:", len(self_hash_input.encode("utf-8")))
+print()
+print("git path | committed-blob SHA-256 | in self-hash input | derived | expected | match")
+for n in NAMES:
+    ok = (hashes[n] == man["artifact_hashes"][n]
+          == man["committed_blob_binding"][n]["committed_blob_sha256"])
+    print(gitpath(n) + " | " + hashes[n] + " | yes | " + derived + " | " + expected
+          + " | " + ("MATCH" if ok else "MISMATCH"))
+print()
+print("artifact count            :", len(hashes))
+print("manifest artifact_hashes  :", len(man["artifact_hashes"]))
+print("committed_blob_binding    :", len(man["committed_blob_binding"]))
+print()
+print("derived token :", derived)
+print("expected token:", expected)
+print("MATCH         :", derived == expected)
+print()
+print("commit-SHA fields present in manifest:",
+      [k for k in ("head_at_build_time", "pinned_commit", "package_commit",
+                   "containing_commit") if k in man])
+print("_commit_binding.commit_sha_in_this_manifest =",
+      man["_commit_binding"]["commit_sha_in_this_manifest"])
+
+$ python C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/token_table11.py d679eec8525fa672724a012f7d1fac0d0d8e7620
+EXACT self-hash input bytes (json.dumps(hashes, sort_keys=True)):
+{"431_fixture_preflight.json": "080eb3ed9fca215d8e65faa3dafaa451536de974d7ccb53fbbda16af26ad8770", "431_measurement_config.json": "7000ad8f4c1f14b43d59f043fb90a52c7c03e139cd6ec808180cfd651f139a0b", "431_output_schema.json": "a9724730044357131cec19e81558a0e05a9460d1a3588f9ef9d520e47d26d4b2", "431_requirement_profiles.json": "57f8a22ae258e01afa94568c9fba8e9f895e79868c592134b162d5923bd8563b", "431_sanction_allowed_signers": "f0d2db7374ed8e6a0a5cc727f82794af9ad16c70b2532d6878a4706c337217d6", "431_sanction_key.pub": "e0b26fd7f79e933db44deecca6820037cd950760ec1e5c4421e217a5963bb9b9", "431_sanction_policy.json": "e78b5ffcfbd6a48afa674c91d971531179a2c5cdd22c6de5c87f7029d0f056d0", "431_selector_prompt.txt": "3a146f4122dddf09f8de984662685789ee6aee6a3276509d91fc5818a63e0007", "atlas_meridian_warehouse_lease.txt": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71", "atreca_eastjamie_southsf_lease.txt": "e049ee63a4e2f475c133b65ceb7a454b4570e59ec288a39b37129740b200d04d", "run_431_selection_measurement.py": "0496dfc8af6aa761d7928ddf57884c4dfab41ae5a5f99e328145e5b5ff67002d"}
+
+byte length of self-hash input: 1091
+
+git path | committed-blob SHA-256 | in self-hash input | derived | expected | match
+build_log/431_measurement_config.json | 7000ad8f4c1f14b43d59f043fb90a52c7c03e139cd6ec808180cfd651f139a0b | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+build_log/431_requirement_profiles.json | 57f8a22ae258e01afa94568c9fba8e9f895e79868c592134b162d5923bd8563b | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+build_log/431_output_schema.json | a9724730044357131cec19e81558a0e05a9460d1a3588f9ef9d520e47d26d4b2 | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+build_log/431_selector_prompt.txt | 3a146f4122dddf09f8de984662685789ee6aee6a3276509d91fc5818a63e0007 | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+build_log/431_fixture_preflight.json | 080eb3ed9fca215d8e65faa3dafaa451536de974d7ccb53fbbda16af26ad8770 | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+build_log/run_431_selection_measurement.py | 0496dfc8af6aa761d7928ddf57884c4dfab41ae5a5f99e328145e5b5ff67002d | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+build_log/431_sanction_allowed_signers | f0d2db7374ed8e6a0a5cc727f82794af9ad16c70b2532d6878a4706c337217d6 | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+build_log/431_sanction_key.pub | e0b26fd7f79e933db44deecca6820037cd950760ec1e5c4421e217a5963bb9b9 | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+build_log/431_sanction_policy.json | e78b5ffcfbd6a48afa674c91d971531179a2c5cdd22c6de5c87f7029d0f056d0 | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt | e049ee63a4e2f475c133b65ceb7a454b4570e59ec288a39b37129740b200d04d | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt | da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71 | yes | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca | MATCH
+
+artifact count            : 11
+manifest artifact_hashes  : 11
+committed_blob_binding    : 11
+
+derived token : ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca
+expected token: ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca
+MATCH         : True
+
+commit-SHA fields present in manifest: []
+_commit_binding.commit_sha_in_this_manifest = None
+
+## 5. New gate code at P4 (hardcoded ELEVEN-artifact scope; build set derived from it)
+
+$ git show d679eec8525fa672724a012f7d1fac0d0d8e7620:build_log/run_431_selection_measurement.py | sed -n '/^EXPECTED_PACKAGE_ARTIFACTS/,/^}/p'
+EXPECTED_PACKAGE_ARTIFACTS: Dict[str, str] = {
+    "431_measurement_config.json": "build_log/431_measurement_config.json",
+    "431_requirement_profiles.json": "build_log/431_requirement_profiles.json",
+    "431_output_schema.json": "build_log/431_output_schema.json",
+    "431_selector_prompt.txt": "build_log/431_selector_prompt.txt",
+    "431_fixture_preflight.json": "build_log/431_fixture_preflight.json",
+    "run_431_selection_measurement.py": "build_log/run_431_selection_measurement.py",
+    "431_sanction_allowed_signers": "build_log/431_sanction_allowed_signers",
+    "431_sanction_key.pub": "build_log/431_sanction_key.pub",
+    "431_sanction_policy.json": "build_log/431_sanction_policy.json",
+    # Step 445: the two lease fixtures the measurement READS are now tracked and
+    # token-bound. Previously "05 Lease Analyzer/test_data/" was gitignored, the atlas
+    # lease was untracked, and a fresh worktree at the package commit did not contain it —
+    # so a sanctioned run either failed or depended on an out-of-band file. They are
+    # force-added (the directory stays ignored), LF-pinned, and verified by the same
+    # three-way blob equality as every other artifact. Note these live OUTSIDE build_log/,
+    # which is why git paths are carried explicitly here rather than derived from the name.
+    "atreca_eastjamie_southsf_lease.txt":
+        "05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt",
+    "atlas_meridian_warehouse_lease.txt":
+        "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt",
+}
+
+$ git show d679eec8525fa672724a012f7d1fac0d0d8e7620:build_log/run_431_selection_measurement.py | sed -n '/Step 445: the hashed file set is DERIVED/,/^    hashes = /p'
+    # Step 445: the hashed file set is DERIVED from EXPECTED_PACKAGE_ARTIFACTS, the same
+    # constant the runtime gate enforces. Previously this dict was maintained separately and
+    # the binding's git_path was synthesized as f"build_log/{name}" -- which silently assumed
+    # every artifact lives in build_log/. The lease fixtures do not, so the two are now one
+    # source of truth and cannot drift apart.
+    files = {name: CAM_ROOT / gp for name, gp in EXPECTED_PACKAGE_ARTIFACTS.items()}
+    hashes = {name: sha256_lf(p) for name, p in files.items()}
+
+$ git show d679eec8525fa672724a012f7d1fac0d0d8e7620:build_log/run_431_selection_measurement.py | grep -n 'EXPECTED_PACKAGE_ARTIFACTS'
+82:EXPECTED_PACKAGE_ARTIFACTS: Dict[str, str] = {
+1434:    for name, gp in EXPECTED_PACKAGE_ARTIFACTS.items():
+1610:    (0) SCOPE is hardcoded. EXPECTED_PACKAGE_ARTIFACTS (name -> git path) is compiled into
+1657:    expected_names = set(EXPECTED_PACKAGE_ARTIFACTS)
+1675:    for name, gp in EXPECTED_PACKAGE_ARTIFACTS.items():
+1689:    for name, gp in EXPECTED_PACKAGE_ARTIFACTS.items():
+1717:    pkg_paths = list(EXPECTED_PACKAGE_ARTIFACTS.values()) + [MANIFEST_GITPATH]
+1795:        "artifact_scope_source": "EXPECTED_PACKAGE_ARTIFACTS hardcoded in the harness",
+1799:        "verified_artifacts": list(EXPECTED_PACKAGE_ARTIFACTS),
+2183:    # Step 445: the hashed file set is DERIVED from EXPECTED_PACKAGE_ARTIFACTS, the same
+2188:    files = {name: CAM_ROOT / gp for name, gp in EXPECTED_PACKAGE_ARTIFACTS.items()}
+2202:            "git_path": EXPECTED_PACKAGE_ARTIFACTS[name],
+2362:            "gitattributes_paths_eol_lf": list(EXPECTED_PACKAGE_ARTIFACTS.values()) + [".gitattributes (repo root)"],
+
+## 6. NEW tests (k)(l) + POSITIVE demonstration -- executed IN a clean worktree at P4
+
+$ cat C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/neg_leases.py
+"""Step 445 tests (k), (l) and the POSITIVE demonstration.
+
+Run with cwd = a CLEAN detached worktree at the package commit.
+
+(k) a lease fixture MODIFIED, tag verification stubbed to SUCCEED -> must halt.
+(l) a lease fixture MISSING -> must halt.
+(+) POSITIVE: untouched worktree -- both leases present, preflight admits 7/7, and the gate
+    halts ONLY on the missing signed tag.
+"""
+import hashlib
+import importlib.util
+import subprocess
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location(
+    "h", str(Path("build_log/run_431_selection_measurement.py").resolve()))
+h = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(h)
+
+ATRECA = Path("05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt")
+ATLAS = Path("05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt")
+_, TOKEN = h.recompute_token_from_head()
+
+print("HEAD                :",
+      subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip())
+print("CAM_ROOT derived    :", h.CAM_ROOT)
+print("package artifacts   :", len(h.EXPECTED_PACKAGE_ARTIFACTS))
+for n, gp in h.EXPECTED_PACKAGE_ARTIFACTS.items():
+    print("   ", n, "->", gp)
+print("token from HEAD blobs:", TOKEN)
+print()
+
+STUB = lambda head, token: {
+    "tag": "stage2-sanction-431-STUBBED-VALID", "peeled_commit": head, "embedded_token": token,
+    "authorized_principal": "zvido@yahoo.com",
+    "sanction_key_fingerprint": "SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs",
+    "anchor_source": "STUBBED VALID TAG (test)"}
+
+
+def case(label, setup, teardown, stub_tag):
+    print("-" * 78)
+    print("CASE:", label)
+    real = h.verify_signed_sanction_binding
+    try:
+        note = setup()
+        if note:
+            print("SETUP:", note)
+        if stub_tag:
+            h.verify_signed_sanction_binding = STUB
+            print("SETUP: verify_signed_sanction_binding STUBBED TO SUCCEED")
+        try:
+            h.verify_repository_execution_identity(TOKEN)
+            print("RESULT: NO HALT  <-- FAILURE")
+        except h.MeasurementIntegrityHalt as e:
+            print("RESULT: MeasurementIntegrityHalt (pre-call)")
+            print(str(e))
+    finally:
+        h.verify_signed_sanction_binding = real
+        teardown()
+
+
+_bk = {}
+
+# ---- (k) lease MODIFIED ----
+def k_setup():
+    _bk["k"] = ATLAS.read_bytes()
+    ATLAS.write_bytes(_bk["k"].replace(b"22.4%", b"99.9%", 1))
+    return ("edited the atlas lease in place (Proportionate Share 22.4% -> 99.9%); every other "
+            "artifact untouched. worktree sha256(LF)=" +
+            hashlib.sha256(ATLAS.read_bytes()).hexdigest()[:16] + "...")
+
+
+def k_teardown():
+    if "k" in _bk:
+        ATLAS.write_bytes(_bk.pop("k"))
+
+
+case("(k) a LEASE FIXTURE MODIFIED, tag verification stubbed VALID", k_setup, k_teardown, True)
+
+# ---- (l) lease MISSING ----
+def l_setup():
+    _bk["l"] = ATRECA.read_bytes()
+    ATRECA.unlink()
+    return "deleted the atreca lease from the worktree"
+
+
+def l_teardown():
+    if "l" in _bk:
+        ATRECA.write_bytes(_bk.pop("l"))
+
+
+case("(l) a LEASE FIXTURE MISSING, tag verification stubbed VALID", l_setup, l_teardown, True)
+
+# ---- POSITIVE ----
+print("-" * 78)
+print("POSITIVE DEMONSTRATION: untouched worktree at the package commit")
+print("both leases present:")
+for p in (ATRECA, ATLAS):
+    print(f"   {p.name}: exists={p.exists()} bytes={p.stat().st_size}")
+print()
+print("preflight (deterministic, ZERO provider calls):")
+sources = h.build_sources()
+cfg = h.load_artifacts()["config"]
+pre = h.run_preflight(sources, cfg)
+print("   admitted:", len(pre["admitted"]), "/", len(h.CANDIDATES), "->", pre["admitted"])
+for slug, rec in pre["leases"].items():
+    print(f"   lease {slug}: source_document_hash={rec['source_document_hash'][:16]}... "
+          f"frozen_expected={rec['frozen_hash_expected'][:16]}... "
+          f"hash_matches_frozen={rec['hash_matches_frozen']}")
+print()
+print("gate on the untouched worktree (no stubs) -- must halt ONLY on the missing tag:")
+try:
+    h.verify_repository_execution_identity(TOKEN)
+    print("RESULT: NO HALT  <-- FAILURE")
+except h.MeasurementIntegrityHalt as e:
+    print("RESULT: MeasurementIntegrityHalt (pre-call)")
+    print(str(e))
+print("-" * 78)
+print("post-test tree status (must be clean):")
+print(subprocess.run(["git", "status", "--porcelain", "--untracked-files=all"],
+                     capture_output=True, text=True).stdout.strip() or "(clean)")
+
+$ cd 'C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/wt445' && python C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/neg_leases.py
+HEAD                : d679eec8525fa672724a012f7d1fac0d0d8e7620
+CAM_ROOT derived    : C:\Users\Owner\AppData\Local\Temp\claude\C--Users-Owner-OneDrive-CAM\443298e2-ae39-4240-993e-750d4a4d5257\scratchpad\wt445
+package artifacts   : 11
+    431_measurement_config.json -> build_log/431_measurement_config.json
+    431_requirement_profiles.json -> build_log/431_requirement_profiles.json
+    431_output_schema.json -> build_log/431_output_schema.json
+    431_selector_prompt.txt -> build_log/431_selector_prompt.txt
+    431_fixture_preflight.json -> build_log/431_fixture_preflight.json
+    run_431_selection_measurement.py -> build_log/run_431_selection_measurement.py
+    431_sanction_allowed_signers -> build_log/431_sanction_allowed_signers
+    431_sanction_key.pub -> build_log/431_sanction_key.pub
+    431_sanction_policy.json -> build_log/431_sanction_policy.json
+    atreca_eastjamie_southsf_lease.txt -> 05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt
+    atlas_meridian_warehouse_lease.txt -> 05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt
+token from HEAD blobs: ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca
+
+------------------------------------------------------------------------------
+CASE: (k) a LEASE FIXTURE MODIFIED, tag verification stubbed VALID
+SETUP: edited the atlas lease in place (Proportionate Share 22.4% -> 99.9%); every other artifact untouched. worktree sha256(LF)=bbaa28ac72ec7165...
+SETUP: verify_signed_sanction_binding STUBBED TO SUCCEED
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (§11): repository CONTENT-identity check FAILED — the executed bytes do not provably equal the reviewed committed blobs under pinned LF. No provider call is made. Problems:
+  - atlas_meridian_warehouse_lease.txt: working-tree LF sha256 bbaa28ac72ec != HEAD blob da9b5655c5ca
+  - package working tree is NOT clean:
+M "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt"
+------------------------------------------------------------------------------
+CASE: (l) a LEASE FIXTURE MISSING, tag verification stubbed VALID
+SETUP: deleted the atreca lease from the worktree
+SETUP: verify_signed_sanction_binding STUBBED TO SUCCEED
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (§11): repository CONTENT-identity check FAILED — the executed bytes do not provably equal the reviewed committed blobs under pinned LF. No provider call is made. Problems:
+  - atreca_eastjamie_southsf_lease.txt: working-tree file 05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt missing
+  - package working tree is NOT clean:
+D "05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt"
+------------------------------------------------------------------------------
+POSITIVE DEMONSTRATION: untouched worktree at the package commit
+both leases present:
+   atreca_eastjamie_southsf_lease.txt: exists=True bytes=160244
+   atlas_meridian_warehouse_lease.txt: exists=True bytes=31755
+
+preflight (deterministic, ZERO provider calls):
+   admitted: 7 / 7 -> ['cand_01', 'cand_02', 'cand_03', 'cand_04', 'cand_05', 'cand_06', 'cand_07']
+   lease atreca: source_document_hash=7118cc6ddf65bd7b... frozen_expected=7118cc6ddf65bd7b... hash_matches_frozen=True
+   lease atlas: source_document_hash=da9b5655c5cab382... frozen_expected=da9b5655c5cab382... hash_matches_frozen=True
+
+gate on the untouched worktree (no stubs) -- must halt ONLY on the missing tag:
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Construction A / Option 3 + Step 442): the run-commit is NOT bound to this package by a valid signed sanction tag. A run is authorized ONLY by an annotated tag signed by SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs (zvido@yahoo.com), pointing at HEAD (d679eec8525f), embedding this manifest token (ef1a7af7f77d) and package_commit == HEAD. Valid tags found: 0; tags pointing at HEAD: [none].
+------------------------------------------------------------------------------
+post-test tree status (must be clean):
+(clean)
+
+## 7. Full prior suite (a-g, f2, f3, h, i, j) re-run IN the clean worktree at P4
+
+$ cd 'C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/wt445' && python C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/neg_manifest.py
+------------------------------------------------------------------------------
+CASE: (a) working-tree manifest bytes differ from HEAD blob
+SETUP: added a key to the working-tree manifest only
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Step 443): working-tree manifest bytes DIFFER from HEAD:build_log/431_config_manifest.json. The committed blob is authoritative and was used for verification; the divergence itself voids the run (an edited working-tree manifest is the manifest-trust bypass this check exists to stop).
+  working-tree sha256 (LF): 9f52bdd5494bbab99fc5551ec4a3d689e8d54bb1fd0385126a199bc4b086d178
+  HEAD blob   sha256      : 67d8e41ca6bfef096850b0e4959fb618a00892c664332378e9ddf41a4ef5d676
+------------------------------------------------------------------------------
+CASE: (b) harness entry REMOVED from committed_blob_binding
+SETUP: binding shrunk from 9 to 8; token field left intact
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Step 443): committed_blob_binding does not match the hardcoded 11-artifact package set. A binding that omits an artifact shrinks the verification scope (the manifest-trust bypass); one that adds an artifact is not the sanctioned package.
+  missing from binding: ['run_431_selection_measurement.py']
+  unexpected in binding: [none]
+------------------------------------------------------------------------------
+CASE: (c) an artifact ADDED to the binding
+SETUP: binding extended to 10 entries
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Step 443): committed_blob_binding does not match the hardcoded 11-artifact package set. A binding that omits an artifact shrinks the verification scope (the manifest-trust bypass); one that adds an artifact is not the sanctioned package.
+  missing from binding: [none]
+  unexpected in binding: ['attacker_payload.py']
+------------------------------------------------------------------------------
+CASE: (d) an artifact OMITTED from the binding
+SETUP: authorization policy dropped from the binding
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Step 443): committed_blob_binding does not match the hardcoded 11-artifact package set. A binding that omits an artifact shrinks the verification scope (the manifest-trust bypass); one that adds an artifact is not the sanctioned package.
+  missing from binding: ['431_sanction_policy.json']
+  unexpected in binding: [none]
+------------------------------------------------------------------------------
+CASE: (e) a manifest artifact hash ALTERED
+SETUP: artifact_hashes[431_selector_prompt.txt] replaced with a bogus value
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (§11): repository CONTENT-identity check FAILED — the executed bytes do not provably equal the reviewed committed blobs under pinned LF. No provider call is made. Problems:
+  - 431_selector_prompt.txt: manifest artifact_hashes claims bbbbbbbbbbbb but HEAD blob is 3a146f4122dd
+  - package working tree is NOT clean:
+M build_log/431_config_manifest.json
+------------------------------------------------------------------------------
+CASE: (f) stale/incorrect token field (the superseded 442 token)
+SETUP: manifest claims token 8389e965 while the HEAD blobs derive bb1c40b1
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (§11): repository CONTENT-identity check FAILED — the executed bytes do not provably equal the reviewed committed blobs under pinned LF. No provider call is made. Problems:
+  - package working tree is NOT clean:
+M build_log/431_config_manifest.json
+------------------------------------------------------------------------------
+CASE: (f2) --stage2-sanction does not equal the token recomputed from HEAD blobs
+SETUP: pristine tree; supplied the superseded 442 token 8389e965... as --stage2-sanction
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Step 443): --stage2-sanction does not equal the token recomputed from the HEAD blobs.
+  supplied --stage2-sanction : 8389e9651438e72707eadd63a1e69a17a78035ea36ea75de640d8dcd76a2a071
+  recomputed from HEAD blobs : ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca
+------------------------------------------------------------------------------
+CASE: (f3) signed tag embeds a STALE token (tag issued for the superseded 442 package)
+SETUP: stub the git tag primitives to present one annotated, signature-valid tag at HEAD whose body carries token 8389e965...; the real comparison logic runs
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Construction A / Option 3 + Step 442): the run-commit is NOT bound to this package by a valid signed sanction tag. A run is authorized ONLY by an annotated tag signed by SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs (zvido@yahoo.com), pointing at HEAD (d679eec8525f), embedding this manifest token (ef1a7af7f77d) and package_commit == HEAD. Valid tags found: 0; tags pointing at HEAD: ['stage2-sanction-431-8389e965'].
+Rejections:
+  - stage2-sanction-431-8389e965: embedded token 8389e9651438 != manifest token ef1a7af7f77d
+------------------------------------------------------------------------------
+CASE: (g) THE BYPASS -- harness MODIFIED, its manifest entry REMOVED, VALID SIGNED TAG present
+SETUP: append a live line to the working-tree harness; drop run_431_selection_measurement.py
+       from committed_blob_binding; stub verify_signed_sanction_binding to SUCCEED so the
+       halt cannot be attributed to a missing tag.
+working-tree harness sha256 (LF): 038f9f08a03668c71348d360c48686c4f7f19d6ce82ee52231cf114907102ba0
+committed  harness sha256 (LF): 0496dfc8af6aa761d7928ddf57884c4dfab41ae5a5f99e328145e5b5ff67002d
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Step 443): committed_blob_binding does not match the hardcoded 11-artifact package set. A binding that omits an artifact shrinks the verification scope (the manifest-trust bypass); one that adds an artifact is not the sanctioned package.
+  missing from binding: ['run_431_selection_measurement.py']
+  unexpected in binding: [none]
+------------------------------------------------------------------------------
+restored working tree; verifying it is clean:
+(clean)
+
+$ cd 'C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/wt445' && python C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/neg_deps.py
+CAM_ROOT derived by the harness : C:\Users\Owner\AppData\Local\Temp\claude\C--Users-Owner-OneDrive-CAM\443298e2-ae39-4240-993e-750d4a4d5257\scratchpad\wt445
+cwd                             : C:\Users\Owner\AppData\Local\Temp\claude\C--Users-Owner-OneDrive-CAM\443298e2-ae39-4240-993e-750d4a4d5257\scratchpad\wt445
+derived root == cwd             : True
+HEAD in this tree               : d679eec8525fa672724a012f7d1fac0d0d8e7620
+token recomputed from HEAD blobs: ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca
+
+------------------------------------------------------------------------------
+CASE: (h) THE NEW BYPASS -- imported repository-local module MODIFIED, nine artifacts pristine, tag verification stubbed VALID
+SETUP: appended a line to cam\core\provider_router.py (a module the harness imports); the nine package artifacts and the manifest are UNTOUCHED
+SETUP: verify_signed_sanction_binding STUBBED TO SUCCEED
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Step 444): the repository working tree is NOT clean. `git status --porcelain --untracked-files=all` must be EMPTY over the WHOLE repository before any provider call, because the harness imports repository-local modules from this tree — a modified or untracked file outside the nine package artifacts can change what actually executes.
+  tree: C:\Users\Owner\AppData\Local\Temp\claude\C--Users-Owner-OneDrive-CAM\443298e2-ae39-4240-993e-750d4a4d5257\scratchpad\wt445
+  offending entries (1):
+   M cam/core/provider_router.py
+  Run the sanctioned measurement from a dedicated detached worktree at the package commit (git worktree add --detach <path> <package-commit>), which starts clean.
+------------------------------------------------------------------------------
+CASE: (i) UNTRACKED file present in the import path
+SETUP: created UNTRACKED cam\core\provider_router_shadow.py (tracked files all pristine)
+SETUP: verify_signed_sanction_binding STUBBED TO SUCCEED
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Step 444): the repository working tree is NOT clean. `git status --porcelain --untracked-files=all` must be EMPTY over the WHOLE repository before any provider call, because the harness imports repository-local modules from this tree — a modified or untracked file outside the nine package artifacts can change what actually executes.
+  tree: C:\Users\Owner\AppData\Local\Temp\claude\C--Users-Owner-OneDrive-CAM\443298e2-ae39-4240-993e-750d4a4d5257\scratchpad\wt445
+  offending entries (1):
+  ?? cam/core/provider_router_shadow.py
+  Run the sanctioned measurement from a dedicated detached worktree at the package commit (git worktree add --detach <path> <package-commit>), which starts clean.
+------------------------------------------------------------------------------
+CASE: (j) CLEAN worktree, all checks satisfied, NO tag stub -- must halt only on the missing tag
+SETUP: no mutation; tree is clean and the real tag check runs
+RESULT: MeasurementIntegrityHalt (pre-call)
+HARD HALT (Construction A / Option 3 + Step 442): the run-commit is NOT bound to this package by a valid signed sanction tag. A run is authorized ONLY by an annotated tag signed by SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs (zvido@yahoo.com), pointing at HEAD (d679eec8525f), embedding this manifest token (ef1a7af7f77d) and package_commit == HEAD. Valid tags found: 0; tags pointing at HEAD: [none].
+------------------------------------------------------------------------------
+post-test tree status (must be clean):
+(clean)
+
+## 8. Semantic artifacts + newline equivalence
+
+$ git diff --stat 65556ee d679eec8525fa672724a012f7d1fac0d0d8e7620 -- build_log/431_measurement_config.json build_log/431_requirement_profiles.json build_log/431_output_schema.json build_log/431_selector_prompt.txt build_log/431_fixture_preflight.json
+(command produced no output)
+
+$ python C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/newline_eq.py d679eec8525fa672724a012f7d1fac0d0d8e7620
+artifact | JSON object equality | AST equality (LF vs CRLF) | equal after deleting only CR | byte-diff vs 65556ee | worktree SHA == blob SHA | CRLF in blob
+431_measurement_config.json | True | n/a | True | identical | True | False
+431_requirement_profiles.json | True | n/a | True | identical | True | False
+431_output_schema.json | True | n/a | True | identical | True | False
+431_fixture_preflight.json | True | n/a | True | identical | True | False
+431_selector_prompt.txt | n/a (not JSON) | n/a | True | identical | True | False
+run_431_selection_measurement.py | n/a (not JSON) | True | False | differs | True | False
+431_sanction_allowed_signers | n/a (not JSON) | n/a | n/a (not in 65556ee) | n/a (not in 65556ee) | True | False
+431_sanction_key.pub | n/a (not JSON) | n/a | n/a (not in 65556ee) | n/a (not in 65556ee) | True | False
+431_sanction_policy.json | n/a (not in 65556ee) | n/a | n/a (not in 65556ee) | n/a (not in 65556ee) | True | False
+
+## 9. Mechanism-unchanged (measured across P''' -> P4)
+
+$ python C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/mechanism_hashes.py 6a32d47 d679eec8525fa672724a012f7d1fac0d0d8e7620
+region | sha256@6a32d47 | sha256@d679eec8525fa672724a012f7d1fac0d0d8e7620 | identical across all revs
+FIX 1a + terminal-fatal (run_stage2) | 26f0616fb2e2ea98 | 26f0616fb2e2ea98 | IDENTICAL
+434 config-integrity classifier | 5dcb92668f2b9ff4 | 5dcb92668f2b9ff4 | IDENTICAL
+F2 certification path (certify) | fedb3b6711957aa8 | fedb3b6711957aa8 | IDENTICAL
+F2 payload builder (build_panelist_payload) | fe0002a31869a271 | fe0002a31869a271 | IDENTICAL
+panelist call path (call_panelist) | 72173942d153ad7b | 72173942d153ad7b | IDENTICAL
+provider call wrapper (_provider_call) | a8d8e7ccec077e66 | a8d8e7ccec077e66 | IDENTICAL
+series orchestration (run_candidate_series) | 47e107bc9c4c222a | 47e107bc9c4c222a | IDENTICAL
+certification (certify_parameter_series) | 01c0201942966618 | 01c0201942966618 | IDENTICAL
+Role-C report language (render_report) | b1fc7c8dbe027af6 | b1fc7c8dbe027af6 | IDENTICAL
+merge/validator (merge_panel) | 368bc90f63bb4592 | 368bc90f63bb4592 | IDENTICAL
+basis rule (_basis_rule) | a2fea2f645ee0098 | a2fea2f645ee0098 | IDENTICAL
+field grounding (apply_field_grounding) | 74ed90ac7c8cf0ad | 74ed90ac7c8cf0ad | IDENTICAL
+candidate compare (compare_candidate) | 7913ac7f80574cda | 7913ac7f80574cda | IDENTICAL
+
+ALL FROZEN-MECHANISM REGIONS IDENTICAL ACROSS ['6a32d47', 'd679eec8525fa672724a012f7d1fac0d0d8e7620'] : True
+
+## 10. P4 vs Q-prep4 package identity (eleven paths + manifest)
+
+$ git diff --exit-code d679eec8525fa672724a012f7d1fac0d0d8e7620 779cc887ce0875ea3d50f6d52485217974e4828c -- build_log/431_measurement_config.json build_log/431_requirement_profiles.json build_log/431_output_schema.json build_log/431_selector_prompt.txt build_log/431_fixture_preflight.json build_log/run_431_selection_measurement.py build_log/431_sanction_allowed_signers build_log/431_sanction_key.pub build_log/431_sanction_policy.json '05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt' '05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt' build_log/431_config_manifest.json; echo "(exit=$? ; 0 = identical)"
+(exit=0 ; 0 = identical)
+
+$ git diff --stat d679eec8525fa672724a012f7d1fac0d0d8e7620 779cc887ce0875ea3d50f6d52485217974e4828c
+ build_log/431_sanction_message.txt | 12 ++++----
+ build_log/431_sanction_record.md   | 38 ++++++++++++------------
+ build_log/445_code_status.md       | 60 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 86 insertions(+), 24 deletions(-)
+
+## 11. Q-prep4 message, SHA-256, obsolete notice, closed gap, no tag
+
+$ git show 779cc887ce0875ea3d50f6d52485217974e4828c:build_log/431_sanction_message.txt
+Stage-2 sanction -- Step 431 governed-selection executable package (Construction A / Option 3)
+package_commit: d679eec8525fa672724a012f7d1fac0d0d8e7620
+token: ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca
+manifest_self_hash: ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca
+authorized_principal: zvido@yahoo.com
+sanction_key_fingerprint: SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs
+artifact_blob_sha256:
+  431_measurement_config.json: 7000ad8f4c1f14b43d59f043fb90a52c7c03e139cd6ec808180cfd651f139a0b
+  431_requirement_profiles.json: 57f8a22ae258e01afa94568c9fba8e9f895e79868c592134b162d5923bd8563b
+  431_output_schema.json: a9724730044357131cec19e81558a0e05a9460d1a3588f9ef9d520e47d26d4b2
+  431_selector_prompt.txt: 3a146f4122dddf09f8de984662685789ee6aee6a3276509d91fc5818a63e0007
+  431_fixture_preflight.json: 080eb3ed9fca215d8e65faa3dafaa451536de974d7ccb53fbbda16af26ad8770
+  run_431_selection_measurement.py: 0496dfc8af6aa761d7928ddf57884c4dfab41ae5a5f99e328145e5b5ff67002d
+  431_sanction_allowed_signers: f0d2db7374ed8e6a0a5cc727f82794af9ad16c70b2532d6878a4706c337217d6
+  431_sanction_key.pub: e0b26fd7f79e933db44deecca6820037cd950760ec1e5c4421e217a5963bb9b9
+  431_sanction_policy.json: e78b5ffcfbd6a48afa674c91d971531179a2c5cdd22c6de5c87f7029d0f056d0
+  atreca_eastjamie_southsf_lease.txt: e049ee63a4e2f475c133b65ceb7a454b4570e59ec288a39b37129740b200d04d
+  atlas_meridian_warehouse_lease.txt: da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71
+statement: Stage 2 authorized only for this exact package at commit d679eec8525fa672724a012f7d1fac0d0d8e7620.
+
+$ git show 779cc887ce0875ea3d50f6d52485217974e4828c:build_log/431_sanction_message.txt | sha256sum
+685d9dfe60cd9de5f808803ddee5507e8d6e15f1109f78c0b79de1a4c7674ec6 *-
+
+$ git show 779cc887ce0875ea3d50f6d52485217974e4828c:build_log/431_sanction_record.md | sed -n '/^## OBSOLETE prior messages/,/^## Status/p'
+## OBSOLETE prior messages — DO NOT SIGN
+Two superseded messages exist in this file's history. **Neither was ever signed.**
+
+| SHA-256 | named package commit | token | why obsolete |
+|---|---|---|---|
+| `3de7329cfcb62e9c7a4da9f267f6c4b73df88ba9969c0477343811aa5f11b931` | `3fb5f39` (442) | `8389e965…` | its runtime permitted the manifest-trust bypass (the working-tree manifest decided what was verified) |
+| `84e6aab4b5c9bdf507645956cc151f352d3bb512c50d3a5a7cd7a436b6105eb0` | `b05b735` (443) | `bb1c40b1…` | its runtime verified the nine package artifacts but not the repository-local modules the harness imports, so a modified `cam/core/*` still executed |
+| `56bce9e915ef56361f5a166e71a78763bbcd2babc9b1f8d341f62f75c51560be` | `6a32d47` (444) | `f341a188…` | its package did not include the lease fixtures: `atlas_meridian_warehouse_lease.txt` was untracked, so a fresh worktree at that commit lacked an input the measurement reads |
+
+Signing either would sanction a package whose gate can be circumvented. The message file was
+replaced in place at this path; those bytes survive only in the history of that file.
+
+Signing history to date: **no sanction tag has ever been created or signed in this repository.**
+
+## Status
+
+$ git show 779cc887ce0875ea3d50f6d52485217974e4828c:build_log/431_sanction_record.md | sed -n '/^Input fixtures are now IN the package/,/^## Applying/p'
+(command produced no output)
+
+$ git tag -l
+(command produced no output)
+
+$ git show-ref --tags; echo "(exit=$?)"
+(exit=1)
+
+$ git status --porcelain cam/
+(command produced no output)
+
