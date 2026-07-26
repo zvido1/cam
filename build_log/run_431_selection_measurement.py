@@ -89,6 +89,17 @@ EXPECTED_PACKAGE_ARTIFACTS: Dict[str, str] = {
     "431_sanction_allowed_signers": "build_log/431_sanction_allowed_signers",
     "431_sanction_key.pub": "build_log/431_sanction_key.pub",
     "431_sanction_policy.json": "build_log/431_sanction_policy.json",
+    # Step 445: the two lease fixtures the measurement READS are now tracked and
+    # token-bound. Previously "05 Lease Analyzer/test_data/" was gitignored, the atlas
+    # lease was untracked, and a fresh worktree at the package commit did not contain it —
+    # so a sanctioned run either failed or depended on an out-of-band file. They are
+    # force-added (the directory stays ignored), LF-pinned, and verified by the same
+    # three-way blob equality as every other artifact. Note these live OUTSIDE build_log/,
+    # which is why git paths are carried explicitly here rather than derived from the name.
+    "atreca_eastjamie_southsf_lease.txt":
+        "05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt",
+    "atlas_meridian_warehouse_lease.txt":
+        "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt",
 }
 
 # ── Stage-2 outputs (produced only under sanction) ────────────────────────────
@@ -2169,25 +2180,12 @@ def build_stage1() -> None:
         )
 
     print("[6/6] writing config manifest (committed-blob-derived identity under pinned LF)...")
-    files = {
-        "431_measurement_config.json": CONFIG_PATH,
-        "431_requirement_profiles.json": PROFILES_PATH,
-        "431_output_schema.json": SCHEMA_PATH,
-        "431_selector_prompt.txt": PROMPT_PATH,
-        "431_fixture_preflight.json": PREFLIGHT_PATH,
-        "run_431_selection_measurement.py": Path(__file__),
-        # Step 442: the authorization artifacts are part of the package identity. Binding
-        # them into the token means the trust anchor itself cannot be swapped without
-        # invalidating the token — an attacker who substitutes a different authorized key
-        # changes artifact_hashes, changes the self-hash, and voids the sanction.
-        "431_sanction_allowed_signers": ALLOWED_SIGNERS_PATH,
-        "431_sanction_key.pub": SANCTION_KEY_PATH,
-        "431_sanction_policy.json": SANCTION_POLICY_PATH,
-    }
-    # Step 441: artifact identity is the SHA-256 of each file's committed-blob-equivalent
-    # bytes (LF-normalized), NOT the checked-out newline representation. Under the
-    # .gitattributes eol=lf policy the LF working-tree bytes equal the committed blob, so
-    # this token is reproducible from the repository's Git blobs on any platform.
+    # Step 445: the hashed file set is DERIVED from EXPECTED_PACKAGE_ARTIFACTS, the same
+    # constant the runtime gate enforces. Previously this dict was maintained separately and
+    # the binding's git_path was synthesized as f"build_log/{name}" -- which silently assumed
+    # every artifact lives in build_log/. The lease fixtures do not, so the two are now one
+    # source of truth and cannot drift apart.
+    files = {name: CAM_ROOT / gp for name, gp in EXPECTED_PACKAGE_ARTIFACTS.items()}
     hashes = {name: sha256_lf(p) for name, p in files.items()}
     self_hash = hashlib.sha256(
         json.dumps(hashes, sort_keys=True).encode("utf-8")
@@ -2201,7 +2199,7 @@ def build_stage1() -> None:
     # Commit binding moves entirely to an external signed sanction tag created AFTER commit P.
     committed_blob_binding = {
         name: {
-            "git_path": f"build_log/{name}",
+            "git_path": EXPECTED_PACKAGE_ARTIFACTS[name],
             "committed_blob_sha256": hashes[name],
         }
         for name in files
@@ -2278,6 +2276,10 @@ def build_stage1() -> None:
                  "role": "Step-441-fix2 executable package (Construction A: manifest carries no commit SHA; commit binding via external signed tag)",
                  "status": "SUPERSEDED-FOR-EXECUTION — NOT void; commit-binding topology was correct, but the signature TRUST ANCHOR was not committed at the package commit",
                  "superseded_by_step": "442 — the allowed-signers file did not exist at the package commit (added only in a descendant commit) and `gpg.ssh.allowedSignersFile` was a machine-local .git/config path, so `git tag -v` resolved its trust anchor from configuration rather than from bytes committed at P. A third party checking out P alone could not identify the authorized key. Step 442 commits the allowed-signers file, the standalone public key, and an authorization policy AT the package commit, binds all three into the token, materializes the verification anchor from HEAD blobs, and enforces the authorized key/principal/namespace explicitly."},
+                {"token": "f341a1886973bfec6d2e1f776b81fec29e16bdf7a3f1f2740f10aab876d7d352",
+                 "role": "Step-444 executable package (whole-tree cleanliness + derived CAM_ROOT; nine artifacts)",
+                 "status": "SUPERSEDED-FOR-EXECUTION - NOT void; execution-dependency binding was sound, but a measurement INPUT was still outside version control",
+                 "superseded_by_step": "445 - the two lease fixtures the measurement reads were not both tracked: '05 Lease Analyzer/test_data/' is gitignored and atlas_meridian_warehouse_lease.txt was untracked, so a fresh detached worktree at the package commit did not contain it and a sanctioned run either failed in preflight or depended on an out-of-band file. Tzvi ruled the leases are generic public documents with no confidentiality constraint, so both are force-added, LF-pinned and bound into the package: the artifact set becomes ELEVEN. Verified invariant: source_document_hash is unchanged by CRLF->LF, so both still match the FROZEN_LEASE_HASHES pinned at Step 430 - reviewed fixture CONTENT did not change."},
                 {"token": "bb1c40b1e37a0d14d865c48526724c04184a00d0c18ebde8126733df4697c477",
                  "role": "Step-443 executable package (manifest-trust bypass closed: hardcoded scope, HEAD-only manifest, runtime token recomputation, four-way token equality)",
                  "status": "SUPERSEDED-FOR-EXECUTION - NOT void; package-artifact verification was sound, but repository-local EXECUTION DEPENDENCIES were unverified",
@@ -2288,7 +2290,7 @@ def build_stage1() -> None:
                  "superseded_by_step": "443 — MANIFEST-TRUST BYPASS: run_stage2 loaded the manifest from the WORKING TREE and the gate enumerated artifacts from its committed_blob_binding. Deleting an entry (e.g. the harness) from the working-tree copy while leaving the token field intact shrank the verification scope, so a MODIFIED harness could execute under a valid signed tag — executed bytes != sanctioned bytes. 443 hardcodes the nine-artifact scope in the harness, reads the manifest only from HEAD (requiring the working-tree copy to be byte-identical), recomputes the token at run time from the nine HEAD blobs, and requires four-way token equality (recomputed == committed manifest == --stage2-sanction == signed-tag body)."},
             ],
             "current_executable_token": self_hash,
-            "authorizing_step": "444 — repository-local execution dependencies bound: whole-tree cleanliness (git status --porcelain --untracked-files=all must be empty) + derived CAM_ROOT + dedicated detached-worktree execution; 442 trust anchor/key enforcement and 443 hardcoded scope, HEAD-manifest authority, runtime token recomputation and four-way token equality all preserved",
+            "authorizing_step": "445 — lease fixtures tracked and token-bound (eleven artifacts); 444 — repository-local execution dependencies bound: whole-tree cleanliness (git status --porcelain --untracked-files=all must be empty) + derived CAM_ROOT + dedicated detached-worktree execution; 442 trust anchor/key enforcement and 443 hardcoded scope, HEAD-manifest authority, runtime token recomputation and four-way token equality all preserved",
             "_provenance_line_ending_correction": (
                 "Tokens generated before the line-ending correction were derived from Windows working-tree bytes "
                 "under core.autocrlf=true. They remain evidence of local sanction-to-execution drift gating on that "
@@ -2298,6 +2300,16 @@ def build_stage1() -> None:
                 "Beginning with the Step-441 package, artifact identity is derived from committed Git-blob bytes "
                 "under path-pinned LF line endings. Runtime preflight verifies that the executed working-tree bytes "
                 "exactly equal the pinned committed blobs and the blobs at HEAD, for every artifact."
+            ),
+            "_provenance_input_fixture_tracking": (
+                "Through Step 444 the measurement's own inputs were not fully under version control: "
+                "'05 Lease Analyzer/test_data/' is gitignored, the atreca lease had been force-added but the atlas "
+                "lease had not, so a fresh detached worktree at the package commit did not contain it. From Step 445 "
+                "both lease fixtures are force-added (the directory remains ignored), pinned eol=lf, and bound into "
+                "the package token and the runtime three-way blob equality - the artifact set is ELEVEN. A worktree "
+                "at the package commit now contains everything the measurement reads. The fixtures' reviewed CONTENT "
+                "is unchanged: source_document_hash is invariant under CRLF->LF normalization and both still equal "
+                "the FROZEN_LEASE_HASHES pinned at Step 430."
             ),
             "_provenance_execution_dependency_binding": (
                 "Through Step 443 the gate verified the nine package artifacts but not the repository-local "
@@ -2347,7 +2359,7 @@ def build_stage1() -> None:
             "run_still_gated_by": "scoped delta audit + a signed annotated sanction tag (Tzvi's key) binding commit P to THIS token; the runtime HALTS until that tag exists (no run in Step 441-fix2)",
         },
         "line_ending_policy": {
-            "gitattributes_paths_eol_lf": [f"build_log/{n}" for n in files] + [".gitattributes (repo root)"],
+            "gitattributes_paths_eol_lf": list(EXPECTED_PACKAGE_ARTIFACTS.values()) + [".gitattributes (repo root)"],
             "artifact_hash_basis": "SHA-256 of committed-blob-equivalent bytes (LF-normalized)",
             "reproducible_from_committed_blobs": True,
         },

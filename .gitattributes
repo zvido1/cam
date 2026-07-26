@@ -19,6 +19,14 @@
 /build_log/431_sanction_key.pub               text eol=lf
 /build_log/431_sanction_policy.json           text eol=lf
 
+# Step 445 — the two lease fixtures the measurement reads. Force-added into version control
+# (the enclosing "05 Lease Analyzer/test_data/" stays gitignored) and token-bound, so a fresh
+# worktree at the package commit contains everything the run needs. LF-pinned like every other
+# text artifact; verified invariant: source_document_hash is unchanged by CRLF->LF, so both
+# still match FROZEN_LEASE_HASHES pinned at Step 430.
+"/05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt"  text eol=lf
+"/05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt"  text eol=lf
+
 # Step 441-fix3 — sanction MESSAGE artifacts (provenance only; NOT in token derivation and
 # NOT in the runtime gate). LF-pinned so the message signed by Tzvi is byte-identical to its
 # recorded SHA-256 on any checkout.
