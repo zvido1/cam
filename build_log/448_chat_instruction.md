@@ -1,7 +1,17 @@
-Step 448. Read build_log/447_code_status.md first for context.
+Step 448 REVISED — post-run audit of the Step 447 measurement.
 
-Before executing anything: write this instruction verbatim to
-build_log/448_chat_instruction.md (Rule 7).
+REVISION NOTE (recorded per Rule 7): this file replaces an earlier version of the Step 448
+instruction. That version's TASK 1 and TASK 3 rested on a FALSE PREMISE AUTHORED BY CHAT — it
+asserted that §9.1 defines "four preregistered predicates" (grounding discipline, citation
+discipline, same-candidate discipline, disagreement preservation) and that §12 specifies fields
+for `431_validation.json` and `431_repository_seam_check.json`. Neither is true of the
+preregistration text: the four names appear nowhere in it (they were authored from a
+parenthetical gloss in the v3.2 amendment record, line 9), §9.1 defines NINE criteria, and §12
+is a file list that specifies no fields. Claude Code halted on both tasks rather than resolving
+the ambiguity; the halt was ruled correct and the four predicates are WITHDRAWN. Tasks 0, 2, 4,
+5 and 6 are unchanged from the prior version and are carried verbatim below.
+
+Read build_log/447_code_status.md first for context.
 
 SCOPE: post-run audit of the Step 447 measurement. Audit only.
 No harness edits. No rerun. No push. No remediation of any recorded debt.
@@ -11,6 +21,32 @@ requires a verbatim quote plus location, or is marked
 
 If any task cannot be completed as specified, halt and report.
 Do not adjust the specification to make it completable.
+
+
+RULING ON THE HALT (record verbatim in 448_code_status.md):
+
+Your halt was correct on both tasks. The "four predicates" were authored by
+Chat from a parenthetical gloss in the v3.2 amendment record and were never
+preregistered. Withdrawn.
+
+Governing criterion set: the NINE criteria in §9.1. §8.2 is not a rival set;
+it is the evidence decomposition of §9.1 into a measurement class (5,
+sidecar-computed, -> 431_validation.json) and an artifact/seam class (5,
+repo/manifest/report-computed, -> 431_repository_seam_check.json), per §8.2's
+own words: "Not every §9.1 criterion is a sidecar property. Some are
+repository/manifest/report facts."
+
+ROOT-CAUSE FINDING (supersedes the "inert constants" framing):
+§12 marks `validate_431.py` and the seam-checker as "(+ optional)" Stage-1
+artifacts while listing `431_validation.json` and `431_repository_seam_check.json`
+as unconditional Stage-2 outputs. §1 omits the validators entirely. The
+manifest's eleven token-bound artifacts include neither. The optional
+producers were not built; the mandatory products therefore cannot exist; and
+§8.2 forbids authoring the table in their place. Lines 108-109 are the
+symptom, not the cause.
+
+CONSEQUENCE: §9.1 is UNPRODUCIBLE under package P4. Not merely unevaluated.
+Nothing in this step or any report may be labeled §9.1 for this run.
 
 
 TASK 0 - ARTIFACT IMMUTABILITY
@@ -24,29 +60,26 @@ header as "independent post-run validation, not emitted by the sanctioned
 harness," and is read-only against run outputs.
 
 
-TASK 1 - PREREGISTERED 9.1 PREDICATE AUDIT
+TASK 1-REVISED - §9.1 COMPUTABILITY SURVEY (NOT an evaluation)
 
-The table currently reported as 9.1 is not 9.1. Rename it in all outputs to
-"Terminal certification-state distribution."
+Quote each of the nine §9.1 criteria verbatim. For each, determine whether
+the required data EXISTS in the immutable Step 447 outputs, the repository,
+or the manifest:
+  PRESENT  - all required fields exist; cite artifact + pointer
+  PARTIAL  - some exist; name what is missing
+  ABSENT   - the data was never recorded
 
-Then:
+Also map each §9.1 criterion to its §8.2 evidence-class counterpart, and
+report any §9.1 criterion with no §8.2 counterpart, and any §8.2 criterion
+with no §9.1 counterpart.
 
-1. Quote verbatim, from the preregistration 9.1 text, the definition of each
-   of the four predicates: grounding discipline, citation discipline,
-   same-candidate discipline, disagreement preservation. Quote before
-   evaluating. If the 9.1 text does not define a predicate operationally,
-   say so and stop on that predicate.
+HARD CONSTRAINT: emit NO status, pass, fail, satisfied, or not-established
+judgment on any criterion. This survey establishes only whether a future
+validator COULD compute it. Producing a §9.1 verdict is the prohibited
+authorship.
 
-2. Evaluate each predicate per series against the produced artifacts,
-   applying only the preregistered definition.
-
-3. If the produced artifacts do not contain sufficient information to
-   evaluate a predicate, mark it NOT ESTABLISHED. Do not infer success from
-   terminal states. Do not substitute a proxy criterion.
-
-Constraint: no criterion may be authored or adjusted after seeing results.
-If a definition requires interpretation, halt and report the ambiguity
-rather than resolving it.
+Note explicitly whether §8.2's seam criterion "report pass/fail values equal
+validator output" is satisfiable in principle when no validator output exists.
 
 
 TASK 2 - CAND_04 TERMINAL-STATE DERIVATION
@@ -79,30 +112,16 @@ linkage remains unexercised."
 versus `none`, not from competing substantive assertions about the basis."
 
 
-TASK 3 - SECTION 12 FIELD MAPPING
+TASK 3-REVISED - DEPENDENCY-CHAIN FINDING
 
-1. Quote verbatim lines 108 and 109 of the harness (VALIDATION_PATH,
-   SEAM_CHECK_PATH) plus the search evidence establishing no write site for
-   either. Record the exact search command and its output.
+Quote verbatim: §12 in full; §9.1's header line; §8.2's "COPIED FROM ...
+never authored" sentence; §1's Stage-1 artifact list; lines 108-109 of the
+harness plus the no-write-site search evidence (already done as 3.1, carry
+forward). Show from 431_config_manifest.json that no validator or
+seam-checker is among the eleven token-bound artifacts.
 
-2. Enumerate, quoted verbatim from section 12, every field specified for
-   431_validation.json and 431_repository_seam_check.json.
-
-3. Assign each field to exactly one category:
-   (a) PRESENT ELSEWHERE with equivalent content in the three produced
-       artifacts or the sidecar. Cite location.
-   (b) DETERMINISTICALLY DERIVABLE from immutable recorded fields.
-   (c) ABSENT EVERYWHERE.
-
-GUARD ON CATEGORY (b): the derivation rule for any field placed in (b) must
-be written from section 12's own text and committed to build_log/ BEFORE the
-field is computed. If section 12's text does not determine the derivation
-without a judgment call, the field is (c), not (b). Do not derive under
-discretion. Results are already visible; discretionary derivation is
-post-hoc criteria construction.
-
-Category (c) fields: the corresponding claims are unsupported and must be
-marked not established in the report.
+Record the optional-producer / mandatory-product inconsistency as the root
+cause. Record. Do not remediate, do not propose a corrected package.
 
 
 TASK 4 - COUNT RECONCILIATION
@@ -165,3 +184,10 @@ DELIVERABLES
 build_log/448_code_status.md reporting all six tasks, plus the input/output
 hash record, the section 12 mapping table, any committed derivation rules,
 and the prerequisites contract. Commit. Do not push.
+
+DELIVERABLE ADDITION
+
+State plainly whether the 108-call run is salvageable by a validator-only
+package computing §9.1 over the immutable sidecar with zero model calls, or
+whether required data is absent and a re-run under a corrected package is
+the only path. This follows from the survey; do not decide it in advance.
