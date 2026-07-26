@@ -10,3 +10,9 @@
 /build_log/431_fixture_preflight.json         text eol=lf
 /build_log/431_config_manifest.json           text eol=lf
 /build_log/run_431_selection_measurement.py   text eol=lf
+
+# Step 441-fix3 — sanction verification/attestation artifacts. LF-pinned so the draft
+# sanction message signed by Tzvi is byte-identical to its recorded SHA-256 on any checkout,
+# and the allowed-signers file verifies consistently. Not hashed into the package token.
+/build_log/431_sanction_message_draft.txt     text eol=lf
+/build_log/431_sanction_allowed_signers       text eol=lf
