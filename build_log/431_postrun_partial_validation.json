@@ -1,0 +1,589 @@
+{
+  "_artifact": "431_postrun_partial_validation.json",
+  "_status": "post_run_derived__not_preregistered_validator_output",
+  "_not": "This is NOT 431_validation.json and NOT the preregistered \u00a78.2 validator output. It was produced after the outcomes were visible. Its contents may not be labelled \u00a79.1 for this run.",
+  "_generator": "build_log/450_postrun_validator.py",
+  "_generated_utc": "2026-07-26T19:54:00.473687+00:00",
+  "_inputs": {
+    "sidecar_sha256": "c44573cb56d990afe7818dbdbfc3aa1e9586e51331a86b348b97f0e55967a9e7",
+    "report_sha256": "8f469cec0d5d50fcfbfdaf65b4c53c1034640e58b0cf07092b4fb8d47bfe3603"
+  },
+  "package_commit": "d679eec8525fa672724a012f7d1fac0d0d8e7620",
+  "package_token": "ef1a7af7f77d0999648bc39fa6b367a68d31d09470be699ee25555137cc511ca",
+  "criteria": [
+    {
+      "criterion_id": "9.1#1",
+      "criterion_text_verbatim": "No unverified span or unresolved/empty-grounded cited quote entered selection.",
+      "status": "computed",
+      "artifact_status": "post_run_derived__not_preregistered_validator_output",
+      "evidence_artifact": "build_log/431_selection_measurement_sidecar.json",
+      "evidence_pointer": "series[*].{canonical,degraded}_panels[*].per_role[*].judgment.{_unverified_quote_traces,_invalidated_fields}",
+      "details": {
+        "unresolved_quote_traces_recorded": 1,
+        "fields_invalidated_total": 7,
+        "invalidation_reasons": {
+          "empty_field_support": 7
+        },
+        "invalidated_fields_still_carrying_a_substantive_value": 0,
+        "interpretation_note": "'entered selection' is computed as: an invalidated field still carrying a substantive (non-unclear/not_assessable) value. No other reading is applied."
+      }
+    },
+    {
+      "criterion_id": "9.1#2",
+      "criterion_text_verbatim": "No parameter certified by cross-candidate assembly (validator checks same-id property supply).",
+      "status": "computed",
+      "artifact_status": "post_run_derived__not_preregistered_validator_output",
+      "evidence_artifact": "build_log/431_selection_measurement_sidecar.json",
+      "evidence_pointer": "certification_traces[*].per_candidate[*]",
+      "details": {
+        "satisfied_traces": 14,
+        "satisfied_traces_with_a_single_id_supplying_every_property_LITERAL_8_1": 4,
+        "satisfied_traces_with_a_single_id_under_basis_match_or_not_applicable": 14,
+        "satisfied_traces_with_a_harness_qualified_candidate": 14,
+        "definitional_gap_not_resolved_here": "\u00a78.1's conjunction names basis_match=match. SCHEMA_FIXED_NOT_APPLICABLE exempts the basis field for base_rent and rent_adjustment_pct, so those candidates record basis_match='not_applicable' and CANNOT satisfy the literal text. The literal count and the not_applicable-inclusive count are both reported; which reading \u00a78.1 intends is a preregistration question and is NOT decided by this artifact.",
+        "per_trace": [
+          {
+            "lease": "atreca",
+            "parameter": "tenant_share",
+            "series_index": 1,
+            "candidate_ids_supplying_every_property_literal_8_1": [
+              "cand_01"
+            ],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_01"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_01"
+            ],
+            "n_candidates_in_trace": 1
+          },
+          {
+            "lease": "atreca",
+            "parameter": "tenant_share",
+            "series_index": 2,
+            "candidate_ids_supplying_every_property_literal_8_1": [
+              "cand_01"
+            ],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_01"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_01"
+            ],
+            "n_candidates_in_trace": 1
+          },
+          {
+            "lease": "atreca",
+            "parameter": "tenant_share",
+            "series_index": 4,
+            "candidate_ids_supplying_every_property_literal_8_1": [
+              "cand_01"
+            ],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_01"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_01"
+            ],
+            "n_candidates_in_trace": 1
+          },
+          {
+            "lease": "atreca",
+            "parameter": "tenant_share",
+            "series_index": 5,
+            "candidate_ids_supplying_every_property_literal_8_1": [
+              "cand_01"
+            ],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_01"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_01"
+            ],
+            "n_candidates_in_trace": 1
+          },
+          {
+            "lease": "atreca",
+            "parameter": "base_rent",
+            "series_index": 1,
+            "candidate_ids_supplying_every_property_literal_8_1": [],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_02"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_02"
+            ],
+            "n_candidates_in_trace": 1
+          },
+          {
+            "lease": "atreca",
+            "parameter": "base_rent",
+            "series_index": 2,
+            "candidate_ids_supplying_every_property_literal_8_1": [],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_02"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_02"
+            ],
+            "n_candidates_in_trace": 1
+          },
+          {
+            "lease": "atreca",
+            "parameter": "base_rent",
+            "series_index": 3,
+            "candidate_ids_supplying_every_property_literal_8_1": [],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_02"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_02"
+            ],
+            "n_candidates_in_trace": 1
+          },
+          {
+            "lease": "atreca",
+            "parameter": "base_rent",
+            "series_index": 4,
+            "candidate_ids_supplying_every_property_literal_8_1": [],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_02"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_02"
+            ],
+            "n_candidates_in_trace": 1
+          },
+          {
+            "lease": "atreca",
+            "parameter": "base_rent",
+            "series_index": 5,
+            "candidate_ids_supplying_every_property_literal_8_1": [],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_02"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_02"
+            ],
+            "n_candidates_in_trace": 1
+          },
+          {
+            "lease": "atlas",
+            "parameter": "base_rent",
+            "series_index": 1,
+            "candidate_ids_supplying_every_property_literal_8_1": [],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_06"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_06"
+            ],
+            "n_candidates_in_trace": 2
+          },
+          {
+            "lease": "atlas",
+            "parameter": "base_rent",
+            "series_index": 2,
+            "candidate_ids_supplying_every_property_literal_8_1": [],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_06"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_06"
+            ],
+            "n_candidates_in_trace": 2
+          },
+          {
+            "lease": "atlas",
+            "parameter": "base_rent",
+            "series_index": 3,
+            "candidate_ids_supplying_every_property_literal_8_1": [],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_06"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_06"
+            ],
+            "n_candidates_in_trace": 2
+          },
+          {
+            "lease": "atlas",
+            "parameter": "base_rent",
+            "series_index": 4,
+            "candidate_ids_supplying_every_property_literal_8_1": [],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_06"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_06"
+            ],
+            "n_candidates_in_trace": 2
+          },
+          {
+            "lease": "atlas",
+            "parameter": "base_rent",
+            "series_index": 5,
+            "candidate_ids_supplying_every_property_literal_8_1": [],
+            "candidate_ids_supplying_every_property_basis_match_or_not_applicable": [
+              "cand_06"
+            ],
+            "candidate_ids_marked_qualified_by_harness": [
+              "cand_06"
+            ],
+            "n_candidates_in_trace": 2
+          }
+        ],
+        "required_property_conjunction_per_8.1": "relevance_ok AND basis_match=match AND text_role_ok AND value_ok AND support_ok AND applicability_match=applicable, all on one candidate_id"
+      }
+    },
+    {
+      "criterion_id": "9.1#4",
+      "criterion_text_verbatim": "Per-field disagreement preserved; non-unanimous certification blocked (no implicit majority).",
+      "status": "computed",
+      "artifact_status": "post_run_derived__not_preregistered_validator_output",
+      "evidence_artifact": "build_log/431_selection_measurement_sidecar.json",
+      "evidence_pointer": "certification_traces[*].per_candidate[*].agreement_by_field",
+      "details": {
+        "per_candidate_records_missing_agreement_by_field": 0,
+        "agreement_state_histogram": {
+          "unanimous": 193,
+          "split": 13,
+          "majority_with_dissent": 4
+        },
+        "per_candidate_records_in_satisfied_traces_with_a_non_unanimous_field": 5,
+        "QUALIFYING_candidates_in_satisfied_traces_with_a_non_unanimous_field": 0,
+        "qualifying_candidate_non_unanimous_detail": [],
+        "scope_note": "Two scopings are reported. The broad count includes NON-certifying candidates in the same trace (e.g. atlas/base_rent cand_05, the losing stub, carries a non-unanimous candidate_support_state while the certifying cand_06 is unanimous). The criterion speaks of non-unanimous CERTIFICATION, so the qualifying-candidate count is reported separately rather than collapsing the two."
+      }
+    },
+    {
+      "criterion_id": "9.1#5",
+      "criterion_text_verbatim": "No terminal `unsatisfied_*` emitted (completeness not_established).",
+      "status": "computed",
+      "artifact_status": "post_run_derived__not_preregistered_validator_output",
+      "evidence_artifact": "build_log/431_selection_measurement_sidecar.json",
+      "evidence_pointer": "certification_traces[*].{final_certification_state,completeness_provenance}",
+      "details": {
+        "terminal_state_histogram": {
+          "satisfied": 14,
+          "review_needed_disagreement": 11,
+          "review_needed_no_qualifying_candidate": 5
+        },
+        "states_matching_unsatisfied_prefix": [],
+        "traces_whose_completeness_status_is_not_not_established": 0,
+        "total_traces": 30
+      }
+    },
+    {
+      "criterion_id": "9.1#7",
+      "criterion_text_verbatim": "Every result carries the completeness qualifier per \u00a79.0.",
+      "status": "computed",
+      "artifact_status": "post_run_derived__not_preregistered_validator_output",
+      "evidence_artifact": "build_log/431_selection_measurement.md",
+      "evidence_pointer": "per-result lines",
+      "details": {
+        "result_lines_detected": 30,
+        "result_lines_carrying_completeness_qualifier": 30,
+        "result_lines_missing_qualifier": []
+      }
+    },
+    {
+      "criterion_id": "9.1#8",
+      "criterion_text_verbatim": "Complete audit artifact reconstructs each decision (candidate vs context citations distinct; per-candidate comparisons visible; per-panelist reasons retained).",
+      "status": "computed",
+      "artifact_status": "post_run_derived__not_preregistered_validator_output",
+      "evidence_artifact": "build_log/431_selection_measurement_sidecar.json",
+      "evidence_pointer": "judgment.{candidate_citations,context_citations,reason}; certification_traces[*].per_candidate[*]",
+      "details": {
+        "judgments_total": 108,
+        "judgments_with_distinct_candidate_and_context_citation_keys": 108,
+        "judgments_missing_a_non_empty_reason": 0,
+        "per_candidate_records_carrying_all_comparison_fields": 35
+      }
+    },
+    {
+      "criterion_id": "9.1#9",
+      "criterion_text_verbatim": "No live pipeline file consumes the harness output.",
+      "status": "computed",
+      "artifact_status": "post_run_derived__not_preregistered_validator_output",
+      "evidence_artifact": "repository",
+      "evidence_pointer": "working tree outside build_log/",
+      "details": {
+        "search": "grep -rln '431_selection_measurement_sidecar|431_selection_measurement.md|431_runtime_seam_capture' --include=*.py --include=*.json --include=*.ts --include=*.js . , excluding build_log/",
+        "non_build_log_files_referencing_harness_outputs": [],
+        "note": "Search executed in Step 448 and re-executed for this artifact; empty result set."
+      }
+    },
+    {
+      "criterion_id": "9.1#6",
+      "criterion_text_verbatim": "Certified parameters (if any) carry materialized `semantic_support_spans`, not value-only.",
+      "status": "derived_from_established_facts",
+      "artifact_status": "post_run_derived__not_preregistered_validator_output",
+      "evidence_artifact": "derived",
+      "evidence_pointer": "Step 449 Task A + certification_traces",
+      "details": {
+        "fact_1_required_field_never_written": {
+          "statement": "No identifier with the prefix 'semantic_support_span' is constructed, populated or emitted anywhere in the sanctioned package.",
+          "prefix_occurrences_in_sidecar": 0,
+          "prefix_occurrences_in_harness_source": 0,
+          "prefix_occurrences_in_output_schema": 0,
+          "prefix_occurrences_in_selector_prompt": 0,
+          "evidence": "Step 449 Task A.1/A.2"
+        },
+        "fact_2_antecedent_met": {
+          "statement": "The criterion's 'if any' antecedent is satisfied: certifications exist.",
+          "satisfied_traces": 14
+        },
+        "derivation": "The criterion predicates a property of certified parameters on a field the package never materialized, while certifications exist. The property is therefore not exhibited by the run outputs. This is a derivation from the two facts above, not a measurement of the criterion."
+      }
+    },
+    {
+      "criterion_id": "9.1#3",
+      "criterion_text_verbatim": "No property borrowed from a semantic-support span to cure a deficient primary.",
+      "status": "not_established_at_package_layer",
+      "artifact_status": "post_run_derived__not_preregistered_validator_output",
+      "evidence_artifact": "build_log/431_selection_measurement_sidecar.json",
+      "evidence_pointer": "certification_traces[*].per_candidate[*]; Step 449 Task A.3",
+      "details": {
+        "package_layer": "The quantification domain is empty: no semantic-support span was ever materialized by this package (Step 449 Task A.3, option (c)). The prohibition therefore has no domain over which to have been enforced, and no package-layer result is emitted.",
+        "enforcement_half_reported_separately": {
+          "trace_level_result_id": "value_layer_anti_borrowing",
+          "note": "Distinct from the package layer. Reports whether the value supplied for each certification came from the same candidate that supplied every other required property (\u00a78.1 same-id conjunction, \u00a74 value_ok on the primary).",
+          "satisfied_traces_examined": 14,
+          "every_satisfied_trace_has_a_single_id_supplying_all_properties_LITERAL_8_1": false,
+          "every_satisfied_trace_has_a_single_id_under_basis_match_or_not_applicable": true,
+          "per_certified_candidate_value_layer": [
+            {
+              "lease": "atreca",
+              "parameter": "tenant_share",
+              "series_index": 1,
+              "candidate_id": "cand_01",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "match",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atreca",
+              "parameter": "tenant_share",
+              "series_index": 2,
+              "candidate_id": "cand_01",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "match",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atreca",
+              "parameter": "tenant_share",
+              "series_index": 4,
+              "candidate_id": "cand_01",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "match",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atreca",
+              "parameter": "tenant_share",
+              "series_index": 5,
+              "candidate_id": "cand_01",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "match",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atreca",
+              "parameter": "base_rent",
+              "series_index": 1,
+              "candidate_id": "cand_02",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atreca",
+              "parameter": "base_rent",
+              "series_index": 2,
+              "candidate_id": "cand_02",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atreca",
+              "parameter": "base_rent",
+              "series_index": 3,
+              "candidate_id": "cand_02",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atreca",
+              "parameter": "base_rent",
+              "series_index": 4,
+              "candidate_id": "cand_02",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atreca",
+              "parameter": "base_rent",
+              "series_index": 5,
+              "candidate_id": "cand_02",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atlas",
+              "parameter": "base_rent",
+              "series_index": 1,
+              "candidate_id": "cand_05",
+              "value_ok": false,
+              "support_ok": false,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "not_qualified"
+            },
+            {
+              "lease": "atlas",
+              "parameter": "base_rent",
+              "series_index": 1,
+              "candidate_id": "cand_06",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atlas",
+              "parameter": "base_rent",
+              "series_index": 2,
+              "candidate_id": "cand_05",
+              "value_ok": false,
+              "support_ok": false,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "not_qualified"
+            },
+            {
+              "lease": "atlas",
+              "parameter": "base_rent",
+              "series_index": 2,
+              "candidate_id": "cand_06",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atlas",
+              "parameter": "base_rent",
+              "series_index": 3,
+              "candidate_id": "cand_05",
+              "value_ok": false,
+              "support_ok": false,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "not_qualified"
+            },
+            {
+              "lease": "atlas",
+              "parameter": "base_rent",
+              "series_index": 3,
+              "candidate_id": "cand_06",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atlas",
+              "parameter": "base_rent",
+              "series_index": 4,
+              "candidate_id": "cand_05",
+              "value_ok": false,
+              "support_ok": false,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "not_qualified"
+            },
+            {
+              "lease": "atlas",
+              "parameter": "base_rent",
+              "series_index": 4,
+              "candidate_id": "cand_06",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            },
+            {
+              "lease": "atlas",
+              "parameter": "base_rent",
+              "series_index": 5,
+              "candidate_id": "cand_05",
+              "value_ok": false,
+              "support_ok": false,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "not_qualified"
+            },
+            {
+              "lease": "atlas",
+              "parameter": "base_rent",
+              "series_index": 5,
+              "candidate_id": "cand_06",
+              "value_ok": true,
+              "support_ok": true,
+              "basis_match": "not_applicable",
+              "applicability_match": "applicable",
+              "candidate_qualification": "qualified"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "conjunction": {
+    "_emitted_by": "validator",
+    "criteria_computed": 7,
+    "criteria_derived": 1,
+    "criteria_not_established_at_package_layer": 1,
+    "total_criteria_in_9_1": 9,
+    "computed_criterion_ids": [
+      "9.1#1",
+      "9.1#2",
+      "9.1#4",
+      "9.1#5",
+      "9.1#7",
+      "9.1#8",
+      "9.1#9"
+    ],
+    "conjunction_over_computed_criteria_only": true,
+    "conjunction_result": null,
+    "conjunction_result_note": "No conjunction verdict is emitted. Two of the nine criteria (#3, #6) yield no measured result, so the nine-way conjunction \u00a79.1 defines is not computable from these outputs. A conjunction over the seven computed criteria alone would not be \u00a79.1 and is deliberately left null rather than reported under a name it does not have."
+  }
+}

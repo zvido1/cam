@@ -103,6 +103,11 @@ If you characterize rather than quote, mark it: **"[UNVERIFIED — characterized
 
 From Step 424 onward: if you are given a task and no `build_log/NNN_chat_instruction.md` exists for it, **write the instruction to disk first** — verbatim as received, before executing — then proceed. Do not paraphrase it, do not summarize it, do not improve it. It is the brief you will be audited against.
 
+### 8. Producer-consumer census
+**Added 2026-07-26 after Step 447/448.** Before any preregistration package is sanctioned, every specified product must be traced: producing function → write site → validator consumer → report consumer. A product with no producer, or a producer marked optional whose product is mandatory, halts the sanction.
+
+*Why this exists:* the Step-431 preregistration listed `431_validation.json` and `431_repository_seam_check.json` as unconditional Stage-2 outputs while marking their producers "(+ optional `validate_431.py` and seam-checker)" in §12, and omitting them from §1's Stage-1 artifact list entirely. Neither producer was built, so neither product could exist. §8.2 forbids authoring the §9.1 table in their place, so §9.1 became **unproducible** — discovered only *after* 108 live provider calls had been spent. The package passed every hash, signature, scope and cleanliness gate; none of those gates asks whether a specified output has a producer.
+
 ---
 
 ## GIT WORKFLOW — CRITICAL
