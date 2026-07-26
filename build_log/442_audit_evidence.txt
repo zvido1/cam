@@ -7,13 +7,14 @@ Superseded package = c9f6dd7f6db7899e729b5f6f6407398a64f41d65 (token 0b98c6fa...
 ## 1. Repo state
 
 $ git rev-parse HEAD
-5684a72f2461a1a51dea1bf6e5c0798963b54437
+406f5418ce9f3d2fd760b8d89de9d09bfd500d26
 
 $ git status --short
  M build_log/398_code_status.md
  M build_log/399_code_status.md
  M build_log/406_code_status.md
  M build_log/407_code_status.md
+ M build_log/442_audit_evidence.txt
 ?? "05 Lease Analyzer/_389_results/"
 ?? "05 Lease Analyzer/_391_results/"
 ?? "05 Lease Analyzer/_417_results/"
@@ -22,9 +23,9 @@ $ git status --short
 ?? "05 Lease Analyzer/_422_results/"
 
 $ git log --oneline -3
+406f541 442: audit evidence file (command-then-literal-output, no narration)
 5684a72 442 Q-prep: exact unsigned sanction message naming P' + record (provenance only)
 3fb5f39 442: committed trust anchor at the package commit + explicit sanction-key enforcement
-32d456a 441fix3: sanction-key verification setup + draft sanction message; premature-tag withdrawal (none present)
 
 ## 2. Manifest at P'
 
@@ -986,15 +987,6 @@ run_431_selection_measurement.py | n/a (not JSON) | True | False | differs | Tru
 
 ## 9. No tag / pre-call halt
 
-$ git tag -l
-(command produced no output)
-
-$ git show-ref --tags; echo "(exit=$?)"
-(exit=1)
-
-$ git cat-file -t stage2-sanction-431-8389e965
-fatal: Not a valid object name stage2-sanction-431-8389e965
-
 $ cat C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/gate_halt.py
 """Execute the COMMITTED runtime gate at HEAD and print exactly what it does.
 
@@ -1015,7 +1007,7 @@ head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=Tr
 print("HEAD at execution:", head)
 print()
 
-print("STEP 1 â€” load_committed_trust_anchor() [enforcement (a)-(d), reads HEAD blobs]")
+print("STEP 1 -- load_committed_trust_anchor() [enforcement (a)-(d), reads HEAD blobs]")
 anchor = h.load_committed_trust_anchor()
 print("  principal                :", anchor["principal"])
 print("  namespaces               :", anchor["namespaces"])
@@ -1026,7 +1018,7 @@ print("  policy allowed_namespace :", anchor["policy"]["allowed_namespace"])
 print("  anchor byte length       :", len(anchor["anchor_bytes"]))
 print()
 
-print("STEP 2 â€” verify_repository_execution_identity(manifest) [full gate]")
+print("STEP 2 -- verify_repository_execution_identity(manifest) [full gate]")
 try:
     result = h.verify_repository_execution_identity(manifest)
     print("  RESULT: PASSED")
@@ -1035,10 +1027,42 @@ except h.MeasurementIntegrityHalt as e:
     print("  RESULT: MeasurementIntegrityHalt raised BEFORE any provider call")
     print(str(e))
 
-$ python C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/gate_halt.py
-HEAD at execution: 5684a72f2461a1a51dea1bf6e5c0798963b54437
+### 9a. PRIMARY: gate executed from a DETACHED checkout of P' (the state a run occurs in)
 
-STEP 1 — load_committed_trust_anchor() [enforcement (a)-(d), reads HEAD blobs]
+$ git rev-parse HEAD
+3fb5f39a9932c1249241f5e987c2e206c074ded1
+
+$ git rev-parse --abbrev-ref HEAD
+HEAD
+
+$ git status --short
+ M build_log/398_code_status.md
+ M build_log/399_code_status.md
+ M build_log/406_code_status.md
+ M build_log/407_code_status.md
+?? "05 Lease Analyzer/_389_results/"
+?? "05 Lease Analyzer/_391_results/"
+?? "05 Lease Analyzer/_417_results/"
+?? "05 Lease Analyzer/_418c_results/"
+?? "05 Lease Analyzer/_419_results/"
+?? "05 Lease Analyzer/_422_results/"
+
+$ git symbolic-ref -q HEAD; echo "(exit=$? ; non-zero = detached HEAD)"
+(exit=1 ; non-zero = detached HEAD)
+
+$ git tag -l
+(command produced no output)
+
+$ git show-ref --tags; echo "(exit=$?)"
+(exit=1)
+
+$ git cat-file -t stage2-sanction-431-8389e965
+fatal: Not a valid object name stage2-sanction-431-8389e965
+
+$ python C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/gate_halt.py
+HEAD at execution: 3fb5f39a9932c1249241f5e987c2e206c074ded1
+
+STEP 1 -- load_committed_trust_anchor() [enforcement (a)-(d), reads HEAD blobs]
   principal                : zvido@yahoo.com
   namespaces               : git
   fingerprint (recomputed) : SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs
@@ -1047,9 +1071,36 @@ STEP 1 — load_committed_trust_anchor() [enforcement (a)-(d), reads HEAD blobs]
   policy allowed_namespace : git
   anchor byte length       : 131
 
-STEP 2 — verify_repository_execution_identity(manifest) [full gate]
+STEP 2 -- verify_repository_execution_identity(manifest) [full gate]
   RESULT: MeasurementIntegrityHalt raised BEFORE any provider call
-HARD HALT (Construction A / Option 3 + Step 442): the run-commit is NOT bound to this package by a valid signed sanction tag. A run is authorized ONLY by an annotated tag signed by SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs (zvido@yahoo.com), pointing at HEAD (5684a72f2461), embedding this manifest token (8389e9651438) and package_commit == HEAD. Valid tags found: 0; tags pointing at HEAD: [none].
+HARD HALT (Construction A / Option 3 + Step 442): the run-commit is NOT bound to this package by a valid signed sanction tag. A run is authorized ONLY by an annotated tag signed by SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs (zvido@yahoo.com), pointing at HEAD (3fb5f39a9932), embedding this manifest token (8389e9651438) and package_commit == HEAD. Valid tags found: 0; tags pointing at HEAD: [none].
+
+### 9b. SECONDARY data point: same gate executed on the working branch (NOT detached).
+###     HEAD is named in the output below; the nine package artifacts are byte-identical
+###     at P' and at the branch HEAD, so only the tag check differs in origin.
+
+$ git rev-parse HEAD
+406f5418ce9f3d2fd760b8d89de9d09bfd500d26
+
+$ git symbolic-ref -q HEAD; echo "(exit=$? ; zero = on a branch, not detached)"
+refs/heads/main
+(exit=0 ; zero = on a branch, not detached)
+
+$ python C:/Users/Owner/AppData/Local/Temp/claude/C--Users-Owner-OneDrive-CAM/443298e2-ae39-4240-993e-750d4a4d5257/scratchpad/gate_halt.py
+HEAD at execution: 406f5418ce9f3d2fd760b8d89de9d09bfd500d26
+
+STEP 1 -- load_committed_trust_anchor() [enforcement (a)-(d), reads HEAD blobs]
+  principal                : zvido@yahoo.com
+  namespaces               : git
+  fingerprint (recomputed) : SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs
+  policy authorized_fp     : SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs
+  policy principal         : zvido@yahoo.com
+  policy allowed_namespace : git
+  anchor byte length       : 131
+
+STEP 2 -- verify_repository_execution_identity(manifest) [full gate]
+  RESULT: MeasurementIntegrityHalt raised BEFORE any provider call
+HARD HALT (Construction A / Option 3 + Step 442): the run-commit is NOT bound to this package by a valid signed sanction tag. A run is authorized ONLY by an annotated tag signed by SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs (zvido@yahoo.com), pointing at HEAD (406f5418ce9f), embedding this manifest token (8389e9651438) and package_commit == HEAD. Valid tags found: 0; tags pointing at HEAD: [none].
 
 ## 10. Corrected provenance text as committed
 
