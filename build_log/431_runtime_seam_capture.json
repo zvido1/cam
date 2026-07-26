@@ -1,0 +1,17 @@
+{
+  "before_first_model_call": {
+    "phase": "before_first_model_call",
+    "timestamp_utc": "2026-07-26T17:16:45.416146+00:00",
+    "git_status_porcelain_cam": "",
+    "cam_clean": true,
+    "commit_hash": "d679eec8525fa672724a012f7d1fac0d0d8e7620"
+  },
+  "after_last_model_call": {
+    "phase": "after_last_model_call",
+    "timestamp_utc": "2026-07-26T17:37:50.617238+00:00",
+    "git_status_porcelain_cam": "",
+    "cam_clean": true,
+    "commit_hash": "d679eec8525fa672724a012f7d1fac0d0d8e7620"
+  },
+  "fatal_occurred": false
+}
