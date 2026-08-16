@@ -1,0 +1,606 @@
+{
+  "_artifact": "452_deterministic_rules.json",
+  "_authority": "Frozen at Stage 1A per 452_production_package_instruction_v8.md §5. Ratified instruction SHA-256 002b3afa9b33a76a0f913007342ef3654c8915acdb9bfb7d9c4b125cf96910ce.",
+  "_status": "STAGE-1A FROZEN. No Stage-1B or Stage-2 step may edit this file (§2, §7.0 step 4).",
+  "_identity_layer_note": "Stage-1 artifacts are inputs to the token derivation and therefore carry NO package token (§1 token-header rule).",
+  "rules_version": "452_rules_v1",
+  "R1_identity_formulas": {
+    "_source": "§4.0.1",
+    "algorithm": "SHA-256 over the UTF-8 encoding of a canonical JSON array of the listed components; hex; truncated to 16; prefixed.",
+    "canonical_json": "json.dumps(components, ensure_ascii=False, separators=(\",\", \":\"))",
+    "ids": {
+      "judgment_id": {
+        "prefix": "J-",
+        "components": [
+          "lease_id",
+          "parameter",
+          "candidate_id",
+          "series_index",
+          "role"
+        ]
+      },
+      "citation_occ_id": {
+        "prefix": "CO-",
+        "components": [
+          "judgment_id",
+          "citation_class",
+          "citation_id"
+        ]
+      },
+      "envelope_id": {
+        "prefix": "EV-",
+        "components": [
+          "lease_id",
+          "candidate_id",
+          "context_start_char",
+          "context_end_char"
+        ]
+      },
+      "support_span_id": {
+        "prefix": "SS-",
+        "components": [
+          "source_document_hash",
+          "start_char",
+          "end_char"
+        ]
+      },
+      "failed_trace_id": {
+        "prefix": "FT-",
+        "components": [
+          "lease_id",
+          "parameter",
+          "candidate_id",
+          "series_index",
+          "role",
+          "field",
+          "citation_class",
+          "citation_id",
+          "sha256_of_quote"
+        ]
+      },
+      "missing_trace_id": {
+        "prefix": "MT-",
+        "components": [
+          "lease_id",
+          "parameter",
+          "candidate_id",
+          "series_index",
+          "role",
+          "field"
+        ]
+      }
+    }
+  },
+  "R2_partA_partB_precedence": {
+    "_source": "§5.0.1",
+    "rule": "For semantic-field identity and all basis comparisons, Part B v3.3's relation-bearing amendment supersedes Part A v5's charge_basis_components token. Part A's field-grounding, merge, disagreement and certification semantics otherwise remain controlling.",
+    "field_name_in_force": "value_applies_to_charge_basis_components",
+    "field_name_superseded": "charge_basis_components"
+  },
+  "R3_parameter_aware_basis_ok": {
+    "_source": "§4.4, §5.0.1",
+    "_resolves": "Part A §6.3's conjunction requires basis_match=match while Part A §4.1 declares the basis dimension not_applicable for base_rent and rent_adjustment_pct. Unsatisfiable as literally written; resolved in draft v4.",
+    "branch_basis_bearing": "basis_ok = (basis_match == \"match\") where the profile declares a basis-bearing parameter",
+    "branch_not_applicable": "basis_ok = (basis field == \"not_applicable\" AND the profile declares it so) for base_rent and rent_adjustment_pct",
+    "both_branches_must_be_exercised_by_tests": true
+  },
+  "R4_replay_integrity_supersedes_cand06_fallback": {
+    "_source": "§5.0.2",
+    "rule": "For L3 replay integrity, failure to reverify any candidate that contributed to the frozen L1 record halts the entire production package. This supersedes Part B's prospective cand_06 exclusion fallback."
+  },
+  "R5_two_window_resolution": {
+    "_source": "§4.3.1",
+    "resolve_span_prohibited": true,
+    "_why": "Document-wide search returns AMBIGUOUS whenever a quote occurs more than once anywhere in the lease, including when unique in the window the panelist saw.",
+    "candidate_citation_window": "[candidate_start_char, candidate_end_char)",
+    "context_citation_window": "[context_start_char, context_end_char)",
+    "matcher": "cam.adapters.lease_review.lease_evidence_spans._find_normalized_matches, imported never reimplemented",
+    "procedure": "Match against the FULL canonical source; filter matches to the window; apply 0/1/2+ classification; re-check is_valid_invariant before VERIFIED; fail closed.",
+    "prohibited": [
+      "building a CanonicalSource over a window slice",
+      "reimplementing matching"
+    ]
+  },
+  "R6_resolution_classification": {
+    "_source": "§4.4",
+    "map": {
+      "0_matches_in_window": {
+        "status": "UNVERIFIED",
+        "effect": "invalidated",
+        "trace": "failed_support_trace"
+      },
+      "1_match_in_window": {
+        "status": "VERIFIED",
+        "effect": "EvidenceSpan constructed",
+        "trace": null
+      },
+      "2_or_more_matches_in_window": {
+        "status": "AMBIGUOUS",
+        "effect": "invalidated",
+        "trace": "failed_support_trace"
+      },
+      "empty_field_support": {
+        "status": "EMPTY",
+        "effect": "invalidated",
+        "trace": "missing_support_trace"
+      }
+    },
+    "ambiguity_authority": "452_ambiguity_ruling.md — an extension of Part A §4.5 to the ambiguous case, decided 2026-07-26. Not derivable from the ratified Part A text.",
+    "schema_fixed_not_applicable_exempt_from_missing_support": true
+  },
+  "R7_grounding_enforcement": {
+    "_source": "§4.4 rules 1-5",
+    "enforced_field_value": "unclear",
+    "applies_to_fields": [
+      "parameter_family_relevance",
+      "candidate_support_state",
+      "value_applies_to_charge_basis_components",
+      "charge_scope",
+      "text_role",
+      "value_completeness"
+    ],
+    "rule_1": "`unclear` is the visible enforced value, retained for audit.",
+    "rule_2": "The invalidated vote is omitted from substantive aggregation — not counted at all.",
+    "rule_3": "A field with any role invalidated cannot be `unanimous`. Two survivors are not '2/2 unanimous'.",
+    "rule_4": "agreement_by_field becomes `not_assessable`.",
+    "rule_5": "Under the frozen unanimous-required threshold, `not_assessable` cannot support `satisfied`.",
+    "confidence_untouched": "Confidence is NOT reset or capped — invalidation, not a confidence haircut.",
+    "not_assessable_is_not_a_field_value": "Per Part A §5.2 not_assessable belongs to agreement_by_field, never to a field."
+  },
+  "R8_pass_b_recomputation_chain": {
+    "_source": "§4.4.6",
+    "_nothing_copied": true,
+    "steps": [
+      {
+        "n": 1,
+        "step": "effective per-evaluator fields"
+      },
+      {
+        "n": 2,
+        "step": "grounded relevance and cited-union retention",
+        "authority": "Part A §5.1",
+        "not_optional": true,
+        "rule": "A candidate enters the parameter's retained_evidence if >=1 panelist marks parameter_family_relevance: relevant with a grounded, source-resolving reason.",
+        "_why": "Retention and certification have different consumers by design, so an invalidated relevance judgment can change the retained-evidence ledger as well as the terminal label."
+      },
+      {
+        "n": 3,
+        "step": "per-candidate semantic merge",
+        "authority": "Part A §5.2"
+      },
+      {
+        "n": 4,
+        "step": "agreement_by_field"
+      },
+      {
+        "n": 5,
+        "step": "parameter_candidate_comparison",
+        "authority": "Part A §6.1"
+      },
+      {
+        "n": 6,
+        "step": "applicability_match",
+        "authority": "Part A §6.2"
+      },
+      {
+        "n": 7,
+        "step": "certification_trace",
+        "authority": "Part B §8.1"
+      },
+      {
+        "n": 8,
+        "step": "terminal certification state",
+        "authority": "Part A §6.3"
+      }
+    ]
+  },
+  "R9_contested_event_reading": {
+    "_source": "Part A §5.1, realized in §5.2 — RULING (Chat, 2026-08-14), not transcription",
+    "_governs": "reading, not computation. No 452 product keys on contested-ness.",
+    "definition": "A contested inclusion is a candidate in retained_evidence whose parameter_family_relevance agreement is majority_with_dissent or split, with dissenting reasons preserved in per_panelist[].",
+    "constraint_on_reading": "§5.1's named cases (1/3, 2/3 relevant) are substantive disagreements and resolve to `split`. `majority_with_dissent` is NOT a contested-inclusion signature; it requires the substantive votes to agree with the dissent being an abstention.",
+    "correction_of_record": "Grounding invalidation does NOT convert split into majority_with_dissent. Under R7 rule 2 the invalidated vote is omitted entirely and under rule 4 the token is not_assessable. P4 never applied grounding invalidation, so the conversion has never run in either pass."
+  },
+  "R10_logical_exercise_status_split": {
+    "_source": "§4.2.2 — GENERAL, not #6-specific",
+    "logical_status": [
+      "pass",
+      "fail",
+      "not_established"
+    ],
+    "exercise_status": [
+      "exercised",
+      "vacuous"
+    ],
+    "logical_consumed_by": "the §9.1 conjunction",
+    "exercise_consumed_by": "RTP and patent claims — never the conjunction",
+    "boundary_rule": "`vacuous` is available only when the criterion's own antecedent permits an empty domain. Failure to produce a required subject is not converted into a vacuous pass.",
+    "general_applicability": "Applies to EVERY criterion whose subject can be empty, not to #6 alone. §7.3 must identify all of them; #3 and #6 are named instances, not asserted to be the complete list.",
+    "frozen_treatment": [
+      {
+        "criterion": "#6",
+        "pass": "A",
+        "situation": "Fourteen certifications, required packages absent",
+        "logical_status": "fail",
+        "exercise_status": "exercised"
+      },
+      {
+        "criterion": "#6",
+        "pass": "B",
+        "situation": "Zero post-enforcement certifications",
+        "logical_status": "pass",
+        "exercise_status": "vacuous"
+      },
+      {
+        "criterion": "#6",
+        "pass": "B",
+        "situation": "Certifications exist, every package complete",
+        "logical_status": "pass",
+        "exercise_status": "exercised"
+      },
+      {
+        "criterion": "#6",
+        "pass": "B",
+        "situation": "A certification exists without a complete package",
+        "logical_status": "fail",
+        "exercise_status": "exercised"
+      },
+      {
+        "criterion": "#3",
+        "pass": "A_package_layer",
+        "situation": "P4 never materialized a package subject",
+        "logical_status": "not_established",
+        "exercise_status": "vacuous"
+      },
+      {
+        "criterion": "#3",
+        "pass": "B",
+        "situation": "Complete packages exist, none carries support spans",
+        "logical_status": "pass",
+        "exercise_status": "vacuous"
+      },
+      {
+        "criterion": "#3",
+        "pass": "B",
+        "situation": "One or more support-bearing complete packages exist",
+        "logical_status": "pass_or_fail",
+        "exercise_status": "exercised"
+      },
+      {
+        "criterion": "#3",
+        "pass": "B",
+        "situation": "A package needed for assessment is blocked or absent",
+        "logical_status": "not_established",
+        "exercise_status": "vacuous"
+      },
+      {
+        "criterion": "#1",
+        "criterion_text": "No unverified span or unresolved/empty-grounded cited quote entered selection.",
+        "pass": "A_or_B",
+        "situation": "Cited quotes exist and every one resolves; the guard never has to exclude anything",
+        "logical_status": "pass",
+        "exercise_status": "vacuous",
+        "vacuity_basis": "contingent"
+      },
+      {
+        "criterion": "#1",
+        "criterion_text": "No unverified span or unresolved/empty-grounded cited quote entered selection.",
+        "pass": "A",
+        "situation": "A cited quote fails to resolve and is kept out of selection",
+        "logical_status": "pass",
+        "exercise_status": "exercised",
+        "vacuity_basis": "contingent",
+        "observed": "EXERCISED IN PASS A. Step 450 recorded a non-resolving context citation: cand_03, panel 4, role C, citation `xc1`. The domain is non-empty, so #1 is not vacuous for this run."
+      },
+      {
+        "criterion": "#1",
+        "criterion_text": "No unverified span or unresolved/empty-grounded cited quote entered selection.",
+        "pass": "A_or_B",
+        "situation": "An unresolved or empty-grounded quote reached selection",
+        "logical_status": "fail",
+        "exercise_status": "exercised",
+        "vacuity_basis": "contingent"
+      },
+      {
+        "criterion": "#2",
+        "criterion_text": "No parameter certified by cross-candidate assembly (validator checks same-id property supply).",
+        "pass": "B",
+        "situation": "Zero certifications exist, so there is no assembly to check",
+        "logical_status": "pass",
+        "exercise_status": "vacuous",
+        "vacuity_basis": "contingent",
+        "note": "Reachable: the unseating clause anticipates a zero Pass-B count."
+      },
+      {
+        "criterion": "#2",
+        "criterion_text": "No parameter certified by cross-candidate assembly (validator checks same-id property supply).",
+        "pass": "A",
+        "situation": "Certifications exist and every certified property is supplied by its own candidate",
+        "logical_status": "pass",
+        "exercise_status": "exercised",
+        "vacuity_basis": "contingent",
+        "observed": "EXERCISED IN PASS A. Fourteen certifications give the same-id check a non-empty domain."
+      },
+      {
+        "criterion": "#2",
+        "criterion_text": "No parameter certified by cross-candidate assembly (validator checks same-id property supply).",
+        "pass": "A_or_B",
+        "situation": "A certified parameter draws a property from a different candidate's record",
+        "logical_status": "fail",
+        "exercise_status": "exercised",
+        "vacuity_basis": "contingent"
+      },
+      {
+        "criterion": "#5",
+        "criterion_text": "No terminal `unsatisfied_*` emitted (completeness not_established).",
+        "pass": "A_and_B",
+        "situation": "Completeness is `not_established` throughout, so no terminal `unsatisfied_*` can be emitted by any conforming run",
+        "logical_status": "pass",
+        "exercise_status": "vacuous",
+        "vacuity_basis": "by_construction",
+        "FINDING": "PERMANENTLY UNEXERCISABLE. Part A §6.4 locks Part B to `status: not_established`, so the guard this criterion describes never has to fire — not in this run, not in Pass B, not in any run of this package. `logical_status` is `pass` in every conforming execution and `exercise_status` is `vacuous` in every conforming execution. There is no situation row in which #5 is exercised, because none is reachable.",
+        "claim_consequence": "Part A §10's scope fence lists 'completeness-gated terminal negatives (§6.3, all four)' as IN SCOPE. If #5 can never be exercised, that item is NOT demonstrated by Step 431, Step 447 or Step 452. It is the THIRD Part A in-scope item this instrument cannot reach, joining #3 and #6. It must appear in §11's 'established only if exercised' list via the exercise fields, and in the patent supplement's boundary statement.",
+        "boundary_rule_check": "This is NOT a laundered failure. §4.2.2's boundary rule bars `vacuous` where the package FAILED to produce a required subject. Here the criterion's own antecedent — parenthetically, `(completeness not_established)` — is what empties the domain, so `vacuous` is the correct and permitted value.",
+        "l1_confirmation": {
+          "_established_at": "Stage 1B, 2026-08-15, by direct read of the frozen L1 sidecar",
+          "artifact": "build_log/431_selection_measurement_sidecar.json",
+          "certification_traces_examined": 30,
+          "distinct_completeness_provenance_status_values": [
+            "not_established"
+          ],
+          "traces_with_status_established": 0,
+          "finding": "Every one of the 30 certification traces carries completeness_provenance.status == 'not_established'. NOT ONE carries 'established'.",
+          "consequence": "Part A §6.4's locked rule — \"only `status: established` under a declared `method` permits any `unsatisfied_*`\" — was therefore never satisfiable in L1. The by_construction vacuity of criterion #5 is no longer an inference from the specification; it is CONFIRMED against the run's own bytes."
+        }
+      }
+    ],
+    "_vacuity_basis": "Added by the §7.3 census ruling (2026-08-14). Records WHY a criterion's domain can be empty. `contingent` = empty for this run's data but non-empty runs are possible. `by_construction` = no conforming run of THIS package can populate the domain. NOT a new exercise_status value: the frozen vocabulary remains `exercised | vacuous`. The ratified instruction is unchanged.",
+    "_vacuity_basis_scope": "Present on the #1, #2 and #5 tables added by the census. The #3 and #6 tables predate the field and are left byte-unchanged.",
+    "_criterion_source": "431_partB_measurement_instruction.md §9.1, nine criteria, numbered in listed order."
+  },
+  "R11_criterion_6_rules": {
+    "_source": "§4.2.3",
+    "pass_a": "logical fail — P4 produced satisfied states without certified packages.",
+    "pass_b_logical_pass_iff": "every post-enforcement satisfied state has materialization_status == complete AND every context citation actually relied upon for the basis/scope/role subset is represented by a verified semantic_support_span.",
+    "empty_support_spans_rule": "An empty semantic_support_spans[] may pass ONLY when the source judgment shows no context citation was relied upon for those fields. Empty because nothing was materialized is failure; empty because nothing needed materializing is legitimate."
+  },
+  "R12_materialization": {
+    "_source": "§4.3.2, §4.3.6, §4.3.8",
+    "primary_span": {
+      "evidence_span_id": "original cand_01..cand_07",
+      "source_document_hash": "frozen preflight hash",
+      "canonical_text_hash": "freshly constructed; REQUIRED EQUAL to source_document_hash",
+      "offsets": "pinned preflight offsets",
+      "span_text": "the exact canonical slice",
+      "span_text_hash": "imported _span_text_hash(span_text)",
+      "normalization_profile": "canonical_whitespace_v2",
+      "verification_status": "VERIFIED only after all checks",
+      "uniqueness": "verify the pinned slice; do NOT rediscover. Document-wide uniqueness only where preflight required it — cand_06 alone.",
+      "halt_on": "any pin, hash or profile mismatch halts the package (R4)"
+    },
+    "primary_support_asymmetry": "The primary is offset-pinned, so span_text is the canonical slice and the preflight quote is a verification target. A support span is quote-proposed, so span_text is the panelist's verbatim quote.",
+    "support_span_selection": "Context citation ids appearing in field_support under the basis, scope and role fields. Scope membership per the Stage-1B charge_scope determination.",
+    "support_span_construction": "Only on exactly one window-local match; deduplicated on (source_document_hash, start_char, end_char) with citation_occ_ids, supports_fields and supporting_panelists unioned; ordered by start_char, end_char, id.",
+    "materialization_status": {
+      "attempted_for": "EVERY Pass-A satisfied state; blocked records emitted, not skipped",
+      "complete": "the primary verifies AND every selection-subset citation resolves uniquely in its window",
+      "blocked": "any selection-subset citation is UNVERIFIED, window-ambiguous or missing",
+      "out_of_subset_failure": "recorded in enforcement, may unseat Pass B, does NOT block materialization"
+    }
+  },
+  "R13_anti_borrowing_dataflow": {
+    "_source": "§4.3.7",
+    "_kind": "DATAFLOW test — borrowing is a derivation path, not the presence of digits",
+    "value_token_present_from": "primary-candidate text ONLY",
+    "value_completeness_from": "the primary's panel judgment ONLY",
+    "value_ok_consumes": [
+      "value_token_present",
+      "value_completeness"
+    ],
+    "prohibited": "no support-span field may be an input to any of them",
+    "static_property_field": "anti_borrowing_dataflow_verified",
+    "runtime_property_field": "anti_borrowing_runtime_exercised",
+    "runtime_requires": "an actual support-bearing complete package"
+  },
+  "R14_charge_scope_consumption_algorithm": {
+    "_source": "§5.0.3 — the ALGORITHM is frozen here; the DETERMINATION is a Stage-1B product",
+    "determination_path": "build_log/452_charge_scope_applicability_determination.json",
+    "per_parameter_fields": [
+      "schema_applicability",
+      "qualification_use",
+      "materialization_subset_membership",
+      "source_artifact",
+      "source_pointer",
+      "quoted_rule",
+      "status"
+    ],
+    "status_values": [
+      "resolved",
+      "unresolved",
+      "conflicting"
+    ],
+    "two_source_artifacts": {
+      "431_requirement_profiles.json": "establishes whether charge_scope participates in QUALIFICATION",
+      "431_output_schema.json": "answers whether the field is schema-fixed not_applicable"
+    },
+    "consumption": [
+      "IF materialization_subset_membership == included THEN charge_scope context citations join the §4.3.6 selection subset",
+      "IF schema_applicability == schema_fixed_not_applicable THEN the field is exempt from the missing-support rule (R6)",
+      "IF qualification_use == gates_qualification THEN charge_scope participates in candidate_qualification, ELSE it is metadata only"
+    ],
+    "halt": "unresolved or conflicting on ANY parameter fails the input-sufficiency gate and halts.",
+    "load_bearing_twice": [
+      "whether an empty or failed scope citation invalidates a field",
+      "§4.3.6 subset membership, on which Pass B #6's logical status turns"
+    ]
+  },
+  "R15_final_disposition_aggregation": {
+    "_source": "§4.16",
+    "consumes": [
+      "validation.json",
+      "repository_seam_check.json",
+      "post_report_validation.json"
+    ],
+    "aggregation": [
+      "any required criterion logical_status == fail -> fail",
+      "no fail, any not_established -> not_established",
+      "all logical_status == pass -> pass"
+    ],
+    "conjunction_consumes": "logical_status ONLY",
+    "exercise_status_handling": "carried alongside, reported, consumed by RTP and patent claims — never by the conjunction",
+    "split_criterion": "A split criterion contributes its WEAKEST component.",
+    "two_axes": {
+      "mechanism_disposition": "final_mechanism_disposition.json",
+      "execution_integrity": "computed by finalize-record as execution_integrity_status inside 452_execution_record_final.md (§4.12)"
+    }
+  },
+  "R16_tenth_check": {
+    "_source": "§4.2.5 — Part A §11.1 #5's clause dropped in transit to Part B §9.1",
+    "rule": "no candidate with candidate_support_state == insufficient_context certified"
+  },
+  "R17_value_token_present_canonical_path": {
+    "_source": "§4.5-4.9",
+    "path": "source_records.json -> candidates[].value_token_present",
+    "rule": "referenced by everything, recomputed by nothing"
+  },
+  "R18_topological_order": {
+    "_source": "§4.10",
+    "order": [
+      "0 install network guard (standard-library-only entrypoint, §4.14)",
+      "1 source_records.json",
+      "2 pass_a_results.json",
+      "3 pass_a_fidelity.json (HALTS immediately on failure)",
+      "4 grounding_enforcement.json",
+      "5 pass_b_results.json",
+      "6 pass_comparison.json",
+      "7 certified_parameter_evidence.json",
+      "8 envelope_sufficiency.json",
+      "9 observations.json",
+      "10 validation.json",
+      "11 repository_seam_check.json",
+      "12 report.md",
+      "13 post_report_validation.json",
+      "14 final_mechanism_disposition.json",
+      "15 l2_comparison.json",
+      "16 contract_reconciliation.md",
+      "17 zero_provider_call_check.json",
+      "18 output_manifest.json",
+      "19 verify staged directory closure",
+      "20 ONE directory rename: staging -> build_log/452_stage2_results/",
+      "21 452_production_invocation_record.json (Set A', guard still active)",
+      "-- 452_execution_record_final.md (separate invocation)"
+    ]
+  },
+  "R19_transactional_publication": {
+    "_source": "§4.15, §4.17",
+    "staging": "build_log/.452_stage2_results.staging-<nonce>/",
+    "target": "build_log/452_stage2_results/",
+    "promotion": "rename staging to target in ONE same-filesystem operation",
+    "preconditions": [
+      "every Set-A file produced and validated inside staging",
+      "exact directory closure verified",
+      "target does not already exist unless an explicitly sanctioned replacement rule applies"
+    ],
+    "failure_record": {
+      "path": "build_log/452_stage2_failure_record.json",
+      "schema": [
+        "failure_stage",
+        "failure_reason",
+        "staged_paths_present[]",
+        "staged_paths_missing[]",
+        "inputs_verified",
+        "guard_status",
+        "outbound_attempt_count",
+        "staging_directory_disposition",
+        "l3_authority"
+      ],
+      "l3_authority": false,
+      "publication": "temporary file plus one atomic rename",
+      "rule": "Staging is deleted or quarantined; no final-named L3 product is left behind."
+    },
+    "post_promotion_rollback": [
+      "atomically rename build_log/452_stage2_results/ to a clearly non-authoritative quarantine path, or remove it",
+      "confirm the authoritative target path no longer exists",
+      "emit 452_stage2_failure_record.json recording the quarantine disposition",
+      "halt"
+    ],
+    "completed_unit_rule": "Production success requires BOTH build_log/452_stage2_results/ AND build_log/452_production_invocation_record.json to exist as one completed unit. Neither is authoritative without the other. This is a consumption rule as well as a production rule."
+  },
+  "R20_pass_definitions": {
+    "_source": "§4.1, §4.2.1, §4.4.6",
+    "pass_a": "As-computed replay of the frozen L1 record. May add identity and provenance wrappers. MAY NOT reinterpret the payload inside them. Proven faithful by pass_a_fidelity.json, which HALTS immediately on failure.",
+    "pass_b": "Full recomputation per R8, applying grounding enforcement (R7) at a granularity P4 did not enforce.",
+    "unseating_clause": "No prior satisfied count is preserved as a target. A Pass B count below fourteen — including zero — is anticipated, legitimate, and demonstrates the grounding rule operating. A zero count produces a vacuous exercise status, not a failure, and establishes nothing.",
+    "l2_one_way": "The comparison function may write ONLY l2_comparison.json. It may not mutate, overwrite or feed any authoritative field."
+  },
+  "R21_producer_binding": {
+    "_added": "2026-08-15",
+    "_why": "The §7.2 census traces PRODUCTS to producers. It never asked whether the producers EXIST. Two §3.1 products declared `Code, Stage 1B step 3a/3b` — role strings — while their code lived outside the repository, and a third (452_run_censuses.py) existed but was unbound by §3.1. The census passed 72/72 throughout. A manifest built over that state would hash gate records whose producers nothing pins, so a changed producer could emit an identical-shaped record and the token would not notice.",
+    "clause_1_producer_must_be_a_file": "Every `expected_producer` must resolve to a repository FILE, or be explicitly exempted below. A role string, a path constant, a planned section, or a derivable-later note is NOT a producer. This is the clause that catches a producer which does not exist.",
+    "clause_2_producer_must_be_bound": "Every non-exempt producer file must itself be a §3.1 EXPECTED_PACKAGE_ARTIFACTS entry. This is the clause that catches a producer which exists but is unbound.",
+    "_clause_order_matters": "Clause 1 before clause 2. Clause 2 alone cannot catch a role string, because a role string is not a file to look up in §3.1.",
+    "_exemption_list_lives_here_not_in_code": "Recorded in this rules file rather than compiled into the census, so it is auditable rather than hidden in a source constant.",
+    "exemptions": {
+      "L1_P4_era_producers": {
+        "_basis": "Bound by the 431 config manifest and the P4 signed tag `stage2-sanction-431-ef1a7af7`. That is the correct binding and it is NOT this package's. Pulling them into 452's §3.1 would collapse the layer boundary the three-layer table exists to hold.",
+        "entries": [
+          "P4 Stage-1",
+          "run_431_selection_measurement.py",
+          "run_relationship_tests",
+          "render_report",
+          "pre-existing fixture, bound at Step 445"
+        ],
+        "products_covered": 16
+      },
+      "authoring_acts_not_code": {
+        "_basis": "A ratification, a ruling, a transcription and a human decision have no producing script. Requiring one would be a category error.",
+        "entries": [
+          "Tzvi",
+          "Chat instance",
+          "Chat instance, from Tzvi's ruling",
+          "Chat instance, ratified 2026-07-19, committed e702bf0",
+          "Chat instance, v3.3 ratified 2026-07-19, committed 38785e7",
+          "Code, as literal transcription of the reviewing party's decision",
+          "Code, Stage 1A",
+          "Code, Q-prep",
+          "Code, Q-prep (§8.3 step 2)",
+          "N/A"
+        ],
+        "products_covered": 18,
+        "_note": "`Code, Stage 1A` covers the four Stage-1A artifacts that ARE the deliverable — script, tests, schema, rules. Their producer is an authoring act; the artifact is the product."
+      },
+      "L2_ad_hoc": {
+        "_basis": "L2 probes are explicitly not identity-bound; §6.9 isolates them.",
+        "entries": [
+          "Step 450 ad hoc post-run audit script",
+          "Claude Code, Step 447",
+          "Claude Code, Step 448",
+          "Claude Code, Step 448 Task 0",
+          "Claude Code, Step 449",
+          "Claude Code, Step 450",
+          "Claude Code, Step 451"
+        ],
+        "products_covered": 7
+      },
+      "deferred_to_a_later_step": {
+        "_basis": "Produced at a §7.0 step not yet reached; cannot exist before then.",
+        "entries": [
+          "Code, Stage 1A step 5"
+        ],
+        "products_covered": 1,
+        "_note": "452_config_manifest.json is built at step 5. Re-check when step 5 runs."
+      },
+      "_entry_form_note": "Entries are matched against the PRODUCER HEAD — the declaration text before any em-dash commentary or parenthetical. Two entries were first written in full-declaration form and never matched; corrected 2026-08-15.",
+      "mechanical_derivation_from_committed_source": {
+        "_basis": "The product is byte-derived from an artifact already bound by a committed manifest, and the derivation is verifiable by hash against that source. No producing script is required because no judgment is exercised: a byte-copy is checkable by comparing digests, and a template substitution is checkable by diffing the changed keys. Added 2026-08-15 when the three §3.1 trust artifacts were created.",
+        "entries": [
+          "Code, mechanical copy / template edit"
+        ],
+        "products_covered": 3,
+        "_audit_requirement": "Every product under this exemption MUST record, in its own entry, the source it derives from and the verification performed. 452_sanction_key.pub and 452_sanction_allowed_signers are byte-identical to their 431 originals (sha256 verified); 452_sanction_policy.json changed exactly four strings, with authorized_principal, authorized_fingerprint, allowed_namespace and rule byte-identical.",
+        "_not_a_licence_to_author": "This exemption covers COPYING and MECHANICAL SUBSTITUTION only. Generating key material remains Tzvi's act. No private key may be generated, read, copied or invoked under this or any exemption."
+      }
+    },
+    "_exemption_list_is_CLOSED": "Enumerable in full as of 2026-08-15. Any producer string not listed here and not resolving to a §3.1 file HALTS the census."
+  }
+}

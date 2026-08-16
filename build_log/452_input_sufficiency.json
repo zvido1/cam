@@ -1,0 +1,214 @@
+{
+  "_artifact": "452_input_sufficiency.json",
+  "_producer": "Code, Stage 1B step 3b",
+  "_stage": "1B",
+  "_spec": "452_production_package_instruction_v8.md §7.4, §7.0 step 3b",
+  "_shape_only": "Presence/absence and shape facts ONLY.",
+  "_l1_read_at_stage_1b": "PERMITTED. §2 forbids reading L1 at Stage 1A only. The sidecar and manifest were read here to RE-ESTABLISH facts rather than inherit them.",
+  "charge_scope_determination_hash": "d167f7522a28d62173e717ce5941ebb48c157ba46fb65c922caf8acebf60ced7",
+  "charge_scope_determination_artifact": "build_log/452_charge_scope_applicability_determination.json",
+  "charge_scope_every_parameter_resolved": true,
+  "charge_scope_status_by_parameter": {
+    "tenant_share": "resolved",
+    "building_share": "resolved",
+    "base_rent": "resolved_by_interpretive_ruling",
+    "rent_adjustment_pct": "resolved_by_interpretive_ruling"
+  },
+  "charge_scope_resolved_by_interpretive_ruling": [
+    "base_rent",
+    "rent_adjustment_pct"
+  ],
+  "atlas_3_3_offset_established": {
+    "artifact": "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt",
+    "frozen_hash_lf_normalised": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "match_pattern": "Section\\s+3\\.3\\.",
+    "_pattern_note": "A bare `3.3` pattern is WRONG here: it also matches inside `Section 13.3.` at offset 17552. The heading form is `Section 3.3.`, matched anchored.",
+    "heading_text_at_offset": "Section 3.3. Real Estate Taxes and CAM Charges. (a) Tenant",
+    "section_3_3_match_count": 1,
+    "section_3_3_start_char_offsets": [
+      4858
+    ],
+    "state": "ESTABLISHED",
+    "passes": true,
+    "note": "§7.4 open item: \"§10 needs Atlas §3.3's offset against the frozen hash.\" Offset is measured on the LF-normalised bytes whose sha256 is recorded above."
+  },
+  "field_support_108_of_108_reestablished": {
+    "state": "RE-ESTABLISHED",
+    "method": "Direct traversal of the frozen L1 sidecar at Stage 1B. Step 450's L2 finding was NOT carried forward and was not consulted.",
+    "field_support_objects_total": 108,
+    "field_support_objects_non_empty": 108,
+    "passes": true
+  },
+  "stage_1b_obligations_resolved": {
+    "PA-03": {
+      "obligation": "PA-03 — did P4 write all seven §6.4 sub-fields into certification_trace.completeness_provenance, or only a status token?",
+      "traces_examined": 30,
+      "distinct_shapes_observed": [
+        "status"
+      ],
+      "sub_fields_present_in_every_trace": [
+        "status"
+      ],
+      "sub_fields_absent_from_every_trace": [
+        "method",
+        "scope",
+        "limitations",
+        "evidence_artifact_id",
+        "candidate_generation_policy_version",
+        "source_document_hash"
+      ],
+      "verbatim_value_observed": "{\"status\": \"not_established\"}",
+      "resolution": "ONLY A STATUS TOKEN",
+      "rulings_applied": {
+        "_dates": "Ruling A, C and D — 2026-08-15",
+        "superseded_by": "P452-SA-source-records",
+        "canonical_path": "source_records.json -> completeness_provenance_recovered",
+        "read_from_l1": [
+          "status"
+        ],
+        "recovered_from_frozen_inputs": [
+          "scope",
+          "source_document_hash",
+          "evidence_artifact_id",
+          "limitations"
+        ],
+        "null_with_basis": [
+          "method",
+          "candidate_generation_policy_version"
+        ],
+        "unresolved": [],
+        "ninth_producerless_instance": {
+          "field": "candidate_generation_policy_version",
+          "IN_KIND_DISTINCTION": "Not flattened into the count of eight. Instances 1-8 are unwritten outputs. Instance 9 is a specified field with no possible referent — Part B does not perform candidate generation, so no policy version could exist."
+        },
+        "limitations_pointer_corrected": "Ruling A cited \"Part B §3.1\", which does not exist. Ruling D corrected it to Part A §3.1 and directed that the correction be recorded, not hidden.",
+        "three_findings_one_root": "Criterion #5's by_construction vacuity, method being null, and candidate_generation_policy_version being null all follow from Part B not measuring candidate-generation recall. A scope consequence, not three separate defects."
+      },
+      "l1_byte_finding_unchanged": "The L1 finding above stands: P4 wrote a status token only. The rulings resolve how the package HANDLES that, and do not alter what P4 wrote.",
+      "passes": true,
+      "_passes_basis": "All seven §6.4 sub-fields are resolved under Rulings A, C and D: one read from L1, four recovered from frozen inputs, two null-with-basis, none unresolved.",
+      "halt_rule": "PA-03 routing: \"If any sub-field is absent, that is a §7.4 HALT and this product is then either superseded by a named Step-452 product or the package halts.\"",
+      "consequence": "CONFIRMED as a FURTHER producerless instance beyond Step 451's seven. The typed completeness provenance Part A §6.4 requires was never materialized; P4 wrote the status token alone, uniformly across all 30 traces."
+    },
+    "PA-04": {
+      "obligation": "PA-04 — are agreement_by_field.parameter_family_relevance and per_panelist[] present per judgment, and is retained_evidence membership recoverable?",
+      "agreement_by_field_parameter_family_relevance": {
+        "present_on_every_per_candidate_record": true,
+        "observed_keys": [
+          "candidate_support_state",
+          "charge_scope",
+          "parameter_family_relevance",
+          "text_role",
+          "value_applies_to_charge_basis_components",
+          "value_completeness"
+        ],
+        "passes": true
+      },
+      "per_panelist": {
+        "occurrences_of_the_literal_name": 0,
+        "present_as_named": false,
+        "structural_equivalent_found": "per_role.{A,B,C}.judgment",
+        "judgment_objects_counted": 105,
+        "passes": true,
+        "resolution": "name_differs_property_holds",
+        "specified_identifier": "per_panelist[]",
+        "actual_path": "per_role.{A,B,C}.judgment",
+        "basis": "Part A §5.2 specifies full cited judgments always preserved; all three roles carry relevance, field_support and reason.",
+        "_ruling": "RULING B, 2026-08-15. A ruling, not a reading — neither artifact says this. Same class as semantic_support_span_ids versus semantic_support_spans in §8.1: Part A names a concept, the harness names a field."
+      },
+      "retained_evidence": {
+        "occurrences_of_the_literal_name": 0,
+        "materialized_as_named_structure": false,
+        "membership_recoverable": true,
+        "recovery_basis": "§4.4.6 steps 2-4 recompute retention from per-role parameter_family_relevance plus candidate/context citations, all of which are present. Membership is DERIVABLE; it is not STORED.",
+        "passes": true,
+        "resolution": "recoverable_not_stored",
+        "materialised_at": "source_records.json -> candidates[].retained_evidence_membership",
+        "_ruling": "RULING B, 2026-08-15, under the §4.9 canonical-path pattern."
+      },
+      "passes": true
+    },
+    "PB-08": {
+      "obligation": "PB-08 — fresh read of relationship_tests_v3_3 (prior citation was from Step 441's quoted manifest content, not a fresh read).",
+      "read_performed_now": true,
+      "source": "build_log/431_config_manifest.json $.relationship_tests_v3_3",
+      "all_passed": true,
+      "test_count": 4,
+      "per_test": [
+        {
+          "name": "a_combined_opex_taxes",
+          "s5_clause": "§5 test 1",
+          "expected_basis_match": "match",
+          "actual_basis_match": "match",
+          "pass": true
+        },
+        {
+          "name": "b_sibling_tax_candidate",
+          "s5_clause": "§5 test 2",
+          "expected_basis_match": "mismatch",
+          "actual_basis_match": "mismatch",
+          "pass": true
+        },
+        {
+          "name": "c_comention_no_linkage",
+          "s5_clause": "§5 test 3",
+          "expected_basis_match": "mismatch",
+          "actual_basis_match": "mismatch",
+          "pass": true
+        },
+        {
+          "name": "d_ungrounded_linkage",
+          "s5_clause": "§5 test 4",
+          "expected_basis_match": "undeterminable",
+          "actual_basis_match": "undeterminable",
+          "pass": true
+        }
+      ],
+      "passes": true,
+      "note": "Step 441's quoted content is CONFIRMED by this fresh read. The obligation is discharged."
+    }
+  },
+  "per_product_derivability": {
+    "products_examined": 72,
+    "products_with_an_undetermined_producer": [
+      "PA-03-completeness-provenance-typed"
+    ],
+    "state": "ESTABLISHED",
+    "products_undetermined_and_STILL_unresolved": [],
+    "passes": true,
+    "reason": "Every product traces to a producer or a named supersessor (§7.2 census: 72/72), and PA-03's seven sub-fields are fully resolved under Rulings A, C and D. No product now depends on an input that does not exist and is not accounted for.",
+    "_undetermined_note": "PA-03's expected_producer still reads UNDETERMINED pending the Stage-1B determination it names. That determination has now been MADE, here."
+  },
+  "checks": [
+    {
+      "check": "charge_scope_determination",
+      "passes": true
+    },
+    {
+      "check": "atlas_3_3_offset_established",
+      "passes": true
+    },
+    {
+      "check": "field_support_108_of_108_reestablished",
+      "passes": true
+    },
+    {
+      "check": "stage_1b_obligation_PB-08",
+      "passes": true
+    },
+    {
+      "check": "stage_1b_obligation_PA-03",
+      "passes": true
+    },
+    {
+      "check": "stage_1b_obligation_PA-04",
+      "passes": true
+    },
+    {
+      "check": "per_product_derivability",
+      "passes": true
+    }
+  ],
+  "aggregate_pass_fail": "pass",
+  "first_failure_halt_record": null
+}

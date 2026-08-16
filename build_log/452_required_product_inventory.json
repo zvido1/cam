@@ -1,0 +1,1896 @@
+{
+  "artifact": "452_required_product_inventory.json",
+  "schema_version": "452_inventory_v1",
+  "authored_by": "Chat instance",
+  "authored_date": "2026-08-14",
+  "status": "SEED v2 — FALSIFIABLE, NOT AUTHORITATIVE",
+  "revision_record": {
+    "v1_to_v2": "2026-08-14, following Claude Code's independent sweep.",
+    "halts_fired_against_v1": [
+      "HALT-1: eleven §3.1 artifacts had no inventory entry. The seeder entered three §3.1 documents as products (the v8 instruction, the ratification record, the ambiguity ruling) and omitted eleven others on no stated principle. §3.1 membership makes something a product; the rule is now applied uniformly.",
+      "HALT-2: Part A §6.4's typed completeness_provenance names seven sub-fields; five appeared nowhere in v1. Part A calls it 'the single most load-bearing negative-claim guard' and warns against reduction to a truthy flag. A census tracing it as one opaque field cannot see that six of seven sub-fields have no producer — this is §7.2's per-required-field rule catching a defect on its first application.",
+      "HALT-3: Part A §5.1's contested-inclusion and contested-withholding records occurred zero times in v1. §5.1 requires them as 'real structured events, recorded with cited reasons as provenance, never collapsed to a number'. They can alter the retained-evidence ledger without altering any terminal label."
+    ],
+    "declared_gaps_filled": [
+      "§8.1: Code's read found twelve fields absent (parameter, lease, and ten per_candidate[] fields). NOT a halt — no product was absent and the seeder declared this gap. Code is authorized to transcribe the twelve names into PB-14 directly; the seeder has not read them and will not author field names it has not seen.",
+      "§6.2: nothing absent. The four requirement classes map onto PB-06's seven fields."
+    ],
+    "seeder_error_corrected": "PB-08: the four relation-bearing tests ARE recorded, in 431_config_manifest.json under relationship_tests_v3_3. The seeder's suggestion of an eighth producerless product was WRONG. Code's citation carries a declared provenance caveat: quoted from Step 441 rather than re-read, to respect the Stage-1A no-L1-read constraint. A fresh read belongs to Stage 1B.",
+    "exclusions_upheld": "Code judged none of the three declared exclusions a product. No halt from item 4.",
+    "new_open_question_for_stage_1b": "Whether P4 ever PRODUCED §6.4's seven completeness_provenance sub-fields and §5.1's contested records. If either is specified and unwritten, that is a further producerless instance beyond Step 451's seven, and §4.4.6 step 2's retention recomputation may have no contested-record input to recompute from. Stage 1B input sufficiency must establish this."
+  },
+  "provenance_statement": [
+    "Per 452_production_package_instruction_v8.md §4.0, this inventory is SEEDED by the Chat instance and is falsifiable, not authoritative.",
+    "It was authored from direct reading of 431_partA_governed_selection_spec.md, 431_partB_measurement_instruction.md, and 452_production_package_instruction_v8.md, WITHOUT sight of any sweep by Claude Code. Code declined to supply a sweep as a seed on the correct ground that an inventory derived from the sweep that audits it destroys the independence of the falsification.",
+    "The Chat instance has been wrong about these documents at least three times in this arc (the four §9.1 predicates that did not exist; §12's supposed field list; the location of _classify_failure). Treat every entry as a claim to be checked, not a fact.",
+    "Code MUST sweep Part A + Part B + Step 452 itself independently. Any product found in any of the three and absent here is a HALT, not a silent addition."
+  ],
+  "known_gaps_declared_by_the_seeder": [
+    {
+      "gap": "Part B §8.1 certification_trace per_candidate field list is INCOMPLETE here.",
+      "detail": "The seeder read the tail of §8.1 and captured semantic_support_span_ids, completeness_provenance, the four hashes, final_certification_state, series_index, and per_candidate[].candidate_qualification. The opening of the per_candidate block was not read. Step 451 independently found field_support_citation_ids as a §8.1-required field with no write site; it is entered below on that authority, not on the seeder's reading.",
+      "code_action": "Read §8.1 in full. Every field it names that is absent below is a HALT."
+    },
+    {
+      "gap": "Part A products are enumerated from §7.1 and §11.1 only.",
+      "detail": "Part A is a design specification and specifies few concrete file products. The seeder did not re-read Part A §1-§6, §8-§10 for product-shaped requirements during this authoring pass.",
+      "code_action": "Sweep Part A in full. Any product-shaped requirement outside §7.1/§11.1 is a HALT."
+    },
+    {
+      "gap": "Part B §6.2 preflight contents are summarized, not field-enumerated.",
+      "code_action": "Enumerate §6.2's required fields and halt on any absent here."
+    }
+  ],
+  "consumer_type_vocabulary": [
+    "runtime_gate",
+    "validator",
+    "report",
+    "signer",
+    "construction_audit",
+    "future_citation"
+  ],
+  "temporal_layer_vocabulary": [
+    "stage_1",
+    "stage_1b",
+    "stage_2_output",
+    "post_production_provenance",
+    "post_p452_provenance"
+  ],
+  "products": [
+    {
+      "product_id": "PB-01-selector-prompt",
+      "source_document": "431_partB",
+      "source_section": "§1, §5",
+      "verbatim_requirement": "`431_selector_prompt.txt` — the exact selector prompt (§5), model-facing text, no fixture labels/hints.",
+      "required_fields": [
+        "model_facing_text"
+      ],
+      "expected_producer": "P4 Stage-1 (historical)",
+      "expected_output_path": "build_log/431_selector_prompt.txt",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "452 token binding via 431_config_manifest.json",
+          "required": false
+        }
+      ],
+      "note": "Historical P4 artifact. Bound to 452 only indirectly through 431_config_manifest.json. NOT in 452 §3.1."
+    },
+    {
+      "product_id": "PB-02-output-schema",
+      "source_document": "431_partB",
+      "source_section": "§1, §5",
+      "verbatim_requirement": "`431_output_schema.json` — the exact JSON output schema for a panelist judgment (§5).",
+      "required_fields": [
+        "parameter_family_relevance",
+        "candidate_support_state",
+        "text_role",
+        "value_completeness",
+        "value_applies_to_charge_basis_components",
+        "charge_scope",
+        "candidate_citations",
+        "context_citations",
+        "field_support",
+        "reason",
+        "confidence"
+      ],
+      "expected_producer": "P4 Stage-1 (historical)",
+      "expected_output_path": "build_log/431_output_schema.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "452 §5.0.3 charge_scope determination",
+          "required": true
+        }
+      ],
+      "note": "IN 452 §3.1. Load-bearing for §5.0.3: this is the artifact that answers whether charge_scope is schema-fixed not_applicable for base_rent and rent_adjustment_pct."
+    },
+    {
+      "product_id": "PB-03-requirement-profiles",
+      "source_document": "431_partB",
+      "source_section": "§1, §4",
+      "verbatim_requirement": "`431_requirement_profiles.json` — the versioned per-parameter requirement profiles (§4), declared independent of fixtures.",
+      "required_fields": [
+        "tenant_share.basis_match",
+        "tenant_share.text_role_ok",
+        "tenant_share.value_ok",
+        "tenant_share.applicability_match",
+        "building_share.basis_match",
+        "base_rent.value_applies_to_charge_basis_components",
+        "base_rent.text_role_ok",
+        "base_rent.value_ok",
+        "rent_adjustment_pct.value_applies_to_charge_basis_components",
+        "rent_adjustment_pct.text_role_ok",
+        "rent_adjustment_pct.value_ok"
+      ],
+      "expected_producer": "P4 Stage-1 (historical)",
+      "expected_output_path": "build_log/431_requirement_profiles.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "452 §5.0.3 charge_scope determination (qualification_use half)",
+          "required": true
+        },
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.4 parameter-aware basis_ok",
+          "required": true
+        }
+      ],
+      "note": "IN 452 §3.1. §4 states charge_scope 'does NOT gate qualification in v1' for tenant_share — this bears directly on §5.0.3 and Code must quote the executable predicate, not this prose."
+    },
+    {
+      "product_id": "PB-04-measurement-config",
+      "source_document": "431_partB",
+      "source_section": "§1, §3",
+      "verbatim_requirement": "`431_measurement_config.json` — every frozen deterministic value (§3)",
+      "required_fields": [
+        "context_policy_version",
+        "max_context_chars",
+        "envelope_algorithm",
+        "attempt_ceiling",
+        "value_token_detector",
+        "value_token_detector_version",
+        "certification_policy_version"
+      ],
+      "expected_producer": "P4 Stage-1 (historical)",
+      "expected_output_path": "build_log/431_measurement_config.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.9 value_token_present recomputation using 431_valuetok_v1",
+          "required": true
+        }
+      ],
+      "note": "IN 452 §3.1. The frozen detector patterns are required to recompute value_token_present."
+    },
+    {
+      "product_id": "PB-05-harness",
+      "source_document": "431_partB",
+      "source_section": "§1",
+      "verbatim_requirement": "`run_431_selection_measurement.py` — the harness (builds against the above; makes NO calls at build stage).",
+      "required_fields": [],
+      "expected_producer": "P4 Stage-1 (historical)",
+      "expected_output_path": "build_log/run_431_selection_measurement.py",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "Step 451 census (VALIDATION_PATH/SEAM_CHECK_PATH inert constants at lines 108-109)",
+          "required": false
+        }
+      ],
+      "note": "NOT in 452 §3.1. 452 does not execute or import it."
+    },
+    {
+      "product_id": "PB-06-fixture-preflight",
+      "source_document": "431_partB",
+      "source_section": "§1, §6.2",
+      "verbatim_requirement": "`431_fixture_preflight.json` — the fixture-preflight result (§6): full source hashes, per-candidate quote resolution, unique-resolution check.",
+      "required_fields": [
+        "atlas_source_document_hash",
+        "atreca_source_document_hash",
+        "normalization_profile_version",
+        "per_candidate_expected_quote",
+        "per_candidate_offset",
+        "per_candidate_resolution_verification",
+        "cand_06_full_quote_resolution_count"
+      ],
+      "expected_producer": "P4 Stage-1 (historical)",
+      "expected_output_path": "build_log/431_fixture_preflight.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.3.2 primary span construction — offsets, hashes, cand_06 uniqueness",
+          "required": true
+        }
+      ],
+      "note": "IN 452 §3.1. GAP: field list above is summarized from §6.2 prose, not enumerated from the artifact. Code must enumerate."
+    },
+    {
+      "product_id": "PB-07-config-manifest",
+      "source_document": "431_partB",
+      "source_section": "§1",
+      "verbatim_requirement": "`431_config_manifest.json` — the hash of each artifact above, so the reviewed config is the run config.",
+      "required_fields": [
+        "committed_blob_binding",
+        "manifest_self_hash_of_artifact_hashes"
+      ],
+      "expected_producer": "P4 Stage-1 (historical)",
+      "expected_output_path": "build_log/431_config_manifest.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "452 §3.1 as FROZEN L1 INPUT ONLY, never as 452's own manifest (§8.1)",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "PB-08-relation-bearing-tests",
+      "source_document": "431_partB",
+      "source_section": "§5",
+      "verbatim_requirement": "the harness must ship deterministic unit tests (zero model calls, run at build) that assert the profile+validator handle these four synthetic classifications correctly … These four tests passing at build is a Stage-1 gate; failure halts the build",
+      "required_fields": [
+        "test_1_combined_percentage_inclusion_match",
+        "test_2_sibling_tax_candidate_mismatch",
+        "test_3_co_mention_no_linkage_mismatch",
+        "test_4_ungrounded_linkage_undeterminable"
+      ],
+      "expected_producer": "run_relationship_tests(), P4 Stage-1",
+      "expected_output_path": "within build_log/431_config_manifest.json → relationship_tests_v3_3",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "P4 Stage-1 build gate",
+          "required": true
+        },
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "informed audit",
+          "required": true
+        }
+      ],
+      "note": "CORRECTED v2. The seeder wrote UNKNOWN and suggested an eighth producerless product; Code's sweep found the artifact: relationship_tests_v3_3 with all_passed: true and per-test expected_basis_match / actual_basis_match / pass. PRODUCED. Direct precedent for 452 §7.5. Code's citation is from Step 441's quoted manifest content, not a fresh read — re-verify at Stage 1B."
+    },
+    {
+      "product_id": "PB-09-sidecar",
+      "source_document": "431_partB",
+      "source_section": "§12",
+      "verbatim_requirement": "Stage 2 (run): `431_selection_measurement_sidecar.json`",
+      "required_fields": [
+        "per_judgment_semantic_fields",
+        "field_support",
+        "candidate_citations",
+        "context_citations",
+        "provider_model_fallback_metadata",
+        "series_index",
+        "raw_attempt_index",
+        "canonical_attempt_index",
+        "agreement_by_field",
+        "final_certification_state"
+      ],
+      "expected_producer": "run_431_selection_measurement.py",
+      "expected_output_path": "build_log/431_selection_measurement_sidecar.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.1 source_records.json, ALL passes",
+          "required": true
+        }
+      ],
+      "note": "IN 452 §3.1. The primary L1 input. PRODUCED by P4."
+    },
+    {
+      "product_id": "PB-10-runtime-seam-capture",
+      "source_document": "431_partB",
+      "source_section": "§8.2, §12",
+      "verbatim_requirement": "The harness captures `git status --porcelain cam/` inside the measurement process, immediately before the first model call and immediately after the final model call, together with timestamps and the repository commit hash, into a runtime capture record (`431_runtime_seam_capture.json`).",
+      "required_fields": [
+        "before_first_model_call",
+        "after_last_model_call",
+        "cam_clean",
+        "timestamps",
+        "repository_commit_hash"
+      ],
+      "expected_producer": "run_431_selection_measurement.py",
+      "expected_output_path": "build_log/431_runtime_seam_capture.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.2 seam class",
+          "required": true
+        }
+      ],
+      "note": "IN 452 §3.1. PRODUCED by P4. §8.2: the seam checker CONSUMES these and may not reconstruct pre-run state."
+    },
+    {
+      "product_id": "PB-11-validation-json",
+      "source_document": "431_partB",
+      "source_section": "§8.2, §12",
+      "verbatim_requirement": "measurement_validation  →  431_validation.json      (computed from the sidecar)",
+      "required_fields": [
+        "citation_grounding",
+        "same_candidate_certification",
+        "disagreement_handling",
+        "completeness_limited_negatives",
+        "semantic_support_span_behavior"
+      ],
+      "expected_producer": "NONE — Step 451: VALIDATION_PATH defined line 108, never written. §12 marks the producer (validate_431.py) OPTIONAL while listing this product as mandatory.",
+      "expected_output_path": "build_log/431_validation.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "report",
+          "consumer": "Part B §9.1 table, COPIED FROM, never authored",
+          "required": true
+        }
+      ],
+      "note": "NEVER PRODUCED. Root cause of Step 452. 452 emits its own equivalent as 452_stage2_results/validation.json."
+    },
+    {
+      "product_id": "PB-12-repository-seam-check",
+      "source_document": "431_partB",
+      "source_section": "§8.2, §12",
+      "verbatim_requirement": "artifact_and_seam_validation  →  431_repository_seam_check.json  (computed from repo + manifest + report)",
+      "required_fields": [
+        "reviewed_hashes_equal_run_hashes",
+        "pre_post_cam_git_status_clean",
+        "no_live_import_consumption_seam",
+        "report_completeness_qualifiers_present",
+        "report_pass_fail_values_equal_validator_output"
+      ],
+      "expected_producer": "NONE — Step 451: SEAM_CHECK_PATH defined line 109, never written. §12 marks the seam-checker OPTIONAL while listing this product as mandatory.",
+      "expected_output_path": "build_log/431_repository_seam_check.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "report",
+          "consumer": "Part B §9.1 table",
+          "required": true
+        }
+      ],
+      "note": "NEVER PRODUCED. Its fifth criterion is self-referentially unsatisfiable for L1: both operands absent. SUPERSEDED BY: P452-SA-repository-seam-check (build_log/452_stage2_results/repository_seam_check.json, §4.2, §4.10 step 11) for the non-report criteria, and P452-SA-post-report-validation (build_log/452_stage2_results/post_report_validation.json, §4.10 steps 12-13) for the two report-inspecting criteria. The split across two products is what breaks the Part B cycle in which the report is built from the seam check while one seam criterion inspects the report. Cross-reference added 2026-08-14 by Chat after Code's census found it absent; the seeder had asserted it was present without checking."
+    },
+    {
+      "product_id": "PB-13-report",
+      "source_document": "431_partB",
+      "source_section": "§9, §12",
+      "verbatim_requirement": "Per evaluator × candidate: all §5 fields, `field_support`, cited reason, confidence, real provider/model/fallback metadata, per-quote source-verification, `value_token_present`.",
+      "required_fields": [
+        "per_evaluator_per_candidate_all_section5_fields",
+        "field_support",
+        "cited_reason",
+        "confidence",
+        "provider_model_fallback_metadata",
+        "per_quote_source_verification",
+        "value_token_present"
+      ],
+      "expected_producer": "render_report — Step 451: emits title, hashes, provenance, panel-integrity, Role-C note, terminal states ONLY. In the produced report: confidence 0, field_support 0, value_token_present 0, citation 0.",
+      "expected_output_path": "build_log/431_selection_measurement.md",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "431_repository_seam_check.json report criteria",
+          "required": true
+        }
+      ],
+      "note": "PARTIALLY PRODUCED — 4th producerless instance found by Step 451. render_report emits title, hashes, provenance, panel-integrity, Role-C note and terminal states; in the produced report confidence 0, field_support 0, value_token_present 0, citation 0. SUPERSEDED BY: P452-SA-report (build_log/452_stage2_results/report.md, §4.6, §4.10 step 12), which produces the per-evaluator × candidate content §9 required, with value_token_present referenced from §4.9's canonical path rather than recomputed. Cross-reference added 2026-08-14 by Chat after Code's census found it absent."
+    },
+    {
+      "product_id": "PB-14-certification-trace",
+      "source_document": "431_partB",
+      "source_section": "§8.1",
+      "verbatim_requirement": "semantic_support_span_ids / completeness_provenance / prompt_hash, schema_hash, requirement_profiles_hash, config_hash / final_certification_state",
+      "required_fields": [
+        "series_index",
+        "per_candidate[].series_index",
+        "per_candidate[].candidate_qualification",
+        "per_candidate[].field_support_citation_ids",
+        "semantic_support_span_ids",
+        "completeness_provenance",
+        "prompt_hash",
+        "schema_hash",
+        "requirement_profiles_hash",
+        "config_hash",
+        "final_certification_state",
+        "parameter",
+        "lease",
+        "per_candidate[].candidate_id",
+        "per_candidate[].raw_attempt_index",
+        "per_candidate[].canonical_attempt_index",
+        "per_candidate[].relevance_ok",
+        "per_candidate[].basis_match",
+        "per_candidate[].text_role_ok",
+        "per_candidate[].value_ok",
+        "per_candidate[].support_ok",
+        "per_candidate[].applicability_match",
+        "per_candidate[].agreement_by_field"
+      ],
+      "expected_producer": "run_431_selection_measurement.py — PARTIAL. Step 449: semantic_support_span_ids prefix count 0 everywhere including schema and prompt; field_support_citation_ids also never written.",
+      "expected_output_path": "within build_log/431_selection_measurement_sidecar.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.2.3 #3 and #6",
+          "required": true
+        }
+      ],
+      "note": "SEED GAP: the per_candidate opening was not read by the seeder. field_support_citation_ids is entered on Step 451's authority, not the seeder's reading. Code MUST read §8.1 in full; any field it names and this list omits is a HALT.\n\nPARTIAL SUPERSESSION. Of the 23 fields §8.1 names, 22 are produced by run_431_selection_measurement.py. ONE — semantic_support_span_ids — has no write site (Step 449: prefix count 0 across harness, schema, prompt and outputs; the panel was never asked for a span). It is SUPERSEDED BY: P452-SA-certified-parameter-evidence (build_log/452_stage2_results/certified_parameter_evidence.json, §4.3), which materializes source-addressed EvidenceSpans from field_support context citations under §4.3.6's selection rule. field_support_citation_ids is likewise never written by P4 and is superseded by the same product's failed_support_traces and verified_support_spans lineage. Supersession here is PER FIELD, not per product — which is why §7.2 traces per field.",
+      "transcription_note_by_code": "Twelve field names transcribed verbatim from Part B §8.1's certification_trace block (431_partB_measurement_instruction.md lines 170-182). Total now 23. Step 449 established that per_candidate[].field_support_citation_ids and semantic_support_span_ids have no write site in the P4 harness; the other 21 are written by certify_parameter_series."
+    },
+    {
+      "product_id": "PB-15-envelope-sufficiency-measurement",
+      "source_document": "431_partB",
+      "source_section": "§10",
+      "verbatim_requirement": "Measure, do not assume, whether the frozen envelope from cand_04 reaches §3.3. Report char distance and inclusion.",
+      "required_fields": [
+        "char_distance_cand_04_to_atlas_3_3",
+        "inclusion"
+      ],
+      "expected_producer": "NONE — Step 451: char_distance / distance / envelope_sufficiency occur 0 times in harness, sidecar and report.",
+      "expected_output_path": "UNKNOWN — §10 requires the measurement but names no artifact",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "future_citation",
+          "consumer": "Part A §8.2 linked-span-retrieval deferral trigger",
+          "required": true
+        }
+      ],
+      "note": "6th producerless instance. Blocks a deferred architecture decision. 452 §4.8 produces it."
+    },
+    {
+      "product_id": "PB-16-section-9-2-observations",
+      "source_document": "431_partB",
+      "source_section": "§9.2",
+      "verbatim_requirement": "Forcing-case outcome observations (reported, NEVER pass/fail)",
+      "required_fields": [
+        "cand_04_outcome_hypothesis_comparison",
+        "cand_04_observed_basis_components_and_basis_match",
+        "cand_04_value_to_basis_linkage_citations",
+        "cand_05_vs_cand_06_value_completeness",
+        "cand_07_vs_cand_03_text_role",
+        "atreca_cand_01_02_03_certification",
+        "envelope_sufficiency_cross_reference"
+      ],
+      "expected_producer": "NONE — Step 451: the only §9.2-labelled report section carries terminal states; cand_04 appears once in the entire report.",
+      "expected_output_path": "within build_log/431_selection_measurement.md",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "report",
+          "consumer": "431_selection_measurement.md",
+          "required": true
+        }
+      ],
+      "note": "5th producerless instance. 452 §4.7 produces it."
+    },
+    {
+      "product_id": "PB-17-value-token-present",
+      "source_document": "431_partB",
+      "source_section": "§3, §5, §9",
+      "verbatim_requirement": "`value_token_present` per the frozen §3 detector",
+      "required_fields": [
+        "value_token_present"
+      ],
+      "expected_producer": "run_431_selection_measurement.py lines 490, 513-514 — computed into the comparison dict, attached as `_comparison` at 1210, then `c.pop(\"_comparison\", None)` at 1215 before persistence. Sidecar occurrences: 0.",
+      "expected_output_path": "within build_log/431_selection_measurement_sidecar.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.3.7 anti-borrowing dataflow test",
+          "required": true
+        }
+      ],
+      "note": "7th instance, distinct category: COMPUTED THEN DISCARDED. 452 §4.9 recomputes it to a canonical path."
+    },
+    {
+      "product_id": "PA-01-certified-parameter-evidence",
+      "source_document": "431_partA",
+      "source_section": "§7.1",
+      "verbatim_requirement": "certified_parameter_evidence / primary_candidate_span / semantic_support_spans[] / panel_judgment",
+      "required_fields": [
+        "primary_candidate_span",
+        "semantic_support_spans",
+        "panel_judgment",
+        "applicability",
+        "completeness_provenance"
+      ],
+      "expected_producer": "NONE — the P4 harness emits a final_certification_state label and never materializes a certified package.",
+      "expected_output_path": "UNSPECIFIED in Part A",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "Part A §11.1 / Part B §9.1 criteria #3 and #6",
+          "required": true
+        }
+      ],
+      "note": "Part A §10 places this IN SCOPE ('certified package with materialized semantic-support spans (§7.1, cases 1+2)'). §7.1's 'future wiring behavior' qualifier governs the Gate-B handoff, not the materialization. 452 §4.3 produces it."
+    },
+    {
+      "product_id": "PA-02-mechanism-success-criteria",
+      "source_document": "431_partA",
+      "source_section": "§11.1",
+      "verbatim_requirement": "Part A §11.1 mechanism success criteria — EIGHT criteria (Step 451 Task D).",
+      "required_fields": [
+        "eight_criteria"
+      ],
+      "expected_producer": "N/A — criteria, not a file",
+      "expected_output_path": "N/A",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "Part B §9.1, which carries NINE (eight copied + #7 Part-B-native)",
+          "required": true
+        }
+      ],
+      "note": "Step 451 Task D: two of the eight copied criteria (#3, #6) name a subject the Part B instrument never materializes. #5 was copied with the clause 'Incomplete candidate scope blocks certification' DROPPED — restored as 452's tenth check."
+    },
+    {
+      "product_id": "P452-inventory",
+      "source_document": "452_v8.1",
+      "source_section": "§4.0",
+      "verbatim_requirement": "452_required_product_inventory.json, token-bound, one entry per specified product",
+      "required_fields": [
+        "product_id",
+        "source_document",
+        "source_section",
+        "verbatim_requirement",
+        "required_fields",
+        "expected_producer",
+        "expected_output_path",
+        "temporal_layer",
+        "consumers"
+      ],
+      "expected_producer": "Chat instance (seed) + Code independent sweep (falsification)",
+      "expected_output_path": "build_log/452_required_product_inventory.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "§7.2 producer-consumer census",
+          "required": true
+        },
+        {
+          "consumer_type": "validator",
+          "consumer": "§4.13 contract reconciliation",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-instruction",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1",
+      "verbatim_requirement": "build_log/452_production_package_instruction_v8.md",
+      "required_fields": [],
+      "expected_producer": "Chat instance",
+      "expected_output_path": "build_log/452_production_package_instruction_v8.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "452_ratification_record.md",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-ratification-record",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §7.0 step 0",
+      "verbatim_requirement": "The reviewing party ratifies the exact bytes … and records the decision in build_log/452_ratification_record.md, naming the reviewed content hash, the reviewing party, and the date. … It is terminal: it is not itself ratified.",
+      "required_fields": [
+        "reviewed_artifact",
+        "reviewed_sha256",
+        "reviewing_party",
+        "ratification_date",
+        "decision",
+        "authorization_scope",
+        "conditions",
+        "transcription_statement",
+        "principal_authorization"
+      ],
+      "expected_producer": "Code, as literal transcription of the reviewing party's decision",
+      "expected_output_path": "build_log/452_ratification_record.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "§7.0 step 0 — Stage 1A does not begin until it exists",
+          "required": true
+        }
+      ],
+      "note": "EXISTS as of 2026-08-14, SHA-256 777ba039…, naming instruction hash 002b3afa…"
+    },
+    {
+      "product_id": "P452-production-script",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §4.10",
+      "verbatim_requirement": "build_log/452_production_script.py",
+      "required_fields": [
+        "network_guard_pre_import_entrypoint",
+        "production_invocation",
+        "finalize_record_invocation",
+        "failure_path"
+      ],
+      "expected_producer": "Code, Stage 1A",
+      "expected_output_path": "build_log/452_production_script.py",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "Stage 2",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-production-tests",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §7.5",
+      "verbatim_requirement": "build_log/452_production_tests.py",
+      "required_fields": [
+        "13_positive_coverage_areas",
+        "21_adverse_coverage_cases",
+        "embedded_literal_fixtures"
+      ],
+      "expected_producer": "Code, Stage 1A",
+      "expected_output_path": "build_log/452_production_tests.py",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "452_stage1_test_results.json",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-output-schema",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1",
+      "verbatim_requirement": "build_log/452_output_schema.json",
+      "required_fields": [
+        "schema_for_every_Set_A_product"
+      ],
+      "expected_producer": "Code, Stage 1A",
+      "expected_output_path": "build_log/452_output_schema.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "Stage 2 output validation",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-deterministic-rules",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §5",
+      "verbatim_requirement": "452_deterministic_rules.json — frozen at Stage 1A",
+      "required_fields": [
+        "identity_formulas_and_serialization",
+        "support_span_selection",
+        "ambiguity_handling",
+        "empty_support_rule",
+        "two_window_resolution",
+        "per_field_invalidation_and_merge",
+        "pass_b_recomputation_chain",
+        "pass_a_fidelity_criterion",
+        "logical_exercise_status_split_and_general_rule",
+        "field_scope_sets",
+        "parameter_aware_basis_ok",
+        "charge_scope_consumption_algorithm",
+        "final_disposition_and_two_axis_split",
+        "section_10_maps_and_formulas",
+        "span_construction_failure_boundaries_dedup_ordering",
+        "primary_support_asymmetry",
+        "value_token_present_canonical_path",
+        "topological_order",
+        "transactional_publication_and_failure_record",
+        "pass_a_pass_b_definitions"
+      ],
+      "expected_producer": "Code, Stage 1A",
+      "expected_output_path": "build_log/452_deterministic_rules.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "Stage 2 production",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-ambiguity-ruling",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §5.1-5.18",
+      "verbatim_requirement": "ambiguity handling per 452_ambiguity_ruling.md, recorded as an extension of Part A §4.5 to the ambiguous case decided 2026-07-26",
+      "required_fields": [
+        "the_question",
+        "the_ruling",
+        "resolution_table",
+        "extension_not_reading_declaration",
+        "reasoning",
+        "envelope_constrained_resolution",
+        "scope",
+        "anticipated_effect"
+      ],
+      "expected_producer": "Chat instance, from Tzvi's ruling",
+      "expected_output_path": "build_log/452_ambiguity_ruling.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "§4.4.1 classification",
+          "required": true
+        }
+      ],
+      "note": "EXISTS. Decision date 2026-07-26 corroborated by mtime."
+    },
+    {
+      "product_id": "P452-stage1-test-results",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §7.5",
+      "verbatim_requirement": "Contents: exact test ids; fixture hashes; expected and actual outputs; aggregate pass/fail; first-failure record.",
+      "required_fields": [
+        "test_ids",
+        "fixture_hashes",
+        "expected_outputs",
+        "actual_outputs",
+        "aggregate_pass_fail",
+        "first_failure_record"
+      ],
+      "expected_producer": "452_production_tests.py",
+      "expected_output_path": "build_log/452_stage1_test_results.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "§7.1 Stage-2 revalidation against HEAD",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-producer-consumer-census",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §7.2",
+      "verbatim_requirement": "A product passes only if EVERY one of its required fields passes.",
+      "required_fields": [
+        "producing_function",
+        "input_hashes",
+        "per_entry_result",
+        "per_required_field_result",
+        "aggregate_pass_fail",
+        "first_failure_halt_record",
+        "construction_audit_consumer"
+      ],
+      "expected_producer": "452_run_censuses.py",
+      "expected_output_path": "build_log/452_producer_consumer_census.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "§7.1 Stage-2 revalidation",
+          "required": true
+        }
+      ],
+      "_producer_corrected_2026_08_15": "WAS: 'Code, Stage 1A step 2' — a ROLE STRING, not a file. The producing code ran from a session scratchpad outside the repository, so this §3.1 product could not be reproduced from committed bytes. TENTH producerless instance, and the first inside the remediation package itself. 452_stage1b.py was promoted into build_log/ on 2026-08-15 and verified to regenerate both Stage-1B products byte-identically."
+    },
+    {
+      "product_id": "P452-predicate-reachability-census",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §7.3",
+      "verbatim_requirement": "Must additionally identify every criterion with a possibly-empty domain, confirm each carries both logical_status and exercise_status, and confirm each has a frozen treatment table. #3 and #6 are named instances, not asserted to be the complete list.",
+      "required_fields": [
+        "producing_function",
+        "input_hashes",
+        "per_predicate_reachable_assignment",
+        "possibly_empty_domain_criteria_enumeration",
+        "dual_status_confirmation",
+        "aggregate_pass_fail",
+        "first_failure_halt_record"
+      ],
+      "expected_producer": "452_run_censuses.py",
+      "expected_output_path": "build_log/452_predicate_reachability_census.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "§7.1 Stage-2 revalidation",
+          "required": true
+        }
+      ],
+      "_producer_corrected_2026_08_15": "WAS: 'Code, Stage 1A step 2' — a ROLE STRING, not a file. The producing code ran from a session scratchpad outside the repository, so this §3.1 product could not be reproduced from committed bytes. TENTH producerless instance, and the first inside the remediation package itself. 452_stage1b.py was promoted into build_log/ on 2026-08-15 and verified to regenerate both Stage-1B products byte-identically."
+    },
+    {
+      "product_id": "P452-charge-scope-determination",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §5.0.3, §7.0 step 3a",
+      "verbatim_requirement": "schema_applicability / qualification_use / materialization_subset_membership / source_artifact, source_pointer, quoted_rule / status: resolved | unresolved | conflicting",
+      "required_fields": [
+        "schema_applicability",
+        "qualification_use",
+        "materialization_subset_membership",
+        "source_artifact",
+        "source_pointer",
+        "quoted_rule",
+        "status"
+      ],
+      "expected_producer": "452_stage1b.py step 3a",
+      "expected_output_path": "build_log/452_charge_scope_applicability_determination.json",
+      "temporal_layer": "stage_1b",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "452_input_sufficiency.json (§7.0 step 3b consumes and hashes it)",
+          "required": true
+        }
+      ],
+      "note": "TWO source artifacts: 431_output_schema.json for schema_applicability, 431_requirement_profiles.json for qualification_use. unresolved or conflicting on any parameter HALTS.",
+      "_producer_corrected_2026_08_15": "WAS: 'Code, Stage 1B step 3a' — a ROLE STRING, not a file. The producing code ran from a session scratchpad outside the repository, so this §3.1 product could not be reproduced from committed bytes. TENTH producerless instance, and the first inside the remediation package itself. 452_stage1b.py was promoted into build_log/ on 2026-08-15 and verified to regenerate both Stage-1B products byte-identically."
+    },
+    {
+      "product_id": "P452-input-sufficiency",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §7.4, §7.0 step 3b",
+      "verbatim_requirement": "Consumes and hashes 452_charge_scope_applicability_determination.json; passes only if every parameter is resolved.",
+      "required_fields": [
+        "per_product_derivability",
+        "charge_scope_determination_hash",
+        "atlas_3_3_offset_established",
+        "field_support_108_of_108_reestablished",
+        "aggregate_pass_fail",
+        "first_failure_halt_record"
+      ],
+      "expected_producer": "452_stage1b.py step 3b",
+      "expected_output_path": "build_log/452_input_sufficiency.json",
+      "temporal_layer": "stage_1b",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "§7.1 Stage-2 revalidation",
+          "required": true
+        }
+      ],
+      "note": "Presence/absence and shape facts ONLY. If any field would let a reader infer an outcome, it does not belong here.",
+      "_producer_corrected_2026_08_15": "WAS: 'Code, Stage 1B step 3b' — a ROLE STRING, not a file. The producing code ran from a session scratchpad outside the repository, so this §3.1 product could not be reproduced from committed bytes. TENTH producerless instance, and the first inside the remediation package itself. 452_stage1b.py was promoted into build_log/ on 2026-08-15 and verified to regenerate both Stage-1B products byte-identically."
+    },
+    {
+      "product_id": "P452-config-manifest",
+      "source_document": "452_v8.1",
+      "source_section": "§3.2, §8.1, §7.0 step 5",
+      "verbatim_requirement": "MANIFEST_GITPATH = \"build_log/452_config_manifest.json\" — separately hardcoded, OUTSIDE EXPECTED_PACKAGE_ARTIFACTS",
+      "required_fields": [
+        "declared_artifact_set",
+        "per_artifact_committed_blob_hash",
+        "derived_token"
+      ],
+      "expected_producer": "Code, Stage 1A step 5",
+      "expected_output_path": "build_log/452_config_manifest.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "Stage 2 four-way token equality",
+          "required": true
+        }
+      ],
+      "note": "NOT in §3.1 by design — a manifest carrying the derived token cannot be an input to that token."
+    },
+    {
+      "product_id": "P452-trust-allowed-signers",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1",
+      "verbatim_requirement": "build_log/452_sanction_allowed_signers",
+      "required_fields": [
+        "principal",
+        "key_type",
+        "public_key"
+      ],
+      "expected_producer": "Code, mechanical copy / template edit — no key material authored",
+      "expected_output_path": "build_log/452_sanction_allowed_signers",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "signed-tag verification at Stage 2",
+          "required": true
+        }
+      ],
+      "note": "ABSENT. Flagged by Code at Stage 1A halt. Required at §7.0 step 5.",
+      "_producer_corrected_2026_08_15": "PRODUCER CORRECTED 2026-08-15. WAS: \"Tzvi — Code CANNOT author key material\". That was CORRECT about GENERATION and WRONG about COPYING. Generating a keypair is Tzvi's act and remains so; byte-copying an already-committed PUBLIC key, and substituting four non-security strings in a policy template, are mechanical acts that author no key material. 452_sanction_key.pub and 452_sanction_allowed_signers are byte-identical copies of their 431 originals (verified by sha256). 452_sanction_policy.json changed exactly four strings from 431_sanction_policy.json — _artifact, _purpose, key_file, allowed_signers_file — while authorized_principal, authorized_fingerprint, allowed_namespace and rule are byte-identical. NO PRIVATE KEY WAS GENERATED, READ, COPIED OR INVOKED. The sanction message and the signed tag remain Tzvi's acts and were NOT created."
+    },
+    {
+      "product_id": "P452-trust-public-key",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1",
+      "verbatim_requirement": "build_log/452_sanction_key.pub",
+      "required_fields": [
+        "public_key"
+      ],
+      "expected_producer": "Code, mechanical copy / template edit — no key material authored",
+      "expected_output_path": "build_log/452_sanction_key.pub",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "signed-tag verification at Stage 2",
+          "required": true
+        }
+      ],
+      "note": "ABSENT. §8.2's precondition — that the PRIVATE key is never provided to, read by, copied by or invoked from the Code process — remains UNCONFIRMED by Tzvi as of 2026-08-14, open since v1.",
+      "_producer_corrected_2026_08_15": "PRODUCER CORRECTED 2026-08-15. WAS: \"Tzvi — Code CANNOT author key material\". That was CORRECT about GENERATION and WRONG about COPYING. Generating a keypair is Tzvi's act and remains so; byte-copying an already-committed PUBLIC key, and substituting four non-security strings in a policy template, are mechanical acts that author no key material. 452_sanction_key.pub and 452_sanction_allowed_signers are byte-identical copies of their 431 originals (verified by sha256). 452_sanction_policy.json changed exactly four strings from 431_sanction_policy.json — _artifact, _purpose, key_file, allowed_signers_file — while authorized_principal, authorized_fingerprint, allowed_namespace and rule are byte-identical. NO PRIVATE KEY WAS GENERATED, READ, COPIED OR INVOKED. The sanction message and the signed tag remain Tzvi's acts and were NOT created."
+    },
+    {
+      "product_id": "P452-trust-policy",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1",
+      "verbatim_requirement": "build_log/452_sanction_policy.json. The 431 sanction policy names the Step-431 package and must not be inherited.",
+      "required_fields": [
+        "package_named",
+        "authorized_principal",
+        "key_fingerprint",
+        "scope"
+      ],
+      "expected_producer": "Code, mechanical copy / template edit — no key material authored",
+      "expected_output_path": "build_log/452_sanction_policy.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "trust anchor at P452",
+          "required": true
+        }
+      ],
+      "note": "ABSENT. Must NAME this package. Silent inheritance of the 431 policy is forbidden.",
+      "_producer_corrected_2026_08_15": "PRODUCER CORRECTED 2026-08-15. WAS: \"Tzvi — Code CANNOT author key material\". That was CORRECT about GENERATION and WRONG about COPYING. Generating a keypair is Tzvi's act and remains so; byte-copying an already-committed PUBLIC key, and substituting four non-security strings in a policy template, are mechanical acts that author no key material. 452_sanction_key.pub and 452_sanction_allowed_signers are byte-identical copies of their 431 originals (verified by sha256). 452_sanction_policy.json changed exactly four strings from 431_sanction_policy.json — _artifact, _purpose, key_file, allowed_signers_file — while authorized_principal, authorized_fingerprint, allowed_namespace and rule are byte-identical. NO PRIVATE KEY WAS GENERATED, READ, COPIED OR INVOKED. The sanction message and the signed tag remain Tzvi's acts and were NOT created."
+    },
+    {
+      "product_id": "P452-sanction-message",
+      "source_document": "452_v8.1",
+      "source_section": "§4.0, §8.3",
+      "verbatim_requirement": "452_sanction_message.txt — the exact unsigned message. Neither is a token input.",
+      "required_fields": [
+        "exact_unsigned_message_bytes"
+      ],
+      "expected_producer": "Code, Q-prep (§8.3 step 2)",
+      "expected_output_path": "build_log/452_sanction_message.txt",
+      "temporal_layer": "post_p452_provenance",
+      "consumers": [
+        {
+          "consumer_type": "signer",
+          "consumer": "Tzvi, §8.3 step 4",
+          "required": true
+        },
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "§8.3 step 3",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-sanction-record",
+      "source_document": "452_v8.1",
+      "source_section": "§4.0, §8.3",
+      "verbatim_requirement": "452_sanction_record.md — the legibility record.",
+      "required_fields": [
+        "package_commit",
+        "token",
+        "tag_object_id",
+        "message_hash"
+      ],
+      "expected_producer": "Code, Q-prep",
+      "expected_output_path": "build_log/452_sanction_record.md",
+      "temporal_layer": "post_p452_provenance",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "§8.3 step 3",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-source-records",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.1, §4.10 step 1",
+      "verbatim_requirement": "written ONCE: candidates, judgments, citations, provenance, envelopes, frozen IDs, value_token_present, L1 provenance",
+      "required_fields": [
+        "candidates",
+        "judgments",
+        "citations",
+        "provenance",
+        "envelopes",
+        "judgment_id",
+        "citation_occ_id",
+        "envelope_id",
+        "candidates[].value_token_present",
+        "candidates[].value_token_detector_version",
+        "candidates[].value_token_matches",
+        "candidates[].derivation_source",
+        "l1_artifact",
+        "l1_json_pointer",
+        "l1_value_canonical_json_sha256",
+        "identity_layer",
+        "package_token"
+      ],
+      "expected_producer": "452_production_script.py step 1",
+      "expected_output_path": "build_log/452_stage2_results/source_records.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "every downstream Set-A product",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-pass-a-results",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.10 step 2",
+      "verbatim_requirement": "as-computed, references source-record IDs",
+      "required_fields": [
+        "per_series_certification_state",
+        "identity_layer",
+        "package_token"
+      ],
+      "expected_producer": "452_production_script.py step 2",
+      "expected_output_path": "build_log/452_stage2_results/pass_a_results.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "pass_a_fidelity.json, validation.json, report.md",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-pass-a-fidelity",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.2.1, §4.10 step 3",
+      "verbatim_requirement": "Pass A may add identity and provenance wrappers. It may not reinterpret the payload inside them.",
+      "required_fields": [
+        "every_canonical_l1_judgment_once",
+        "raw_semantic_fields_unchanged",
+        "citation_ids_and_quotes_unchanged",
+        "provider_model_fallback_unchanged",
+        "candidate_parameter_series_role_mapping_unchanged",
+        "p4_merged_and_terminal_states_unchanged",
+        "thirty_series_and_attempts_reconcile",
+        "no_l1_record_omitted_or_invented",
+        "status"
+      ],
+      "expected_producer": "452_production_script.py step 3",
+      "expected_output_path": "build_log/452_stage2_results/pass_a_fidelity.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "HALTS immediately on failure",
+          "required": true
+        },
+        {
+          "consumer_type": "validator",
+          "consumer": "§4.12 execution_integrity_status conjunct 4",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-grounding-enforcement",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.4, §4.10 step 4",
+      "verbatim_requirement": "0/1/2+ classification and the empty_field_support EMPTY branch",
+      "required_fields": [
+        "failed_support_traces",
+        "missing_support_traces",
+        "original_value",
+        "support_status",
+        "citation_class",
+        "effective_value",
+        "counted_in_merge",
+        "resulting_agreement"
+      ],
+      "expected_producer": "452_production_script.py step 4",
+      "expected_output_path": "build_log/452_stage2_results/grounding_enforcement.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "pass_b_results.json, certified_parameter_evidence.json",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-pass-b-results",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.4.6, §4.10 step 5",
+      "verbatim_requirement": "Nothing downstream of an invalidated field may be copied from P4's merged or terminal state. Eight-stage recomputation.",
+      "required_fields": [
+        "effective_per_evaluator_fields",
+        "grounded_relevance_and_cited_union_retention",
+        "per_candidate_semantic_merge",
+        "agreement_by_field",
+        "parameter_candidate_comparison",
+        "applicability_match",
+        "certification_trace",
+        "terminal_certification_state"
+      ],
+      "expected_producer": "452_production_script.py step 5",
+      "expected_output_path": "build_log/452_stage2_results/pass_b_results.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "pass_comparison, certified_parameter_evidence, validation",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-pass-comparison",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.10 step 6",
+      "verbatim_requirement": "deltas",
+      "required_fields": [
+        "per_series_delta"
+      ],
+      "expected_producer": "452_production_script.py step 6",
+      "expected_output_path": "build_log/452_stage2_results/pass_comparison.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "report",
+          "consumer": "report.md",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-certified-parameter-evidence",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.3, §4.10 step 7",
+      "verbatim_requirement": "Attempted for every Pass-A satisfied state; blocked records emitted, not skipped.",
+      "required_fields": [
+        "historical_certification_state",
+        "materialization_status",
+        "materialization_block_reason",
+        "primary_span",
+        "verified_support_spans",
+        "failed_support_traces",
+        "missing_support_traces"
+      ],
+      "expected_producer": "452_production_script.py step 7",
+      "expected_output_path": "build_log/452_stage2_results/certified_parameter_evidence.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "validation.json #3 and #6",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-envelope-sufficiency",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.8, §4.10 step 8",
+      "verbatim_requirement": "No sufficiency threshold is declared. Part B §10 says 'Report char distance and inclusion' — a measurement, not a test.",
+      "required_fields": [
+        "establishing_clause_map",
+        "distance",
+        "direction",
+        "inclusion",
+        "partial_covered_chars",
+        "citation_categories",
+        "envelope_bounds",
+        "boundary_method",
+        "truncation_flags",
+        "resolution_counts"
+      ],
+      "expected_producer": "452_production_script.py step 8",
+      "expected_output_path": "build_log/452_stage2_results/envelope_sufficiency.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "report",
+          "consumer": "report.md, observations.json",
+          "required": true
+        },
+        {
+          "consumer_type": "future_citation",
+          "consumer": "Part A §8.2 linked-span-retrieval ratification",
+          "required": false
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-observations",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.7, §4.10 step 9",
+      "verbatim_requirement": "All six §9.2 classes including cand_04's none/unclear abstention-versus-negation pattern stated explicitly",
+      "required_fields": [
+        "cand_04_basis_components_per_panelist",
+        "cand_04_abstention_vs_negation_statement",
+        "cand_05_vs_cand_06_value_completeness",
+        "cand_07_vs_cand_03_text_role",
+        "atreca_control_variance",
+        "reasoning_exhaustion_naming_note",
+        "envelope_sufficiency_cross_reference",
+        "completeness_qualifiers"
+      ],
+      "expected_producer": "452_production_script.py step 9",
+      "expected_output_path": "build_log/452_stage2_results/observations.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "report",
+          "consumer": "report.md",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-validation",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.2, §4.10 step 10",
+      "verbatim_requirement": "Records { criterion_id, status, evidence_artifact, evidence_pointer, details }",
+      "required_fields": [
+        "criterion_id",
+        "status",
+        "evidence_artifact",
+        "evidence_pointer",
+        "details",
+        "logical_status",
+        "exercise_status",
+        "pass_b_satisfied_count",
+        "pass_b_complete_package_count",
+        "materialization_function_exercised",
+        "materialization_exercised_by_pass",
+        "post_enforcement_certified_package_exercised",
+        "support_span_materialization_exercised",
+        "support_span_materialization_exercised_by_pass",
+        "support_bearing_complete_package_count_by_pass",
+        "anti_borrowing_dataflow_verified",
+        "anti_borrowing_runtime_exercised",
+        "anti_borrowing_runtime_exercised_by_pass",
+        "ambiguous_support_invalidation_count",
+        "empty_support_invalidation_count",
+        "tenth_check_insufficient_context"
+      ],
+      "expected_producer": "452_production_script.py step 10",
+      "expected_output_path": "build_log/452_stage2_results/validation.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "report",
+          "consumer": "report.md",
+          "required": true
+        },
+        {
+          "consumer_type": "validator",
+          "consumer": "final_mechanism_disposition.json",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-repository-seam-check",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.2, §4.10 step 11",
+      "verbatim_requirement": "NON-report criteria only",
+      "required_fields": [
+        "reviewed_hashes_equal_run_hashes",
+        "pre_post_cam_clean",
+        "no_live_import_consumption_seam"
+      ],
+      "expected_producer": "452_production_script.py step 11",
+      "expected_output_path": "build_log/452_stage2_results/repository_seam_check.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "report",
+          "consumer": "report.md",
+          "required": true
+        },
+        {
+          "consumer_type": "validator",
+          "consumer": "final_mechanism_disposition.json",
+          "required": true
+        }
+      ],
+      "note": "The two report-inspecting criteria are EXCLUDED here and live in post_report_validation.json — this is what breaks the Part B cycle."
+    },
+    {
+      "product_id": "P452-SA-report",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.6, §4.10 step 12",
+      "verbatim_requirement": "§9.0 is a hard requirement: every result cell carries certification state and completeness status inline. No cell abbreviates review_needed_no_qualifying_candidate to 'unsatisfied,' 'failed,' or '0/5.'",
+      "required_fields": [
+        "per_evaluator_per_candidate_all_section5_fields",
+        "field_support_with_citation_class",
+        "cited_reason",
+        "confidence",
+        "provider_model_fallback_metadata",
+        "per_quote_source_verification",
+        "value_token_present_by_reference",
+        "panel_and_fallback_provenance",
+        "candidate_to_parameter_lease_series_mapping",
+        "certification_derivation_per_series",
+        "terminal_state_distribution_labelled_separately"
+      ],
+      "expected_producer": "452_production_script.py step 12",
+      "expected_output_path": "build_log/452_stage2_results/report.md",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "post_report_validation.json",
+          "required": true
+        },
+        {
+          "consumer_type": "future_citation",
+          "consumer": "patent supplement",
+          "required": false
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-post-report-validation",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.10 steps 12-13",
+      "verbatim_requirement": "the §9.0 completeness-qualifier check, and the validator/report parity check",
+      "required_fields": [
+        "completeness_qualifier_check",
+        "validator_report_parity_check"
+      ],
+      "expected_producer": "452_production_script.py step 13",
+      "expected_output_path": "build_log/452_stage2_results/post_report_validation.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "final_mechanism_disposition.json",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-final-mechanism-disposition",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.16, §4.10 step 14",
+      "verbatim_requirement": "The conjunction consumes logical_status only. Every exercise_status is carried alongside, reported, and consumed by RTP and patent claims — never by the conjunction.",
+      "required_fields": [
+        "pass_a_disposition",
+        "pass_b_disposition",
+        "per_criterion_logical_status",
+        "per_criterion_exercise_status"
+      ],
+      "expected_producer": "452_production_script.py step 14",
+      "expected_output_path": "build_log/452_stage2_results/final_mechanism_disposition.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "452_execution_record_final.md",
+          "required": true
+        }
+      ],
+      "note": "MECHANISM axis only. execution_integrity is the other axis and is produced in 452_execution_record_final.md (§4.12)."
+    },
+    {
+      "product_id": "P452-SA-l2-comparison",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §6.9, §4.10 step 15",
+      "verbatim_requirement": "The comparison function may write ONLY l2_comparison.json. It may not mutate, overwrite, or feed any authoritative field",
+      "required_fields": [
+        "per_l2_artifact_comparison",
+        "agreements",
+        "disagreements"
+      ],
+      "expected_producer": "452_production_script.py step 15, isolated",
+      "expected_output_path": "build_log/452_stage2_results/l2_comparison.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "construction audit",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-contract-reconciliation",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.13, §4.10 step 16",
+      "verbatim_requirement": "covers only the products Part A and Part B promised, each mapped to produced-by-P4 / produced-by-this-package / genuinely-absent",
+      "required_fields": [
+        "per_part_a_b_product_classification"
+      ],
+      "expected_producer": "452_production_script.py step 16",
+      "expected_output_path": "build_log/452_stage2_results/contract_reconciliation.md",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "construction audit",
+          "required": true
+        }
+      ],
+      "note": "SCOPE BOUND: Part A and Part B products ONLY. 452-native lifecycle products are covered by the inventory, census, output closure, and final record."
+    },
+    {
+      "product_id": "P452-SA-zero-provider-call-check",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.14, §4.10 step 17",
+      "verbatim_requirement": "pass only when the static closure scan passes, outbound-attempt count is zero, and every subprocess invocation matched the allowlist",
+      "required_fields": [
+        "pre_import_guard_installation",
+        "static_import_closure_result",
+        "subprocess_commands",
+        "outbound_attempt_count",
+        "finalization_point",
+        "status"
+      ],
+      "expected_producer": "452_production_script.py step 17",
+      "expected_output_path": "build_log/452_stage2_results/zero_provider_call_check.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "452_production_invocation_record.json, 452_execution_record_final.md",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SA-output-manifest",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.11, §4.10 step 18",
+      "verbatim_requirement": "path and SHA-256 for every Set-A product except itself, with self_excluded: true and the reason recorded. It does not carry the staged-closure result.",
+      "required_fields": [
+        "package_commit",
+        "token",
+        "tag_name",
+        "tag_object_id",
+        "input_hashes_before",
+        "input_hashes_after",
+        "per_output_path_and_sha256",
+        "self_excluded",
+        "self_exclusion_reason",
+        "script_version",
+        "start_timestamp",
+        "end_timestamp",
+        "detached_head",
+        "whole_tree_cleanliness_before",
+        "whole_tree_cleanliness_after",
+        "exit_status"
+      ],
+      "expected_producer": "452_production_script.py step 18",
+      "expected_output_path": "build_log/452_stage2_results/output_manifest.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "452_production_invocation_record.json, 452_execution_record_final.md",
+          "required": true
+        }
+      ]
+    },
+    {
+      "product_id": "P452-SAprime-production-invocation-record",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.17, §4.10 step 21",
+      "verbatim_requirement": "Produced after the results directory is promoted, while the production guard is still active. Written to a temporary file and atomically renamed into place.",
+      "required_fields": [
+        "final_target_directory_closure",
+        "output_manifest_sha256",
+        "zero_provider_call_check_sha256",
+        "final_outbound_attempt_count",
+        "subprocess_allowlist_result",
+        "completion_status"
+      ],
+      "expected_producer": "452_production_script.py step 21",
+      "expected_output_path": "build_log/452_production_invocation_record.json",
+      "temporal_layer": "post_production_provenance",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "452_execution_record_final.md",
+          "required": true
+        },
+        {
+          "consumer_type": "future_citation",
+          "consumer": "any citation of an L3 result",
+          "required": true
+        }
+      ],
+      "note": "Production success requires BOTH this and 452_stage2_results/ as ONE completed unit. Neither is authoritative without the other — a consumption rule as well as a production rule."
+    },
+    {
+      "product_id": "P452-SB-execution-record-final",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.12",
+      "verbatim_requirement": "Producer: python build_log/452_production_script.py finalize-record",
+      "required_fields": [
+        "output_manifest_sha256",
+        "zero_provider_call_check_sha256",
+        "production_invocation_record_sha256",
+        "p452_commit",
+        "token",
+        "signed_tag_object_id",
+        "output_hashes_designated_for_results_commit",
+        "post_report_aggregate",
+        "exercise_fields",
+        "four_gate_record_aggregates",
+        "finalize_invocation_zero_call",
+        "execution_integrity_status"
+      ],
+      "expected_producer": "452_production_script.py finalize-record",
+      "expected_output_path": "build_log/452_execution_record_final.md",
+      "temporal_layer": "post_p452_provenance",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "construction audit",
+          "required": true
+        },
+        {
+          "consumer_type": "future_citation",
+          "consumer": "any citation of an L3 result",
+          "required": true
+        }
+      ],
+      "note": "FIELD-LEVEL CENSUS TARGET: execution_integrity_status is a REQUIRED FIELD with its own producer and eleven conjuncts. v8 named the axis with nothing computing it; a product-level census would have passed this record while the field inside it had no producer. This entry is the reason §7.2 runs per required field."
+    },
+    {
+      "product_id": "P452-failure-record",
+      "source_document": "452_v8.1",
+      "source_section": "§3.3, §4.15",
+      "verbatim_requirement": "authority: NONE. Excluded from every success artifact, every claim, and every set in §3.3. Never cited as an L3 result.",
+      "required_fields": [
+        "failure_stage",
+        "failure_reason",
+        "staged_paths_present",
+        "staged_paths_missing",
+        "inputs_verified",
+        "guard_status",
+        "outbound_attempt_count",
+        "staging_directory_disposition",
+        "l3_authority"
+      ],
+      "expected_producer": "452_production_script.py, failure path",
+      "expected_output_path": "build_log/452_stage2_failure_record.json",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "construction audit",
+          "required": true
+        }
+      ],
+      "note": "NON-AUTHORITATIVE. Emitted only on failure. Published via temporary file plus one atomic rename. Must record post-promotion quarantine disposition per §4.17."
+    },
+    {
+      "product_id": "PA-03-completeness-provenance-typed",
+      "source_document": "431_partA",
+      "source_section": "§6.4",
+      "verbatim_requirement": "Part A §6.4 specifies completeness_provenance as a TYPED structure of seven sub-fields, described as 'the single most load-bearing negative-claim guard', with an explicit warning against reducing it to a truthy flag.",
+      "required_fields": [
+        "status",
+        "method",
+        "scope",
+        "limitations",
+        "evidence_artifact_id",
+        "candidate_generation_policy_version",
+        "source_document_hash"
+      ],
+      "expected_producer": "UNDETERMINED pending Stage-1B determination. RESOLVING CHECK: 452_input_sufficiency.json (§7.4, §7.0 step 3b) must establish whether run_431_selection_measurement.py wrote all seven §6.4 sub-fields into certification_trace.completeness_provenance, or only a status token. If any sub-field is absent, that is a §7.4 HALT and this product is then either superseded by a named Step-452 product or the package halts. Stage 1A cannot resolve this: §2 forbids reading L1 artifacts at Stage 1A.",
+      "expected_output_path": "within build_log/431_selection_measurement_sidecar.json → certification_trace.completeness_provenance",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.2 completeness-limited negatives; §4.6 §9.0 inline qualifier",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-2. Five of seven sub-field names occurred ZERO times in seed v1. The seeder carried completeness_provenance as one opaque field inside PB-14, which is precisely the reduction Part A forbids and precisely what a product-level census cannot see. Code must transcribe the seventh name from §6.4; the seeder will not author a field name it has not read. If P4 wrote only a status token, this is a FURTHER producerless instance beyond Step 451's seven.\n\nRULING A, 2026-08-15. SUPERSEDED BY: P452-SA-source-records (build_log/452_stage2_results/source_records.json, §4.9's recoverable-field pattern), at canonical path `source_records.json -> completeness_provenance_recovered`. Stage-1B read of the frozen sidecar CONFIRMED P4 wrote a status token only: all 30 traces carry {\"status\": \"not_established\"} and nothing else — the EIGHTH producerless instance beyond Step 451's seven. Five of six absent sub-fields are deterministically recoverable from frozen token-bound inputs, each carrying a derivation_source. `method` is ruled null. `candidate_generation_policy_version` is a HALT: it is absent from 431_measurement_config.json and from every frozen 431 artifact, and Ruling A forbids inventing it.\n\nRULINGS C and D, 2026-08-15. All seven sub-fields now resolved: status read from L1; scope, source_document_hash, evidence_artifact_id and limitations recovered from frozen inputs; method and candidate_generation_policy_version null-with-basis. candidate_generation_policy_version is the NINTH producerless instance and is DISTINCT IN KIND from the other eight — those are unwritten outputs; this is a specified field with no possible referent, because Part B does not perform candidate generation. The limitations pointer was corrected from Part B §3.1 (which does not exist) to Part A §3.1, and the correction is recorded in the artifact rather than hidden.",
+      "transcription_note_by_code": "Seventh sub-field transcribed from Part A 431_partA_governed_selection_spec.md §6.4 line 246-253 fenced block: 'source_document_hash'. Set difference against the six the seeder carried. Transcription from the source block, not authorship."
+    },
+    {
+      "product_id": "PA-04-contested-records",
+      "source_document": "431_partA",
+      "source_section": "§5.1, realized in §5.2",
+      "verbatim_requirement": "431_partA_governed_selection_spec.md line 164, verbatim: \"- **Contested inclusion** (1/3, 2/3 relevant) and **contested withholding** (a panelist marks `not_relevant` where others include) are real structured events, recorded with cited reasons as provenance, never collapsed to a number, never used to drop evidence. Minority relevance is never excluded (Supplement #26 §6.1 asymmetry: omission fatal, over-inclusion cheap).\"",
+      "required_fields": [
+        "retained_evidence_membership",
+        "agreement_by_field.parameter_family_relevance",
+        "per_panelist"
+      ],
+      "expected_producer": "run_431_selection_measurement.py §5.2 per-candidate merge. RESOLVING CHECK: 452_input_sufficiency.json (§7.4, §7.0 step 3b) must establish that agreement_by_field.parameter_family_relevance and per_panelist[] are present per judgment in the frozen sidecar, and that retained_evidence membership is recoverable. Step 447 reported agreement_by_field present, so this is expected to resolve, but §7.4 re-establishes it rather than assuming — Step 447's finding is L2. If any is absent, that is a §7.4 HALT: §4.4.6 steps 2-4 would have no input to recompute from.",
+      "expected_output_path": "within build_log/431_selection_measurement_sidecar.json → agreement_by_field, per_panelist",
+      "temporal_layer": "stage_2_output",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.4.6 steps 2-4 — retention recomputation, merge, agreement_by_field",
+          "required": true
+        }
+      ],
+      "note": "RESOLVED 2026-08-14 BY RULING, NOT BY TRANSCRIPTION. Code's search established that no contested_* field name occurs in Part A, Part B or 452 v8; §5.1 states the requirement in prose and names no structure. The Chat instance ruled that §5.1 names a PHENOMENON whose record is §5.2's existing structures: a contested inclusion is a candidate in retained_evidence whose parameter_family_relevance agreement is majority_with_dissent or split, with dissenting reasons preserved in per_panelist[]. Basis: §5.2 describes the case verbatim ('A candidate that one panelist called relevant and two called not-relevant stays in the cited union AND is blocked from satisfied while relevance is non-unanimous') and §5.1's three requirements map one-for-one onto agreement_by_field's enum, per_panelist[]'s cited judgments, and per-field rather than global recording. §5.1's prose COULD have been implemented as a distinct record type and was not; this ruling is an interpretation and must never be cited as what §5.1 says. CONSEQUENCE: no instruction amendment. §4.4.6 steps 2-4 already recompute all three fields. STAGE 1B MUST STILL ESTABLISH that P4 actually wrote agreement_by_field and per_panelist — Step 447 reported agreement_by_field present, so this is expected to resolve, but it is not assumed.\n\nRULING B, 2026-08-15 — a ruling, not a reading; neither artifact says this. per_panelist: PASS, name_differs_property_holds. Part A §5.2 specifies `per_panelist[] (full cited judgments, always preserved)` — a PROPERTY, not an identifier. `per_role.{A,B,C}.judgment` carries relevance, field_support and a reason for all three roles, so the specified property holds under a different name. Same class as semantic_support_span_ids versus semantic_support_spans in §8.1: Part A names a concept, the harness names a field. retained_evidence: PASS, recoverable_not_stored, materialised at `source_records.json -> candidates[].retained_evidence_membership` under the §4.9 pattern.",
+      "code_note_by_claude_code": "§5.1's named cases — contested inclusion (1/3, 2/3 relevant) and contested\nwithholding — are substantive disagreements between `relevant` and\n`not_relevant`. Under the frozen merge they resolve to\nagreement_by_field.parameter_family_relevance == \"split\", NOT\n\"majority_with_dissent\", which requires the substantive votes to agree with\nthe dissent being an abstention.\n\nCONSTRAINT ON READING THIS ENTRY: a validator or reader identifying §5.1\ncontested events looks for \"split\". \"majority_with_dissent\" is NOT a\ncontested-inclusion signature.\n\nCORRECTION (Chat, 2026-08-14) to an earlier form of this note: grounding\ninvalidation does NOT convert split into majority_with_dissent. That\ndescribes P4's merge_panel(), where an invalidated field becomes `unclear`\nand `unclear` is excluded from `substantive`. 452 §4.4.2 replaced that:\nthe invalidated vote is omitted from substantive aggregation entirely\n(rule 2) and the resulting token is `not_assessable` (rule 4). P4 never\napplied grounding invalidation in any case, so the conversion has never run\nin either pass."
+    },
+    {
+      "product_id": "L1-fixture-atreca",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1",
+      "verbatim_requirement": "05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt",
+      "required_fields": [
+        "canonical_text"
+      ],
+      "expected_producer": "pre-existing fixture, bound at Step 445",
+      "expected_output_path": "05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "§3.1 token binding and HEAD re-verification",
+          "required": true
+        },
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.3.1 CanonicalSource construction, hash 7118cc6d…",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1. Bound into the token at Step 445 so a worktree contains everything the run reads. The word 'lease' appeared once in the whole of seed v1."
+    },
+    {
+      "product_id": "L1-fixture-atlas",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1",
+      "verbatim_requirement": "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt",
+      "required_fields": [
+        "canonical_text"
+      ],
+      "expected_producer": "pre-existing fixture, bound at Step 445",
+      "expected_output_path": "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "§3.1 token binding and HEAD re-verification",
+          "required": true
+        },
+        {
+          "consumer_type": "validator",
+          "consumer": "452 §4.3.1 CanonicalSource, hash da9b5655…; §4.8 Atlas §3.3 establishing-clause location",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1."
+    },
+    {
+      "product_id": "SPEC-partA",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1",
+      "verbatim_requirement": "build_log/431_partA_governed_selection_spec.md",
+      "required_fields": [],
+      "expected_producer": "Chat instance, ratified 2026-07-19, committed e702bf0",
+      "expected_output_path": "build_log/431_partA_governed_selection_spec.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "§3.1 token binding",
+          "required": true
+        },
+        {
+          "consumer_type": "validator",
+          "consumer": "§5.0.1 precedence rule; §4.13 contract reconciliation",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1. Bound so the interpretation target is fixed. §5.0.1 supersedes its charge_basis_components token and resolves its §6.3 conjunction; the exact bytes being superseded must be in the package."
+    },
+    {
+      "product_id": "SPEC-partB",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1",
+      "verbatim_requirement": "build_log/431_partB_measurement_instruction.md",
+      "required_fields": [],
+      "expected_producer": "Chat instance, v3.3 ratified 2026-07-19, committed 38785e7",
+      "expected_output_path": "build_log/431_partB_measurement_instruction.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "runtime_gate",
+          "consumer": "§3.1 token binding",
+          "required": true
+        },
+        {
+          "consumer_type": "validator",
+          "consumer": "§5.0.1 precedence; §5.0.2 cand_06 supersession; §4.13 reconciliation",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1."
+    },
+    {
+      "product_id": "L2-postrun-partial-validation",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §6.9",
+      "verbatim_requirement": "build_log/431_postrun_partial_validation.json",
+      "required_fields": [
+        "per_criterion_status",
+        "mechanism_success"
+      ],
+      "expected_producer": "Step 450 ad hoc post-run audit script (L2)",
+      "expected_output_path": "build_log/431_postrun_partial_validation.json",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "§6.9 l2_comparison.json, read ONLY after all L3 results are finalized",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1. NON-AUTHORITATIVE comparison input. Bound so the comparison target cannot drift. Never consumed as data."
+    },
+    {
+      "product_id": "L2-status-447",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §6.9",
+      "verbatim_requirement": "build_log/447_code_status.md",
+      "required_fields": [],
+      "expected_producer": "Claude Code, Step 447",
+      "expected_output_path": "build_log/447_code_status.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "§6.9 l2_comparison.json",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1. NON-AUTHORITATIVE comparison input."
+    },
+    {
+      "product_id": "L2-status-448",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §6.9",
+      "verbatim_requirement": "build_log/448_code_status.md",
+      "required_fields": [],
+      "expected_producer": "Claude Code, Step 448",
+      "expected_output_path": "build_log/448_code_status.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "§6.9 l2_comparison.json",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1. NON-AUTHORITATIVE comparison input."
+    },
+    {
+      "product_id": "L2-status-449",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §6.9",
+      "verbatim_requirement": "build_log/449_code_status.md",
+      "required_fields": [],
+      "expected_producer": "Claude Code, Step 449",
+      "expected_output_path": "build_log/449_code_status.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "§6.9 l2_comparison.json",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1. NON-AUTHORITATIVE comparison input."
+    },
+    {
+      "product_id": "L2-status-450",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §6.9",
+      "verbatim_requirement": "build_log/450_code_status.md",
+      "required_fields": [],
+      "expected_producer": "Claude Code, Step 450",
+      "expected_output_path": "build_log/450_code_status.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "§6.9 l2_comparison.json",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1. NON-AUTHORITATIVE comparison input. Source of the field_support 108/108 finding that §7.4 must RE-ESTABLISH rather than assume."
+    },
+    {
+      "product_id": "L2-status-451",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §6.9",
+      "verbatim_requirement": "build_log/451_code_status.md",
+      "required_fields": [],
+      "expected_producer": "Claude Code, Step 451",
+      "expected_output_path": "build_log/451_code_status.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "§6.9 l2_comparison.json",
+          "required": true
+        },
+        {
+          "consumer_type": "construction_audit",
+          "consumer": "the seven-producerless-product census this package remediates",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1. NON-AUTHORITATIVE comparison input, and the origin of Step 452's entire premise."
+    },
+    {
+      "product_id": "L2-input-hashes-448",
+      "source_document": "452_v8.1",
+      "source_section": "§3.1, §6.9",
+      "verbatim_requirement": "build_log/448_input_hashes.md",
+      "required_fields": [
+        "per_artifact_sha256_before",
+        "per_artifact_sha256_after"
+      ],
+      "expected_producer": "Claude Code, Step 448 Task 0",
+      "expected_output_path": "build_log/448_input_hashes.md",
+      "temporal_layer": "stage_1",
+      "consumers": [
+        {
+          "consumer_type": "validator",
+          "consumer": "§6.9 l2_comparison.json; corroborates L1 immutability across Steps 448-451",
+          "required": true
+        }
+      ],
+      "note": "ADDED v2 by HALT-1."
+    }
+  ],
+  "products_deliberately_excluded_with_reason": [
+    {
+      "excluded": "Part B §9.1's nine criteria and Part A §11.1's eight",
+      "reason": "Criteria are evaluated BY products, not products themselves. They appear as required_fields of P452-SA-validation. If Code judges them products in their own right, that is a HALT and a correction to this seed."
+    },
+    {
+      "excluded": "452_stage2_results/ as a directory",
+      "reason": "Enumerated as its eighteen constituent files. If §7.2 requires the directory itself to have a producer and consumer, that is a HALT."
+    },
+    {
+      "excluded": "The staging directory build_log/.452_stage2_results.staging-<nonce>/",
+      "reason": "Transient, never published, never cited. If Code judges it a product requiring a census entry, that is a HALT."
+    }
+  ],
+  "seeder_declaration": "This inventory is a claim, not a finding. Every entry above may be wrong. The independent sweep is what makes it evidence."
+}

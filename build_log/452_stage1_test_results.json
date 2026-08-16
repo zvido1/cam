@@ -1,0 +1,271 @@
+{
+  "_artifact": "452_stage1_test_results.json",
+  "_producer": "build_log/452_production_tests.py",
+  "_stage": "1A",
+  "_fixtures": "SYNTHETIC LITERALS ONLY — no L1 run artifact was read",
+  "_generated_utc": "2026-08-16T03:51:40.773194+00:00",
+  "non_gate_stage1_artifact_hashes": {
+    "build_log/452_production_script.py": "aedcbeca7c380d65e9191c38d132308d7ea388f7d6a2cef7cfd0acf053883c88",
+    "build_log/452_production_tests.py": "39c5c14d1c029d9a6d6fbf1c4722abc3a5af3f2707583b649dca7d6afd9980fb",
+    "build_log/452_deterministic_rules.json": "ce1d314b5c23bc24492181e49cc5f7f598d37e0350f9cd1a581ce7aa90ada3ac",
+    "build_log/452_output_schema.json": "167009ff5583f9cf9111dee3510f12369319c621b417f4738771fee076f9ee13",
+    "build_log/452_required_product_inventory.json": "0b21b3d31537ffe7dfd3deb296f5a9fd0eb57bc26d86d9d06509edb9178b36e6",
+    "build_log/452_ambiguity_ruling.md": "4881e95c8d973c806810df492eed58f8e8e3baf44c7980e8f95fd860721b2495",
+    "build_log/452_production_package_instruction_v8.md": "b9343bd91066ca9fac694f945f6bf5ef8f13a5ab59c5fac091826cb9d081a7da",
+    "build_log/452_ratification_record.md": "777ba0396e34500f3c4a7c31b25ab86166a500578a60f3ee36df30de0016728a"
+  },
+  "input_hashes": {
+    "build_log/452_production_script.py": "aedcbeca7c380d65e9191c38d132308d7ea388f7d6a2cef7cfd0acf053883c88",
+    "build_log/452_production_tests.py": "39c5c14d1c029d9a6d6fbf1c4722abc3a5af3f2707583b649dca7d6afd9980fb",
+    "build_log/452_deterministic_rules.json": "ce1d314b5c23bc24492181e49cc5f7f598d37e0350f9cd1a581ce7aa90ada3ac",
+    "build_log/452_output_schema.json": "167009ff5583f9cf9111dee3510f12369319c621b417f4738771fee076f9ee13",
+    "build_log/452_required_product_inventory.json": "0b21b3d31537ffe7dfd3deb296f5a9fd0eb57bc26d86d9d06509edb9178b36e6",
+    "build_log/452_ambiguity_ruling.md": "4881e95c8d973c806810df492eed58f8e8e3baf44c7980e8f95fd860721b2495",
+    "build_log/452_production_package_instruction_v8.md": "b9343bd91066ca9fac694f945f6bf5ef8f13a5ab59c5fac091826cb9d081a7da",
+    "build_log/452_ratification_record.md": "777ba0396e34500f3c4a7c31b25ab86166a500578a60f3ee36df30de0016728a"
+  },
+  "results": [
+    {
+      "area": "identity",
+      "test": "frozen identity formulas + collision resistance",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "resolution",
+      "test": "two-window split (doc-wide AMBIGUOUS, window VERIFIED)",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "resolution",
+      "test": "0/1/2+ classification",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "grounding",
+      "test": "empty field_support -> missing_support_trace",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "grounding",
+      "test": "invalidation -> not_assessable (R7 rules 2,4)",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "grounding",
+      "test": "two survivors are not unanimous (R7 rule 3)",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "grounding",
+      "test": "contested = split, not majority_with_dissent (PA-04)",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "grounding",
+      "test": "failed-trace boundary",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "grounding",
+      "test": "schema-fixed not_applicable exempt from missing-support",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "certification",
+      "test": "parameter-aware basis_ok, both branches",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "certification",
+      "test": "no implicit majority; satisfied requires one qualified id",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "certification",
+      "test": "not_assessable cannot support satisfied (R7 rule 5)",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "anti_borrowing",
+      "test": "value_ok dataflow excludes support spans",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "closure",
+      "test": "Set-A is exactly eighteen files",
+      "kind": "positive",
+      "status": "PASS"
+    },
+    {
+      "area": "adverse",
+      "test": "unexpected staged output halts",
+      "kind": "adverse",
+      "status": "PASS"
+    },
+    {
+      "area": "adverse",
+      "test": "missing staged output halts",
+      "kind": "adverse",
+      "status": "PASS"
+    },
+    {
+      "area": "adverse",
+      "test": "pre-existing target directory halts",
+      "kind": "adverse",
+      "status": "PASS"
+    },
+    {
+      "area": "adverse",
+      "test": "subprocess outside allowlist halts",
+      "kind": "adverse",
+      "status": "PASS"
+    },
+    {
+      "area": "adverse",
+      "test": "outbound connection blocked and counted",
+      "kind": "adverse",
+      "status": "PASS"
+    },
+    {
+      "area": "adverse",
+      "test": "failed primary pin halts the package",
+      "kind": "adverse",
+      "status": "PASS"
+    },
+    {
+      "area": "adverse",
+      "test": "source/canonical hash mismatch halts",
+      "kind": "adverse",
+      "status": "PASS"
+    },
+    {
+      "area": "adverse",
+      "test": "production refuses without Stage-2 sanction; failure record carries no authority",
+      "kind": "adverse",
+      "status": "PASS"
+    },
+    {
+      "area": "adverse",
+      "test": "finalize-record refuses",
+      "kind": "adverse",
+      "status": "PASS"
+    },
+    {
+      "area": "adverse",
+      "test": "edited working-tree manifest",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "requires the Stage-2 runtime gate over a real P452 manifest — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "manifest binding omission",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "same — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "manifest binding addition",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "same — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "stale CLI token",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "requires a minted P452 token — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "stale signed-tag token",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "requires a signed P452 tag, which does not exist — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "modified repository-local imported module",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "requires the Stage-2 whole-tree gate — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "missing gate record",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "gate records are produced by this step; the check runs at Stage 2 (§7.1) — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "gate record marked pass carrying stale input hashes",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "same — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "modified L1 input",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "requires the Stage-2 before/after input hash comparison — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "output-manifest omission",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "requires a produced Set A — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "Set-A file altered between production and finalize-record",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "requires both invocations — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "charge_scope determination unresolved",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "the determination is a Stage-1B product (§5.0.3) — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "invocation-record write/rename failing after Set-A promotion",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "requires a promoted Set A — Stage 2 is not authorized by 452_ratification_record.md"
+    },
+    {
+      "area": "adverse",
+      "test": "each execution_integrity_status conjunct failing individually",
+      "kind": "adverse",
+      "status": "NOT_EXERCISED",
+      "reason": "requires a produced Set A and Set B — Stage 2 is not authorized by 452_ratification_record.md"
+    }
+  ],
+  "counts": {
+    "PASS": 23,
+    "NOT_EXERCISED": 14
+  },
+  "passed": true,
+  "_passed_definition": "True iff zero FAIL. NOT_EXERCISED entries are reported, never counted as passes; each names the Stage-2 authorization it needs."
+}

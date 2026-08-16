@@ -1,0 +1,165 @@
+{
+  "_artifact": "452_charge_scope_applicability_determination.json",
+  "_producer": "Code, Stage 1B step 3a",
+  "_stage": "1B",
+  "_spec": "452_production_package_instruction_v8.md §5.0.3, §7.0 step 3a",
+  "_source_artifact_hashes": {
+    "build_log/431_output_schema.json": "a9724730044357131cec19e81558a0e05a9460d1a3588f9ef9d520e47d26d4b2",
+    "build_log/431_requirement_profiles.json": "57f8a22ae258e01afa94568c9fba8e9f895e79868c592134b162d5923bd8563b",
+    "build_log/431_partA_governed_selection_spec.md": "e62c9ef0c6d1e2bf10157e87f67413641cf08757ebef759c53bcedaf27b27df4"
+  },
+  "_no_l1_run_artifact_read": true,
+  "_inference_prohibited": "§5.0.3 forbids settling this by inference. Where the two named artifacts diverge the status is `conflicting`, never a chosen reading.",
+  "parameters": [
+    {
+      "parameter": "tenant_share",
+      "schema_applicability": "required_unfixed",
+      "qualification_use": "does_not_gate_qualification",
+      "materialization_subset_membership": "member",
+      "source_artifact": [
+        "build_log/431_output_schema.json",
+        "build_log/431_requirement_profiles.json",
+        "build_log/431_partA_governed_selection_spec.md"
+      ],
+      "source_pointer": [
+        "$.properties.charge_scope + $.required[7]",
+        "$.profiles.tenant_share.charge_scope",
+        "Part A §4.1 L126-L130"
+      ],
+      "quoted_rule": [
+        "\"charge_scope\": {\"type\": \"string\", \"enum\": [\"building\", \"project\", \"premises\", \"other\", \"unclear\", \"not_applicable\"], \"description\": \"The denominator/scope the proportion is measured against, where the parameter family has one.\"}  --  and `charge_scope` appears in the top-level `required` array (index 7), so it is required on EVERY output regardless of parameter type. Nothing is fixed per parameter.",
+        "$.profiles.tenant_share.charge_scope: {\"rule\": \"RECORDED AS METADATA ONLY -- does NOT gate qualification in v1\", \"gates_qualification\": false, \"_explicit_note\": \"Stated explicitly rather than left silently either-way (§4). Scope (building vs project vs premises) is captured for observation but no v1 requirement turns on it.\"}",
+        "431_requirement_profiles.json `_qualification_rule.candidate_qualification`: \"qualified iff relevance_ok AND basis_match in {match, not_applicable} AND text_role_ok AND value_ok AND support_ok -- ALL evaluated on the SAME candidate\"  --  `charge_scope` does NOT appear in the conjunction, for any parameter.",
+        "Part A §4.1 L129: `charge_scope: building | project | premises | other | unclear`",
+        "452 §4.3.6: \"Context citation ids in `field_support` under the **basis, scope and role** fields, scope membership per §5.0.3.\""
+      ],
+      "status": "resolved",
+      "_basis": "Both source artifacts answer both questions and agree. `charge_scope` is declared for this parameter in Part A §4.1, required by the output schema, explicitly recorded as metadata that does not gate qualification, and is NOT schema-fixed `not_applicable` -- so it is a §4.3.6 subset member and NOT exempt from §4.3.5's missing-support rule."
+    },
+    {
+      "parameter": "building_share",
+      "schema_applicability": "required_unfixed",
+      "qualification_use": "does_not_gate_qualification",
+      "materialization_subset_membership": "member",
+      "source_artifact": [
+        "build_log/431_output_schema.json",
+        "build_log/431_requirement_profiles.json",
+        "build_log/431_partA_governed_selection_spec.md"
+      ],
+      "source_pointer": [
+        "$.properties.charge_scope + $.required[7]",
+        "$.profiles.building_share.charge_scope",
+        "Part A §4.1 L126-L130"
+      ],
+      "quoted_rule": [
+        "\"charge_scope\": {\"type\": \"string\", \"enum\": [\"building\", \"project\", \"premises\", \"other\", \"unclear\", \"not_applicable\"], \"description\": \"The denominator/scope the proportion is measured against, where the parameter family has one.\"}  --  and `charge_scope` appears in the top-level `required` array (index 7), so it is required on EVERY output regardless of parameter type. Nothing is fixed per parameter.",
+        "$.profiles.building_share.charge_scope: {\"rule\": \"RECORDED AS METADATA ONLY -- does NOT gate qualification in v1\", \"gates_qualification\": false}",
+        "431_requirement_profiles.json `_qualification_rule.candidate_qualification`: \"qualified iff relevance_ok AND basis_match in {match, not_applicable} AND text_role_ok AND value_ok AND support_ok -- ALL evaluated on the SAME candidate\"  --  `charge_scope` does NOT appear in the conjunction, for any parameter.",
+        "Part A §4.1 L129: `charge_scope: building | project | premises | other | unclear`",
+        "452 §4.3.6: \"Context citation ids in `field_support` under the **basis, scope and role** fields, scope membership per §5.0.3.\""
+      ],
+      "status": "resolved",
+      "_basis": "Both source artifacts answer both questions and agree. `charge_scope` is declared for this parameter in Part A §4.1, required by the output schema, explicitly recorded as metadata that does not gate qualification, and is NOT schema-fixed `not_applicable` -- so it is a §4.3.6 subset member and NOT exempt from §4.3.5's missing-support rule."
+    },
+    {
+      "parameter": "base_rent",
+      "schema_applicability": "schema_fixed_not_applicable",
+      "qualification_use": "does_not_gate_qualification",
+      "materialization_subset_membership": "non_member",
+      "source_artifact": [
+        "build_log/431_output_schema.json",
+        "build_log/431_requirement_profiles.json",
+        "build_log/431_partA_governed_selection_spec.md"
+      ],
+      "source_pointer": [
+        "$.properties.charge_scope + $.required[7]",
+        "$.profiles.base_rent  (NO charge_scope key; basis_match.schema_fixed_value IS present)",
+        "Part A §4.1 L131-L133"
+      ],
+      "quoted_rule": [
+        "431_output_schema.json $.properties.charge_scope: enum contains \"not_applicable\"; description: \"The denominator/scope the proportion is measured against, where the parameter family has one.\"",
+        "Part A §4.1 L124: \"Parameter-type-specific semantic dimensions (dimensions that don't apply use `not_applicable`, which is NOT `none`).\"",
+        "Part A §4.1: `charge_scope` is listed ONLY under `tenant_share / building_share` (L126-L130). `base_rent` (L131-L133) and `rent_adjustment_pct` (L134-L136) are carried by `text_role` + `value_completeness` (+ value-token shape)."
+      ],
+      "status": "resolved_by_interpretive_ruling",
+      "ruling_date": "2026-08-15",
+      "ruling_party": "GPT-5.6 Sol, ChatGPT review instance",
+      "ruling": "charge_scope is schema-fixed not_applicable for base_rent and rent_adjustment_pct",
+      "ruling_effect": "required output key remains present with value not_applicable; field_support grounding is exempt; charge_scope is excluded from the §4.3.6 materialization subset",
+      "provenance": "This ruling resolves an ambiguity between the ratified specification, uniform output schema, and executable profiles. It does not characterize the resolution as already explicit in those artifacts.",
+      "profiles_silence": {
+        "classification": "OMISSION, not counter-rule",
+        "basis": "The profiles omit `charge_scope` from the qualification conjunction entirely, and label it for the share parameters as \"RECORDED AS METADATA ONLY — does NOT gate qualification in v1\". Silence therefore cannot reliably mean applicable."
+      },
+      "future_correction_required": {
+        "_status": "NOT APPLIED",
+        "_why": "The frozen 431 artifacts Step 452 consumes are UNCHANGED. These are prospective amendments recorded for a future revision; applying them would alter inputs this package has already hashed.",
+        "amendments": [
+          "Part A: state `charge_scope: not_applicable` explicitly for `base_rent` and `rent_adjustment_pct`, as it already does for `charge_basis_components`.",
+          "431_requirement_profiles.json: carry `charge_scope.schema_fixed_value` for those parameters, as it already does for `basis_match.schema_fixed_value`."
+        ]
+      }
+    },
+    {
+      "parameter": "rent_adjustment_pct",
+      "schema_applicability": "schema_fixed_not_applicable",
+      "qualification_use": "does_not_gate_qualification",
+      "materialization_subset_membership": "non_member",
+      "source_artifact": [
+        "build_log/431_output_schema.json",
+        "build_log/431_requirement_profiles.json",
+        "build_log/431_partA_governed_selection_spec.md"
+      ],
+      "source_pointer": [
+        "$.properties.charge_scope + $.required[7]",
+        "$.profiles.rent_adjustment_pct  (NO charge_scope key; basis_match.schema_fixed_value IS present)",
+        "Part A §4.1 L134-L136"
+      ],
+      "quoted_rule": [
+        "431_output_schema.json $.properties.charge_scope: enum contains \"not_applicable\"; description: \"The denominator/scope the proportion is measured against, where the parameter family has one.\"",
+        "Part A §4.1 L124: \"Parameter-type-specific semantic dimensions (dimensions that don't apply use `not_applicable`, which is NOT `none`).\"",
+        "Part A §4.1: `charge_scope` is listed ONLY under `tenant_share / building_share` (L126-L130). `base_rent` (L131-L133) and `rent_adjustment_pct` (L134-L136) are carried by `text_role` + `value_completeness` (+ value-token shape)."
+      ],
+      "status": "resolved_by_interpretive_ruling",
+      "ruling_date": "2026-08-15",
+      "ruling_party": "GPT-5.6 Sol, ChatGPT review instance",
+      "ruling": "charge_scope is schema-fixed not_applicable for base_rent and rent_adjustment_pct",
+      "ruling_effect": "required output key remains present with value not_applicable; field_support grounding is exempt; charge_scope is excluded from the §4.3.6 materialization subset",
+      "provenance": "This ruling resolves an ambiguity between the ratified specification, uniform output schema, and executable profiles. It does not characterize the resolution as already explicit in those artifacts.",
+      "profiles_silence": {
+        "classification": "OMISSION, not counter-rule",
+        "basis": "The profiles omit `charge_scope` from the qualification conjunction entirely, and label it for the share parameters as \"RECORDED AS METADATA ONLY — does NOT gate qualification in v1\". Silence therefore cannot reliably mean applicable."
+      },
+      "future_correction_required": {
+        "_status": "NOT APPLIED",
+        "_why": "The frozen 431 artifacts Step 452 consumes are UNCHANGED. These are prospective amendments recorded for a future revision; applying them would alter inputs this package has already hashed.",
+        "amendments": [
+          "Part A: state `charge_scope: not_applicable` explicitly for `base_rent` and `rent_adjustment_pct`, as it already does for `charge_basis_components`.",
+          "431_requirement_profiles.json: carry `charge_scope.schema_fixed_value` for those parameters, as it already does for `basis_match.schema_fixed_value`."
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "parameters_examined": 4,
+    "resolved": [
+      "tenant_share",
+      "building_share"
+    ],
+    "resolved_by_interpretive_ruling": [
+      "base_rent",
+      "rent_adjustment_pct"
+    ],
+    "conflicting": [],
+    "unresolved": [],
+    "every_parameter_resolved": true,
+    "_gate_consequence": "§5.0.3: \"`unresolved` or `conflicting` on any parameter fails the input-sufficiency gate and halts.\""
+  },
+  "_ruling_applied": {
+    "date": "2026-08-15",
+    "party": "GPT-5.6 Sol, ChatGPT review instance; authorized by Chat",
+    "scope": "base_rent and rent_adjustment_pct only. tenant_share and building_share unchanged.",
+    "recorded_by": "Claude Code, transcription only — no independent judgment applied.",
+    "excluded_from_record": "GPT's semantic argument about proportional denominators was flagged by GPT as confirmation only. It is commercial intuition and is deliberately NOT recorded here: this record's discipline is quoted bytes."
+  }
+}

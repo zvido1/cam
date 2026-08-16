@@ -1,0 +1,509 @@
+{
+  "_artifact": "452_output_schema.json",
+  "_authority": "Frozen at Stage 1A per 452_production_package_instruction_v8.md §3.1. Ratified instruction SHA-256 002b3afa9b33a76a0f913007342ef3654c8915acdb9bfb7d9c4b125cf96910ce.",
+  "_scope": "Declares the shape of every Stage-2 output. Stage-1 artifacts are NOT described here; they are token inputs and carry no token (§1).",
+  "_status": "STAGE-1A FROZEN.",
+  "schema_version": "452_output_schema_v1",
+  "_common_stage2_header": {
+    "_rule": "§1 token-header rule — EVERY Stage-2 output carries these two fields.",
+    "identity_layer": {
+      "type": "string",
+      "const": "L3"
+    },
+    "package_token": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "set_A": {
+    "_path": "build_log/452_stage2_results/",
+    "_closure": "EXACTLY the eighteen files below. Any extra or missing file halts before promotion (§4.15).",
+    "source_records.json": {
+      "_topological_step": 1,
+      "candidates": {
+        "type": "array",
+        "items": {
+          "candidate_id": "string",
+          "lease_id": "string",
+          "parameter": "string",
+          "candidate_start_char": "int",
+          "candidate_end_char": "int",
+          "candidate_text": "string",
+          "value_token_present": "bool",
+          "value_token_detector_version": "string",
+          "value_token_matches": "array<string>",
+          "derivation_source": "string",
+          "retained_evidence_membership": "bool",
+          "retained_evidence_membership_basis": "enum: cited_union_relevant | cited_union_minority_relevant | not_retained"
+        }
+      },
+      "judgments": {
+        "type": "array",
+        "items": {
+          "judgment_id": "string (J-)",
+          "lease_id": "string",
+          "parameter": "string",
+          "candidate_id": "string",
+          "series_index": "int",
+          "role": "A|B|C",
+          "raw_attempt_index": "int",
+          "canonical_attempt_index": "int|null",
+          "canonical": "bool",
+          "is_fallback": "bool",
+          "actual_provider": "string",
+          "actual_model": "string",
+          "fallback_reason": "string|null",
+          "semantic_fields": "object (six §5 fields, as-recorded)",
+          "field_support": "object",
+          "confidence": "number|null",
+          "reason": "string"
+        }
+      },
+      "citations": {
+        "type": "array",
+        "items": {
+          "citation_occ_id": "string (CO-)",
+          "judgment_id": "string",
+          "citation_class": "candidate|context",
+          "citation_id": "string",
+          "quote": "string"
+        }
+      },
+      "envelopes": {
+        "type": "array",
+        "items": {
+          "envelope_id": "string (EV-)",
+          "lease_id": "string",
+          "candidate_id": "string",
+          "context_start_char": "int",
+          "context_end_char": "int",
+          "context_text": "string",
+          "boundary_method": "string",
+          "truncated_left": "bool",
+          "truncated_right": "bool"
+        }
+      },
+      "provenance": {
+        "type": "array",
+        "items": {
+          "l1_artifact": "string",
+          "l1_json_pointer": "string",
+          "l1_value_canonical_json_sha256": "string"
+        }
+      },
+      "_written_once": true,
+      "_retention_membership_rule": "§4.9 CANONICAL-PATH PATTERN, applied 2026-08-15. Retention membership is materialised ONCE at `source_records.json -> candidates[].retained_evidence_membership`, referenced by everything and recomputed by nothing — the same discipline §4.9 fixes for `value_token_present`. Rationale: L1 never materialised `retained_evidence` (0 occurrences in the frozen sidecar); membership was derivable but not stored, so every consumer would otherwise re-derive it and the derivations could diverge. Minority relevance is retained (Part A §5.1: minority relevance is never excluded).",
+      "completeness_provenance_recovered": {
+        "_canonical_path": "source_records.json -> completeness_provenance_recovered",
+        "_pattern": "§4.9 recoverable-field pattern: referenced by everything, recomputed by nothing.",
+        "_ruling": "Ruling A, 2026-08-15. A ruling, not a reading — no artifact says this.",
+        "_supersedes": "PA-03-completeness-provenance-typed",
+        "status": {
+          "value": "not_established",
+          "derivation_source": "build_log/431_selection_measurement_sidecar.json",
+          "pointer": "$.certification_traces[*].completeness_provenance.status",
+          "recovered": true
+        },
+        "scope": {
+          "value": "parameter_candidate_universe",
+          "derivation_source": "build_log/431_partA_governed_selection_spec.md",
+          "pointer": "Part A §6.4 typed record — fixes this literal",
+          "recovered": true
+        },
+        "source_document_hash": {
+          "value_by_lease": {
+            "atlas": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+            "atreca": "7118cc6ddf65bd7b09f436071f02c431bacc14b2a7c66bb9f84f8335ded0b03b"
+          },
+          "derivation_source": "build_log/431_fixture_preflight.json",
+          "pointer": "$.leases.{atlas,atreca}.source_document_hash",
+          "recovered": true,
+          "_verified": "Both hashes read from the frozen artifact, not transcribed from the ruling."
+        },
+        "evidence_artifact_id": {
+          "value": "c44573cb56d990afe7818dbdbfc3aa1e9586e51331a86b348b97f0e55967a9e7",
+          "derivation_source": "build_log/431_selection_measurement_sidecar.json",
+          "pointer": "LF-normalised sha256 of the committed blob",
+          "recovered": true,
+          "_manifest_binding": "The ruling names 452_config_manifest.json as where this identity is bound. That manifest is built at §7.0 step 5, AFTER step 4, so the binding does not exist yet. The identity itself is computed here from the committed blob; step 5 must bind THIS value."
+        },
+        "limitations": {
+          "value": [
+            "Mechanism measurement over a **provisioned** candidate set — NOT a benchmark, NOT recall, NOT a test of whether the panel reached the answer we expect (Part A §3.1, §11)."
+          ],
+          "derivation_source": "build_log/431_partB_measurement_instruction.md",
+          "pointer": "opening scope statement (the instance citing Part A §3.1)",
+          "cites": "Part A §3.1, §11",
+          "recovered": true,
+          "_ruling": "RULING D, 2026-08-15.",
+          "CORRECTED_POINTER_RECORD": "Ruling A originally cited \"Part B §3.1\" as the source. **Part B has no §3.1** — no such heading exists in the document. Code flagged this rather than substituting silently; Ruling D corrected it to Part A §3.1 and directed that the correction itself be recorded here, because \"a corrected pointer that hides the correction is how a wrong citation survives.\" The disclaimer above is verbatim from Part B's opening scope statement, which is the instance that cites Part A §3.1."
+        },
+        "method": {
+          "value": null,
+          "basis": "not_applicable — status is not_established on all 30 traces. Part A §6.4\nrequires a declared method only to permit a terminal unsatisfied_*, and none\nwas emitted. Writing a method string would manufacture the exact provenance\n§6.4 exists to prevent.",
+          "recovered": "N/A — ruled null, not recovered"
+        },
+        "candidate_generation_policy_version": {
+          "value": null,
+          "basis": "null — absent from every frozen 431 run artifact. Part A §6.4 specifies the\nfield inside the typed completeness_provenance record; no 431 artifact\ndeclares a candidate-generation policy version, and none could: Part B\nexpressly does not perform candidate generation. Candidates were provisioned\nby hand, not generated by a policy. There is no version because there was no\npolicy.\n\nThe nearest present key, context_policy_version = \"431_envelope_v1\", governs\nthe context envelope, not candidate generation, and is NOT a substitute.\n\nRECORDED AS THE NINTH PRODUCERLESS INSTANCE, distinct in kind from the other\neight: those are products a producer should have written and did not. This is\na field whose producer could not exist, because the activity it versions was\nnever performed. Part A §6.4 specifies it unconditionally inside a record\nPart B is required to emit with status: not_established.",
+          "recovered": false,
+          "resolution": "null_with_basis",
+          "_ruling": "RULING C, 2026-08-15.",
+          "producerless_instance_ordinal": 9,
+          "in_kind_distinction": "NOT to be flattened into the count of eight. The other eight are UNWRITTEN OUTPUTS — products a producer should have written and did not. This is a SPECIFIED FIELD WITH NO POSSIBLE REFERENT under Part B's own scope fence: the activity it versions was never performed.",
+          "corroborating_source": "Part A §3.1 'Multi-candidate provisioning': \"Fixed, provisioned candidate set per parameter = the verified spans elicitation proposed for that parameter's targets... No new segmentation, ranking, or discovery.\" Read at Stage 1B; corroborates that no candidate-generation policy existed to be versioned."
+        },
+        "_resolution_summary": {
+          "total_sub_fields": 7,
+          "read_from_l1": [
+            "status"
+          ],
+          "recovered_from_frozen_inputs": [
+            "scope",
+            "source_document_hash",
+            "evidence_artifact_id",
+            "limitations"
+          ],
+          "null_with_basis": [
+            "method",
+            "candidate_generation_policy_version"
+          ],
+          "unresolved": [],
+          "_one_root": "BOTH nulls trace to the same constraint. `method` is null because completeness was never ESTABLISHED; `candidate_generation_policy_version` is null because candidates were never GENERATED. Both follow from Part B not measuring candidate-generation recall — the same constraint that makes §9.1 criterion #5 permanently unexercisable. THREE FINDINGS, ONE ROOT. A scope consequence, not three separate defects."
+        }
+      }
+    },
+    "pass_a_results.json": {
+      "_topological_step": 2,
+      "_definition": "As-computed replay. Identity and provenance wrappers only; no reinterpretation.",
+      "per_candidate_merged": "array",
+      "certification_traces": "array",
+      "terminal_states": "array"
+    },
+    "pass_a_fidelity.json": {
+      "_topological_step": 3,
+      "_halts_immediately_on_failure": true,
+      "every_canonical_l1_judgment_represented_exactly_once": "bool",
+      "raw_semantic_fields_unchanged": "bool",
+      "citation_ids_and_quotes_unchanged": "bool",
+      "provider_model_fallback_fields_unchanged": "bool",
+      "candidate_parameter_series_role_mapping_unchanged": "bool",
+      "p4_merged_result_and_terminal_state_unchanged": "bool",
+      "all_thirty_series_reconciled": "bool",
+      "canonical_and_degraded_attempts_reconciled": "bool",
+      "no_l1_record_omitted_or_invented": "bool",
+      "pass_a_l1_fidelity": "pass|fail"
+    },
+    "grounding_enforcement.json": {
+      "_topological_step": 4,
+      "per_field_records": {
+        "type": "array",
+        "items": {
+          "judgment_id": "string",
+          "field": "string",
+          "classification": "VERIFIED|UNVERIFIED|AMBIGUOUS|EMPTY",
+          "window_match_count": "int",
+          "enforced_field_value": "unclear|null",
+          "omitted_from_substantive_aggregation": "bool",
+          "trace_id": "string (FT-|MT-)|null"
+        }
+      },
+      "failed_support_traces": "array (FT-)",
+      "missing_support_traces": "array (MT-)",
+      "ambiguous_support_invalidation_count": "int",
+      "empty_support_invalidation_count": "int"
+    },
+    "pass_b_results.json": {
+      "_topological_step": 5,
+      "_definition": "Full recomputation per R8. Nothing copied.",
+      "step_1_effective_per_evaluator_fields": "array",
+      "step_2_retained_evidence": {
+        "type": "array",
+        "items": {
+          "parameter": "string",
+          "lease_id": "string",
+          "candidate_id": "string",
+          "retained_evidence_membership": "bool",
+          "retaining_panelists": "array<role>",
+          "grounded": "bool"
+        }
+      },
+      "step_3_per_candidate_semantic_merge": "array",
+      "step_4_agreement_by_field": "array",
+      "step_5_parameter_candidate_comparison": "array",
+      "step_6_applicability_match": "array",
+      "step_7_certification_trace": "array",
+      "step_8_terminal_certification_state": "array"
+    },
+    "pass_comparison.json": {
+      "_topological_step": 6,
+      "deltas": "array"
+    },
+    "certified_parameter_evidence.json": {
+      "_topological_step": 7,
+      "_both_passes": true,
+      "packages": {
+        "type": "array",
+        "items": {
+          "pass": "A|B",
+          "parameter": "string",
+          "lease_id": "string",
+          "series_index": "int",
+          "primary_candidate_span": {
+            "evidence_span_id": "string",
+            "source_document_hash": "string",
+            "canonical_text_hash": "string",
+            "start_char": "int",
+            "end_char": "int",
+            "span_text": "string",
+            "span_text_hash": "string",
+            "normalization_profile": "const canonical_whitespace_v2",
+            "verification_status": "VERIFIED",
+            "section_ref": "string|null",
+            "source_anchor": "string|null"
+          },
+          "semantic_support_spans": {
+            "type": "array",
+            "items": {
+              "support_span_id": "string (SS-)",
+              "source_document_hash": "string",
+              "start_char": "int",
+              "end_char": "int",
+              "span_text": "string",
+              "citation_occ_ids": "array",
+              "supports_fields": "array",
+              "supporting_panelists": "array"
+            }
+          },
+          "materialization_status": "complete|blocked",
+          "blocked_reason": "string|null"
+        }
+      },
+      "_empty_support_spans_legitimacy": "may pass ONLY when the source judgment shows no context citation was relied upon for the basis/scope/role subset"
+    },
+    "envelope_sufficiency.json": {
+      "_topological_step": 8,
+      "_no_threshold_declared": true,
+      "establishing_clause_map": "object",
+      "distance_chars": "int",
+      "inclusion": "bool",
+      "citation_categories": {
+        "const_five": [
+          "in_candidate",
+          "in_envelope",
+          "outside_envelope_in_document",
+          "unresolvable",
+          "empty"
+        ]
+      }
+    },
+    "observations.json": {
+      "_topological_step": 9,
+      "_all_six_9_2_classes": true,
+      "cand_04_basis_grounding": "object",
+      "cand_04_abstention_versus_negation": "string — the none/unclear pattern stated explicitly",
+      "cand_05_vs_cand_06_value_completeness": "object",
+      "cand_07_vs_cand_03_text_role": "object",
+      "atreca_control": "object — reported as replicate variance",
+      "envelope_sufficiency_observation": "object",
+      "reasoning_exhaustion_naming_note": "string — the label is assigned from model family + empty output and measures no reasoning budget"
+    },
+    "validation.json": {
+      "_topological_step": 10,
+      "_measurement_class": true,
+      "criteria": {
+        "type": "array",
+        "items": {
+          "criterion_id": "string",
+          "criterion_text_verbatim": "string",
+          "logical_status": "pass|fail|not_established",
+          "exercise_status": "exercised|vacuous",
+          "evidence_artifact": "string",
+          "evidence_pointer": "string",
+          "details": "object"
+        }
+      },
+      "exercise_fields": {
+        "pass_b_satisfied_count": "int",
+        "pass_b_complete_package_count": "int",
+        "materialization_function_exercised": "bool",
+        "materialization_exercised_by_pass": "A|B|A_and_B|null",
+        "post_enforcement_certified_package_exercised": "bool",
+        "support_span_materialization_exercised": "bool",
+        "support_span_materialization_exercised_by_pass": "A|B|A_and_B|null",
+        "support_bearing_complete_package_count_by_pass": {
+          "A": "int",
+          "B": "int"
+        },
+        "anti_borrowing_dataflow_verified": "bool",
+        "anti_borrowing_runtime_exercised": "bool",
+        "anti_borrowing_runtime_exercised_by_pass": "A|B|A_and_B|null",
+        "ambiguous_support_invalidation_count": "int",
+        "empty_support_invalidation_count": "int"
+      },
+      "tenth_check": {
+        "rule": "no candidate with candidate_support_state == insufficient_context certified",
+        "result": "pass|fail"
+      }
+    },
+    "repository_seam_check.json": {
+      "_topological_step": 11,
+      "_non_report_criteria_only": true,
+      "reviewed_hashes_equal_run_hashes": "object",
+      "pre_post_cam_git_status_clean": "object",
+      "no_live_import_or_consumption_seam": "object"
+    },
+    "report.md": {
+      "_topological_step": 12,
+      "_format": "markdown",
+      "hard_requirements": [
+        "every result cell carries the inline completeness qualifier (§9.0)",
+        "no cell abbreviates review_needed_no_qualifying_candidate to unsatisfied/failed/0-of-5"
+      ],
+      "sections": [
+        "identity header",
+        "terminal certification-state distribution",
+        "§9.2 observations",
+        "envelope sufficiency",
+        "claim bound"
+      ]
+    },
+    "post_report_validation.json": {
+      "_topological_step": 13,
+      "report_completeness_qualifiers_present": "bool",
+      "report_values_equal_validator_output": "bool"
+    },
+    "final_mechanism_disposition.json": {
+      "_topological_step": 14,
+      "_mechanism_only": true,
+      "consumes": [
+        "validation.json",
+        "repository_seam_check.json",
+        "post_report_validation.json"
+      ],
+      "mechanism_disposition": "pass|fail|not_established",
+      "conjunction_consumes": "logical_status only",
+      "exercise_status_carried_alongside": "object"
+    },
+    "l2_comparison.json": {
+      "_topological_step": 15,
+      "_isolated": true,
+      "_one_way": "may write ONLY this file; may not mutate or feed any authoritative field",
+      "l2_claims": "array",
+      "l3_recomputed": "array",
+      "agreement": "array"
+    },
+    "contract_reconciliation.md": {
+      "_topological_step": 16,
+      "_scope": "Part A and Part B promised products ONLY. Step-452-native lifecycle products excluded.",
+      "classification_per_product": [
+        "produced_by_P4",
+        "produced_by_this_package",
+        "genuinely_absent"
+      ]
+    },
+    "zero_provider_call_check.json": {
+      "_topological_step": 17,
+      "guard_installed_before_project_imports": "bool",
+      "ast_and_import_scan_over_transitive_closure": "object",
+      "allowlist": "array",
+      "outbound_attempt_count": "int",
+      "subprocess_commands": "array",
+      "allowlist_result": "pass|fail",
+      "_boundary": "records the computation up to the prepublication boundary; the final count for the whole invocation lives in §4.17"
+    },
+    "output_manifest.json": {
+      "_topological_step": 18,
+      "_excludes_itself": true,
+      "package_commit": "string",
+      "token": "string",
+      "tag_name": "string",
+      "tag_object_id": "string",
+      "input_hashes_before": "object",
+      "input_hashes_after": "object",
+      "products": {
+        "type": "array",
+        "items": {
+          "path": "string",
+          "sha256": "string"
+        }
+      },
+      "self_exclusion_recorded": "bool",
+      "self_exclusion_reason": "string",
+      "script_version": "string",
+      "timestamps": "object",
+      "detached_head": "string",
+      "whole_tree_clean_before": "bool",
+      "whole_tree_clean_after": "bool",
+      "exit_status": "string",
+      "_does_not_carry": "the staged-closure result — that lives in §4.17, produced after"
+    }
+  },
+  "set_A_prime": {
+    "_path": "build_log/452_production_invocation_record.json",
+    "_written": "after Set A is promoted, while the production guard is still active",
+    "final_target_directory_closure": "object",
+    "output_manifest_sha256": "string",
+    "zero_provider_call_check_sha256": "string",
+    "final_outbound_attempt_count": "int",
+    "subprocess_allowlist_result": "pass|fail",
+    "completion_status": "string",
+    "_publication": "temporary file plus one atomic rename",
+    "_completed_unit_rule": "neither this nor 452_stage2_results/ is authoritative without the other"
+  },
+  "set_B": {
+    "_path": "build_log/452_execution_record_final.md",
+    "_separate_invocation": true,
+    "sha256_of": [
+      "output_manifest.json",
+      "zero_provider_call_check.json",
+      "452_production_invocation_record.json"
+    ],
+    "p452_commit": "string",
+    "token": "string",
+    "signed_tag_object_id": "string",
+    "output_hashes_designated_for_results_commit": "object",
+    "post_report_aggregate": "from final_mechanism_disposition.json, NOT the step-10 partial",
+    "exercise_fields": "the §4.2.4 set",
+    "all_four_gate_record_aggregates": "object",
+    "finalize_invocation_zero_call": {
+      "guard_installed_before_project_imports": "bool",
+      "outbound_attempt_count": "int",
+      "subprocess_commands": "array",
+      "allowlist_result": "pass|fail",
+      "status": "string"
+    },
+    "execution_integrity_status": {
+      "type": "pass|fail",
+      "_pass_only_when_all_eleven_hold": [
+        "P452 commit, tag, token, principal, fingerprint and message binding all verify",
+        "all four Stage-1 gate records exist, passed, and their declared input hashes match HEAD",
+        "L1 inputs hash identically before and after production",
+        "pass_a_l1_fidelity passed",
+        "whole-repository cleanliness held before and after production",
+        "Set-A closure passed",
+        "452_production_invocation_record.json reports successful completion",
+        "the production-invocation zero-call evidence passed",
+        "the finalize-invocation zero-call evidence passed",
+        "every Set-A hash verifies against both the manifest and the invocation record",
+        "Set-B closure passed"
+      ],
+      "_on_any_failure": "no successful final execution record is emitted; only 452_stage2_failure_record.json, which carries no L3 authority"
+    }
+  },
+  "failure_product": {
+    "_path": "build_log/452_stage2_failure_record.json",
+    "_authority": "NONE. Excluded from every success artifact, every claim, and every set in §3.3. Never cited as an L3 result.",
+    "failure_stage": "string",
+    "failure_reason": "string",
+    "staged_paths_present": "array",
+    "staged_paths_missing": "array",
+    "inputs_verified": "bool",
+    "guard_status": "string",
+    "outbound_attempt_count": "int",
+    "staging_directory_disposition": "string",
+    "l3_authority": {
+      "const": false
+    }
+  }
+}

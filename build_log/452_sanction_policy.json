@@ -1,0 +1,10 @@
+{
+  "_artifact": "452_sanction_policy.json",
+  "_purpose": "Committed authorization policy for the Step-452 Stage-2 package. The runtime gate reads this from HEAD (not from .git/config) and requires the sole key in the committed allowed-signers file to match authorized_fingerprint before it will accept any sanction tag.",
+  "authorized_principal": "zvido@yahoo.com",
+  "authorized_fingerprint": "SHA256:bHbLJOYJwDmI1E/cPduVFnOkbVpbRzwJEyAShQZuAHs",
+  "allowed_namespace": "git",
+  "key_file": "build_log/452_sanction_key.pub",
+  "allowed_signers_file": "build_log/452_sanction_allowed_signers",
+  "rule": "Exactly one authorized key. Signature verification is performed with an allowed-signers file containing ONLY this key, materialized from the committed HEAD blob; a tag that verifies under that anchor necessarily came from the authorized key."
+}
