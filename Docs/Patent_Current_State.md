@@ -11,13 +11,15 @@ read all 20+ patent supplements. Parallels `CAM_Current_State.md`
 >
 > **WHAT IS NOW DEMONSTRATED.** The frozen three-model panel made 108 citation-grounded classifications over seven provisioned candidate spans across two leases, under a cryptographically sanctioned, repository-reproducible package, executed from a clean detached worktree at the sanctioned commit with the gate passing before the first call. Per-panelist grounding, per-field agreement, per-candidate comparisons and full decision traces are recorded in `431_selection_measurement_sidecar.json`. **Terminal certification-state distribution** over 30 series: satisfied 14, `review_needed_disagreement` 11, `review_needed_no_qualifying_candidate` 5; `completeness: not_established` on all 30. *(This distribution is NOT §9.1 and must never be cited as mechanism success.)*
 >
-> **ANTI-BORROWING AT THE VALUE LAYER IS EXERCISED AND TRACE-VISIBLE — and it is a SEPARATE finding from package materialization.** For every certified series the trace identifies which candidate supplied each required property (`relevance_ok`, `text_role_ok`, `value_ok`, `support_ok`, `applicability_match`), so cross-candidate assembly is detectable by inspection rather than by trust; no certification was made by a candidate carrying a non-unanimous field (0 of 14). This finding stands independently of the §9.1 gap below and is the substantive RTP content of this run.
+> **ANTI-BORROWING AT THE VALUE LAYER IS EXERCISED AND TRACE-VISIBLE — and it is a SEPARATE finding from package materialization.** For every certified series the trace identifies which candidate supplied each required property (`relevance_ok`, `text_role_ok`, `value_ok`, `support_ok`, `applicability_match`), so cross-candidate assembly is detectable by inspection rather than by trust; no certification was made by a candidate carrying a non-unanimous field (0 of 14). This finding stands independently of the §9.1 gap below.
+>
+> **⚠ PROVENANCE QUALIFIER ON THE PRECEDING PARAGRAPH (recorded 2026-07-26, Step 451 producer-consumer census).** The trace-visibility finding above was computed by **post-run analysis over the immutable sidecar** — it was not emitted by any producer in the sanctioned package. P4 wrote three things: `431_selection_measurement_sidecar.json`, `431_runtime_seam_capture.json`, and a thin report of terminal states. Every substantive finding in this block — the value-layer trace visibility, the 0-of-18 cand_04 result, the panel provenance table, the count reconciliation — was produced by scripts written after the outcomes were visible. Its evidentiary basis is the sidecar's immutability and the sanctioned run that produced the sidecar; it is **NOT** bound by the signed tag, which binds the package that generated the panel judgments and does not bind the analysis that subsequently interpreted them. **Cite the finding with this qualifier attached. Do not describe it as an output of the sanctioned package, and do not call it this run's substantive RTP content without it.** Remedy in progress: `build_log/452_production_package_instruction_v8.md` (v8.2, RATIFIED 2026-08-15 at SHA-256 `b9343bd9…` for Stage 1A and Stage 1B only; Stage 2 separately unauthorized). Pointer updated 2026-08-15 — it previously named `452_production_package_instruction_v2.md`, an unbound superseded draft, and was two ratification cycles stale.
 >
 > **⛔ WHAT THIS RUN DOES NOT SUPPORT — do not claim these, in any supplement.**
 > - **Emitted certified evidence packages with materialized support spans.** No identifier with the prefix `semantic_support_span` is constructed, populated or emitted anywhere in the sanctioned package: 0 occurrences in the harness, the output schema, the selector prompt, and all three run outputs. The panel was never asked to produce one. **No such package was emitted.**
 > - **Recorded anti-borrowing at the SUPPORT-SPAN layer.** The preregistered criterion forbidding a property "borrowed from a semantic-support span" quantifies over an **empty domain**. Any affirmative reading would be **vacuously true** — true because nothing of the quantified kind exists, not because a mechanism declined to borrow. §8.2 binds that prohibition to a materialization requirement in a single criterion ("materialized, not value-only; no borrowed property"); an empty domain satisfies the second conjunct only by failing the first.
 > - **Gate-B handoff.** Not demonstrated by this run and not claimed.
-> - **Any §9.1 mechanism-success result.** §12 listed `431_validation.json` and `431_repository_seam_check.json` as unconditional Stage-2 outputs while marking their producers "(+ optional)"; §1 omitted the producers; the token-bound artifact set contains neither. The producers were never built, the products cannot exist, and §8.2 requires the §9.1 table to be **"COPIED FROM"** them, **"never authored."** A post-run artifact computes seven of the nine criteria from the immutable sidecar (`build_log/431_postrun_partial_validation.json`) — it is explicitly **not** the preregistered validator and **may not be labelled §9.1**. One criterion is uncomputable at any cost: its data was never recorded.
+> - **Any §9.1 mechanism-success result.** §12 listed `431_validation.json` and `431_repository_seam_check.json` as unconditional Stage-2 outputs while marking their producers "(+ optional)"; §1 omitted the producers; the token-bound artifact set contains neither. The producers were never built, the products cannot exist, and §8.2 requires the §9.1 table to be **"COPIED FROM"** them, **"never authored."** A post-run artifact computes seven of the nine criteria from the immutable sidecar (`build_log/431_postrun_partial_validation.json`) — it is explicitly **not** the preregistered validator and **may not be labelled §9.1**. One criterion (#6) resolves negative on the historical record rather than being computed: the required field was never written, and fourteen certifications met its "if any" antecedent. **This does NOT require a re-run to remedy.** Step 450 established the raw material is present in the sidecar (`field_support` 108/108 across all six semantic fields; context citations carrying ids and verbatim quotes), so support-span materialization and field-grounding enforcement are constructible deterministically with zero further model calls. The Step-451 census further found that the two missing validators were not the only gap: **seven specified products have no producer**, one field (`value_token_present`) is computed and discarded before persistence, Part B §8.1's certification conjunction is **unsatisfiable** for `base_rent` and `rent_adjustment_pct` (it requires `basis_match=match` on a dimension §4 declares `not_applicable`), and Part A §11.1's "incomplete candidate scope blocks certification" clause was dropped in transit to Part B §9.1 #5.
 >
 > **METHOD CONTRIBUTION FROM THE FAILURE (dated, citable).** The gap was invisible to every gate the package had — hash, signature, scope, cleanliness, four-way token equality — because none of them asks whether a *specified output has a producer*. It surfaced only after the calls were spent. The corrective is now standing project law as **Rule 8, producer-consumer census**: before sanction, every specified product must be traced producing function → write site → validator consumer → report consumer; a product with no producer, or an optional producer whose product is mandatory, halts the sanction. That a preregistration can be internally inconsistent in a way that survives cryptographic sanction is itself a governance finding.
 >
@@ -984,6 +986,80 @@ any implementation. Do not allow them to soften over time.
     was introduced to correct. (Supplement #26, 2026-07-14.)
 
 ---
+
+### CLAIM BOUNDARY — Part A §10 in-scope items this instrument cannot demonstrate (2026-08-15)
+
+**Source:** Step 452 Stage-1A predicate-reachability census (§7.3), `build_log/452_predicate_reachability_census.json`; frozen treatment in R10 of `build_log/452_deterministic_rules.json`.
+
+Part A §10's scope fence lists items as IN SCOPE. **Three of them are not demonstrated by Step 431, Step 447 or Step 452**, and the reason differs between them. This is a claim-boundary fact and must not be stated only inside a gate record.
+
+| §9.1 criterion | Subject | Why undemonstrated | Vacuity basis |
+|---|---|---|---|
+| **#3** anti-borrowing | support-bearing packages to borrow from | P4 never materialized a support-bearing package | contingent |
+| **#6** certified parameters carry materialized spans | certified packages | domain empty under a zero post-enforcement count | contingent |
+| **#5** completeness-gated terminal negatives (§6.3, all four) | terminal `unsatisfied_*` emissions | **empty by construction** | **by_construction** |
+
+**#5 is categorically different from #3 and #6, and the difference matters for prosecution.** #3 and #6 are *contingently* vacuous: a different run, with materialized packages or a non-zero post-enforcement count, would exercise them. #5 cannot be exercised by **any conforming run of this package**. Part A §6.4 locks Part B to `status: not_established`, so no terminal `unsatisfied_*` can ever be emitted, so the guard the criterion describes never has to fire. Its `logical_status` is `pass` and its `exercise_status` is `vacuous` in every conforming execution; there is no reachable exercised row.
+
+**Consequence for the record:** a `pass` on §9.1 #5 is evidence that nothing violated the constraint, **not** evidence that the mechanism guarding it works. It must not be cited as reduction to practice of completeness-gated terminal negatives. Demonstrating that item requires an instrument in which completeness can reach `established` — which this package, by its own Part A §6.4, is not.
+
+**This is a permitted vacuity, not a laundered failure.** §4.2.2's boundary rule bars `vacuous` where the package *failed to produce a required subject*. Here the criterion's own parenthetical antecedent — `(completeness not_established)` — is what empties the domain, which is exactly the case the rule allows. The distinction is what keeps the status split from becoming a laundering device.
+
+**L1 CONFIRMATION of #5 (added 2026-08-15, Stage 1B).** #5's `by_construction` vacuity is no longer an inference from the specification — it is confirmed against the run's own bytes. All **30** certification traces in `build_log/431_selection_measurement_sidecar.json` carry `completeness_provenance.status == "not_established"`; **not one** carries `established`. Part A §6.4's locked rule — *"only `status: established` under a declared `method` permits any `unsatisfied_*`"* — was therefore never satisfiable in L1.
+
+### EIGHTH producerless instance (2026-08-15)
+
+Step 451's census found **seven** products Part B specified with no producer. Stage 1B's per-field determination found an **eighth**:
+
+**`PA-03-completeness-provenance-typed`.** P4 wrote `completeness_provenance` as a **status token only** — `{"status": "not_established"}` — across all 30 traces. Six of the seven Part A §6.4 sub-fields are absent from **every** trace: `method`, `scope`, `limitations`, `evidence_artifact_id`, `candidate_generation_policy_version`, `source_document_hash`.
+
+**Why it escaped Step 451's census, and why that is the methodological point:** the inventory seeder carried `completeness_provenance` as one opaque field inside `PB-14`. A **product-level** census sees a field that is present. Only a **per-field** census sees six absent sub-fields inside it. This is the same defect class §7.2's per-field wording was written to catch — *"a producerless field inside a valid product is the same defect wearing a smaller hat"* — and it is the eighth confirmed instance of it.
+
+**Relationship to the three unreachable in-scope items above:** distinct. Those three are criteria this instrument cannot *exercise*; this is a specified product P4 did not *produce*. They compound, however — the typed completeness provenance §6.4 requires is precisely the artifact that would let completeness reach `established`, which is the condition #5 needs in order to be exercisable at all.
+
+### METHOD — why a census must run per field, not per product (2026-08-15)
+
+This is a reusable finding about **census design**, not a Step-452 detail.
+
+> **A producerless field inside a valid product is the same defect wearing a smaller hat.**
+
+A product-level census asks: does this product have a producer, a path, and a consumer? A **per-field** census asks the same of *every field the product is required to carry*. The difference is not pedantic — a product can satisfy all three tests at the product level while a required field inside it has no producer at all, and the product-level census reports a pass.
+
+**Three confirmed instances, in three different documents:**
+
+| # | Instance | How it hid |
+|---|---|---|
+| 1 | `execution_integrity_status` | Named as an axis; a record was told to cite it while **nothing computed it**. The record had a producer, a path and a consumer. |
+| 2 | `completeness_provenance` sub-fields | Carried as **one opaque field** inside `PB-14`. The field was present; six of its seven required sub-fields were absent. |
+| 3 | `semantic_support_span_ids` | Present in a product whose other 22 fields were produced; this one had **no write site anywhere** — harness, schema, prompt or output. |
+
+Instance 1 is why the per-field wording was adopted. Instances 2 and 3 were then caught **by** it. Instance 2 is the significant one for claim purposes: the field it hid inside was Part A's typed `completeness_provenance` — described in the specification as **"the single most load-bearing negative-claim guard"** — and the reduction that concealed it (collapsing a typed record to one opaque field) is precisely the reduction Part A §6.4 forbids.
+
+**Generalization.** Wherever a specification defines a *typed record* and an inventory or census tracks it as a *single field*, the census inherits the collapse it was built to detect. The tracking granularity must match the specification's granularity, or the audit silently re-introduces the defect at the audit layer. This is the same failure the extraction architecture guards against one level down — a quote that does not resolve is not evidence — applied to the audit's own bookkeeping.
+
+### NINTH producerless instance — and why it is distinct in kind (2026-08-15)
+
+**`candidate_generation_policy_version`**, a required sub-field of Part A §6.4's typed `completeness_provenance` record.
+
+**Do not flatten this into the count of eight.** Instances 1–8 are **unwritten outputs**: a producer should have written them and did not. This is a **specified field with no possible referent**. Part B expressly does not perform candidate generation — Part A §3.1 fixes a *provisioned* candidate set with *"No new segmentation, ranking, or discovery"* — so no candidate-generation policy existed to be versioned. **The producer could not exist; it did not merely fail to run.** Part A §6.4 nonetheless specifies the field unconditionally, inside a record Part B is required to emit.
+
+The distinction matters for prosecution: eight are implementation gaps against a specification. This one is an **internal inconsistency in the specification itself** — a mandatory field whose referent the same specification's scope fence excludes.
+
+### THREE FINDINGS, ONE ROOT (2026-08-15)
+
+Three separate findings in this arc are one scope consequence, and must not be recorded as three defects:
+
+| Finding | Why |
+|---|---|
+| §9.1 criterion **#5** is permanently unexercisable | completeness is `not_established`, so no terminal `unsatisfied_*` can ever be emitted |
+| `method` is **null** | completeness was never **established** |
+| `candidate_generation_policy_version` is **null** | candidates were never **generated** |
+
+All three follow from a single fact: **Part B does not measure candidate-generation recall.** It measures governed selection over a hand-provisioned candidate set. Part A §3.1 states it directly — *"seeding known-correct/known-wrong candidates measures governed selection over a provisioned set with local context"* — and Part B §8.3 restates the consequence: *"Part B cannot measure recall, so it cannot establish document completeness."*
+
+**This is a scope consequence, not three defects.** An instrument that does not measure recall cannot establish completeness; cannot declare the method by which completeness was established; cannot version a candidate-generation policy it never ran; and therefore cannot exercise a criterion gated on completeness. Reporting these as independent failures would overstate the defect count and understate the single boundary that produces all of them.
+
+**Recorded by Claude Code at the architect's explicit direction (2026-08-15), against the standing rule that current-state docs are Chat's domain.**
 
 ## Patent Sentences (Most Quotable)
 
