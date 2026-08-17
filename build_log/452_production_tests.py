@@ -378,7 +378,12 @@ def run():
         "_stage": "1A",
         "_fixtures": "SYNTHETIC LITERALS ONLY — no L1 run artifact was read",
         "_generated_utc": datetime.now(timezone.utc).isoformat(),
-        "non_gate_stage1_artifact_hashes": non_gate,
+        # ONE declaration only. This record previously emitted the same 8-entry set twice —
+        # once as `non_gate_stage1_artifact_hashes` and once as `input_hashes`. §7.1 has Stage 2
+        # recompute "every gate record's declared input hashes"; with two blocks, an edit to one
+        # leaves the other stale and the outcome depends on which key the checker reads. A check
+        # whose result depends on parse order is the same family as a check that cannot fail.
+        # Deduplicated 2026-08-16, before the step-4 freeze.
         "input_hashes": non_gate,
         "results": RESULTS,
         "counts": counts,
