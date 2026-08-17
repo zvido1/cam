@@ -4,30 +4,38 @@ Reviewed artifact:
 `build_log/452_production_package_instruction_v8.md`
 
 Reviewed SHA-256:
-`b9343bd91066ca9fac694f945f6bf5ef8f13a5ab59c5fac091826cb9d081a7da`
-Size: 55,059 bytes. Lines: 638. Line endings: LF only.
+`b72ec14dc275f5454f036c8934736ff435fda79f8947ba8e064aa9fe95122e3c`
+Size: 60,258 bytes. Lines: 670. Line endings: LF only.
 
 Reviewing party:
 GPT-5.6 Sol, ChatGPT review instance
 
 Ratification date:
-2026-08-15
+2026-08-16
 
 Decision:
 The exact artifact identified above is RATIFIED for Stage 1A and Stage 1B only.
 
 Supersession:
-This re-ratification supersedes the ratification of
-002b3afa9b33a76a0f913007342ef3654c8915acdb9bfb7d9c4b125cf96910ce dated
-2026-08-14. The delta was confined to the v8.2 patch adding
-452_run_censuses.py and 452_stage1b.py to §3.1, and the restoration of
-the v8.1 patch record's trailing sentence with its damage/repair history.
-No other section content changed.
+This third re-ratification supersedes the ratification of
+b9343bd91066ca9fac694f945f6bf5ef8f13a5ab59c5fac091826cb9d081a7da dated
+2026-08-15, which itself superseded 002b3afa... dated 2026-08-14. The
+v8.2 to v8.3 delta was confined to four diff hunks: the version heading
+and patch history, §3.1 gaining 452_key_isolation_record.md, and the
+§7.0 checkpoint ordering with §7.1's non-vacuous input_hashes
+requirement.
 
 Basis:
-The reviewing party inspected the exact file bytes, not excerpts, and
-performed a byte-level comparison against the previously ratified
-artifact rather than checking the new paragraphs in isolation.
+The reviewing party held both the previously ratified b9343bd9...
+attachment and the current artifact, and performed a real byte
+comparison rather than relying on arithmetic or quoted regions. The
+v8.1 and v8.2 patch records were confirmed byte-identical to their text
+in the prior ratified artifact.
+
+Disclosed provenance gap:
+The recorded absence of a committed v8.2 to v8.3 baseline is accepted as
+a disclosed historical provenance gap and is not represented as having
+been repaired retroactively.
 
 Authorization scope:
 This ratification authorizes construction and structural preflight under the

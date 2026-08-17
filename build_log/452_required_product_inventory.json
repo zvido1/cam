@@ -616,7 +616,7 @@
           "required": true
         }
       ],
-      "note": "EXISTS as of 2026-08-14, SHA-256 777ba039…, naming instruction hash 002b3afa…"
+      "note": "EXISTS. Its current hash and the instruction hash it names are recorded in\nbuild_log/452_ratification_record.md, which is the single place either value\nlives. This note previously stamped both and was stale on both counts."
     },
     {
       "product_id": "P452-production-script",

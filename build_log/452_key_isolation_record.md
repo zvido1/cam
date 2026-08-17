@@ -161,4 +161,8 @@ record**, not against §8.2 of this package, and is not a blocker for Step 452's
 (37 entries), so `452_config_manifest.json` will not bind it at step 5. Step-447 through Step-451
 status records *are* in §3.1. Whether a record offered as evidence toward §8.2 should likewise be
 bound is a question for Chat and the reviewing party; Claude Code has not added it, because §3.1
-was re-ratified at `b9343bd9…` and any further change requires another ratification cycle.
+This record is now a §3.1 artifact, bound by the manifest per v8.3. The
+recommendation that it be bound has been acted on. The instruction's
+ratification status is recorded in build_log/452_ratification_record.md;
+this line previously stamped a hash and was superseded within two turns of
+being written — while arguing that stale pointers are a defect class.

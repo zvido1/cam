@@ -1,6 +1,6 @@
 {
   "_artifact": "452_deterministic_rules.json",
-  "_authority": "Frozen at Stage 1A per 452_production_package_instruction_v8.md §5. Ratified instruction SHA-256 002b3afa9b33a76a0f913007342ef3654c8915acdb9bfb7d9c4b125cf96910ce.",
+  "_authority": "Built against build_log/452_production_package_instruction_v8.md, ratified\nper build_log/452_ratification_record.md, which names the reviewed hash.\nThis artifact deliberately does NOT stamp that hash: a stamped hash goes\nstale on every re-ratification, which is the coupling §3.2 avoids by keeping\nthe manifest outside its own artifact set and the instruction header avoids\nby refusing to carry its own ratification status. Stamped and repointed\ntwice before this rule was applied.",
   "_status": "STAGE-1A FROZEN. No Stage-1B or Stage-2 step may edit this file (§2, §7.0 step 4).",
   "_identity_layer_note": "Stage-1 artifacts are inputs to the token derivation and therefore carry NO package token (§1 token-header rule).",
   "rules_version": "452_rules_v1",

@@ -1,6 +1,6 @@
 # Step 452 — Sanctioned Deterministic Post-Run Production Package
 
-## PREREGISTRATION BUILD INSTRUCTION — **v8.2**
+## PREREGISTRATION BUILD INSTRUCTION — **v8.3**
 
 **Ratification status is NOT carried by this document.** It is recorded externally in `build_log/452_ratification_record.md`, which names the reviewed content hash and the reviewing party. A document that declares its own ratification status cannot be ratified and then committed without changing the bytes that were ratified — the same self-reference §3.2 avoids by keeping the manifest outside its own artifact set. This document's status at any moment is whatever the ratification record says of its current hash, and nothing in these bytes asserts it.
 
@@ -526,6 +526,11 @@ Gate records are themselves Stage-1 artifacts inside `EXPECTED_PACKAGE_ARTIFACTS
    the reviewing party, and the date. This record is a §3.1 artifact and
    must exist before step 5. It is terminal: it is not itself ratified.
    Stage 1A does not begin until it exists.
+0a WORKING BASELINE. Before any new Stage-1 edit, force-add and commit every
+   currently existing §3.1 artifact as a clearly labelled NON-SANCTIONED
+   Stage-1 checkpoint. Provenance only: not P452, not token-bearing, cannot
+   authorize Stage 2. Explicit `git add -f -- <path>` per file; NEVER
+   blanket-force-add build_log/.
 1  finalize script, tests, rules, schemas, inventory
 2  run tests and the two censuses; each record hashes the NON-GATE Stage-1
    artifacts and MUST declare input_hashes (§7.1)
@@ -545,7 +550,9 @@ Gate records are themselves Stage-1 artifacts inside `EXPECTED_PACKAGE_ARTIFACTS
    for token derivation, sanction, and Stage-2 execution
 ```
 
-**Step 0a, WORKING BASELINE (added v8.3).** Before any new Stage-1 edit, force-add and commit every currently existing §3.1 artifact as a clearly labelled NON-SANCTIONED Stage-1 checkpoint. Provenance only: not P452, not token-bearing, cannot authorize Stage 2.
+**Step 0a, WORKING BASELINE.** Before any new Stage-1 edit, force-add and commit every currently existing §3.1 artifact as a clearly labelled NON-SANCTIONED Stage-1 checkpoint. Provenance only: not P452, not token-bearing, cannot authorize Stage 2.
+
+**0a was omitted from the ordered block when v8.3 was first written, existing only as this prose.** A reader executing the enumeration would never have performed the baseline — the step whose entire purpose is making edits recoverable was itself unreachable from the sequence that governs execution. Found by Claude Code immediately after running it. Corrected 2026-08-15.
 
 **Why the checkpoints exist.** Until an artifact is committed it has **no recoverable prior state** — the gate records store its digest, not its bytes. A closed package whose bound source artifacts were never tracked can prove which bytes entered P452 and **cannot** prove that an asserted intermediate edit was confined to what was claimed. Those are different claims. Found when Claude Code was asked to confirm a citation repoint in `452_ambiguity_ruling.md` was confined to one line and correctly answered that it could not, because the file had never been committed.
 
@@ -554,6 +561,9 @@ Gate records are themselves Stage-1 artifacts inside `EXPECTED_PACKAGE_ARTIFACTS
 **Second effect, and it makes step 4 enforceable.** `build_log/` is gitignored, so `git status --porcelain --untracked-files=all` is currently **blind to every §3.1 artifact** — the same blindness §3.3 records on the output side. Once the checkpoints track them, a Stage-1 edit after the freeze becomes visible to the cleanliness check. Before this, step 4's freeze was declaratory; after it, it is checkable.
 
 **Checkpoint commits carry NO token or sanction significance.** Their only job is historical recoverability. Because `build_log/` is gitignored, use explicit `git add -f -- <paths>`; **never** blanket-force-add the directory.
+
+**KNOWN GAP IN THIS PACKAGE'S OWN PROVENANCE.** Step 0a was introduced by the v8.3 edit and executed immediately after, so the working baseline (commit `190cef7e`) captured the instruction already at v8.3. **The v8.2 → v8.3 diff is not recoverable**: `b9343bd9…` was never committed, no copy exists on disk, and only its digest and a partial quote set survive. This is precisely the defect step 0a exists to prevent, occurring once during 0a's own introduction. Recorded rather than worked around; a baseline that pretends to start earlier than it does would be worse than an honest gap at the boundary.
+
 **The determination is a non-gate Stage-1B input to the input-sufficiency gate, not its sibling.** The earlier gate records do not hash it — they precede it and test different things. The manifest binds all of them afterward. The gate records must describe **the exact bytes being sanctioned, not their ancestors.**
 
 ### 7.1 Stage-2 revalidation

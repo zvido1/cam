@@ -5,16 +5,16 @@
   "_granularity": "PER REQUIRED FIELD, not per product",
   "_tracing_rule": "§7.2 traces the DECLARED SPECIFICATION CHAIN: is a producer named, and is it a real producer rather than a path constant, a planned section or a derivable-later note. It does NOT verify that a field's bytes exist inside an L1 artifact — that is §7.4's job at Stage 1B, and §2 forbids reading L1 at Stage 1A.",
   "_supersession_rule": "A product whose expected_producer is a declared NONE passes iff its note names the Step-452 product that supersedes it AND that superseding product itself passes. Otherwise it halts. Without this rule the census would halt on the very absences the package exists to remediate.",
-  "_generated_utc": "2026-08-16T03:51:39.950743+00:00",
+  "_generated_utc": "2026-08-16T04:46:07.206351+00:00",
   "input_hashes": {
-    "build_log/452_production_package_instruction_v8.md": "b9343bd91066ca9fac694f945f6bf5ef8f13a5ab59c5fac091826cb9d081a7da",
-    "build_log/452_ratification_record.md": "777ba0396e34500f3c4a7c31b25ab86166a500578a60f3ee36df30de0016728a",
-    "build_log/452_production_script.py": "aedcbeca7c380d65e9191c38d132308d7ea388f7d6a2cef7cfd0acf053883c88",
+    "build_log/452_production_package_instruction_v8.md": "b72ec14dc275f5454f036c8934736ff435fda79f8947ba8e064aa9fe95122e3c",
+    "build_log/452_ratification_record.md": "b06e50adada4d374667c851ac59c805c5bdbf5ea4f90d1bb826049aa1713482b",
+    "build_log/452_production_script.py": "29ea2ced2f186496609084bdc2c1096f8961c40befd9211dea3ede5adfea3bb6",
     "build_log/452_production_tests.py": "39c5c14d1c029d9a6d6fbf1c4722abc3a5af3f2707583b649dca7d6afd9980fb",
-    "build_log/452_output_schema.json": "167009ff5583f9cf9111dee3510f12369319c621b417f4738771fee076f9ee13",
-    "build_log/452_deterministic_rules.json": "ce1d314b5c23bc24492181e49cc5f7f598d37e0350f9cd1a581ce7aa90ada3ac",
-    "build_log/452_required_product_inventory.json": "0b21b3d31537ffe7dfd3deb296f5a9fd0eb57bc26d86d9d06509edb9178b36e6",
-    "build_log/452_ambiguity_ruling.md": "4881e95c8d973c806810df492eed58f8e8e3baf44c7980e8f95fd860721b2495"
+    "build_log/452_output_schema.json": "ebf998f3d6793fc905b7b26c76cc9673719b6233b018e65f77865c5d3b7e4452",
+    "build_log/452_deterministic_rules.json": "df761b59f4261d37bc1d4d0296ffe3d5f5e07f94a3a57f4240705df36aace074",
+    "build_log/452_required_product_inventory.json": "d3249cc5e28ca2ec0e121124d87f91c7a26e7dfb86f146fddb503fa135570094",
+    "build_log/452_ambiguity_ruling.md": "a716e7ff44e867855f7ad992db626a1a47426da31cc1d7fd19ba31577590eb55"
   },
   "_gate_records_excluded_from_own_hashing": [
     "452_input_sufficiency.json",

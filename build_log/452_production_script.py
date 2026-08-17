@@ -1,7 +1,12 @@
 """452 sanctioned deterministic post-run production package — L3 producer.
 
-Built against 452_production_package_instruction_v8.md, ratified SHA-256
-002b3afa9b33a76a0f913007342ef3654c8915acdb9bfb7d9c4b125cf96910ce.
+Built against build_log/452_production_package_instruction_v8.md, ratified
+per build_log/452_ratification_record.md, which names the reviewed hash.
+This artifact deliberately does NOT stamp that hash: a stamped hash goes
+stale on every re-ratification, which is the coupling §3.2 avoids by keeping
+the manifest outside its own artifact set and the instruction header avoids
+by refusing to carry its own ratification status. Stamped and repointed
+twice before this rule was applied.
 
 TWO SANCTIONED INVOCATIONS, zero provider calls across both (§4.14):
     python build_log/452_production_script.py produce         --stage2-sanction <token>
