@@ -56,7 +56,7 @@
     "verified_at_build": "every committed blob contains zero CRLF; every worktree copy is byte-identical"
   },
   "_commit_binding": {
-    "head_at_build_time": "8c181f2e7a7f536df04d81fad04d9e8b248a1139",
+    "head_at_build_time": "df67cb3c17b02ad1d79f063e4822fde5075af10c",
     "construction": "Construction A / Option 3: this manifest carries NO package commit SHA. P452 does not exist yet, and a manifest cannot name the commit that will contain it. The run-commit-to-token binding lives in the external signed annotated tag, created by Tzvi after P452.",
     "head_at_build_time_is_the_PARENT_of_P452": true
   },
@@ -212,7 +212,7 @@
     },
     "452_key_isolation_record.md": {
       "git_path": "build_log/452_key_isolation_record.md",
-      "committed_blob_sha256": "cf983ee3a982b8a64767d3a04c4845ce2ee6e1df4cc46a45bbca87beff898040"
+      "committed_blob_sha256": "deb8d8d3bf083e67f4b9e72d04280f6f09fbda61946b749a1fa5ae2e4a5c8c6c"
     },
     "431_postrun_partial_validation.json": {
       "git_path": "build_log/431_postrun_partial_validation.json",
@@ -283,7 +283,7 @@
     "452_predicate_reachability_census.json": "4530a6394f6fd6ffa1d058de5a1e6922ac2fab64b377dce357a45bdbc40d5918",
     "452_charge_scope_applicability_determination.json": "d167f7522a28d62173e717ce5941ebb48c157ba46fb65c922caf8acebf60ced7",
     "452_input_sufficiency.json": "f9d5a751336ffdaba87dd144a8e589da33fe0697dcbe407139e5804c859402fe",
-    "452_key_isolation_record.md": "cf983ee3a982b8a64767d3a04c4845ce2ee6e1df4cc46a45bbca87beff898040",
+    "452_key_isolation_record.md": "deb8d8d3bf083e67f4b9e72d04280f6f09fbda61946b749a1fa5ae2e4a5c8c6c",
     "431_postrun_partial_validation.json": "6752517b8af37580d3fb6a36dbc74999ca3f38ff88df6fcb128110c904b3f009",
     "447_code_status.md": "25bf5b7df4f3685b7ef3c39098038022e2b1de68a8880096601a01d32b79987a",
     "448_code_status.md": "6e1042076369e1c4dd0c33cddfd44b55b2b936334fa5132ca92fb4ca0ca4d5fa",
@@ -300,7 +300,7 @@
     "source": "reproduced from build_log/431_config_manifest.json and verified to regenerate its token ef1a7af7... exactly before use",
     "input": "artifact_hashes only — the manifest is not an input to itself"
   },
-  "manifest_self_hash_of_artifact_hashes": "1a01f631152a5f5bd5ebb4799b16fc2cbd688636ae997121e57a74aa76451779",
-  "stage2_sanction_token": "1a01f631152a5f5bd5ebb4799b16fc2cbd688636ae997121e57a74aa76451779",
+  "manifest_self_hash_of_artifact_hashes": "e0b985b43b95b311907aae7909f9c5da129ba55eebecd2980749524dd390f5a4",
+  "stage2_sanction_token": "e0b985b43b95b311907aae7909f9c5da129ba55eebecd2980749524dd390f5a4",
   "_how_to_sanction": "Not yet sanctionable. Requires: §7.0 step 6 package commit P452; Tzvi's §8.2 factual statement on private-key control; the exact sanction message; and Tzvi's personal creation of the signed annotated tag. Claude Code created no tag and no sanction message."
 }
