@@ -32,3 +32,43 @@
 # recorded SHA-256 on any checkout.
 /build_log/431_sanction_message.txt           text eol=lf
 /build_log/431_sanction_message_template.txt  text eol=lf
+
+# Step 452 (v8.3) — the remaining §3.1 EXPECTED_PACKAGE_ARTIFACTS. Only 7 of the 38 were
+# pinned before this: the 431 package inherited its own scoping and the Step-452 additions
+# were never covered. With core.autocrlf=true an unpinned path is rewritten to CRLF on every
+# checkout while its blob stays LF, so `git status` reports clean (it compares post-
+# normalisation) while §3.2's stricter requirement — worktree copy BYTE-IDENTICAL to the
+# committed blob — silently fails. Found at the step-5 pre-build check, on the very file a
+# `git checkout --` had restored while demonstrating that the step-4 freeze is enforceable.
+# .gitattributes is NOT a §3.1 artifact and is NOT in the token-input set.
+/build_log/431_selection_measurement_sidecar.json             text eol=lf
+/build_log/431_runtime_seam_capture.json                      text eol=lf
+/build_log/431_selection_measurement.md                       text eol=lf
+/build_log/431_partA_governed_selection_spec.md               text eol=lf
+/build_log/431_partB_measurement_instruction.md               text eol=lf
+/build_log/452_production_package_instruction_v8.md           text eol=lf
+/build_log/452_ratification_record.md                         text eol=lf
+/build_log/452_production_script.py                           text eol=lf
+/build_log/452_production_tests.py                            text eol=lf
+/build_log/452_run_censuses.py                                text eol=lf
+/build_log/452_stage1b.py                                     text eol=lf
+/build_log/452_output_schema.json                             text eol=lf
+/build_log/452_deterministic_rules.json                       text eol=lf
+/build_log/452_required_product_inventory.json                text eol=lf
+/build_log/452_ambiguity_ruling.md                            text eol=lf
+/build_log/452_stage1_test_results.json                       text eol=lf
+/build_log/452_producer_consumer_census.json                  text eol=lf
+/build_log/452_predicate_reachability_census.json             text eol=lf
+/build_log/452_charge_scope_applicability_determination.json  text eol=lf
+/build_log/452_input_sufficiency.json                         text eol=lf
+/build_log/452_key_isolation_record.md                        text eol=lf
+/build_log/431_postrun_partial_validation.json                text eol=lf
+/build_log/447_code_status.md                                 text eol=lf
+/build_log/448_code_status.md                                 text eol=lf
+/build_log/449_code_status.md                                 text eol=lf
+/build_log/450_code_status.md                                 text eol=lf
+/build_log/451_code_status.md                                 text eol=lf
+/build_log/448_input_hashes.md                                text eol=lf
+/build_log/452_sanction_allowed_signers                       text eol=lf
+/build_log/452_sanction_key.pub                               text eol=lf
+/build_log/452_sanction_policy.json                           text eol=lf

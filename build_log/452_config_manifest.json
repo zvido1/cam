@@ -1,0 +1,306 @@
+{
+  "_artifact": "452_config_manifest.json",
+  "_purpose": "Committed-blob binding and token derivation for the Step-452 production package. Built at §7.0 step 5 from the COMMITTED §3.1 blobs, never from the working tree.",
+  "authorizing_instruction": "build_log/452_production_package_instruction_v8.md",
+  "ratification": "Recorded in build_log/452_ratification_record.md, which names the reviewed hash. This manifest deliberately does NOT stamp that hash.",
+  "stage": "1B complete; step 5. NOT the package commit.",
+  "package_type": "deterministic post-run production package (L3). ZERO provider calls.",
+  "model_calls_made_at_build": 0,
+  "_manifest_is_outside_the_token_input_set": {
+    "MANIFEST_GITPATH": "build_log/452_config_manifest.json",
+    "rule": "§3.2: a manifest carrying the derived token cannot be an input to that token. This path is NOT among EXPECTED_PACKAGE_ARTIFACTS and is NOT hashed here.",
+    "self_reference": "none — this manifest does not hash itself"
+  },
+  "line_ending_policy": {
+    "gitattributes_paths_eol_lf": [
+      "build_log/431_selection_measurement_sidecar.json",
+      "build_log/431_runtime_seam_capture.json",
+      "build_log/431_selection_measurement.md",
+      "build_log/431_measurement_config.json",
+      "build_log/431_requirement_profiles.json",
+      "build_log/431_output_schema.json",
+      "build_log/431_fixture_preflight.json",
+      "build_log/431_config_manifest.json",
+      "05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt",
+      "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt",
+      "build_log/431_partA_governed_selection_spec.md",
+      "build_log/431_partB_measurement_instruction.md",
+      "build_log/452_production_package_instruction_v8.md",
+      "build_log/452_ratification_record.md",
+      "build_log/452_production_script.py",
+      "build_log/452_production_tests.py",
+      "build_log/452_run_censuses.py",
+      "build_log/452_stage1b.py",
+      "build_log/452_output_schema.json",
+      "build_log/452_deterministic_rules.json",
+      "build_log/452_required_product_inventory.json",
+      "build_log/452_ambiguity_ruling.md",
+      "build_log/452_stage1_test_results.json",
+      "build_log/452_producer_consumer_census.json",
+      "build_log/452_predicate_reachability_census.json",
+      "build_log/452_charge_scope_applicability_determination.json",
+      "build_log/452_input_sufficiency.json",
+      "build_log/452_key_isolation_record.md",
+      "build_log/431_postrun_partial_validation.json",
+      "build_log/447_code_status.md",
+      "build_log/448_code_status.md",
+      "build_log/449_code_status.md",
+      "build_log/450_code_status.md",
+      "build_log/451_code_status.md",
+      "build_log/448_input_hashes.md",
+      "build_log/452_sanction_allowed_signers",
+      "build_log/452_sanction_key.pub",
+      "build_log/452_sanction_policy.json"
+    ],
+    "note": "All 38 §3.1 paths are path-pinned `text eol=lf` in .gitattributes. Only 7 were pinned before 2026-08-17; with core.autocrlf=true the other 31 were rewritten to CRLF on checkout while their blobs stayed LF, so `git status` reported clean (it compares post-normalisation) while §3.2's byte-identity requirement failed. Found at this step's pre-build check and fixed before the manifest was built.",
+    "verified_at_build": "every committed blob contains zero CRLF; every worktree copy is byte-identical"
+  },
+  "_commit_binding": {
+    "head_at_build_time": "8c181f2e7a7f536df04d81fad04d9e8b248a1139",
+    "construction": "Construction A / Option 3: this manifest carries NO package commit SHA. P452 does not exist yet, and a manifest cannot name the commit that will contain it. The run-commit-to-token binding lives in the external signed annotated tag, created by Tzvi after P452.",
+    "head_at_build_time_is_the_PARENT_of_P452": true
+  },
+  "expected_package_artifacts_count": 38,
+  "expected_package_artifacts": [
+    "build_log/431_selection_measurement_sidecar.json",
+    "build_log/431_runtime_seam_capture.json",
+    "build_log/431_selection_measurement.md",
+    "build_log/431_measurement_config.json",
+    "build_log/431_requirement_profiles.json",
+    "build_log/431_output_schema.json",
+    "build_log/431_fixture_preflight.json",
+    "build_log/431_config_manifest.json",
+    "05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt",
+    "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt",
+    "build_log/431_partA_governed_selection_spec.md",
+    "build_log/431_partB_measurement_instruction.md",
+    "build_log/452_production_package_instruction_v8.md",
+    "build_log/452_ratification_record.md",
+    "build_log/452_production_script.py",
+    "build_log/452_production_tests.py",
+    "build_log/452_run_censuses.py",
+    "build_log/452_stage1b.py",
+    "build_log/452_output_schema.json",
+    "build_log/452_deterministic_rules.json",
+    "build_log/452_required_product_inventory.json",
+    "build_log/452_ambiguity_ruling.md",
+    "build_log/452_stage1_test_results.json",
+    "build_log/452_producer_consumer_census.json",
+    "build_log/452_predicate_reachability_census.json",
+    "build_log/452_charge_scope_applicability_determination.json",
+    "build_log/452_input_sufficiency.json",
+    "build_log/452_key_isolation_record.md",
+    "build_log/431_postrun_partial_validation.json",
+    "build_log/447_code_status.md",
+    "build_log/448_code_status.md",
+    "build_log/449_code_status.md",
+    "build_log/450_code_status.md",
+    "build_log/451_code_status.md",
+    "build_log/448_input_hashes.md",
+    "build_log/452_sanction_allowed_signers",
+    "build_log/452_sanction_key.pub",
+    "build_log/452_sanction_policy.json"
+  ],
+  "committed_blob_binding": {
+    "431_selection_measurement_sidecar.json": {
+      "git_path": "build_log/431_selection_measurement_sidecar.json",
+      "committed_blob_sha256": "c44573cb56d990afe7818dbdbfc3aa1e9586e51331a86b348b97f0e55967a9e7"
+    },
+    "431_runtime_seam_capture.json": {
+      "git_path": "build_log/431_runtime_seam_capture.json",
+      "committed_blob_sha256": "01e0427e187b658d07947978b30e6bb8a78b9e2f0551180d00cde364d10ec981"
+    },
+    "431_selection_measurement.md": {
+      "git_path": "build_log/431_selection_measurement.md",
+      "committed_blob_sha256": "8f469cec0d5d50fcfbfdaf65b4c53c1034640e58b0cf07092b4fb8d47bfe3603"
+    },
+    "431_measurement_config.json": {
+      "git_path": "build_log/431_measurement_config.json",
+      "committed_blob_sha256": "7000ad8f4c1f14b43d59f043fb90a52c7c03e139cd6ec808180cfd651f139a0b"
+    },
+    "431_requirement_profiles.json": {
+      "git_path": "build_log/431_requirement_profiles.json",
+      "committed_blob_sha256": "57f8a22ae258e01afa94568c9fba8e9f895e79868c592134b162d5923bd8563b"
+    },
+    "431_output_schema.json": {
+      "git_path": "build_log/431_output_schema.json",
+      "committed_blob_sha256": "a9724730044357131cec19e81558a0e05a9460d1a3588f9ef9d520e47d26d4b2"
+    },
+    "431_fixture_preflight.json": {
+      "git_path": "build_log/431_fixture_preflight.json",
+      "committed_blob_sha256": "080eb3ed9fca215d8e65faa3dafaa451536de974d7ccb53fbbda16af26ad8770"
+    },
+    "431_config_manifest.json": {
+      "git_path": "build_log/431_config_manifest.json",
+      "committed_blob_sha256": "67d8e41ca6bfef096850b0e4959fb618a00892c664332378e9ddf41a4ef5d676"
+    },
+    "atreca_eastjamie_southsf_lease.txt": {
+      "git_path": "05 Lease Analyzer/test_data/tenants/atreca_eastjamie_southsf_lease.txt",
+      "committed_blob_sha256": "e049ee63a4e2f475c133b65ceb7a454b4570e59ec288a39b37129740b200d04d"
+    },
+    "atlas_meridian_warehouse_lease.txt": {
+      "git_path": "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt",
+      "committed_blob_sha256": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71"
+    },
+    "431_partA_governed_selection_spec.md": {
+      "git_path": "build_log/431_partA_governed_selection_spec.md",
+      "committed_blob_sha256": "e62c9ef0c6d1e2bf10157e87f67413641cf08757ebef759c53bcedaf27b27df4"
+    },
+    "431_partB_measurement_instruction.md": {
+      "git_path": "build_log/431_partB_measurement_instruction.md",
+      "committed_blob_sha256": "09010e75deb8a7591a13a3b5f45fe130f65f321e40a25e8a9f19d4f92059d240"
+    },
+    "452_production_package_instruction_v8.md": {
+      "git_path": "build_log/452_production_package_instruction_v8.md",
+      "committed_blob_sha256": "b72ec14dc275f5454f036c8934736ff435fda79f8947ba8e064aa9fe95122e3c"
+    },
+    "452_ratification_record.md": {
+      "git_path": "build_log/452_ratification_record.md",
+      "committed_blob_sha256": "b06e50adada4d374667c851ac59c805c5bdbf5ea4f90d1bb826049aa1713482b"
+    },
+    "452_production_script.py": {
+      "git_path": "build_log/452_production_script.py",
+      "committed_blob_sha256": "29ea2ced2f186496609084bdc2c1096f8961c40befd9211dea3ede5adfea3bb6"
+    },
+    "452_production_tests.py": {
+      "git_path": "build_log/452_production_tests.py",
+      "committed_blob_sha256": "88924f7f74bb2ffebe0adadd752bda19beb5184f5a6b53f237a733ea3388e301"
+    },
+    "452_run_censuses.py": {
+      "git_path": "build_log/452_run_censuses.py",
+      "committed_blob_sha256": "ff3847b5aa02557c228b37f20c767a5a7f2ac863e91b21664303bfd920bb3569"
+    },
+    "452_stage1b.py": {
+      "git_path": "build_log/452_stage1b.py",
+      "committed_blob_sha256": "412ad506f699417064771bd6c22c6823541f1dfa517867ee4e74287ffd5eeffb"
+    },
+    "452_output_schema.json": {
+      "git_path": "build_log/452_output_schema.json",
+      "committed_blob_sha256": "ebf998f3d6793fc905b7b26c76cc9673719b6233b018e65f77865c5d3b7e4452"
+    },
+    "452_deterministic_rules.json": {
+      "git_path": "build_log/452_deterministic_rules.json",
+      "committed_blob_sha256": "df761b59f4261d37bc1d4d0296ffe3d5f5e07f94a3a57f4240705df36aace074"
+    },
+    "452_required_product_inventory.json": {
+      "git_path": "build_log/452_required_product_inventory.json",
+      "committed_blob_sha256": "d3249cc5e28ca2ec0e121124d87f91c7a26e7dfb86f146fddb503fa135570094"
+    },
+    "452_ambiguity_ruling.md": {
+      "git_path": "build_log/452_ambiguity_ruling.md",
+      "committed_blob_sha256": "a716e7ff44e867855f7ad992db626a1a47426da31cc1d7fd19ba31577590eb55"
+    },
+    "452_stage1_test_results.json": {
+      "git_path": "build_log/452_stage1_test_results.json",
+      "committed_blob_sha256": "454596d36a33ed725c0fb1131b0a13073444aad74ffd17f9a07d8b07863a63ee"
+    },
+    "452_producer_consumer_census.json": {
+      "git_path": "build_log/452_producer_consumer_census.json",
+      "committed_blob_sha256": "17b9d46a68a7345ebca1721c7c6ad6c90a6a225abd92608e1abc56811ecd01e1"
+    },
+    "452_predicate_reachability_census.json": {
+      "git_path": "build_log/452_predicate_reachability_census.json",
+      "committed_blob_sha256": "4530a6394f6fd6ffa1d058de5a1e6922ac2fab64b377dce357a45bdbc40d5918"
+    },
+    "452_charge_scope_applicability_determination.json": {
+      "git_path": "build_log/452_charge_scope_applicability_determination.json",
+      "committed_blob_sha256": "d167f7522a28d62173e717ce5941ebb48c157ba46fb65c922caf8acebf60ced7"
+    },
+    "452_input_sufficiency.json": {
+      "git_path": "build_log/452_input_sufficiency.json",
+      "committed_blob_sha256": "f9d5a751336ffdaba87dd144a8e589da33fe0697dcbe407139e5804c859402fe"
+    },
+    "452_key_isolation_record.md": {
+      "git_path": "build_log/452_key_isolation_record.md",
+      "committed_blob_sha256": "cf983ee3a982b8a64767d3a04c4845ce2ee6e1df4cc46a45bbca87beff898040"
+    },
+    "431_postrun_partial_validation.json": {
+      "git_path": "build_log/431_postrun_partial_validation.json",
+      "committed_blob_sha256": "6752517b8af37580d3fb6a36dbc74999ca3f38ff88df6fcb128110c904b3f009"
+    },
+    "447_code_status.md": {
+      "git_path": "build_log/447_code_status.md",
+      "committed_blob_sha256": "25bf5b7df4f3685b7ef3c39098038022e2b1de68a8880096601a01d32b79987a"
+    },
+    "448_code_status.md": {
+      "git_path": "build_log/448_code_status.md",
+      "committed_blob_sha256": "6e1042076369e1c4dd0c33cddfd44b55b2b936334fa5132ca92fb4ca0ca4d5fa"
+    },
+    "449_code_status.md": {
+      "git_path": "build_log/449_code_status.md",
+      "committed_blob_sha256": "9a60933f0769907a8d597752e49e17d75c5d579362f71870647d656c37307849"
+    },
+    "450_code_status.md": {
+      "git_path": "build_log/450_code_status.md",
+      "committed_blob_sha256": "48a86e46142cedef4640e4b02d4db299c7c7070d80f7c480ce087a705ae344f7"
+    },
+    "451_code_status.md": {
+      "git_path": "build_log/451_code_status.md",
+      "committed_blob_sha256": "47c331686235f81ddc1cfb05b2a0a6ab96e93cf1f1eb86161e617ac84cdaed80"
+    },
+    "448_input_hashes.md": {
+      "git_path": "build_log/448_input_hashes.md",
+      "committed_blob_sha256": "fb5498db14fc2853764532e634cf49fdb2ce8fec5c3245c0f930538ba35da459"
+    },
+    "452_sanction_allowed_signers": {
+      "git_path": "build_log/452_sanction_allowed_signers",
+      "committed_blob_sha256": "f0d2db7374ed8e6a0a5cc727f82794af9ad16c70b2532d6878a4706c337217d6"
+    },
+    "452_sanction_key.pub": {
+      "git_path": "build_log/452_sanction_key.pub",
+      "committed_blob_sha256": "e0b26fd7f79e933db44deecca6820037cd950760ec1e5c4421e217a5963bb9b9"
+    },
+    "452_sanction_policy.json": {
+      "git_path": "build_log/452_sanction_policy.json",
+      "committed_blob_sha256": "25e34ba57188de2815488851742f7cba0acab8474f1e5ba2df02c50a1779a2f8"
+    }
+  },
+  "artifact_hashes": {
+    "431_selection_measurement_sidecar.json": "c44573cb56d990afe7818dbdbfc3aa1e9586e51331a86b348b97f0e55967a9e7",
+    "431_runtime_seam_capture.json": "01e0427e187b658d07947978b30e6bb8a78b9e2f0551180d00cde364d10ec981",
+    "431_selection_measurement.md": "8f469cec0d5d50fcfbfdaf65b4c53c1034640e58b0cf07092b4fb8d47bfe3603",
+    "431_measurement_config.json": "7000ad8f4c1f14b43d59f043fb90a52c7c03e139cd6ec808180cfd651f139a0b",
+    "431_requirement_profiles.json": "57f8a22ae258e01afa94568c9fba8e9f895e79868c592134b162d5923bd8563b",
+    "431_output_schema.json": "a9724730044357131cec19e81558a0e05a9460d1a3588f9ef9d520e47d26d4b2",
+    "431_fixture_preflight.json": "080eb3ed9fca215d8e65faa3dafaa451536de974d7ccb53fbbda16af26ad8770",
+    "431_config_manifest.json": "67d8e41ca6bfef096850b0e4959fb618a00892c664332378e9ddf41a4ef5d676",
+    "atreca_eastjamie_southsf_lease.txt": "e049ee63a4e2f475c133b65ceb7a454b4570e59ec288a39b37129740b200d04d",
+    "atlas_meridian_warehouse_lease.txt": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "431_partA_governed_selection_spec.md": "e62c9ef0c6d1e2bf10157e87f67413641cf08757ebef759c53bcedaf27b27df4",
+    "431_partB_measurement_instruction.md": "09010e75deb8a7591a13a3b5f45fe130f65f321e40a25e8a9f19d4f92059d240",
+    "452_production_package_instruction_v8.md": "b72ec14dc275f5454f036c8934736ff435fda79f8947ba8e064aa9fe95122e3c",
+    "452_ratification_record.md": "b06e50adada4d374667c851ac59c805c5bdbf5ea4f90d1bb826049aa1713482b",
+    "452_production_script.py": "29ea2ced2f186496609084bdc2c1096f8961c40befd9211dea3ede5adfea3bb6",
+    "452_production_tests.py": "88924f7f74bb2ffebe0adadd752bda19beb5184f5a6b53f237a733ea3388e301",
+    "452_run_censuses.py": "ff3847b5aa02557c228b37f20c767a5a7f2ac863e91b21664303bfd920bb3569",
+    "452_stage1b.py": "412ad506f699417064771bd6c22c6823541f1dfa517867ee4e74287ffd5eeffb",
+    "452_output_schema.json": "ebf998f3d6793fc905b7b26c76cc9673719b6233b018e65f77865c5d3b7e4452",
+    "452_deterministic_rules.json": "df761b59f4261d37bc1d4d0296ffe3d5f5e07f94a3a57f4240705df36aace074",
+    "452_required_product_inventory.json": "d3249cc5e28ca2ec0e121124d87f91c7a26e7dfb86f146fddb503fa135570094",
+    "452_ambiguity_ruling.md": "a716e7ff44e867855f7ad992db626a1a47426da31cc1d7fd19ba31577590eb55",
+    "452_stage1_test_results.json": "454596d36a33ed725c0fb1131b0a13073444aad74ffd17f9a07d8b07863a63ee",
+    "452_producer_consumer_census.json": "17b9d46a68a7345ebca1721c7c6ad6c90a6a225abd92608e1abc56811ecd01e1",
+    "452_predicate_reachability_census.json": "4530a6394f6fd6ffa1d058de5a1e6922ac2fab64b377dce357a45bdbc40d5918",
+    "452_charge_scope_applicability_determination.json": "d167f7522a28d62173e717ce5941ebb48c157ba46fb65c922caf8acebf60ced7",
+    "452_input_sufficiency.json": "f9d5a751336ffdaba87dd144a8e589da33fe0697dcbe407139e5804c859402fe",
+    "452_key_isolation_record.md": "cf983ee3a982b8a64767d3a04c4845ce2ee6e1df4cc46a45bbca87beff898040",
+    "431_postrun_partial_validation.json": "6752517b8af37580d3fb6a36dbc74999ca3f38ff88df6fcb128110c904b3f009",
+    "447_code_status.md": "25bf5b7df4f3685b7ef3c39098038022e2b1de68a8880096601a01d32b79987a",
+    "448_code_status.md": "6e1042076369e1c4dd0c33cddfd44b55b2b936334fa5132ca92fb4ca0ca4d5fa",
+    "449_code_status.md": "9a60933f0769907a8d597752e49e17d75c5d579362f71870647d656c37307849",
+    "450_code_status.md": "48a86e46142cedef4640e4b02d4db299c7c7070d80f7c480ce087a705ae344f7",
+    "451_code_status.md": "47c331686235f81ddc1cfb05b2a0a6ab96e93cf1f1eb86161e617ac84cdaed80",
+    "448_input_hashes.md": "fb5498db14fc2853764532e634cf49fdb2ce8fec5c3245c0f930538ba35da459",
+    "452_sanction_allowed_signers": "f0d2db7374ed8e6a0a5cc727f82794af9ad16c70b2532d6878a4706c337217d6",
+    "452_sanction_key.pub": "e0b26fd7f79e933db44deecca6820037cd950760ec1e5c4421e217a5963bb9b9",
+    "452_sanction_policy.json": "25e34ba57188de2815488851742f7cba0acab8474f1e5ba2df02c50a1779a2f8"
+  },
+  "token_derivation": {
+    "formula": "sha256(json.dumps(artifact_hashes, sort_keys=True).encode('utf-8')).hexdigest()",
+    "source": "reproduced from build_log/431_config_manifest.json and verified to regenerate its token ef1a7af7... exactly before use",
+    "input": "artifact_hashes only — the manifest is not an input to itself"
+  },
+  "manifest_self_hash_of_artifact_hashes": "1a01f631152a5f5bd5ebb4799b16fc2cbd688636ae997121e57a74aa76451779",
+  "stage2_sanction_token": "1a01f631152a5f5bd5ebb4799b16fc2cbd688636ae997121e57a74aa76451779",
+  "_how_to_sanction": "Not yet sanctionable. Requires: §7.0 step 6 package commit P452; Tzvi's §8.2 factual statement on private-key control; the exact sanction message; and Tzvi's personal creation of the signed annotated tag. Claude Code created no tag and no sanction message."
+}
