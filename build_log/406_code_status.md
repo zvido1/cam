@@ -119,7 +119,7 @@ Summary:
 
 ## Commit SHA
 
-`<SHA>` — to be filled after commit
+`8b9ed5d`
 
 ---
 

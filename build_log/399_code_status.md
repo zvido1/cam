@@ -79,4 +79,4 @@ Per the FLAG in 399_chat_instruction.md: verified by direct code read only. No l
 
 ## Commit SHA
 
-See below (unpushed, local main).
+`9d8ede2` — unpushed, local main.

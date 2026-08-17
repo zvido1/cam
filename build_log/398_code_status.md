@@ -67,11 +67,7 @@ Added ~36 lines of CSS after the Step 375G `.cv-ci-exposure` block (before Step 
 
 ## Relationship to Step 375G (Client Impact)
 
-Step 375G already renders `use_impact.use_reasoning` as "Client Impact" (indigo box) for ALL items that have non-empty reasoning. For items where `use_consequence === "context_dependent"`, the reasoning will appear in BOTH "Client Impact" and "Context Dependency." This is intentional:
-- "Client Impact" = why this provision matters in dollar/risk terms
-- "Context Dependency" = specifically that the outcome depends on the use profile, plus the evaluator-agreement signal
-
-The 375G block was NOT modified (freeze behavior).
+**NOTE (superseded by 398b below):** the original 398 implementation reprinted `use_reasoning` in the Context Dependency box, so it appeared in BOTH boxes. 398b removed that duplication. Current behavior: `use_reasoning` renders ONCE (375G "Client Impact", indigo); the Context Dependency box (amber) is a thin signal strip carrying only the consequence tag / 1-1-1 split note. The 375G block was NOT modified.
 
 ---
 
@@ -93,9 +89,11 @@ The 375G block was NOT modified (freeze behavior).
 2. Run a **Mode C (Analyze)** job on any lease that has Stage 5e output (any run using `lease_use_impact.py`).
 3. Switch to the **Coverage & Gaps** tab.
 4. Open a finding card where `use_impact.use_consequence === "context_dependent"`.
-5. Immediately below the "Client Impact" indigo box, an amber/ochre **"Context Dependency"** box will appear with the model-authored use_reasoning and (if evaluator_agreement is "1-1-1") a purple italic split note.
+5. Immediately below the "Client Impact" indigo box, an amber/ochre **"Context Dependency"** signal strip appears: a "Use impact: context-dependent" tag, OR (when evaluator_agreement is "1-1-1") a purple italic split note. Per 398b it does NOT reprint the reasoning — that stays in the indigo Client Impact box only.
 
-**Fallback rendering:** if a run has no `context_dependent` items but has items with `use_reasoning` and no `use_consequence` (incomplete use_impact), the block also fires with the reasoning only.
+**Which run to use:** the classification is unstable on LP-05 (see CAM_Current_State "run-to-run instability" note). A fresh run may NOT produce a `context_dependent` item. The frozen 2026-06-11 Atlas run (`results/lease_review_20260611_145145_3131a1`) is a guaranteed-hit artifact: LP-05 = context_dependent, 1-1-1.
+
+**Verified 2026-07-05** by reading the `buildItem()` render block directly against the 2026-06-11 LP-05 data — strip logic and dedup confirmed correct.
 
 **No new toggle required** — the block renders whenever real data exists.
 

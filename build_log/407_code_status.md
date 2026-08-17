@@ -68,7 +68,7 @@ See `build_log/407_second_lease_widened_5e_diagnostic.md` for full report.
 
 ## Commit SHA
 
-`<SHA>` — to be filled after commit
+`46fefaf`
 
 ---
 
