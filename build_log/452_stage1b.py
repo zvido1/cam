@@ -495,12 +495,29 @@ def step_3b() -> tuple:
               ("per_product_derivability", derv["passes"])]
     first_fail = next((n for n, ok in checks if not ok), None)
 
+    # §7.0 step 3b (v8.3): this gate must DECLARE as input_hashes EVERY artifact it read.
+    # Previously it declared only the charge-scope determination, so §7.1's Stage-2
+    # revalidation — "recomputes every gate record's declared input hashes" — passed
+    # vacuously over the sidecar, inventory, manifest and lease this gate actually reads.
+    INPUTS_READ = [
+        "build_log/" + DET,
+        "build_log/431_selection_measurement_sidecar.json",
+        "build_log/452_required_product_inventory.json",
+        "build_log/431_config_manifest.json",
+        "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt",
+    ]
+    input_hashes = {rel: sha(CAM_ROOT / rel) for rel in INPUTS_READ}
+
     rec = {
         "_artifact": "452_input_sufficiency.json",
-        "_producer": "Code, Stage 1B step 3b",
+        "_producer": "build_log/452_stage1b.py step 3b",
         "_stage": "1B",
         "_spec": "452_production_package_instruction_v8.md §7.4, §7.0 step 3b",
         "_shape_only": "Presence/absence and shape facts ONLY.",
+        "input_hashes": input_hashes,
+        "_input_hashes_note": ("Every artifact this gate READ, per §7.0 step 3b (v8.3). A gate "
+                               "record that declares no inputs satisfies §7.1's recomputation "
+                               "check vacuously."),
         "_l1_read_at_stage_1b": ("PERMITTED. §2 forbids reading L1 at Stage 1A only. The sidecar and "
                                  "manifest were read here to RE-ESTABLISH facts rather than inherit them."),
         "charge_scope_determination_hash": det_hash,

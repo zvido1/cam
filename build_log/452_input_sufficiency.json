@@ -1,9 +1,17 @@
 {
   "_artifact": "452_input_sufficiency.json",
-  "_producer": "Code, Stage 1B step 3b",
+  "_producer": "build_log/452_stage1b.py step 3b",
   "_stage": "1B",
   "_spec": "452_production_package_instruction_v8.md §7.4, §7.0 step 3b",
   "_shape_only": "Presence/absence and shape facts ONLY.",
+  "input_hashes": {
+    "build_log/452_charge_scope_applicability_determination.json": "d167f7522a28d62173e717ce5941ebb48c157ba46fb65c922caf8acebf60ced7",
+    "build_log/431_selection_measurement_sidecar.json": "c44573cb56d990afe7818dbdbfc3aa1e9586e51331a86b348b97f0e55967a9e7",
+    "build_log/452_required_product_inventory.json": "d3249cc5e28ca2ec0e121124d87f91c7a26e7dfb86f146fddb503fa135570094",
+    "build_log/431_config_manifest.json": "67d8e41ca6bfef096850b0e4959fb618a00892c664332378e9ddf41a4ef5d676",
+    "05 Lease Analyzer/test_data/tenants/atlas_meridian_warehouse_lease.txt": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71"
+  },
+  "_input_hashes_note": "Every artifact this gate READ, per §7.0 step 3b (v8.3). A gate record that declares no inputs satisfies §7.1's recomputation check vacuously.",
   "_l1_read_at_stage_1b": "PERMITTED. §2 forbids reading L1 at Stage 1A only. The sidecar and manifest were read here to RE-ESTABLISH facts rather than inherit them.",
   "charge_scope_determination_hash": "d167f7522a28d62173e717ce5941ebb48c157ba46fb65c922caf8acebf60ced7",
   "charge_scope_determination_artifact": "build_log/452_charge_scope_applicability_determination.json",
