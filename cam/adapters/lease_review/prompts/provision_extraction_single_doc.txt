@@ -14,10 +14,12 @@ For each issue area listed above:
 1. Locate the clause(s) in the LEASE DOCUMENT that address this issue area. Use the issue area's name and description to guide your search.
 2. Extract the COMPLETE clause text, including all subsections and sub-paragraphs. Do not summarize — copy the full language verbatim.
 3. Record the section reference (e.g., "Article XI, Sections 11.1-11.4").
-4. Determine the status using ONLY these two values:
+4. Determine the status using ONLY these three values:
    - "TENANT_ONLY": The issue area IS present and addressed in the document.
-   - "AMBIGUOUS": The issue area is absent, uncertain, or only partially addressed.
-   IMPORTANT: "NOT_FOUND" is NOT a valid status value. If a clause is absent, use "AMBIGUOUS" and leave tenant_text as an empty string "". Do not use "FOUND_BOTH" or "TEMPLATE_ONLY" — those are reserved for two-document comparison mode.
+   - "NOT_APPLICABLE": The issue area does not apply to this kind of lease. Use this when the concept is structurally absent from documents of this type, not when you looked and could not find it. Leave tenant_text as an empty string "".
+   - "AMBIGUOUS": You could not locate it, or it is uncertain or only partially addressed. Leave tenant_text as an empty string "".
+   THE DISTINCTION: "NOT_APPLICABLE" is a judgment that the concept does not belong in this lease. "AMBIGUOUS" is a failure to find it. If unsure which applies, use "AMBIGUOUS" — under-claiming absence is safe, over-claiming it hides real gaps.
+   IMPORTANT: "NOT_FOUND" is NOT a valid status value. Do not use "FOUND_BOTH" or "TEMPLATE_ONLY" — those are reserved for two-document comparison mode.
 
 CRITICAL — COMPLETE EXTRACTION:
 Extract the COMPLETE clause text for each issue area, including ALL subsections. Do not summarize, paraphrase, or truncate. Downstream coverage and exposure analysis requires the actual contractual language.
