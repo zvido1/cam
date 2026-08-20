@@ -91,7 +91,7 @@ So: **this blocks verification of the fix that was just deployed.**
 
 ## Related open defects, recorded elsewhere but listed here for continuity
 
-1. **Atlas LP-12** — genuine extraction miss. `Section 13.2. Termination Right` exists in the lease and is not found. Search hints include `termination right`; the article-heading grouping rule in the extraction prompt is the suspected cause, unverified. This is a recall problem, not a vocabulary problem, and needs measurement rather than a patch.
+1. **Atlas LP-12** — unstable non-exclusive assignment. **NOT a recall failure.** See §5 below; this line's original "genuine extraction miss" characterisation is withdrawn as false.
 2. **Compare-mode gate exposure** — `check_extraction_completeness` is wired unconditionally in `lease_adapter.py`, governed by `meta.get("canonical", True)` rather than by mode. In compare mode a provision absent from the tenant lease yields `TEMPLATE_ONLY` with empty `tenant_text`, which the gate would score `fail_missing` unless the LP is in the known-absent set. Inspection only; compare mode has not been run since the 422C deploy.
 
 ---
@@ -143,8 +143,13 @@ rigidity was specific to the single numeric field.
 
 ## 2. Atlas LP-12 — RECHARACTERISED: intermittent, not a consistent miss
 
-The "Related open defects" entry below describes LP-12 as a genuine extraction miss. **That is
-now known to be wrong as stated.** Three observations of the same lease and the same LP:
+> **SUPERSEDED BY §5 (2026-08-20).** This section correctly identified the behaviour as
+> intermittent, but its diagnosis — that this is a recall problem — is wrong. Six extraction-only
+> runs establish recall at 6/6. The instability is in cross-filing, not in finding the text.
+> §5 measures it. This section is retained for the observation record; read §5 for the diagnosis.
+
+The "Related open defects" entry (item 1, now rewritten) originally described LP-12 as a genuine
+extraction miss. **That is now known to be wrong as stated.** Three observations of the same lease and the same LP:
 
 | # | when | surface | LP-12 status | chars | gate |
 |---|---|---|---|---|---|
@@ -211,4 +216,100 @@ that **a stability percentage would mislead in both cases**: 40% EP reads as "mo
 2-of-3 AMBIGUOUS reads as "usually fails", when the honest statement is that the mechanism does
 not settle. Any future stability claim about this pipeline should say which stage, at what N, and
 under which code state.
+
+---
+
+# 5. Atlas LP-12 — MEASURED 2026-08-20. Assignment, not recall.
+
+**The "genuine extraction miss" characterisation recorded above is FALSE and is withdrawn.**
+So is the follow-on claim in §2 that this is a recall problem.
+
+Six extraction-only runs on the Atlas fixture, full output persisted at
+`build_log/LP12_extraction_runs/` (`run_01_full.json` … `run_06_full.json`, `summary.json`,
+`run_probe.py`). Extraction was called in isolation — no coverage stage, no gate, no synthesis.
+
+**Recall is 6/6. `Section 13.2. Termination Right` is located on every run, without exception.**
+
+| run | LP-12 status | chars | §13.2 in LP-12 | section_ref | model | fallback |
+|---|---|---|---|---|---|---|
+| 1 | `TENANT_ONLY` | 767 | yes | Sections 13.2, 14.2 | gemini-3.1-pro-preview | no |
+| 2 | `AMBIGUOUS` | 0 | no | — | gemini-3.1-pro-preview | no |
+| 3 | `AMBIGUOUS` | 0 | no | — | gemini-3.1-pro-preview | no |
+| 4 | `TENANT_ONLY` | 767 | yes | Sections 13.2, 14.2 | gemini-3.1-pro-preview | no |
+| 5 | `AMBIGUOUS` | 0 | no | — | gemini-3.1-pro-preview | no |
+| 6 | `AMBIGUOUS` | 0 | no | — | gemini-3.1-pro-preview | no |
+
+Same model on all six, no fallback on any, elapsed 95.7–109.5 s. The split is not explained by a
+model change, a fallback, or a timeout.
+
+## What is stable, and what varies
+
+**Stable — Article 13 is assigned to LP-24 Damage & Destruction on all six runs.** Three needles
+unique to §13.2/13.3 in this lease (`Termination Right`, `replacement value of the Building`,
+`Rent Abatement` — one occurrence each, verified before use) appear under LP-24 in every run
+including all four where LP-12 is empty.
+
+**That assignment is defensible.** §13.2 *is* a casualty termination right and it sits inside the
+casualty article. LP-24 is not the wrong home for it.
+
+**What varies is CROSS-FILING into LP-12.** Two of six runs additionally place §13.2 under LP-12,
+citing `Sections 13.2, 14.2`, 767 characters — **byte-identical between the two successful runs**.
+Four of six do not. The variance is binary: cross-file or don't. It is not a spread of different
+extractions.
+
+## The defect
+
+**An unstable non-exclusive assignment decision, not a recall failure.** The extractor reliably
+finds the text and reliably files it under its own article; whether it *also* files it under the
+second LP the text is material to is decided inconsistently, run to run, on identical input.
+
+**The completeness gate converts that inconsistency into a pass/fail on the entire report.** LP-12
+empty scores `fail_missing`, and empty is the majority behaviour (4 of 6). So the same lease
+yields a full report or a hard abort depending on a cross-filing decision made downstream of
+successful extraction.
+
+## Lineage — this is the 421C defect class, upstream of its fix
+
+`build_log/421C_evidence_assignment_incident.md` §4, *"Architectural Root Cause: Destructive
+Exclusive Assignment"*, records it verbatim:
+
+> The extraction step assigns each section of the lease to exactly one LP bucket. The assignment
+> is exclusive: once a clause is routed to LP-…
+
+That incident voided the Step 417/419/420 Stage-5 baselines. The remedy built in response — 423A
+verified evidence span substrate, 423B LP-blind span proposal sidecar, **423C element-guided
+NON-EXCLUSIVE span elicitation**, with 424/426 recall re-measurement and 428 assignment-stability
+measurement — lives **downstream of extraction**.
+
+**Extraction itself still assigns exclusively, with cross-filing as an optional second placement.**
+The non-exclusive architecture was built one layer below the layer that still has the problem.
+
+## Correction to a previous attribution
+
+An earlier entry in this document attributed LP-12 to the article-heading grouping rule in the
+extraction prompt — *"the suspected cause"* of the text not being found. **That is wrong.** The
+heading rule does not prevent discovery. It anchors text to its own article, which is why Article
+13 lands in LP-24 every time. What it leaves undetermined is whether the same text is *also*
+cross-filed to a second LP, and that is where the instability lives.
+
+## Fix directions — recorded, none chosen
+
+1. **Make cross-filing deterministic at extraction.** Instruct the extractor that a clause material
+   to more than one issue area must be filed under every one of them, and state the rule for when
+   that applies. Cheapest; leaves the exclusive-bucket architecture intact and depends on prompt
+   compliance for a property the gate treats as hard.
+2. **Make the gate assignment-aware.** Let `check_extraction_completeness` satisfy an LP from text
+   filed under a related LP, rather than requiring the text to appear under that LP's own key.
+   Removes the pass/fail coin-flip without touching extraction, but weakens what a `pass` asserts.
+3. **Extend the 423C non-exclusive evidence architecture upstream into extraction**, so a clause is
+   evidence for every issue area it bears on and exclusive bucketing disappears at the point it is
+   introduced. The architecturally correct answer and by far the largest; it is the fix 421C's
+   remedy already implements one layer down.
+
+## What is NOT established
+
+- Whether this affects other leases or other LPs. One fixture, one LP, six runs.
+- The cross-filing rate outside these six runs. 2/6 is an observation, not a rate.
+- Whether other LP pairs with the same one-clause-two-areas shape (the 421C key-terms-table case:
+  Tenant's Share material to LP-07 and the Rent Adjustment) behave the same way. Not measured.
 

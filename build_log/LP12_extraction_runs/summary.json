@@ -1,0 +1,168 @@
+[
+  {
+    "run": 1,
+    "ts": "2026-08-20 09:31:41",
+    "elapsed": 100.7,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "lp12_status": "TENANT_ONLY",
+    "lp12_len": 767,
+    "lp12_has_13_2": true,
+    "lp12_has_termination_right": true,
+    "lp12_section_ref": "Sections 13.2, 14.2",
+    "needle_locations": {
+      "Termination Right": [
+        "LP-12",
+        "LP-24"
+      ],
+      "replacement value of the Building": [
+        "LP-12",
+        "LP-24"
+      ],
+      "Rent Abatement": [
+        "LP-24"
+      ]
+    },
+    "lp12_empty": false,
+    "text_present_somewhere": true
+  },
+  {
+    "run": 2,
+    "ts": "2026-08-20 09:33:22",
+    "elapsed": 104.2,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "lp12_status": "AMBIGUOUS",
+    "lp12_len": 0,
+    "lp12_has_13_2": false,
+    "lp12_has_termination_right": false,
+    "lp12_section_ref": "",
+    "needle_locations": {
+      "Termination Right": [
+        "LP-24"
+      ],
+      "replacement value of the Building": [
+        "LP-24"
+      ],
+      "Rent Abatement": [
+        "LP-24"
+      ]
+    },
+    "lp12_empty": true,
+    "text_present_somewhere": true
+  },
+  {
+    "run": 3,
+    "ts": "2026-08-20 09:35:06",
+    "elapsed": 102.6,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "lp12_status": "AMBIGUOUS",
+    "lp12_len": 0,
+    "lp12_has_13_2": false,
+    "lp12_has_termination_right": false,
+    "lp12_section_ref": "",
+    "needle_locations": {
+      "Termination Right": [
+        "LP-24"
+      ],
+      "replacement value of the Building": [
+        "LP-24"
+      ],
+      "Rent Abatement": [
+        "LP-24"
+      ]
+    },
+    "lp12_empty": true,
+    "text_present_somewhere": true
+  },
+  {
+    "run": 4,
+    "ts": "2026-08-20 09:36:48",
+    "elapsed": 95.7,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "lp12_status": "TENANT_ONLY",
+    "lp12_len": 767,
+    "lp12_has_13_2": true,
+    "lp12_has_termination_right": true,
+    "lp12_section_ref": "Sections 13.2, 14.2",
+    "needle_locations": {
+      "Termination Right": [
+        "LP-12",
+        "LP-24"
+      ],
+      "replacement value of the Building": [
+        "LP-12",
+        "LP-24"
+      ],
+      "Rent Abatement": [
+        "LP-24"
+      ]
+    },
+    "lp12_empty": false,
+    "text_present_somewhere": true
+  },
+  {
+    "run": 5,
+    "ts": "2026-08-20 09:38:24",
+    "elapsed": 109.5,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "lp12_status": "AMBIGUOUS",
+    "lp12_len": 0,
+    "lp12_has_13_2": false,
+    "lp12_has_termination_right": false,
+    "lp12_section_ref": "",
+    "needle_locations": {
+      "Termination Right": [
+        "LP-24"
+      ],
+      "replacement value of the Building": [
+        "LP-24"
+      ],
+      "Rent Abatement": [
+        "LP-24"
+      ]
+    },
+    "lp12_empty": true,
+    "text_present_somewhere": true
+  },
+  {
+    "run": 6,
+    "ts": "2026-08-20 09:40:13",
+    "elapsed": 99.3,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "lp12_status": "AMBIGUOUS",
+    "lp12_len": 0,
+    "lp12_has_13_2": false,
+    "lp12_has_termination_right": false,
+    "lp12_section_ref": "",
+    "needle_locations": {
+      "Termination Right": [
+        "LP-24"
+      ],
+      "replacement value of the Building": [
+        "LP-24"
+      ],
+      "Rent Abatement": [
+        "LP-24"
+      ]
+    },
+    "lp12_empty": true,
+    "text_present_somewhere": true
+  }
+]

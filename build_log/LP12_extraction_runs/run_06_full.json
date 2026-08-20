@@ -1,0 +1,420 @@
+{
+  "provisions": [
+    {
+      "provision_id": "LP-00",
+      "provision_name": "Parties & Premises",
+      "template_text": "",
+      "tenant_text": "THIS WAREHOUSE LEASE AGREEMENT (this \"Lease\") is made and entered into as of March 1, 2026, by and between ATLAS INDUSTRIAL PROPERTIES LLC, a New York limited liability company, having an address at 4400 Industry Avenue, Suite 200, Brooklyn, New York 11232 (\"Landlord\"), and MERIDIAN LOGISTICS SOLUTIONS INC., a New York corporation, having an address at 200 Commerce Street, Brooklyn, New York 11201 (\"Tenant\").\n\nSection 1.1. Demised Premises. Landlord hereby leases to Tenant and Tenant hereby leases from Landlord the warehouse space consisting of approximately 18,500 rentable square feet located on the ground floor of the building at 4400 Industry Avenue, Brooklyn, New York 11232 (the \"Building\"), as more particularly described in Exhibit A attached hereto (the \"Demised Premises\").",
+      "template_section_ref": "",
+      "tenant_section_ref": "Preamble, Section 1.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Identifies the landlord, tenant, and demised premises.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-01",
+      "provision_name": "Rent & Payment Terms",
+      "template_text": "",
+      "tenant_text": "Section 3.1. Base Rent. Tenant shall pay Base Rent to Landlord in equal monthly installments in advance on the first day of each calendar month during the Term, without demand, deduction, offset, or abatement, as follows:\n\nLease Year 1 (April 1, 2026 - March 31, 2027): $18.50 per rentable square foot per annum ($342,250.00 per annum; $28,520.83 per month)\nLease Year 2 (April 1, 2027 - March 31, 2028): $19.06 per rentable square foot per annum ($352,610.00 per annum; $29,384.17 per month)\nLease Year 3 (April 1, 2028 - March 31, 2029): $19.63 per rentable square foot per annum ($363,155.00 per annum; $30,262.92 per month)\nLease Year 4 (April 1, 2029 - March 31, 2030): $20.22 per rentable square foot per annum ($373,870.00 per annum; $31,155.83 per month)\nLease Year 5 (April 1, 2030 - March 31, 2031): $20.83 per rentable square foot per annum ($385,355.00 per annum; $32,112.92 per month)\n\nThe above schedule reflects an annual escalation of approximately 3% per annum. If the Commencement Date is other than the first day of a calendar month, Tenant shall pay prorated Base Rent for the partial month.\n\nSection 3.2. Additional Rent. All sums payable by Tenant under this Lease other than Base Rent, including Tenant's Proportionate Share of Real Estate Taxes, CAM Charges, insurance premiums, and any other charges designated as Additional Rent, shall constitute \"Additional Rent.\" Tenant's failure to pay Additional Rent shall entitle Landlord to the same remedies as for nonpayment of Base Rent.\n\nSection 3.5. Late Charges. Any installment of Base Rent or Additional Rent not paid within five (5) business days of its due date shall bear interest at the rate of one and one-half percent (1.5%) per month from the due date until paid, and Tenant shall also pay a late fee equal to five percent (5%) of the overdue amount.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 3.1, 3.2, 3.5",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Details base rent schedule, additional rent definition, and late charges.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-02",
+      "provision_name": "Rent Escalation",
+      "template_text": "",
+      "tenant_text": "Section 3.1. Base Rent. Tenant shall pay Base Rent to Landlord in equal monthly installments in advance on the first day of each calendar month during the Term, without demand, deduction, offset, or abatement, as follows:\n\nLease Year 1 (April 1, 2026 - March 31, 2027): $18.50 per rentable square foot per annum ($342,250.00 per annum; $28,520.83 per month)\nLease Year 2 (April 1, 2027 - March 31, 2028): $19.06 per rentable square foot per annum ($352,610.00 per annum; $29,384.17 per month)\nLease Year 3 (April 1, 2028 - March 31, 2029): $19.63 per rentable square foot per annum ($363,155.00 per annum; $30,262.92 per month)\nLease Year 4 (April 1, 2029 - March 31, 2030): $20.22 per rentable square foot per annum ($373,870.00 per annum; $31,155.83 per month)\nLease Year 5 (April 1, 2030 - March 31, 2031): $20.83 per rentable square foot per annum ($385,355.00 per annum; $32,112.92 per month)\n\nThe above schedule reflects an annual escalation of approximately 3% per annum. If the Commencement Date is other than the first day of a calendar month, Tenant shall pay prorated Base Rent for the partial month.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 3.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Rent escalates by approximately 3% annually as reflected in the schedule.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-03",
+      "provision_name": "Lease Term & Renewal",
+      "template_text": "",
+      "tenant_text": "Section 2.1. Initial Term. The initial term of this Lease shall commence on the Commencement Date and expire on the Expiration Date, unless sooner terminated as provided herein.\n\nSection 2.2. Renewal Option. Provided that (a) this Lease is in full force and effect, (b) Tenant is not in default hereunder, and (c) Tenant has not assigned this Lease or sublet more than fifty percent (50%) of the Demised Premises, Tenant shall have one (1) option to renew this Lease for one (1) additional term of three (3) years (the \"Renewal Term\"), commencing on April 1, 2031 and expiring on March 31, 2034, upon written notice to Landlord not less than nine (9) months prior to the Expiration Date. The Base Rent for the Renewal Term shall be at the then-prevailing fair market rent for comparable warehouse space in the Borough of Brooklyn, as mutually agreed by the parties or, failing agreement within sixty (60) days of Tenant's renewal notice, as determined by an independent MAI-certified appraiser mutually selected by the parties.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 2.1, 2.2",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Provides for a 5-year initial term and one 3-year renewal option.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-04",
+      "provision_name": "Security Deposit",
+      "template_text": "",
+      "tenant_text": "Section 5.1. Security Deposit. Tenant shall deposit with Landlord the Security Deposit upon execution of this Lease as security for the faithful performance of Tenant's obligations hereunder. Landlord may apply the Security Deposit to cure any default of Tenant; in such event, Tenant shall restore the Security Deposit to the original amount within fifteen (15) days of Landlord's written demand. The Security Deposit shall be maintained in a segregated interest-bearing account for Tenant's benefit. Landlord shall return the Security Deposit, with interest accrued thereon, to Tenant within thirty (30) days after the Expiration Date, provided Tenant has fully performed its obligations hereunder, less any amounts properly applied by Landlord. In addition, if Landlord fails to perform any material obligation under this Lease and such failure continues uncured for thirty (30) days after written notice from Tenant specifying the nature of such failure, Tenant shall have the right to draw upon the Security Deposit as a setoff against damages, and if such failure continues for an additional thirty (30) days, Tenant may terminate this Lease upon written notice to Landlord. These rights are in addition to any other remedies available to Tenant at law or in equity.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 5.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Security deposit is $75,000.00, held in an interest-bearing account.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-05",
+      "provision_name": "Permitted Use",
+      "template_text": "",
+      "tenant_text": "Section 4.1. Permitted Use. Tenant shall use and occupy the Demised Premises solely for the Permitted Use and for no other purpose. Tenant shall not use the Demised Premises in any manner that would violate any applicable law, ordinance, or regulation, or that would increase the rate of insurance on the Building.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 4.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Restricts use to the defined Permitted Use (warehousing, distribution, light assembly, and related office use).",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-06",
+      "provision_name": "Maintenance & Repairs",
+      "template_text": "",
+      "tenant_text": "Section 8.1. Tenant's Repair Obligations. Tenant shall, at its sole cost and expense, keep and maintain the interior of the Demised Premises, including the floor, interior walls, ceilings, dock equipment, and Tenant's trade fixtures and equipment, in good order, condition, and repair throughout the Term.\n\nSection 8.2. Landlord's Repair Obligations. Landlord shall maintain and repair the structural components of the Building, including the roof, exterior walls, foundation, and common building systems, in good condition throughout the Term, at Landlord's cost, subject to reimbursement through CAM Charges where appropriate.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 8.1, 8.2",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Allocates interior maintenance to Tenant and structural/exterior maintenance to Landlord.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-07",
+      "provision_name": "Common Area Maintenance (CAM)",
+      "template_text": "",
+      "tenant_text": "Section 3.3. Real Estate Taxes and CAM Charges. (a) Tenant shall pay to Landlord, as Additional Rent, Tenant's Proportionate Share of: (i) Real Estate Taxes for each calendar year during the Term; and (ii) Common Area Maintenance charges (\"CAM Charges\") for each calendar year during the Term. CAM Charges shall include all costs and expenses incurred by Landlord in operating, maintaining, repairing, and managing the Common Areas and the Building exterior, including but not limited to: maintenance and repair of parking areas, driveways, loading docks, and landscaping; snow and ice removal; lighting; security; janitorial services for common areas; insurance premiums for the Building; management fees not to exceed four percent (4%) of gross Building revenues; and capital expenditures amortized over their useful lives not to exceed fifteen (15) years. CAM Charges shall expressly exclude: debt service; depreciation; capital improvements to the extent not amortized as provided above; costs paid by insurance proceeds; costs attributable to other tenants' negligence; and Landlord's income taxes.\n\n(b) Landlord shall provide Tenant with a good-faith estimate of the projected Real Estate Taxes and CAM Charges for each calendar year by January 15 of such year. Tenant shall pay one-twelfth (1/12th) of such estimated amount on the first day of each calendar month. Within one hundred twenty (120) days after the close of each calendar year, Landlord shall deliver to Tenant a reconciliation statement detailing actual Real Estate Taxes and CAM Charges for such year. If Tenant's actual share exceeds the estimated payments, Tenant shall pay the deficiency within thirty (30) days of receipt of the reconciliation statement. If Tenant has overpaid, the excess shall be credited against the next installment(s) of Additional Rent, or refunded if the Term has expired.\n\nSection 3.4. Tenant's Verification Rights. Tenant shall have the right, exercisable not more than once per calendar year, to audit Landlord's books and records relating to CAM Charges for the preceding calendar year, upon not less than thirty (30) days' prior written notice to Landlord. Such audit shall be conducted during normal business hours at Landlord's office by a certified public accountant retained by Tenant at Tenant's expense. If the audit reveals that Landlord has overcharged Tenant by more than five percent (5%), Landlord shall pay the reasonable cost of such audit in addition to refunding the overcharge with interest at the prime rate plus two percent (2%) per annum. Tenant shall maintain the results of any such audit in strict confidence.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 3.3, 3.4",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Defines CAM inclusions/exclusions and grants Tenant audit rights.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-08",
+      "provision_name": "Insurance Requirements",
+      "template_text": "",
+      "tenant_text": "Section 10.1. Tenant's Insurance. Tenant shall maintain throughout the Term, at its sole cost: (a) commercial general liability insurance with limits of not less than $2,000,000 per occurrence and $5,000,000 in the aggregate; (b) property insurance on Tenant's personal property at full replacement cost; (c) business interruption insurance covering at least twelve (12) months of Tenant's business income; (d) workers' compensation insurance as required by law; and (e) umbrella liability insurance in amounts not less than $10,000,000. All policies shall name Landlord as an additional insured and shall provide for thirty (30) days' notice of cancellation to Landlord.\n\nSection 10.2. Landlord's Insurance. Landlord shall maintain throughout the Term: (a) property insurance on the Building at full replacement cost; and (b) commercial general liability insurance with limits of not less than $5,000,000 per occurrence.\n\nSection 10.3. Waiver of Subrogation. Landlord and Tenant each hereby waive any and all claims against the other for loss or damage covered by insurance maintained by the waiving party, and each shall cause its insurer to include a waiver of subrogation endorsement in its policies.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 10.1, 10.2, 10.3",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Specifies insurance limits for both parties and includes a mutual waiver of subrogation.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-09",
+      "provision_name": "Subletting & Assignment",
+      "template_text": "",
+      "tenant_text": "Section 15.1. Restrictions. Tenant shall not, without Landlord's prior written consent (which shall not be unreasonably withheld, conditioned, or delayed), assign this Lease or sublet the Demised Premises. Any purported assignment or subletting without Landlord's consent shall be void.\n\nSection 15.2. Permitted Transfers. Notwithstanding Section 15.1, Tenant may, without Landlord's consent, assign this Lease or sublet all or part of the Demised Premises to: (a) any affiliate or subsidiary of Tenant; (b) any entity resulting from a merger or consolidation with Tenant; or (c) any purchaser of all or substantially all of Tenant's assets; provided that in each case the assignee assumes all of Tenant's obligations under this Lease and Tenant provides Landlord with prior written notice.\n\nSection 15.3. Recapture. Within thirty (30) days of receipt of any assignment or subletting request requiring Landlord's consent, Landlord may elect to recapture the Demised Premises by written notice. If Landlord so elects, this Lease shall terminate as to such space effective sixty (60) days after Tenant's request.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 15.1, 15.2, 15.3",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Requires Landlord consent for transfers, allows permitted transfers to affiliates, and includes a recapture right.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-10",
+      "provision_name": "Alterations & Improvements",
+      "template_text": "",
+      "tenant_text": "Section 8.4. Tenant's Alterations. Tenant shall not make any alterations, additions, or improvements to the Demised Premises without Landlord's prior written consent, which shall not be unreasonably withheld for non-structural alterations costing less than $50,000. All permitted alterations shall be performed by licensed contractors approved by Landlord, in compliance with all applicable laws and permits, and at Tenant's sole cost.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 8.4",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Consent not unreasonably withheld for non-structural alterations under $50,000.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-11",
+      "provision_name": "Default & Remedies",
+      "template_text": "",
+      "tenant_text": "Section 17.1. Events of Default. Each of the following shall constitute an \"Event of Default\" by Tenant:\n\n(a) Failure to pay any installment of Base Rent or Additional Rent within seven (7) days after its due date;\n\n(b) Failure to perform or observe any other term, covenant, or condition of this Lease within thirty (30) days after written notice from Landlord specifying the default in reasonable detail; provided that if such default is not reasonably susceptible of cure within thirty (30) days, no Event of Default shall occur if Tenant commences cure within such period and diligently prosecutes such cure to completion within ninety (90) days of the original notice;\n\n(c) The filing of a voluntary petition in bankruptcy or insolvency by Tenant, or the filing of an involuntary petition against Tenant that is not dismissed within sixty (60) days;\n\n(d) Tenant's abandonment of the Demised Premises for a period exceeding thirty (30) consecutive days without prior written notice to Landlord.\n\nSection 17.2. Remedies. Upon the occurrence and continuance of an Event of Default, Landlord may exercise any one or more of the following remedies:\n\n(a) Terminate this Lease upon written notice to Tenant;\n\n(b) Without terminating this Lease, re-enter and take possession of the Demised Premises through any lawful means, relet the same, and hold Tenant liable for any deficiency;\n\n(c) Seek any other remedy available at law or in equity.\n\nSection 17.3. Landlord's Right to Cure. If Tenant fails to perform any obligation under this Lease within the applicable cure period, Landlord may perform such obligation on Tenant's behalf, and Tenant shall reimburse Landlord for the reasonable cost thereof, plus interest at ten percent (10%) per annum, within fifteen (15) days of Landlord's written demand.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 17.1, 17.2, 17.3",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Defines events of default, cure periods, and Landlord's remedies.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-12",
+      "provision_name": "Early Termination",
+      "template_text": "",
+      "tenant_text": "",
+      "template_section_ref": "",
+      "tenant_section_ref": "",
+      "status": "AMBIGUOUS",
+      "alignment_notes": "No general early termination or break clause found (termination rights for casualty/condemnation are covered in their respective sections).",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-13",
+      "provision_name": "Indemnification & Liability",
+      "template_text": "",
+      "tenant_text": "Section 11.1. Tenant's Indemnification. Tenant shall defend, indemnify, and hold harmless Landlord and its members, managers, officers, employees, and agents from and against any and all claims, losses, damages, liabilities, costs, and expenses (including reasonable attorneys' fees) arising from: (a) any breach or default by Tenant under this Lease; (b) any act, omission, or negligence of Tenant or Tenant's employees, agents, contractors, or invitees; or (c) Tenant's use and occupancy of the Demised Premises.\n\nSection 11.2. Landlord's Indemnification. Landlord shall defend, indemnify, and hold harmless Tenant and its officers, directors, employees, and agents from and against any and all claims, losses, damages, liabilities, costs, and expenses (including reasonable attorneys' fees) arising from: (a) any breach or default by Landlord under this Lease; (b) any act, omission, or gross negligence of Landlord or Landlord's employees, agents, or contractors; or (c) the condition of the Common Areas or Building structure to the extent caused by Landlord's negligence or willful misconduct.\n\nSection 11.3. Limitation of Liability. Neither party shall be liable to the other for any consequential, indirect, punitive, or special damages arising under this Lease. Landlord's liability shall be limited to Landlord's interest in the Building and Land.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 11.1, 11.2, 11.3",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Contains mutual indemnification and a waiver of consequential damages.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-14",
+      "provision_name": "Force Majeure",
+      "template_text": "",
+      "tenant_text": "Section 24.1. Force Majeure. Except for the payment of Rent and other monetary obligations, the time for performance of any obligation under this Lease shall be extended by the period of any delay caused by acts of God, fire, flood, earthquake, governmental action, labor disputes, or other events beyond the reasonable control of the performing party, provided that the affected party notifies the other party in writing within ten (10) days of the occurrence of such event and uses commercially reasonable efforts to mitigate the effects thereof.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 24.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Standard force majeure clause excluding monetary obligations.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-15",
+      "provision_name": "Signage Rights",
+      "template_text": "",
+      "tenant_text": "Section 7.1. Signage. Tenant shall have the right to install, at Tenant's expense, exterior building signage on the Demised Premises facade, subject to Landlord's prior written approval of size, design, and location, which approval shall not be unreasonably withheld, conditioned, or delayed. Tenant shall also be entitled to one (1) listing in any common Building directory. All signage shall comply with applicable laws.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 7.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Grants exterior signage rights subject to Landlord approval.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-16",
+      "provision_name": "Parking",
+      "template_text": "",
+      "tenant_text": "Section 23.1. Parking. Tenant shall have the exclusive right to use fifteen (15) designated parking spaces in the Building's parking area as identified on Exhibit C. Tenant shall also have the non-exclusive right to use the loading dock facilities designated for the Demised Premises. Landlord shall maintain all parking areas in good condition throughout the Term as part of CAM Charges.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 23.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Allocates 15 exclusive parking spaces to Tenant.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-17",
+      "provision_name": "Dispute Resolution",
+      "template_text": "",
+      "tenant_text": "Section 24.3. Governing Law. This Lease shall be governed by and construed in accordance with the laws of the State of New York.\n\nSection 24.4. Waiver of Jury Trial. LANDLORD AND TENANT EACH HEREBY IRREVOCABLY WAIVE THE RIGHT TO A TRIAL BY JURY IN ANY ACTION ARISING OUT OF OR IN CONNECTION WITH THIS LEASE.\n\nSection 24.11. Attorneys' Fees. In any action to enforce this Lease, the prevailing party shall be entitled to recover its reasonable attorneys' fees, court costs, and disbursements from the non-prevailing party.\n\nSection 24.13. Dispute Resolution. In the event of any dispute arising out of or relating to this Lease, the parties agree to first attempt to resolve such dispute through good-faith negotiation for thirty (30) days following written notice of dispute. If unsuccessful, the parties agree to submit such dispute to mediation before a mutually agreed mediator in New York, New York, for a period not to exceed sixty (60) days. If mediation is unsuccessful, either party may pursue its rights through litigation in the courts of the State of New York, County of Kings.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 24.3, 24.4, 24.11, 24.13",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Requires negotiation, then mediation, then litigation in Kings County, NY. Includes jury waiver and attorneys' fees.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-18",
+      "provision_name": "Holdover Provisions",
+      "template_text": "",
+      "tenant_text": "Section 16.1. Holdover. If Tenant remains in possession of the Demised Premises after the Expiration Date without Landlord's written consent, such holdover shall be a tenancy at sufferance only, terminable by either party upon thirty (30) days' written notice, and Tenant shall pay holdover rent equal to one hundred fifty percent (150%) of the monthly Base Rent and Additional Rent in effect immediately prior to the Expiration Date.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 16.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Holdover rent is 150% of Base Rent and Additional Rent.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-19",
+      "provision_name": "Utilities",
+      "template_text": "",
+      "tenant_text": "Section 6.1. Utilities. Tenant shall arrange and pay for all utilities serving the Demised Premises, including electricity, gas, water, sewer, and telecommunications, which shall be separately metered. Landlord shall provide separately metered electrical service with sufficient capacity for standard warehouse operations, not less than 400 amperes at 480/277 volts three-phase.\n\nSection 6.2. HVAC. The Demised Premises shall be delivered with a functioning HVAC system adequate for standard warehouse use. Landlord shall maintain and repair the HVAC system serving the Demised Premises at Landlord's cost, except for repairs caused by Tenant's misuse or negligence.\n\nSection 6.3. Service Interruption. If any interruption in services caused by Landlord's negligence or willful misconduct continues for more than five (5) consecutive business days and renders the Demised Premises untenantable, Base Rent and Additional Rent shall abate in proportion to the area rendered untenantable for the period of such interruption beyond said five (5) business days.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 6.1, 6.2, 6.3",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Tenant pays for separately metered utilities. Includes rent abatement for service interruptions over 5 days.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-20",
+      "provision_name": "Exclusivity",
+      "template_text": "",
+      "tenant_text": "Section 24.14. Exclusivity. Landlord represents that no other tenant in the Building currently operates a warehousing and logistics business as its primary use. During the Term, Landlord shall not lease any space in the Building to any party whose primary business is warehousing, distribution, or third-party logistics services substantially similar to Tenant's Permitted Use, provided that this restriction shall not apply to any tenant occupying less than 5,000 square feet.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 24.14",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Grants Tenant exclusivity for warehousing/logistics, with a carve-out for tenants under 5,000 sq ft.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-21",
+      "provision_name": "Guaranty of Lease",
+      "template_text": "",
+      "tenant_text": "Section 24.15. Guaranty. As a condition to Landlord's execution of this Lease, Meridian Global Holdings LLC, the parent company of Tenant, shall execute and deliver to Landlord a guaranty of Tenant's obligations under this Lease in the form attached as Exhibit E. The Guaranty shall be a full and unconditional guaranty of payment and performance through the end of the initial Term.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 24.15",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Requires a full and unconditional guaranty from Meridian Global Holdings LLC.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-22",
+      "provision_name": "SNDA (Subordination, Non-Disturbance & Attornment)",
+      "template_text": "",
+      "tenant_text": "Section 19.1. Subordination. This Lease and all of Tenant's rights hereunder are and shall be subordinate to any mortgage, deed of trust, ground lease, or other security instrument now or hereafter encumbering the Building or the Land (each, a \"Superior Interest\"), subject to Section 19.2.\n\nSection 19.2. Non-Disturbance. Landlord shall obtain from each holder of a Superior Interest existing as of the Commencement Date a subordination, non-disturbance, and attornment agreement (\"SNDA Agreement\") in a form reasonably acceptable to Tenant, pursuant to which such holder agrees that, provided Tenant is not in default under this Lease beyond applicable notice and cure periods, such holder shall not disturb Tenant's quiet enjoyment and possession of the Demised Premises in the event of any foreclosure or other enforcement of such holder's remedies. Landlord shall use commercially reasonable efforts to obtain similar SNDA Agreements from holders of Superior Interests placed on the Building after the Commencement Date.\n\nSection 19.3. Attornment. If any holder of a Superior Interest succeeds to Landlord's interest in the Building, Tenant shall attorn to and recognize such successor as Landlord under this Lease, provided that such successor has delivered the non-disturbance agreement required under Section 19.2.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 19.1, 19.2, 19.3",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Lease is subordinate subject to obtaining an SNDA from existing lenders.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-23",
+      "provision_name": "Percentage Rent",
+      "template_text": "",
+      "tenant_text": "",
+      "template_section_ref": "",
+      "tenant_section_ref": "",
+      "status": "NOT_APPLICABLE",
+      "alignment_notes": "Provision known-absent for Warehouse lease type. Basis: document-type-driven. Decision source: KNOWN_ABSENT_BY_DOC_TYPE registry. Not found by extraction model (consistent with known-absent classification).",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-24",
+      "provision_name": "Damage & Destruction",
+      "template_text": "",
+      "tenant_text": "Section 13.1. Damage and Restoration. If the Demised Premises or the Building shall be damaged or destroyed by fire or other casualty, Landlord shall restore the same to substantially the condition existing prior to such damage, provided that insurance proceeds are sufficient and such restoration can be completed within two hundred forty (240) days from the date of damage as reasonably estimated by Landlord's architect.\n\nSection 13.2. Termination Right. If the damage cannot be restored within two hundred forty (240) days, or if the damage occurs during the last twelve (12) months of the Term and the cost of restoration exceeds fifty percent (50%) of the replacement value of the Building, either party may terminate this Lease upon sixty (60) days' written notice given within ninety (90) days of the damage.\n\nSection 13.3. Rent Abatement. During any period in which the Demised Premises are rendered untenantable by reason of casualty damage, Base Rent and Additional Rent shall abate in proportion to the area rendered untenantable until restoration is substantially complete. If restoration is not completed within two hundred forty (240) days and neither party has exercised a termination right, Tenant shall have the right to terminate this Lease upon thirty (30) days' written notice to Landlord.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 13.1, 13.2, 13.3",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Provides for restoration within 240 days, rent abatement, and termination rights for prolonged restoration.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-25",
+      "provision_name": "Condemnation / Eminent Domain",
+      "template_text": "",
+      "tenant_text": "Section 14.1. Total Taking. If the entire Demised Premises shall be taken by governmental authority through eminent domain, this Lease shall terminate as of the date of such taking. The entire award shall belong to Landlord; provided that Tenant shall be entitled to any separate award for Tenant's trade fixtures, moving expenses, and loss of business goodwill.\n\nSection 14.2. Partial Taking. If more than twenty percent (20%) of the rentable area of the Demised Premises shall be taken, either party may terminate this Lease upon ninety (90) days' written notice. If less than twenty percent (20%) is taken, or if neither party elects to terminate, this Lease shall continue and Base Rent shall abate proportionately for the taken area.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 14.1, 14.2",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Addresses total and partial takings, with a 20% threshold for termination rights.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-26",
+      "provision_name": "Quiet Enjoyment",
+      "template_text": "",
+      "tenant_text": "Section 18.1. Quiet Enjoyment. Landlord covenants that, so long as Tenant is not in default hereunder beyond applicable notice and cure periods, Tenant shall have quiet enjoyment and peaceful possession of the Demised Premises during the Term against any person claiming by, through, or under Landlord, subject to the terms and conditions of this Lease and any Superior Interest.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 18.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Standard quiet enjoyment covenant conditioned on Tenant not being in default.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-27",
+      "provision_name": "Landlord Default & Tenant Remedies",
+      "template_text": "",
+      "tenant_text": "Section 5.1. Security Deposit. Tenant shall deposit with Landlord the Security Deposit upon execution of this Lease as security for the faithful performance of Tenant's obligations hereunder. Landlord may apply the Security Deposit to cure any default of Tenant; in such event, Tenant shall restore the Security Deposit to the original amount within fifteen (15) days of Landlord's written demand. The Security Deposit shall be maintained in a segregated interest-bearing account for Tenant's benefit. Landlord shall return the Security Deposit, with interest accrued thereon, to Tenant within thirty (30) days after the Expiration Date, provided Tenant has fully performed its obligations hereunder, less any amounts properly applied by Landlord. In addition, if Landlord fails to perform any material obligation under this Lease and such failure continues uncured for thirty (30) days after written notice from Tenant specifying the nature of such failure, Tenant shall have the right to draw upon the Security Deposit as a setoff against damages, and if such failure continues for an additional thirty (30) days, Tenant may terminate this Lease upon written notice to Landlord. These rights are in addition to any other remedies available to Tenant at law or in equity.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 5.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Tenant has the right to draw on the Security Deposit and terminate the lease if Landlord fails to cure a material default.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-28",
+      "provision_name": "Compliance with Laws",
+      "template_text": "",
+      "tenant_text": "Section 4.2. Compliance with Laws. Tenant shall, at its sole cost and expense, comply with all applicable federal, state, and local laws relating to Tenant's use and occupancy of the Demised Premises. Landlord shall be responsible for ensuring that the Building structure and base building systems comply with applicable law as of the Commencement Date and during the Term to the extent not caused by Tenant's use or alterations.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 4.2",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Allocates compliance obligations between Tenant (use/occupancy) and Landlord (structure/base systems).",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-29",
+      "provision_name": "Right of Entry / Landlord Access",
+      "template_text": "",
+      "tenant_text": "Section 21.1. Landlord's Access. Landlord and its authorized representatives shall have the right to enter the Demised Premises upon not less than forty-eight (48) hours' prior written notice (except in the case of emergency) for the purpose of: (a) inspecting the condition thereof; (b) making repairs, alterations, or improvements to the Building; (c) exhibiting the Demised Premises to prospective purchasers or lenders; or (d) during the last twelve (12) months of the Term, exhibiting the Demised Premises to prospective tenants. Such entry shall be conducted with reasonable care so as to minimize interference with Tenant's business operations.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Section 21.1",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Requires 48 hours' notice for entry, except in emergencies.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-30",
+      "provision_name": "Estoppel Certificate",
+      "template_text": "",
+      "tenant_text": "Section 20.1. Estoppel Certificates. Within fifteen (15) business days after written request by either party, the other party shall execute and deliver a certificate stating: (a) whether this Lease is in full force and effect; (b) the Commencement Date and Expiration Date; (c) the current monthly Rent; (d) whether any defaults exist; (e) whether any modifications have been made; and (f) such other factual matters as the requesting party may reasonably require.\n\nSection 20.2. Failure to Deliver. If a party fails to deliver an estoppel certificate within the required fifteen (15) business day period, such party shall be deemed to have certified that this Lease is in full force and effect without modification, that no defaults exist, and that Rent has been paid through the current month.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 20.1, 20.2",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Requires delivery of estoppel certificates within 15 business days, with deemed certification upon failure.",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-31",
+      "provision_name": "Co-Tenancy",
+      "template_text": "",
+      "tenant_text": "",
+      "template_section_ref": "",
+      "tenant_section_ref": "",
+      "status": "NOT_APPLICABLE",
+      "alignment_notes": "Provision known-absent for Warehouse lease type. Basis: document-type-driven. Decision source: KNOWN_ABSENT_BY_DOC_TYPE registry. Not found by extraction model (consistent with known-absent classification).",
+      "definition_changes": ""
+    },
+    {
+      "provision_id": "LP-32",
+      "provision_name": "Hazardous Materials",
+      "template_text": "",
+      "tenant_text": "Section 12.1. Hazardous Materials Prohibition. Tenant shall not bring, keep, store, use, or dispose of any Hazardous Materials in or about the Demised Premises or the Building, except for standard cleaning and maintenance materials used in quantities customary for warehouse operations and stored in compliance with all applicable laws, and diesel fuel in reasonable quantities for Tenant's forklift equipment, provided such fuel is stored in approved containers in compliance with all fire codes and environmental laws. \"Hazardous Materials\" means any substance regulated under any federal, state, or local environmental law.\n\nSection 12.2. Remediation. If Tenant causes or permits any Hazardous Materials to be released or discharged in or about the Demised Premises, Tenant shall promptly remediate such contamination at Tenant's sole cost and expense in compliance with all applicable environmental laws.",
+      "template_section_ref": "",
+      "tenant_section_ref": "Sections 12.1, 12.2",
+      "status": "TENANT_ONLY",
+      "alignment_notes": "Prohibits hazardous materials with exceptions for standard cleaning supplies and forklift diesel fuel.",
+      "definition_changes": ""
+    }
+  ],
+  "contract_metadata": {
+    "landlord": "ATLAS INDUSTRIAL PROPERTIES LLC",
+    "tenant": "MERIDIAN LOGISTICS SOLUTIONS INC.",
+    "property_description": "4400 Industry Avenue, Brooklyn, New York 11232 (ground floor warehouse space, approx 18,500 RSF)",
+    "effective_date": "March 1, 2026",
+    "term_length": "5 years",
+    "expiration_date": "March 31, 2031",
+    "governing_law": "New York",
+    "base_rent": "$28,520.83/month",
+    "permitted_use": "warehousing, distribution, light assembly, and related office use"
+  },
+  "deal_overview": {
+    "landlord_name": "ATLAS INDUSTRIAL PROPERTIES LLC",
+    "tenant_name": "MERIDIAN LOGISTICS SOLUTIONS INC.",
+    "property_address": "4400 Industry Avenue, Brooklyn, New York 11232",
+    "property_type": "Warehouse",
+    "lease_term_basis": "fixed_years",
+    "lease_term_years": 5,
+    "commencement_date": "April 1, 2026",
+    "expiration_date": "March 31, 2031",
+    "renewal_options": "One (1) 3-year option at fair market rent",
+    "base_rent_monthly": "$28,520.83",
+    "escalation": "Approximately 3% per annum",
+    "security_deposit": "$75,000.00",
+    "cam_structure": "Tenant pays Proportionate Share (22.4%) of CAM and Real Estate Taxes",
+    "permitted_use": "warehousing, distribution, light assembly, and related office use",
+    "key_terms_summary": [
+      "5-year initial term with one 3-year renewal option at fair market rent.",
+      "Base rent starts at $18.50/RSF ($28,520.83/month) with ~3% annual escalations.",
+      "Tenant pays 22.4% proportionate share of CAM and Real Estate Taxes.",
+      "Security deposit of $75,000.00 required.",
+      "Guaranty provided by Meridian Global Holdings LLC.",
+      "Tenant has exclusive right to 15 designated parking spaces."
+    ]
+  },
+  "meta": {
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "primary_model": "gemini-3.1-pro-preview",
+    "primary_provider": "google",
+    "fallback_used": false,
+    "canonical": true,
+    "elapsed_sec": 99.33,
+    "errors": [],
+    "single_doc": true,
+    "extraction_attempt_chain": [
+      {
+        "model": "gemini-3.1-pro-preview",
+        "provider": "google",
+        "outcome": "success"
+      }
+    ]
+  }
+}

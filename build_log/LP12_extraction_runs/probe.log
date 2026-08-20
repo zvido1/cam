@@ -1,0 +1,20 @@
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 100.7s (primary)
+run 1: LP-12 TENANT_ONLY len=767 | 'Termination Right' in ['LP-12', 'LP-24'] | gemini-3.1-pro-preview
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 104.2s (primary)
+run 2: LP-12 AMBIGUOUS len=0 | 'Termination Right' in ['LP-24'] | gemini-3.1-pro-preview
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 102.5s (primary)
+run 3: LP-12 AMBIGUOUS len=0 | 'Termination Right' in ['LP-24'] | gemini-3.1-pro-preview
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 95.7s (primary)
+run 4: LP-12 TENANT_ONLY len=767 | 'Termination Right' in ['LP-12', 'LP-24'] | gemini-3.1-pro-preview
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 109.5s (primary)
+run 5: LP-12 AMBIGUOUS len=0 | 'Termination Right' in ['LP-24'] | gemini-3.1-pro-preview
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 99.3s (primary)
+run 6: LP-12 AMBIGUOUS len=0 | 'Termination Right' in ['LP-24'] | gemini-3.1-pro-preview
+
+persisted to build_log/LP12_extraction_runs/
