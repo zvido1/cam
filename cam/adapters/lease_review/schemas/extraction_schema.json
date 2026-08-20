@@ -27,7 +27,12 @@
         "tenant_name": {"type": "string", "description": "Full legal name of tenant/lessee"},
         "property_address": {"type": "string", "description": "Full property address including suite/unit"},
         "property_type": {"type": "string", "description": "e.g. Retail, Office, Industrial, Mixed-Use"},
-        "lease_term_years": {"type": "number", "description": "Lease term duration in years"},
+        "lease_term_years": {"type": ["number", "null"], "description": "Lease term duration in years. A number ONLY when lease_term_basis is 'fixed_years'. MUST be null for every other basis — a contingent, event-triggered, month-to-month or undetermined term has no correct numeric value, and inventing one is worse than recording its absence."},
+        "lease_term_basis": {
+          "type": "string",
+          "enum": ["fixed_years", "contingent", "event_triggered", "month_to_month", "undetermined"],
+          "description": "How the lease term is defined. fixed_years: a definite term expressible in years. contingent: term ends on the occurrence of one or more conditions, not on a date. event_triggered: term runs from or to a defined event rather than a calendar date. month_to_month: periodic tenancy with no fixed end. undetermined: could not be determined from the document. THE DISTINCTION: contingent, event_triggered and month_to_month are PROPERTIES OF THE LEASE — the document says what it says and there is no number to find. undetermined is a FAILURE TO DETERMINE — the reader could not tell. Same distinction as NOT_APPLICABLE vs AMBIGUOUS on provision status."
+        },
         "commencement_date": {"type": "string", "description": "Lease commencement/effective date"},
         "expiration_date": {"type": "string", "description": "Lease expiration date"},
         "renewal_options": {"type": "string", "description": "Renewal option terms (e.g. 'Two 5-year options')"},
@@ -41,7 +46,17 @@
           "items": {"type": "string"},
           "description": "3-6 bullet points of the most important business terms (TI allowance, assignment rights, cure periods, maintenance, etc.)"
         }
-      }
+      },
+      "allOf": [
+        {
+          "$comment": "lease_term_years MUST be null whenever lease_term_basis is anything other than fixed_years. Enforced, not merely described.",
+          "if": {
+            "required": ["lease_term_basis"],
+            "properties": {"lease_term_basis": {"enum": ["contingent", "event_triggered", "month_to_month", "undetermined"]}}
+          },
+          "then": {"properties": {"lease_term_years": {"type": "null"}}}
+        }
+      ]
     },
     "provisions": {
       "type": "array",

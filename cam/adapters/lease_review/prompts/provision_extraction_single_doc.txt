@@ -51,19 +51,36 @@ Provide a "deal_overview" object summarizing the key business terms.
 
 Required deal_overview fields:
 - "landlord_name", "tenant_name", "property_address", "property_type"
-- "lease_term_years" (numeric), "commencement_date", "expiration_date"
+- "lease_term_basis", "lease_term_years", "commencement_date", "expiration_date"
 - "renewal_options", "base_rent_monthly", "escalation", "security_deposit"
 - "cam_structure", "permitted_use"
 - "key_terms_summary": Array of 3-6 bullet-point strings highlighting the most important business terms
 
 If any field cannot be determined, use an empty string (or empty array for key_terms_summary).
 
+LEASE TERM — set "lease_term_basis" first, then "lease_term_years":
+- "lease_term_basis" must be one of:
+  - "fixed_years": the lease states a definite term expressible in years.
+  - "contingent": the term ends on the occurrence of one or more conditions, not on a date.
+  - "event_triggered": the term runs from or to a defined event rather than a calendar date.
+  - "month_to_month": a periodic tenancy with no fixed end.
+  - "undetermined": you could not determine the term from the document.
+- Emit "lease_term_years" as a number ONLY when "lease_term_basis" is "fixed_years".
+  For every other basis, "lease_term_years" MUST be null.
+- THE DISTINCTION: "contingent", "event_triggered" and "month_to_month" are PROPERTIES OF THE
+  LEASE — the document defines the term that way and there is no number to find. "undetermined"
+  is a FAILURE TO DETERMINE — you could not tell. This is the same distinction as
+  "NOT_APPLICABLE" vs "AMBIGUOUS" on provision status.
+- BIAS: if a term looks like it might be fixed but the document is unclear, use "undetermined"
+  rather than guessing a number. A wrong term length is worse than an admitted unknown.
+
 IMPORTANT TYPE CONSTRAINTS for deal_overview:
-- ALL fields must be JSON strings, not numbers.
-- "lease_term_years" is the only numeric field.
+- ALL other fields must be JSON strings, not numbers.
+- "lease_term_years" is the only numeric field, and it is null unless the basis is "fixed_years".
 - "base_rent_monthly" must be a formatted string like "$19,600.00", not a number like 19600.
 - "key_terms_summary" must be a JSON array of strings.
-- Use empty string "" for any field that cannot be determined. Do not use null.
+- Use empty string "" for any STRING field that cannot be determined. Do not use null for string
+  fields. "lease_term_years" is the sole exception: it takes null, never "".
 
 OUTPUT FORMAT:
 
