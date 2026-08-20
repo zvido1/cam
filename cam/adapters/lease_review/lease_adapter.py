@@ -1719,16 +1719,14 @@ def run_lease_coverage_only(
         "deal_overview": extraction.get("deal_overview", {}),
         "full_template_text": "",
         "full_tenant_text": tenant_text,
-        "summary": {
-            "total_provisions_checked": len(extraction["provisions"]),
-            "conforms": 0,
-            "deviates": 0,
-            "unclear": 0,
-            "critical": 0,
-            "high": 0,
-            "medium": 0,
-            "low": 0,
-        },
+        # Mode C summary is computed at the END of the pipeline by
+        # _compute_summary_analyze(), from the same coverage_assessment and
+        # cross_provision_findings objects the report renders. It is NOT the
+        # compare-mode shape: conforms/deviates/unclear and the severity counters
+        # are deviation-from-template quantities, and Mode C has no template, so
+        # nothing computes them. Emitting them as 0 produced an all-clear headline
+        # above a report carrying 27 attention items (job ...20260820_023343).
+        "summary": {},
         "provisions": [],
         "deviations": [],
         "cascade_findings": [],
@@ -1893,6 +1891,14 @@ def run_lease_coverage_only(
         print(f"[lease_adapter:analyze] Contract section index failed (non-fatal): {_csi_e}", flush=True)
         result['contract_section_index'] = []
 
+    # ── Mode C summary — derived from the rendered body, not recomputed ──
+    # Must run after Stage 7 and P2'' routing so cross_provision_findings is final.
+    result["summary"] = _compute_summary_analyze(
+        result["coverage_assessment"],
+        result["cross_provision_findings"],
+        len(extraction["provisions"]),
+    )
+
     output_dir = Path(cfg["output_dir"]) / run_id
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "pipeline_results.json"
@@ -1913,6 +1919,60 @@ def run_lease_coverage_only(
     )
 
     return result
+
+
+def _compute_summary_analyze(
+    coverage_assessment: List[dict],
+    cross_provision_findings: List[dict],
+    provisions_extracted: int,
+) -> dict:
+    """Mode C summary, derived from the entries the report actually renders.
+
+    Deliberately NOT the compare-mode shape. `conforms`, `deviates`, `unclear` and
+    the CRITICAL/HIGH/MEDIUM/LOW severity counters are all deviation-from-template
+    quantities computed from dispositions; Mode C has no template and produces no
+    dispositions, so nothing computes them. They are OMITTED rather than reported as
+    zero -- a zero is a claim that the quantity was measured and found to be none,
+    which is false here and read as an all-clear.
+
+    Every count below is taken from the same coverage_assessment and
+    cross_provision_findings objects that are serialised into the result and rendered
+    in the report, so the headline cannot drift from the body.
+    """
+    states: dict = {}
+    materiality: dict = {}
+    for c in coverage_assessment:
+        states[c.get("coverage_state") or "unknown"] = states.get(c.get("coverage_state") or "unknown", 0) + 1
+        m = c.get("materiality") or "unrated"
+        materiality[m] = materiality.get(m, 0) + 1
+
+    compound_confirmed = sum(
+        1 for f in cross_provision_findings if f.get("verdict") == "compound_risk_confirmed"
+    )
+    directional = sum(
+        1 for f in cross_provision_findings if f.get("verdict") == "directional_mismatch"
+    )
+
+    return {
+        "mode": "analyze",
+        "total_provisions_checked": provisions_extracted,
+        "issue_areas_assessed": len(coverage_assessment),
+        "requires_attention": sum(1 for c in coverage_assessment if c.get("requires_attention")),
+        "with_missing_elements": sum(1 for c in coverage_assessment if c.get("elements_missing")),
+        "coverage_states": states,
+        "materiality": materiality,
+        "compound_risks_confirmed": compound_confirmed,
+        "cross_provision_findings_total": len(cross_provision_findings),
+        "directional_mismatches": directional,
+        "_omitted_compare_mode_fields": [
+            "conforms", "deviates", "unclear", "critical", "high", "medium", "low"
+        ],
+        "_omitted_reason": (
+            "Deviation-from-template quantities. Mode C has no template and produces no "
+            "dispositions, so these are not computed. Omitted rather than zeroed: a zero "
+            "asserts the quantity was measured and found to be none."
+        ),
+    }
 
 
 def _compute_summary(dispositions: List[dict]) -> dict:
