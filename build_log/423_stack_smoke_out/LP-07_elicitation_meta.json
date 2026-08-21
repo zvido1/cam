@@ -1,0 +1,50 @@
+{
+  "primary_provider": "google",
+  "primary_model": "gemini-3.1-pro-preview",
+  "canonical": true,
+  "fallback_used": false,
+  "fallback_chain": [],
+  "declared_generation_config": {
+    "provider": "google",
+    "model": "gemini-3.1-pro-preview",
+    "temperature": 0.0,
+    "max_output_tokens": 16000
+  },
+  "integrity_metadata": {
+    "declared": {
+      "temperature": 0.0,
+      "max_tokens": 16000,
+      "reasoning_effort": null
+    },
+    "transmitted": {
+      "temperature": 0.0,
+      "max_tokens": 16000,
+      "_max_tokens_key": "max_tokens"
+    },
+    "omitted": {},
+    "omission_reasons": {},
+    "provider": "google",
+    "model": "gemini-3.1-pro-preview"
+  },
+  "prompt_hash": "bbb1e99d0963887d",
+  "config_hash": "7c2ac3de05b6e9ba",
+  "elapsed_sec": 23.08,
+  "errors": [],
+  "attempt_chain": [
+    {
+      "model": "gemini-3.1-pro-preview",
+      "provider": "google",
+      "outcome": "call_returned"
+    },
+    {
+      "model": "gemini-3.1-pro-preview",
+      "provider": "google",
+      "outcome": "success"
+    }
+  ],
+  "target_count": 6,
+  "provider": "google",
+  "model": "gemini-3.1-pro-preview",
+  "degraded": false,
+  "parse_or_validation_failure_reason": null
+}

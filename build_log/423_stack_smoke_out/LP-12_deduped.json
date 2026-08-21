@@ -1,0 +1,134 @@
+[
+  {
+    "verification_status": "verified",
+    "start_char": 9379,
+    "end_char": 9811,
+    "span_text": "In addition, if Landlord fails to perform any material obligation under this Lease and such failure continues uncured for thirty (30) days after written notice from Tenant specifying the nature of such failure, Tenant shall have the right to draw upon the Security Deposit as a setoff against damages, and if such failure continues for an additional thirty (30) days, Tenant may terminate this Lease upon written notice to Landlord.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "e2723c198b38392e",
+    "elicited_by": [
+      "LP-12.triggering_conditions",
+      "LP-12.notice_period"
+    ],
+    "quote_variants": [
+      "In addition, if Landlord fails to perform any material obligation under this Lease and such failure continues uncured for thirty (30) days after written notice from Tenant specifying the nature of such failure, Tenant shall have the right to draw upon the Security Deposit as a setoff against damages, and if such failure continues for an additional thirty (30) days, Tenant may terminate this Lease upon written notice to Landlord."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000001"
+  },
+  {
+    "verification_status": "verified",
+    "start_char": 17183,
+    "end_char": 17541,
+    "span_text": "If the damage cannot be restored within two hundred forty (240) days, or if the damage occurs during the last twelve (12) months of the Term and the cost of restoration exceeds fifty percent (50%) of the replacement value of the Building, either party may terminate this Lease upon sixty (60) days' written notice given within ninety (90) days of the damage.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "5dd5703c4656d92b",
+    "elicited_by": [
+      "LP-12.triggering_conditions",
+      "LP-12.notice_period"
+    ],
+    "quote_variants": [
+      "If the damage cannot be restored within two hundred forty (240) days, or if the damage occurs during the last twelve (12) months of the Term and the cost of restoration exceeds fifty percent (50%) of the replacement value of the Building, either party may terminate this Lease upon sixty (60) days' written notice given within ninety (90) days of the damage."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000002"
+  },
+  {
+    "verification_status": "verified",
+    "start_char": 17812,
+    "end_char": 18035,
+    "span_text": "If restoration is not completed within two hundred forty (240) days and neither party has exercised a termination right, Tenant shall have the right to terminate this Lease upon thirty (30) days' written notice to Landlord.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "7a4b60407dafb6ff",
+    "elicited_by": [
+      "LP-12.triggering_conditions",
+      "LP-12.notice_period"
+    ],
+    "quote_variants": [
+      "If restoration is not completed within two hundred forty (240) days and neither party has exercised a termination right, Tenant shall have the right to terminate this Lease upon thirty (30) days' written notice to Landlord."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000003"
+  },
+  {
+    "verification_status": "verified",
+    "start_char": 18090,
+    "end_char": 18243,
+    "span_text": "If the entire Demised Premises shall be taken by governmental authority through eminent domain, this Lease shall terminate as of the date of such taking.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "fe5ee4986ddc8692",
+    "elicited_by": [
+      "LP-12.triggering_conditions"
+    ],
+    "quote_variants": [
+      "If the entire Demised Premises shall be taken by governmental authority through eminent domain, this Lease shall terminate as of the date of such taking."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000004"
+  },
+  {
+    "verification_status": "verified",
+    "start_char": 18456,
+    "end_char": 18627,
+    "span_text": "If more than twenty percent (20%) of the rentable area of the Demised Premises shall be taken, either party may terminate this Lease upon ninety (90) days' written notice.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "00a7d5bee7956ced",
+    "elicited_by": [
+      "LP-12.triggering_conditions",
+      "LP-12.notice_period"
+    ],
+    "quote_variants": [
+      "If more than twenty percent (20%) of the rentable area of the Demised Premises shall be taken, either party may terminate this Lease upon ninety (90) days' written notice."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000005"
+  },
+  {
+    "verification_status": "verified",
+    "start_char": 19657,
+    "end_char": 19950,
+    "span_text": "Within thirty (30) days of receipt of any assignment or subletting request requiring Landlord's consent, Landlord may elect to recapture the Demised Premises by written notice. If Landlord so elects, this Lease shall terminate as to such space effective sixty (60) days after Tenant's request.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "bdf4041aa511ea1f",
+    "elicited_by": [
+      "LP-12.triggering_conditions",
+      "LP-12.notice_period"
+    ],
+    "quote_variants": [
+      "Within thirty (30) days of receipt of any assignment or subletting request requiring Landlord's consent, Landlord may elect to recapture the Demised Premises by written notice. If Landlord so elects, this Lease shall terminate as to such space effective sixty (60) days after Tenant's request."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000006"
+  },
+  {
+    "verification_status": "verified",
+    "start_char": 21466,
+    "end_char": 21647,
+    "span_text": "Upon the occurrence and continuance of an Event of Default, Landlord may exercise any one or more of the following remedies:\n\n(a) Terminate this Lease upon written notice to Tenant;",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "387f3489d0c6c7c0",
+    "elicited_by": [
+      "LP-12.triggering_conditions",
+      "LP-12.notice_period"
+    ],
+    "quote_variants": [
+      "Upon the occurrence and continuance of an Event of Default, Landlord may exercise any one or more of the following remedies:\n\n(a) Terminate this Lease upon written notice to Tenant;"
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000007"
+  }
+]

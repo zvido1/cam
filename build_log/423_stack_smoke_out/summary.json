@@ -1,0 +1,43 @@
+{
+  "LP-07": {
+    "ok": true,
+    "lp_name": "Common Area Maintenance (CAM)",
+    "elements": 6,
+    "elapsed_sec": 23.1,
+    "provider_calls": 1,
+    "raw_records": 5,
+    "deduped_records": 5,
+    "status_counts": {
+      "verified": 5
+    },
+    "verified_count": 5,
+    "needle": "shall mean 22.4%",
+    "needle_found_in_verified_span": true,
+    "hit_spans": [
+      {
+        "start": 1738,
+        "end": 1889,
+        "elicited_by": [
+          "LP-07.proportionate_share_calculation"
+        ],
+        "span_text": "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building."
+      }
+    ]
+  },
+  "LP-12": {
+    "ok": true,
+    "lp_name": "Early Termination",
+    "elements": 5,
+    "elapsed_sec": 46.3,
+    "provider_calls": 1,
+    "raw_records": 13,
+    "deduped_records": 7,
+    "status_counts": {
+      "verified": 7
+    },
+    "verified_count": 7,
+    "needle": "Termination Right",
+    "needle_found_in_verified_span": false,
+    "hit_spans": []
+  }
+}

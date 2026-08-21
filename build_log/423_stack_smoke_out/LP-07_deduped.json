@@ -1,0 +1,92 @@
+[
+  {
+    "verification_status": "verified",
+    "start_char": 1738,
+    "end_char": 1889,
+    "span_text": "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "2725a0e931e682ba",
+    "elicited_by": [
+      "LP-07.proportionate_share_calculation"
+    ],
+    "quote_variants": [
+      "\"Proportionate Share\" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000001"
+  },
+  {
+    "verification_status": "verified",
+    "start_char": 5152,
+    "end_char": 5716,
+    "span_text": "CAM Charges shall include all costs and expenses incurred by Landlord in operating, maintaining, repairing, and managing the Common Areas and the Building exterior, including but not limited to: maintenance and repair of parking areas, driveways, loading docks, and landscaping; snow and ice removal; lighting; security; janitorial services for common areas; insurance premiums for the Building; management fees not to exceed four percent (4%) of gross Building revenues; and capital expenditures amortized over their useful lives not to exceed fifteen (15) years.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "386db580fcbc9fbc",
+    "elicited_by": [
+      "LP-07.included_expense_categories"
+    ],
+    "quote_variants": [
+      "CAM Charges shall include all costs and expenses incurred by Landlord in operating, maintaining, repairing, and managing the Common Areas and the Building exterior, including but not limited to: maintenance and repair of parking areas, driveways, loading docks, and landscaping; snow and ice removal; lighting; security; janitorial services for common areas; insurance premiums for the Building; management fees not to exceed four percent (4%) of gross Building revenues; and capital expenditures amortized over their useful lives not to exceed fifteen (15) years."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000002"
+  },
+  {
+    "verification_status": "verified",
+    "start_char": 5717,
+    "end_char": 5961,
+    "span_text": "CAM Charges shall expressly exclude: debt service; depreciation; capital improvements to the extent not amortized as provided above; costs paid by insurance proceeds; costs attributable to other tenants' negligence; and Landlord's income taxes.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "9f8ad50c421289a0",
+    "elicited_by": [
+      "LP-07.excluded_expense_categories"
+    ],
+    "quote_variants": [
+      "CAM Charges shall expressly exclude: debt service; depreciation; capital improvements to the extent not amortized as provided above; costs paid by insurance proceeds; costs attributable to other tenants' negligence; and Landlord's income taxes."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000003"
+  },
+  {
+    "verification_status": "verified",
+    "start_char": 6775,
+    "end_char": 7494,
+    "span_text": "Tenant shall have the right, exercisable not more than once per calendar year, to audit Landlord's books and records relating to CAM Charges for the preceding calendar year, upon not less than thirty (30) days' prior written notice to Landlord. Such audit shall be conducted during normal business hours at Landlord's office by a certified public accountant retained by Tenant at Tenant's expense. If the audit reveals that Landlord has overcharged Tenant by more than five percent (5%), Landlord shall pay the reasonable cost of such audit in addition to refunding the overcharge with interest at the prime rate plus two percent (2%) per annum. Tenant shall maintain the results of any such audit in strict confidence.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "e226603a91bf26de",
+    "elicited_by": [
+      "LP-07.tenant_audit_rights"
+    ],
+    "quote_variants": [
+      "Tenant shall have the right, exercisable not more than once per calendar year, to audit Landlord's books and records relating to CAM Charges for the preceding calendar year, upon not less than thirty (30) days' prior written notice to Landlord. Such audit shall be conducted during normal business hours at Landlord's office by a certified public accountant retained by Tenant at Tenant's expense. If the audit reveals that Landlord has overcharged Tenant by more than five percent (5%), Landlord shall pay the reasonable cost of such audit in addition to refunding the overcharge with interest at the prime rate plus two percent (2%) per annum. Tenant shall maintain the results of any such audit in strict confidence."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000004"
+  },
+  {
+    "verification_status": "verified",
+    "start_char": 6230,
+    "end_char": 6431,
+    "span_text": "Within one hundred twenty (120) days after the close of each calendar year, Landlord shall deliver to Tenant a reconciliation statement detailing actual Real Estate Taxes and CAM Charges for such year.",
+    "source_document_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "canonical_text_hash": "da9b5655c5cab382577f139a1884625d81f42b2610a146042018026dc28d2b71",
+    "span_text_hash": "feda2a7328891ab3",
+    "elicited_by": [
+      "LP-07.reconciliation_timeline"
+    ],
+    "quote_variants": [
+      "Within one hundred twenty (120) days after the close of each calendar year, Landlord shall deliver to Tenant a reconciliation statement detailing actual Real Estate Taxes and CAM Charges for such year."
+    ],
+    "failure_reason": null,
+    "usable_in_canonical_stage5": true,
+    "evidence_span_id": "EV-000005"
+  }
+]
