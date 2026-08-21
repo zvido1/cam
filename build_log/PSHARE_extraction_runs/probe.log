@@ -1,0 +1,20 @@
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 103.7s (primary)
+run 1: def-clause in ['LP-00'] | 22.4% in ['LP-00'] | LP-07 len=2636 LP-02 len=1111 | gemini-3.1-pro-preview
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 104.7s (primary)
+run 2: def-clause in ['LP-00'] | 22.4% in ['LP-00'] | LP-07 len=2636 LP-02 len=1111 | gemini-3.1-pro-preview
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 104.0s (primary)
+run 3: def-clause in ['LP-00'] | 22.4% in ['LP-00'] | LP-07 len=2636 LP-02 len=1111 | gemini-3.1-pro-preview
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 98.0s (primary)
+run 4: def-clause in NOWHERE | 22.4% in NOWHERE | LP-07 len=2636 LP-02 len=978 | gemini-3.1-pro-preview
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 92.0s (primary)
+run 5: def-clause in NOWHERE | 22.4% in NOWHERE | LP-07 len=2636 LP-02 len=978 | gemini-3.1-pro-preview
+[lease_extract single-doc] calling gemini-3.1-pro-preview (primary)...
+[lease_extract single-doc] gemini-3.1-pro-preview succeeded in 97.0s (primary)
+run 6: def-clause in NOWHERE | 22.4% in NOWHERE | LP-07 len=2636 LP-02 len=978 | gemini-3.1-pro-preview
+
+persisted to build_log/PSHARE_extraction_runs/

@@ -1,0 +1,314 @@
+[
+  {
+    "run": 1,
+    "ts": "2026-08-21 13:26:11",
+    "elapsed": 103.7,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "per_lp": {
+      "LP-07": {
+        "status": "TENANT_ONLY",
+        "len": 2636,
+        "section_ref": "Sections 3.3, 3.4",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-02": {
+        "status": "TENANT_ONLY",
+        "len": 1111,
+        "section_ref": "Section 3.1",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-01": {
+        "status": "TENANT_ONLY",
+        "len": 1832,
+        "section_ref": "Sections 3.1, 3.2, 3.5",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-00": {
+        "status": "TENANT_ONLY",
+        "len": 2236,
+        "section_ref": "Preamble, Sections 1.1, 1.2",
+        "has_2240": true,
+        "needles": [
+          "shall mean 22.4%",
+          "ratio of the rentable area",
+          "total rentable area of the Building"
+        ]
+      }
+    },
+    "needle_locations": {
+      "shall mean 22.4%": [
+        "LP-00"
+      ],
+      "ratio of the rentable area": [
+        "LP-00"
+      ],
+      "total rentable area of the Building": [
+        "LP-00"
+      ]
+    },
+    "definition_present_somewhere": true,
+    "all_lps_carrying_22_4": [
+      "LP-00"
+    ]
+  },
+  {
+    "run": 2,
+    "ts": "2026-08-21 13:27:55",
+    "elapsed": 104.8,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "per_lp": {
+      "LP-07": {
+        "status": "TENANT_ONLY",
+        "len": 2636,
+        "section_ref": "Sections 3.3, 3.4",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-02": {
+        "status": "TENANT_ONLY",
+        "len": 1111,
+        "section_ref": "Section 3.1",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-01": {
+        "status": "TENANT_ONLY",
+        "len": 1832,
+        "section_ref": "Sections 3.1, 3.2, 3.5",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-00": {
+        "status": "TENANT_ONLY",
+        "len": 2236,
+        "section_ref": "Preamble, Sections 1.1, 1.2",
+        "has_2240": true,
+        "needles": [
+          "shall mean 22.4%",
+          "ratio of the rentable area",
+          "total rentable area of the Building"
+        ]
+      }
+    },
+    "needle_locations": {
+      "shall mean 22.4%": [
+        "LP-00"
+      ],
+      "ratio of the rentable area": [
+        "LP-00"
+      ],
+      "total rentable area of the Building": [
+        "LP-00"
+      ]
+    },
+    "definition_present_somewhere": true,
+    "all_lps_carrying_22_4": [
+      "LP-00"
+    ]
+  },
+  {
+    "run": 3,
+    "ts": "2026-08-21 13:29:40",
+    "elapsed": 104.0,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "per_lp": {
+      "LP-07": {
+        "status": "TENANT_ONLY",
+        "len": 2636,
+        "section_ref": "Sections 3.3, 3.4",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-02": {
+        "status": "TENANT_ONLY",
+        "len": 1111,
+        "section_ref": "Section 3.1",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-01": {
+        "status": "TENANT_ONLY",
+        "len": 1832,
+        "section_ref": "Sections 3.1, 3.2, 3.5",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-00": {
+        "status": "TENANT_ONLY",
+        "len": 2236,
+        "section_ref": "Preamble, Sections 1.1, 1.2",
+        "has_2240": true,
+        "needles": [
+          "shall mean 22.4%",
+          "ratio of the rentable area",
+          "total rentable area of the Building"
+        ]
+      }
+    },
+    "needle_locations": {
+      "shall mean 22.4%": [
+        "LP-00"
+      ],
+      "ratio of the rentable area": [
+        "LP-00"
+      ],
+      "total rentable area of the Building": [
+        "LP-00"
+      ]
+    },
+    "definition_present_somewhere": true,
+    "all_lps_carrying_22_4": [
+      "LP-00"
+    ]
+  },
+  {
+    "run": 4,
+    "ts": "2026-08-21 13:31:24",
+    "elapsed": 98.0,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "per_lp": {
+      "LP-07": {
+        "status": "TENANT_ONLY",
+        "len": 2636,
+        "section_ref": "Sections 3.3, 3.4",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-02": {
+        "status": "TENANT_ONLY",
+        "len": 978,
+        "section_ref": "Section 3.1",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-01": {
+        "status": "TENANT_ONLY",
+        "len": 1832,
+        "section_ref": "Sections 3.1, 3.2, 3.5",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-00": {
+        "status": "TENANT_ONLY",
+        "len": 1175,
+        "section_ref": "Preamble, Section 1.1, Section 24.15",
+        "has_2240": false,
+        "needles": []
+      }
+    },
+    "needle_locations": {
+      "shall mean 22.4%": [],
+      "ratio of the rentable area": [],
+      "total rentable area of the Building": []
+    },
+    "definition_present_somewhere": false,
+    "all_lps_carrying_22_4": []
+  },
+  {
+    "run": 5,
+    "ts": "2026-08-21 13:33:02",
+    "elapsed": 92.1,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "per_lp": {
+      "LP-07": {
+        "status": "TENANT_ONLY",
+        "len": 2636,
+        "section_ref": "Sections 3.3, 3.4",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-02": {
+        "status": "TENANT_ONLY",
+        "len": 978,
+        "section_ref": "Section 3.1",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-01": {
+        "status": "TENANT_ONLY",
+        "len": 1832,
+        "section_ref": "Sections 3.1, 3.2, 3.5",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-00": {
+        "status": "TENANT_ONLY",
+        "len": 1175,
+        "section_ref": "Preamble, Section 1.1, Section 24.15",
+        "has_2240": false,
+        "needles": []
+      }
+    },
+    "needle_locations": {
+      "shall mean 22.4%": [],
+      "ratio of the rentable area": [],
+      "total rentable area of the Building": []
+    },
+    "definition_present_somewhere": false,
+    "all_lps_carrying_22_4": []
+  },
+  {
+    "run": 6,
+    "ts": "2026-08-21 13:34:34",
+    "elapsed": 97.0,
+    "model": "gemini-3.1-pro-preview",
+    "provider": "google",
+    "fallback_used": false,
+    "primary_model": "gemini-3.1-pro-preview",
+    "per_lp": {
+      "LP-07": {
+        "status": "TENANT_ONLY",
+        "len": 2636,
+        "section_ref": "Sections 3.3, 3.4",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-02": {
+        "status": "TENANT_ONLY",
+        "len": 978,
+        "section_ref": "Section 3.1",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-01": {
+        "status": "TENANT_ONLY",
+        "len": 1832,
+        "section_ref": "Sections 3.1, 3.2, 3.5",
+        "has_2240": false,
+        "needles": []
+      },
+      "LP-00": {
+        "status": "TENANT_ONLY",
+        "len": 1175,
+        "section_ref": "Preamble, Section 1.1, Section 24.15",
+        "has_2240": false,
+        "needles": []
+      }
+    },
+    "needle_locations": {
+      "shall mean 22.4%": [],
+      "ratio of the rentable area": [],
+      "total rentable area of the Building": []
+    },
+    "definition_present_somewhere": false,
+    "all_lps_carrying_22_4": []
+  }
+]
