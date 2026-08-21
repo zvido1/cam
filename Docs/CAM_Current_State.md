@@ -1,3 +1,50 @@
+# CAM Current State — Updated 2026-08-20 (EXTRACTION-LAYER FINDING: a definitional clause is lost before assessment, and the product states a confident, unanimous, FALSE claim about the lease as a result. This is upstream of every CAM guarantee. Step 452 parked.)
+
+> **=== LATEST STATUS 2026-08-20 (read THIS FIRST — Steps 453–454. The most consequential finding in the current arc is not in the provenance work; it is one layer below it.) ===**
+>
+> **THE HEADLINE.** In the full Atlas Mode C run of 2026-08-20 (job `lease_review_20260820_023343_961518`), the LP-07 (CAM) coverage entry lists among its `elements_missing`:
+>
+> > `"Tenant's proportionate share calculation method is defined"`
+>
+> **at `confidence = high`, with `3/3` evaluator agreement.** The lease defines it at line 22: *"Proportionate Share shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building."*
+>
+> **This is not an omission. It is a false affirmative claim about the document** — unanimous, well-formed, and delivered as a finding about the lease rather than as a gap in the evidence. **The disagreement-preservation machinery cannot catch it, because all three evaluators saw the same truncated evidence and reasoned correctly from it.** Agreement here is not corroboration; it is three readers agreeing about a document none of them was shown in full.
+>
+> **THE CAUSE — definitional clause loss.** Six extraction-only runs on the Atlas fixture, full output persisted at `build_log/PSHARE_extraction_runs/`:
+>
+> - **0 of 6** reach LP-07 or LP-02, the two issue areas the clause is material to. Both return substantial text on every run; **neither ever contains `22.4`**.
+> - **3 of 6** the clause lands in **LP-00**, which produces no coverage entry at all (the full runs yield 32 coverage entries for 33 requested LPs — LP-00 is the missing one). Present in extraction, invisible to analysis.
+> - **3 of 6** it is **absent from the extraction output entirely**.
+> - LP-00 length signature: 2236 chars holding it, 1175 without — clean presence/absence, not a boundary wobble. Same model all six, no fallback.
+>
+> Both outcomes are **421C's predicted failure modes for destructive exclusive assignment** — the unscored sink and the outright loss. 421C named this exact clause: *"The key-terms table defines Tenant's Share (LP-07 relevance), the Rent Adjustment Percentage (LP-02 relevance)… Assigning it to one bucket means the other buckets don't see it."* That prediction is now measured.
+>
+> **THE COMPLETENESS GATE DOES NOT FIRE.** LP-07 returned 2636 characters, so presence passed. The gate measures **presence**; this defect is about the **correctness of the evidence handed up**. No completeness check can distinguish sufficient-and-wrong from sufficient-and-right.
+>
+> **THE ARCHITECTURAL POINT, and it is the one that matters.** Every CAM guarantee operates **downstream of extraction**. Multi-evaluator panels, preserved disagreement, grounded citations, completeness qualifiers, the two-axis disposition split, the whole apparatus — all of it reasons over whatever extraction supplies. **If extraction silently drops a clause, the apparatus produces a confident unanimous wrong answer and has no mechanism to notice.** The guarantees are conditional on an input layer that carries none of them.
+>
+> **LP-12 — the related defect, opposite symptom.** Six persisted runs (`build_log/LP12_extraction_runs/`): **recall 6/6** — Atlas §13.2 *Termination Right* is located every time. Article 13 is stably assigned to LP-24 (Damage & Destruction), which is defensible. What varies is **cross-filing into LP-12**: 2 of 6 runs also file it there (767 chars, byte-identical between the two), 4 of 6 do not. Same root cause as the above — exclusive assignment with optional cross-filing — opposite symptom: over-assignment, visible, gate-aborting. The earlier "genuine extraction miss" characterisation is **withdrawn as false**.
+>
+> **FIX DIRECTION — settled by these two measurements.**
+> - **Direction 2 (assignment-aware completeness gate) is RULED OUT.** Twice over: a smarter gate cannot find text that is in an unscored sink or deleted; and the gate never fires here anyway, because presence passed.
+> - **Direction 3 — extend 423C's non-exclusive evidence architecture UPSTREAM into extraction — is the answer.** The non-exclusive machinery built after 421C (423A substrate, 423B LP-blind sidecar, 423C element-guided elicitation) lives **downstream of extraction**. It was built one layer below the layer that still has the problem.
+>
+> **FIXED THIS WEEK.**
+> - `NOT_APPLICABLE` extraction vocabulary — **deployed** (`f893286`). Absence and find-failure no longer collapse into one token.
+> - `lease_term_basis` — **committed, not deployed** (`7b0d404`). A contingent term can now be represented; `lease_term_years` permits null, with the must-be-null rule enforced by a draft-07 `if/then`.
+> - Mode C `summary` — **committed, not deployed** (`f510dc1`). It reported `conforms 0, deviates 0, critical 0…` above a report carrying 27 attention items; compare-mode counters are now omitted rather than zeroed, and the summary is derived from the same objects the report renders.
+>
+> **OPEN.**
+> - **Atreca router timeout** — 308.8s against a 300s ceiling on 160,244 chars. The fixture cannot complete Mode C extraction. Untouched: raising a timeout to pass a test is the wrong lever. Whether the ceiling is wrong or the document is genuinely slow is unestablished; an 8.8s margin suggests it may be marginal rather than structural.
+> - **grok-4.3 asserting a clause not in the document** — on `LP-28.grandfathering_pre_existing`, evaluator C returned `explicitly_present` ×2, `unclear` ×2, `missing` ×1 across five draws at temp 0 on identical evidence, citing §4.2 for grandfathering language §4.2 does not contain. Evaluators A and B were stable on the same cell (A 5/5 `missing`, B 4/5). Evaluator-specific, panel-absorbed — but the containment depends on A and B staying stable.
+> - **Compare-mode gate exposure** — `check_extraction_completeness` is wired unconditionally, governed by `meta.get("canonical", True)` rather than by mode. `TEMPLATE_ONLY` provisions have empty `tenant_text` and would score `fail_missing`. Inspection only; compare mode has not been run since the 422C deploy.
+>
+> **STEP 452 — PARKED.** See `build_log/452_PARK_RECORD.md`. Every identity gate passed; the production entrypoint was never wired to execute. *"Step 452 proved the integrity of a program that was not wired to execute Step 452."* The tag `stage2-sanction-452-e0b985b4` verifies and **dies on repair** — the moment `452_production_script.py` changes, the token moves and the tag authorizes nothing.
+>
+> **FINDINGS RECORDED AT:** `build_log/FINDING_definitional_clause_loss.md`, `build_log/FINDING_lease_term_years_contingent_term.md` (§5 for LP-12), `build_log/452_PARK_RECORD.md`. Run artifacts: `build_log/PSHARE_extraction_runs/`, `build_log/LP12_extraction_runs/`.
+
+---
+
 # CAM Current State — Updated 2026-07-26 (431 STAGE-2 EXECUTED — 108 live calls completed under the signed sanction. §9.1 is UNPRODUCIBLE under the sanctioned package: its validators were never built. Claim boundary below.)
 
 > **=== LATEST STATUS 2026-07-26 (read THIS FIRST — Steps 447–450. The measurement RAN. What it supports and what it does NOT are both recorded here; the boundary is load-bearing for the patent record.) ===**

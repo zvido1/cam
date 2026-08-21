@@ -7,6 +7,39 @@ read all 20+ patent supplements. Parallels `CAM_Current_State.md`
 
 **Last updated:** 2026-07-26 (**431/447 — the Stage-2 run EXECUTED: 108 live calls under the signed sanction. The panel-governed SELECTION claim is DEMONSTRATED IN PART. §9.1 mechanism-success is UNPRODUCIBLE under the sanctioned package — its validators were never built — so no §9.1 result exists or may be cited. Claim boundary below.** Prior: 2026-07-24 — sanctioned, handed off. 2026-07-21 — Stage-1 sanctioned, not yet run. 2026-07-14 — Supplement #26 written.)
 
+> **=== BOUND ON READING, ADDED 2026-08-20 (Steps 453–454). NOT A RETRACTION. ===**
+>
+> **An extraction-layer defect measured on 2026-08-20 bounds how the results below may be read. It does not alter any frozen measurement, and nothing here is withdrawn.**
+>
+> ## 1. The cand_04 / `tenant_share` bound — an OPEN QUESTION, not a finding
+>
+> Step 447's `tenant_share` parameter family and the `cand_04` forcing case both concern **a 22.4% value and the basis it applies to**. The Atlas lease states that figure in exactly one place — line 22:
+>
+> > `"Proportionate Share" shall mean 22.4%, representing the ratio of the rentable area of the Demised Premises to the total rentable area of the Building.`
+>
+> Sections 3.2 and 3.3 then *use* the term without restating the definition.
+>
+> **Whether the Step-447 panel saw that definition, or reasoned from the §3.2/§3.3 references without it, is now an OPEN QUESTION rather than an assumption.** Step 447's candidate provisioning is a different code path from Mode C extraction, so the Mode C measurement does **not** establish what the panel received. It establishes only that the question is live and was previously not being asked.
+>
+> **This does not alter the frozen L1 measurement.** Step 447 executed as sanctioned, its outputs are immutable, and its recorded results stand exactly as recorded. What changes is the reading: **any claim resting on the `cand_04` result should carry this bound until the question is settled** — in particular the §9.2 observation that no panelist grounded `operating_expenses` as applying to the 22.4% value (0 of 18 role-judgments). If the definition was not in the provisioned evidence, that observation is about what the panel was shown, not only about how the panel reasoned.
+>
+> Settling it is a separate task against frozen artifacts. It was deliberately not attempted as a side effect of the Mode C work.
+>
+> ## 2. A limitation on every downstream guarantee
+>
+> Six extraction-only runs (`build_log/PSHARE_extraction_runs/`, full output persisted) establish that on the Atlas fixture the Proportionate Share definition reaches **neither** issue area it is material to — 0 of 6. In 3 of 6 it lands in LP-00, which produces no coverage entry; in 3 of 6 it is absent from the extraction output entirely. Both are 421C's predicted failure modes for destructive exclusive assignment.
+>
+> **The consequence is a false affirmative claim, unanimous and well-formed.** In the full Atlas run of 2026-08-20, LP-07's coverage entry lists `"Tenant's proportionate share calculation method is defined"` among its `elements_missing`, at `confidence = high` with `3/3` evaluator agreement. The lease defines it. The evaluators reasoned correctly from the evidence they were handed; the evidence was incomplete and nothing marked it as such.
+>
+> **Why this bounds the patent claims rather than merely noting a bug:** every governance mechanism in the architecture below — multi-evaluator panels, preserved disagreement, grounded citation, completeness qualifiers, the two-axis disposition split — **operates downstream of extraction and reasons over whatever extraction supplies.** None of them can detect a clause that never arrived. Unanimity across three evaluators is not corroboration when all three read the same truncated evidence; it is three readers agreeing about a document none of them was shown in full.
+>
+> The completeness gate does not help: it measures **presence**, and LP-07 had 2,636 characters of text, so presence passed. The defect is in the **correctness** of the evidence handed up, which no presence check can see.
+>
+> **So claims about governed selection, preserved disagreement, and grounded assertion should be read as conditional on the evidence layer being complete — a property this measurement shows is not currently guaranteed, and which the mechanisms themselves do not verify.** The 423A/B/C non-exclusive evidence architecture built after 421C addresses exactly this class, but it operates downstream of extraction; extraction still assigns exclusively.
+>
+> Recorded in full at `build_log/FINDING_definitional_clause_loss.md`. The related LP-12 measurement (recall 6/6, unstable cross-filing) is at `build_log/FINDING_lease_term_years_contingent_term.md` §5.
+
+
 > **=== 431/447 SELECTOR-PANEL RTP — EXECUTED (2026-07-26). READ THE BOUNDARY BEFORE CITING ANYTHING FROM THIS RUN. ===**
 >
 > **WHAT IS NOW DEMONSTRATED.** The frozen three-model panel made 108 citation-grounded classifications over seven provisioned candidate spans across two leases, under a cryptographically sanctioned, repository-reproducible package, executed from a clean detached worktree at the sanctioned commit with the gate passing before the first call. Per-panelist grounding, per-field agreement, per-candidate comparisons and full decision traces are recorded in `431_selection_measurement_sidecar.json`. **Terminal certification-state distribution** over 30 series: satisfied 14, `review_needed_disagreement` 11, `review_needed_no_qualifying_candidate` 5; `completeness: not_established` on all 30. *(This distribution is NOT §9.1 and must never be cited as mechanism success.)*
