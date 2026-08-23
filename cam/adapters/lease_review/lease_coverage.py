@@ -56,9 +56,43 @@ SPAN_EVIDENCE_LPS = {"LP-07", "LP-27"}
 _HEADING_RE = re.compile(r"^(Section\s+\d+(?:\.\d+)*|ARTICLE\s+[IVXLC0-9]+)\.?", re.MULTILINE)
 
 
+# Step 466, LP-27 ONLY. When an LP is listed here, each verified span is widened
+# to the whole section that contains it, instead of the isolated clause body the
+# elicitor returned. Emptying this set restores clause-body spans for every LP --
+# that one edit is the whole rollback of the expansion. It is deliberately
+# separate from SPAN_EVIDENCE_LPS: an LP can be seamed without being expanded.
+#
+# Why: build_log/460_LP27_precision_evidence.md measured that the panel received
+# Section 11.2's indemnity (span ends at 15251) and never saw Section 11.3's
+# liability cap (15490-15748), because the cap matches no LP-27 element and is
+# therefore unreachable by an element-driven search. Widening to section bounds
+# is one of the two candidate directions recorded there; this measures it.
+SECTION_EXPANDED_SPAN_LPS = {"LP-27"}
+
+
 def _build_heading_index(canonical_text: str) -> list:
     """Ascending [(offset, label)] of line-start headings in the canonical text."""
     return [(m.start(), m.group(1).strip()) for m in _HEADING_RE.finditer(canonical_text)]
+
+
+def _section_bounds_for_offset(index: list, offset, text_len: int):
+    """(start, end, label) of the section containing `offset`, or None.
+
+    Start is the heading at or before `offset`; end is the next heading, or the
+    end of the document for the final section. None when no heading precedes the
+    offset -- the same case `_locator_for_offset` returns None for, handled the
+    same way by the caller.
+    """
+    if offset is None:
+        return None
+    prev = None
+    for i, (start, label) in enumerate(index):
+        if start > offset:
+            break
+        prev = (start, label, index[i + 1][0] if i + 1 < len(index) else text_len)
+    if prev is None:
+        return None
+    return prev[0], prev[2], prev[1]
 
 
 def _locator_for_offset(index: list, offset) -> Optional[str]:
@@ -121,6 +155,41 @@ def _assemble_span_evidence(lp_id: str, full_tenant_text: str):
     # 30 on the extraction path, collapsing 8 of 10 elements.
     verified.sort(key=lambda r: (r.get("start_char") or 0, r.get("end_char") or 0))
     index = _build_heading_index(source.canonical_text)
+
+    # Step 466 section expansion. Each DISTINCT containing section is emitted once,
+    # in offset order -- six of LP-27's eight spans fall inside Section 5.1, so
+    # expanding per-span would repeat that section six times.
+    if lp_id in SECTION_EXPANDED_SPAN_LPS:
+        canon = source.canonical_text
+        sections, unlocated = {}, 0
+        for r in verified:
+            b = _section_bounds_for_offset(index, r.get("start_char"), len(canon))
+            if b is None:
+                unlocated += 1
+                r["section_ref"] = None
+                continue
+            start, end, label = b
+            sections[(start, end)] = label
+            r["section_ref"] = label
+        if sections:
+            blocks = ["[%s]\n%s" % (sections[k], canon[k[0]:k[1]].strip())
+                      for k in sorted(sections)]
+            text = "\n\n".join(blocks)
+            logger.info(
+                "[span_evidence] %s: SECTION-EXPANDED -- %d verified span(s) -> %d section(s), %d chars",
+                lp_id, len(verified), len(sections), len(text),
+            )
+            if unlocated:
+                logger.warning(
+                    "[span_evidence] %s: %d span(s) had no containing section and were dropped "
+                    "by section expansion", lp_id, unlocated,
+                )
+            return text, deduped
+        logger.warning(
+            "[span_evidence] %s: section expansion resolved no sections; "
+            "falling through to clause-body spans", lp_id,
+        )
+
     blocks, located = [], 0
     for r in verified:
         span_text = (r.get("span_text") or "").strip()
