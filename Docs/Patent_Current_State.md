@@ -5,7 +5,7 @@ Reading this gives you the full patent architecture without needing to
 read all 20+ patent supplements. Parallels `CAM_Current_State.md`
 (which orients to the build state); this orients to the patent state.
 
-**Last updated:** 2026-07-26 (**431/447 — the Stage-2 run EXECUTED: 108 live calls under the signed sanction. The panel-governed SELECTION claim is DEMONSTRATED IN PART. §9.1 mechanism-success is UNPRODUCIBLE under the sanctioned package — its validators were never built — so no §9.1 result exists or may be cited. Claim boundary below.** Prior: 2026-07-24 — sanctioned, handed off. 2026-07-21 — Stage-1 sanctioned, not yet run. 2026-07-14 — Supplement #26 written.)
+**Last updated:** 2026-08-23 (**bound-on-reading §3 added: the extraction-layer defect has a demonstrated fix in the coverage path; the §1 cand_04 bound is UNCHANGED and the frozen L1 measurement is untouched.** Prior: 2026-07-26 — **431/447 — the Stage-2 run EXECUTED: 108 live calls under the signed sanction. The panel-governed SELECTION claim is DEMONSTRATED IN PART. §9.1 mechanism-success is UNPRODUCIBLE under the sanctioned package — its validators were never built — so no §9.1 result exists or may be cited. Claim boundary below.** Prior: 2026-07-24 — sanctioned, handed off. 2026-07-21 — Stage-1 sanctioned, not yet run. 2026-07-14 — Supplement #26 written.)
 
 > **=== BOUND ON READING, ADDED 2026-08-20 (Steps 453–454). NOT A RETRACTION. ===**
 >
@@ -38,6 +38,20 @@ read all 20+ patent supplements. Parallels `CAM_Current_State.md`
 > **So claims about governed selection, preserved disagreement, and grounded assertion should be read as conditional on the evidence layer being complete — a property this measurement shows is not currently guaranteed, and which the mechanisms themselves do not verify.** The 423A/B/C non-exclusive evidence architecture built after 421C addresses exactly this class, but it operates downstream of extraction; extraction still assigns exclusively.
 >
 > Recorded in full at `build_log/FINDING_definitional_clause_loss.md`. The related LP-12 measurement (recall 6/6, unstable cross-filing) is at `build_log/FINDING_lease_term_years_contingent_term.md` §5.
+>
+> ## 3. Update 2026-08-23 — the defect now has a demonstrated fix. The bound above is UNCHANGED.
+>
+> **Everything in §1 and §2 stands exactly as written. Nothing is narrowed, and nothing is withdrawn.**
+>
+> The extraction-layer defect that §2 rests on has since been fixed **in the coverage path** and measured. `lease_coverage.py` now sources evidence for LP-07 and LP-27 from 423C element-guided span elicitation instead of extraction's exclusive bucket (committed `134998b`, **not deployed**, not extended beyond those two LPs). The false affirmative named in §2 — `"Tenant's proportionate share calculation method is defined"` reported among `elements_missing` at `confidence = high`, `3/3` — moved to `elements_found` and held across five seam runs, with the definition present in the evidence every time. A second defect found en route (assembled span evidence carried no `section_ref`, so the 305 citation gate suppressed correct verdicts as `citation_required_but_absent`) was fixed by deriving the locator deterministically from each verified span's canonical offsets. Recorded at `build_log/FINDING_span_seam_citation_gap.md` and `build_log/457_code_status.md`.
+>
+> **Why this does NOT narrow the §1 bound.** The fix is in the **coverage** path. §1's open question is what **Step 447's candidate provisioning** supplied to the panel — a *different code path*, which this work did not touch, does not run through, and has not measured. The reason §1 was an open question rather than a finding was precisely that the Mode C measurement could not speak to the Step-447 path; a Mode C *fix* cannot either. **Any claim resting on the `cand_04` result still carries the §1 bound**, and settling it remains a separate task against frozen artifacts.
+>
+> **Why this does NOT alter the frozen L1 measurement.** Step 447 executed as sanctioned against immutable artifacts; its outputs are unchanged and unchangeable by later work. Nothing above is a re-run, a re-analysis, or a correction of that measurement.
+>
+> **What it does change, narrowly:** §2's closing sentence — *"The 423A/B/C non-exclusive evidence architecture built after 421C addresses exactly this class, but it operates downstream of extraction; extraction still assigns exclusively"* — should now be read as: extraction still assigns exclusively, **and the coverage layer no longer depends on that assignment for the two LPs in `SPAN_EVIDENCE_LPS`.** The conditional framing of the governance claims in §2 remains correct for every other LP and for every deployed configuration, since this is not deployed.
+>
+> **Not established, and material to any future use of this:** whether the elicited spans are the *right* evidence for the elements they are offered against. That question was never asked. A false `explicitly_present` grounded in an irrelevant clause would be the same class of defect as the false `missing` this work fixed, and the measurements taken would not detect it.
 
 
 > **=== 431/447 SELECTOR-PANEL RTP — EXECUTED (2026-07-26). READ THE BOUNDARY BEFORE CITING ANYTHING FROM THIS RUN. ===**
