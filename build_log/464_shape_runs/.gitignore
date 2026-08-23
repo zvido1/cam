@@ -1,0 +1,4 @@
+# Full extraction outputs -- 12 runs, regenerable by shape_probe.py.
+# The digests and distributions are recorded in build_log/464_code_status.md.
+unpinned/
+pinned/
