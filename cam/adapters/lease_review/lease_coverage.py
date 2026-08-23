@@ -30,6 +30,123 @@ from cam.adapters.lease_review.lease_verdict_distance import NOT_ASSESSED_SENTIN
 logger = logging.getLogger(__name__)
 
 
+# ── Span-sourced evidence (423 seam) ───────────────────────────────────────────
+# EXPERIMENT, LP-07 ONLY. Set SPAN_EVIDENCE_LPS to an empty set to restore the
+# original behaviour for every LP -- that one edit is the whole rollback.
+#
+# Why this exists: FINDING_definitional_clause_loss.md measured that Mode C
+# extraction delivers the Atlas "Proportionate Share shall mean 22.4%" definition
+# to LP-07 in 0 of 6 runs, so the panel unanimously reports the calculation method
+# as undefined at confidence=high when the lease defines it.
+# FINDING_423_stack_verified_live.md then showed the 423C elicitor finds that exact
+# clause on the first call. This seam routes LP-07's evidence through the elicitor
+# instead of extraction's bucket, to test whether the false finding flips.
+SPAN_EVIDENCE_ENABLED = True
+SPAN_EVIDENCE_LPS = {"LP-07", "LP-27"}
+
+
+# Heading forms recognised for locator derivation. Anchored at line start ONLY:
+# the same strings appear inline as cross-references ("...set forth in Section 8.3.")
+# and a backward scan that accepts those mislabels the span. Measured on Atlas:
+# 70 "Section N.N." matches, of which 65 are headings and 5 are cross-references --
+# and the cross-reference at offset 1613 would tag the Proportionate Share
+# definition (offset 1738) as "Section 8.3" when it lives in "Section 1.2".
+# See build_log/FINDING_span_evidence_not_citable.md sections 4-5.
+_HEADING_RE = re.compile(r"^(Section\s+\d+(?:\.\d+)*|ARTICLE\s+[IVXLC0-9]+)\.?", re.MULTILINE)
+
+
+def _build_heading_index(canonical_text: str) -> list:
+    """Ascending [(offset, label)] of line-start headings in the canonical text."""
+    return [(m.start(), m.group(1).strip()) for m in _HEADING_RE.finditer(canonical_text)]
+
+
+def _locator_for_offset(index: list, offset) -> Optional[str]:
+    """Nearest line-start heading at or before `offset`, or None.
+
+    None is a legitimate answer -- a span before the first heading has no
+    containing section. Returning None is correct; inventing a label is the
+    behaviour this function exists to replace.
+    """
+    if offset is None:
+        return None
+    label = None
+    for start, text in index:
+        if start > offset:
+            break
+        label = text
+    return label
+
+
+def _assemble_span_evidence(lp_id: str, full_tenant_text: str):
+    """Return (tenant_text, records) for `lp_id` sourced from 423C verified spans.
+
+    Returns (None, []) on any failure -- the caller falls back to the extraction
+    path and records that it did. A silent substitution would be the defect this
+    whole arc is about.
+    """
+    from cam.adapters.lease_review.lease_evidence_spans import (
+        build_canonical_source, NORMALIZATION_PROFILE_V2,
+    )
+    from cam.adapters.lease_review.lease_element_elicitation import (
+        load_expected_elements_by_lp, elicit_and_resolve_for_lp, dedupe_elicited_spans,
+    )
+    source = build_canonical_source(
+        full_tenant_text,
+        source_type="lease_tenant_document",
+        run_id="span_evidence_seam",
+        normalization_profile=NORMALIZATION_PROFILE_V2,
+    )
+    elements_by_lp = load_expected_elements_by_lp()
+    if lp_id not in elements_by_lp:
+        logger.error("[span_evidence] %s not in expected_elements_305; falling back", lp_id)
+        return None, []
+    _result, raw_records = elicit_and_resolve_for_lp(source, lp_id, elements_by_lp, canonical=True)
+    deduped = dedupe_elicited_spans(raw_records)
+    verified = [r for r in deduped if r.get("verification_status") == "verified"]
+    if not verified:
+        logger.error("[span_evidence] %s produced no verified spans; falling back", lp_id)
+        return None, deduped
+    # Ascending offset order, blank-line separated, each span preceded by the
+    # locator its canonical offset resolves to. The locator is derived from the
+    # document, never proposed by a model: 423B fills section_ref from a model
+    # `section_hint` and 423C does not fill it at all, so neither is a source of
+    # truth here.
+    #
+    # Why this is needed: without it the assembled text carries no section
+    # reference, every evaluator returns section_ref=None, and the deterministic
+    # "citation-or-it-didn't-happen" check at lease_coverage_305.py:991 converts
+    # correct presence readings into `unclear`. Measured on LP-27: 0 of 30
+    # evaluator citations carried a section_ref on the span path against 23-25 of
+    # 30 on the extraction path, collapsing 8 of 10 elements.
+    verified.sort(key=lambda r: (r.get("start_char") or 0, r.get("end_char") or 0))
+    index = _build_heading_index(source.canonical_text)
+    blocks, located = [], 0
+    for r in verified:
+        span_text = (r.get("span_text") or "").strip()
+        locator = _locator_for_offset(index, r.get("start_char"))
+        # A span with no resolvable locator is emitted bare. It will fail the
+        # citation check downstream, which is the honest outcome -- the
+        # alternative is a fabricated locator the gate cannot distinguish from a
+        # real one.
+        if locator:
+            located += 1
+            blocks.append("[%s]\n%s" % (locator, span_text))
+        else:
+            blocks.append(span_text)
+        r["section_ref"] = locator
+    text = "\n\n".join(blocks)
+    logger.info(
+        "[span_evidence] %s: %d verified span(s), %d located, %d chars",
+        lp_id, len(verified), located, len(text),
+    )
+    if located < len(verified):
+        logger.warning(
+            "[span_evidence] %s: %d span(s) had no resolvable locator and were emitted bare",
+            lp_id, len(verified) - located,
+        )
+    return text, deduped
+
+
 # ── Main entry point ───────────────────────────────────────────────────────────
 
 def assess_coverage(
@@ -86,6 +203,24 @@ def assess_coverage(
         for p in provisions
         if p.get("provision_id") and p.get("tenant_text")
     }
+
+    # 423 seam: compute span-sourced evidence ONCE per enabled LP, before the loop,
+    # so the LP's own assessment and cross-LP injection read the SAME text. Two
+    # different values for one LP in one run is the drift this arc keeps finding.
+    span_evidence: dict = {}
+    span_evidence_records: dict = {}
+    if SPAN_EVIDENCE_ENABLED:
+        for _lp in sorted(SPAN_EVIDENCE_LPS):
+            try:
+                _text, _recs = _assemble_span_evidence(_lp, full_tenant_text)
+            except Exception as _e:
+                logger.error("[span_evidence] %s failed (%s); falling back to extraction",
+                             _lp, type(_e).__name__)
+                _text, _recs = None, []
+            if _text:
+                span_evidence[_lp] = _text
+                span_evidence_records[_lp] = _recs
+                all_lp_texts[_lp] = _text
 
     assessments = []
 
@@ -148,6 +283,12 @@ def assess_coverage(
         # ── Step 2: Find the extracted provision ──────────────────────────────
         prov = provision_map.get(pid)
         tenant_text = (prov.get("tenant_text", "") or "") if prov else ""
+
+        # 423 seam (LP-07 only, SPAN_EVIDENCE_LPS). Replaces extraction's bucket
+        # with verified 423C spans. Fell back above if elicitation failed, so a
+        # miss here means the old path is in use -- never a silent substitution.
+        if pid in span_evidence:
+            tenant_text = span_evidence[pid]
         ns = ns_signals.get(pid, [])
 
         # ── Step 2a: Extraction status bridge ─────────────────────────────────
