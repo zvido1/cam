@@ -398,13 +398,39 @@ class TestSidecarMetadata(unittest.TestCase):
 # ── Pipeline seam ──────────────────────────────────────────────────────────────────
 
 class TestPipelineSeam(unittest.TestCase):
-    def test_no_live_pipeline_file_imports_elicitation_module(self):
+    def test_only_the_seam_imports_the_elicitation_module(self):
+        """RETIRED AND REWRITTEN, Step 461. See build_log/461_chat_instruction.md.
+
+        The predecessor asserted that no live pipeline file references this
+        module, including lease_coverage. That was a not-yet-connected
+        precondition, not a layering rule, and the seam (Step 458, commit
+        134998b) retires it deliberately: elicit_and_resolve_for_lp now has a
+        production caller on purpose.
+
+        The genuine direction check --
+        test_evidence_spans_module_not_modified_by_this_slice, that 423A never
+        depends on 423C -- is untouched below and still passes.
+
+        Current doctrine: the seam, and only the seam, reaches the elicitor.
+        """
         import inspect
         from cam.adapters.lease_review import lease_adapter, lease_extract, lease_coverage
 
-        for mod in (lease_adapter, lease_extract, lease_coverage):
-            src = inspect.getsource(mod)
-            self.assertNotIn("lease_element_elicitation", src)
+        for mod in (lease_adapter, lease_extract):
+            self.assertNotIn(
+                "lease_element_elicitation", inspect.getsource(mod),
+                f"{mod.__name__} must not reference lease_element_elicitation -- "
+                "the seam belongs in lease_coverage._assemble_span_evidence",
+            )
+
+        module_src = inspect.getsource(lease_coverage)
+        seam_src = inspect.getsource(lease_coverage._assemble_span_evidence)
+        self.assertEqual(
+            module_src.count("lease_element_elicitation"),
+            seam_src.count("lease_element_elicitation"),
+            "every lease_element_elicitation reference in lease_coverage must be "
+            "inside _assemble_span_evidence; one outside means a second entry point",
+        )
 
     def test_evidence_spans_module_not_modified_by_this_slice(self):
         """423C must not touch lease_evidence_spans.py — confirmed by import

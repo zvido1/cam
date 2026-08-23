@@ -31,8 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 # ── Span-sourced evidence (423 seam) ───────────────────────────────────────────
-# EXPERIMENT, LP-07 ONLY. Set SPAN_EVIDENCE_LPS to an empty set to restore the
-# original behaviour for every LP -- that one edit is the whole rollback.
+# EXPERIMENTAL, SCOPED TO SPAN_EVIDENCE_LPS. Setting that set empty restores the
+# extraction-bucket behaviour for every LP; the locator machinery below then has
+# no caller. Full rollback of the seam is `git checkout` of this file.
 #
 # Why this exists: FINDING_definitional_clause_loss.md measured that Mode C
 # extraction delivers the Atlas "Proportionate Share shall mean 22.4%" definition
@@ -225,6 +226,27 @@ def assess_coverage(
     assessments = []
 
     def _emit(assessment):
+        # 423 seam provenance. Attach the elicitor's OWN span-to-element attribution
+        # (`elicited_by`) to the LP's assessment, so the span->element mapping is a
+        # recorded measurement rather than something a later reader has to
+        # reconstruct from what each evaluator happened to quote -- which is what
+        # build_log/460_LP27_precision_evidence.md had to do, and it says so.
+        # Every assessment passes through _emit, so this is the one attachment site.
+        # Verdicts are not read from this field; it is provenance only.
+        _recs = span_evidence_records.get(assessment.get("issue_area_id"))
+        if _recs:
+            assessment["span_evidence_records"] = [
+                {
+                    "evidence_span_id": r.get("evidence_span_id"),
+                    "start_char": r.get("start_char"),
+                    "end_char": r.get("end_char"),
+                    "section_ref": r.get("section_ref"),
+                    "elicited_by": r.get("elicited_by"),
+                    "verification_status": r.get("verification_status"),
+                    "span_text": r.get("span_text"),
+                }
+                for r in _recs
+            ]
         if lp_progress_callback:
             try:
                 lp_progress_callback(
@@ -284,7 +306,7 @@ def assess_coverage(
         prov = provision_map.get(pid)
         tenant_text = (prov.get("tenant_text", "") or "") if prov else ""
 
-        # 423 seam (LP-07 only, SPAN_EVIDENCE_LPS). Replaces extraction's bucket
+        # 423 seam, for the LPs in SPAN_EVIDENCE_LPS. Replaces extraction's bucket
         # with verified 423C spans. Fell back above if elicitation failed, so a
         # miss here means the old path is in use -- never a silent substitution.
         if pid in span_evidence:

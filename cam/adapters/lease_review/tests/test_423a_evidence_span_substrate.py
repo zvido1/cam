@@ -240,21 +240,50 @@ class TestSeamStandaloneAndUninvasive(unittest.TestCase):
             self.assertIsInstance(s.span_text_hash, str)
             self.assertIn(s.verification_status, {VERIFIED, AMBIGUOUS, UNVERIFIED})
 
-    def test_module_not_imported_by_live_stage5_pipeline_files(self):
-        """423A doctrine: 'leave the existing extraction path running
-        untouched... produces the span layer alongside it.' Prove the seam
-        directly: none of the live Mode C / Stage 5 source files reference
-        this module. This is the strongest available guarantee that no
-        Stage 5 verdict behavior changed as a side effect of adding it."""
+    def test_only_the_seam_imports_the_span_substrate(self):
+        """RETIRED AND REWRITTEN, Step 461. See build_log/461_chat_instruction.md.
+
+        The predecessor asserted that lease_adapter, lease_extract AND
+        lease_coverage all contain no reference to this module. That encoded a
+        *not-yet-connected precondition*, correct while 423A was a standalone
+        slice, and it stopped being true the moment the seam was wired
+        (Step 458, commit 134998b) -- the stack now has a production caller by
+        design.
+
+        It was never a direction constraint. Direction is asserted by
+        test_no_lp_taxonomy_leakage_into_span_resolution and, in the 423C
+        suite, test_evidence_spans_module_not_modified_by_this_slice; both are
+        untouched and still pass.
+
+        What current doctrine actually requires is narrower: the SEAM, and only
+        the seam, reaches the span substrate.
+          - lease_adapter and lease_extract must not reference it at all.
+          - lease_coverage may, but every reference must sit inside
+            _assemble_span_evidence. A reference anywhere else in that module
+            would mean a second, unreviewed entry point.
+
+        Setting SPAN_EVIDENCE_LPS empty, or rolling the seam back entirely,
+        leaves this test passing -- it constrains where the coupling may live,
+        not whether it exists.
+        """
         import inspect
         from cam.adapters.lease_review import lease_adapter, lease_extract, lease_coverage
 
-        for mod in (lease_adapter, lease_extract, lease_coverage):
-            src = inspect.getsource(mod)
+        for mod in (lease_adapter, lease_extract):
             self.assertNotIn(
-                "lease_evidence_spans", src,
-                f"{mod.__name__} must not reference lease_evidence_spans in this slice",
+                "lease_evidence_spans", inspect.getsource(mod),
+                f"{mod.__name__} must not reference lease_evidence_spans -- "
+                "the seam belongs in lease_coverage._assemble_span_evidence",
             )
+
+        module_src = inspect.getsource(lease_coverage)
+        seam_src = inspect.getsource(lease_coverage._assemble_span_evidence)
+        self.assertEqual(
+            module_src.count("lease_evidence_spans"),
+            seam_src.count("lease_evidence_spans"),
+            "every lease_evidence_spans reference in lease_coverage must be inside "
+            "_assemble_span_evidence; one outside means a second entry point",
+        )
 
     def test_no_lp_taxonomy_leakage_into_span_resolution(self):
         """Doctrine check: span resolution takes no LP id, no provision
