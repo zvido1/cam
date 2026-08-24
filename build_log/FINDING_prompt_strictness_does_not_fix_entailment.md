@@ -99,9 +99,11 @@ B **correctly rejected the savings clause as textual support** — then returned
 `_PRESENCE_TIER`, so all three evaluators landed in the presence tier, **no dissent was recorded**, and
 the merge reported `implicitly_present` at high confidence.
 
-Had B returned `missing`, the merge would still have been a presence majority — but with a recorded
-dissent. **The route did not change the verdict; it erased the signal that an evaluator disagreed with
-its basis.**
+**CORRECTED at Step 470.** The original text said the merge would still have been a presence majority
+with a recorded dissent. Wrong — a **disputed gate** at `lease_coverage_305.py:994` returns `disputed`
+on any presence/missing split, ahead of the majority. Simulated: had B returned `missing`, element 7
+merges to **`disputed` at low confidence** in both runs. **The route converted a `disputed` outcome
+into `implicitly_present` at high confidence.** See `470_code_status.md`.
 
 The route is schema-sanctioned on an unfilled placeholder. `469_code_status.md` censuses this: **18 of
 18 jurisdiction-dependent elements in the schema are unfilled `TBD_BY_ATTORNEY_REVIEW`, zero are

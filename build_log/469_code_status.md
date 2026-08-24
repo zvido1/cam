@@ -126,9 +126,14 @@ specific performance or injunctive relief"* — and then returned `covered_by_de
 `missing`. Because that verdict is presence-tier, **all three evaluators landed in the presence tier,
 so no dissent was recorded and the merge reported `implicitly_present` at high confidence.**
 
-Had B returned `missing`, the merge would still have been a presence majority (2 of 3) — but with a
-**recorded dissent** and the disagreement machinery engaged. **The TBD route did not change the verdict;
-it erased the signal that one evaluator disagreed with its basis.**
+**CORRECTED at Step 470** — the original text here said the merge would have been a presence majority
+with a recorded dissent. That was asserted without quoting the code path and is wrong. A **disputed
+gate** at `lease_coverage_305.py:994` returns `disputed` on any presence/missing split, before the
+majority is honoured. Simulated over the stored verdicts: had B returned `missing`, element 7 merges
+to **`disputed` / `distant_split_presence_missing` / low confidence** in both runs.
+
+**So the TBD route converted a `disputed` low-confidence outcome into `implicitly_present` at high
+confidence.** The harm is larger than first recorded. See `470_code_status.md`.
 
 That is the same class of harm recorded in `FINDING_context_widening_regression.md` §5 for element 7's
 stabilisation: the answer stays wrong and the indicator that something is wrong disappears.
