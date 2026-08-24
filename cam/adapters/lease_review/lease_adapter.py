@@ -123,6 +123,23 @@ class GateAbortError(Exception):
         super().__init__(message)
 
 
+# Step 476. When True, an extraction-completeness failure on the CANONICAL path
+# returns a run marked degraded instead of raising GateAbortError. Set to False to
+# restore the previous raise-on-abort behaviour -- that one edit is the whole
+# rollback.
+#
+# Why: production has no gate retry. Step 475 measured 0 of 4 deployed Atlas
+# attempts completing, every one aborting on LP-12, against a ~40% local
+# completion rate -- so roughly three in five production runs on that fixture
+# ended in a hard failure that handed the user the raw internal message, Python
+# `Detail:` dict included, and no output at all.
+#
+# This does NOT change the gate's criteria, does NOT retry, and does NOT
+# substitute evidence. It changes only what happens after the gate has already
+# decided the extraction is incomplete: report it loudly instead of dying.
+GATE_ABORT_RETURNS_DEGRADED = True
+
+
 def _check_cancel(config: dict) -> None:
     """Check if cancellation has been requested for this job.
 
@@ -1367,6 +1384,11 @@ def run_lease_coverage_only(
     # Absent = legacy artifact; fail safe by treating as canonical.
     _is_canonical = meta.get("canonical", True)
 
+    # Step 476: always defined, so the result assembly below never depends on which
+    # gate branch ran.
+    _completeness_failed_ids: list = []
+    _completeness_failure_detail: list = []
+
     if _fail_missing:
         _failed_ids = [r["provision_id"] for r in _fail_missing]
         _failure_detail = [
@@ -1383,7 +1405,7 @@ def run_lease_coverage_only(
             }
             for r in _fail_missing
         ]
-        if _is_canonical:
+        if _is_canonical and not GATE_ABORT_RETURNS_DEGRADED:
             raise GateAbortError(
                 f"Extraction completeness failure: {len(_fail_missing)} required LP(s) "
                 f"have missing evidence and are not classified NOT_APPLICABLE. "
@@ -1391,6 +1413,20 @@ def run_lease_coverage_only(
                 "Cannot produce a valid legal analysis report from incomplete evidence. "
                 f"Detail: {_failure_detail}"
             )
+        elif _is_canonical:
+            # Step 476: canonical path continues, marked degraded. The gate's verdict
+            # is unchanged -- the extraction IS incomplete -- but a loud incomplete
+            # report serves the reader better than a hard failure with no output.
+            # Carried in a local, NOT in cfg["_run_metadata"]: that dict is written
+            # by the non-canonical branch below and read by nothing.
+            print(
+                f"[lease_adapter:analyze] COMPLETENESS GATE DEGRADED (canonical): "
+                f"{len(_fail_missing)} required LP(s) missing evidence: {_failed_ids}. "
+                "Continuing; run marked invalid_for_legal_analysis.",
+                flush=True,
+            )
+            _completeness_failed_ids = _failed_ids
+            _completeness_failure_detail = _failure_detail
         else:
             # Non-canonical / debug: mark run degraded, surface failure, allow continuation
             print(
@@ -1696,11 +1732,40 @@ def run_lease_coverage_only(
         print(f"[lease_adapter:analyze] fallback_events collection failed (non-fatal): {_fe_c_e}", flush=True)
         _fallback_events_c = []
     _run_config_degraded_c = cfg.get("_run_config_degraded", False)
-    _run_degraded_c = bool(_fallback_events_c) or _run_config_degraded_c
-    _degraded_reason_c = (
-        "evaluator_fallback" if _fallback_events_c
-        else ("chain_config_degraded" if _run_config_degraded_c else None)
+    # Step 476: an incomplete extraction degrades the run, and takes precedence in
+    # `degraded_reason` because it is the most serious of the three -- a fallback
+    # means a substitute model answered, this means the evidence was never there.
+    _run_degraded_c = (
+        bool(_fallback_events_c) or _run_config_degraded_c or bool(_completeness_failed_ids)
     )
+    _degraded_reason_c = (
+        "extraction_completeness_failed" if _completeness_failed_ids
+        else ("evaluator_fallback" if _fallback_events_c
+              else ("chain_config_degraded" if _run_config_degraded_c else None))
+    )
+
+    # Step 476: make the failed LPs identifiable in the COVERAGE OUTPUT, not only in
+    # metadata. A reader scanning coverage entries must not have to consult a
+    # separate block to learn that an entry rests on no evidence at all.
+    _incomplete_note = (
+        "EVIDENCE MISSING — extraction returned no text for this issue area. Any verdict "
+        "below is not supported by extracted evidence and must not be relied on."
+    )
+    for _c in coverage_assessment:
+        if _c.get("issue_area_id") in set(_completeness_failed_ids):
+            _c["evidence_missing"] = True
+            _c["evidence_missing_note"] = _incomplete_note
+            _c["invalid_for_legal_analysis"] = True
+
+    _degraded_statement = None
+    if _completeness_failed_ids:
+        _degraded_statement = (
+            "INCOMPLETE REPORT — NOT VALID FOR LEGAL ANALYSIS. Extraction returned no "
+            f"text for {len(_completeness_failed_ids)} required issue area(s): "
+            f"{', '.join(_completeness_failed_ids)}. Those areas were assessed with no "
+            "evidence and their findings are unsupported. The rest of this report was "
+            "produced normally, but the document has not been fully analysed."
+        )
 
     # ── Assemble result (deviation-shaped fields empty, not missing) ──
     result = {
@@ -1742,6 +1807,13 @@ def run_lease_coverage_only(
         "run_degraded": _run_degraded_c,
         "degraded_reason": _degraded_reason_c,
         "fallback_events": _fallback_events_c,
+        # Step 476: extraction-completeness outcome, always present so a consumer can
+        # test the field rather than infer from its absence.
+        "extraction_completeness_failed": bool(_completeness_failed_ids),
+        "extraction_completeness_failed_lps": _completeness_failed_ids,
+        "completeness_failures": _completeness_failure_detail,
+        "invalid_for_legal_analysis": bool(_completeness_failed_ids),
+        "degraded_statement": _degraded_statement,
         # Step 421B: extraction provenance and integrity fields
         "source_document_hash": source_document_hash,
         "extraction_output_hash": extraction_output_hash,
@@ -1897,6 +1969,8 @@ def run_lease_coverage_only(
         result["coverage_assessment"],
         result["cross_provision_findings"],
         len(extraction["provisions"]),
+        completeness_failed_lps=_completeness_failed_ids,
+        degraded_statement=_degraded_statement,
     )
 
     output_dir = Path(cfg["output_dir"]) / run_id
@@ -1925,6 +1999,8 @@ def _compute_summary_analyze(
     coverage_assessment: List[dict],
     cross_provision_findings: List[dict],
     provisions_extracted: int,
+    completeness_failed_lps: Optional[List[str]] = None,
+    degraded_statement: Optional[str] = None,
 ) -> dict:
     """Mode C summary, derived from the entries the report actually renders.
 
@@ -1953,7 +2029,17 @@ def _compute_summary_analyze(
         1 for f in cross_provision_findings if f.get("verdict") == "directional_mismatch"
     )
 
-    return {
+    # Step 476: the degraded markers lead the summary. The summary is what a reader
+    # sees first, and Step 461 recorded a counter improving while the answer got
+    # worse -- a headline that omits "this report is incomplete" is the same defect.
+    _failed = list(completeness_failed_lps or [])
+    out: dict = {}
+    if _failed:
+        out["REPORT_INCOMPLETE"] = True
+        out["invalid_for_legal_analysis"] = True
+        out["incomplete_statement"] = degraded_statement
+        out["issue_areas_with_no_evidence"] = _failed
+    out.update({
         "mode": "analyze",
         "total_provisions_checked": provisions_extracted,
         "issue_areas_assessed": len(coverage_assessment),
@@ -1972,7 +2058,8 @@ def _compute_summary_analyze(
             "dispositions, so these are not computed. Omitted rather than zeroed: a zero "
             "asserts the quantity was measured and found to be none."
         ),
-    }
+    })
+    return out
 
 
 def _compute_summary(dispositions: List[dict]) -> dict:

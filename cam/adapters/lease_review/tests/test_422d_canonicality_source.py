@@ -119,6 +119,10 @@ def _patch_full_pipeline(extraction_result):
 
 # ── Tests: canonicality derived from meta["canonical"], not fallback_used ─────
 
+@patch("cam.adapters.lease_review.lease_adapter.GATE_ABORT_RETURNS_DEGRADED", False)
+# Step 476: these assert the RAISE-ON-ABORT contract, which is now the rollback
+# path behind GATE_ABORT_RETURNS_DEGRADED. Pinned to False so they keep testing
+# that contract; the new default is covered by TestDegradedContinuation below.
 class TestCanonicalFieldGatesBehavior(unittest.TestCase):
 
     def test_canonical_true_fail_missing_aborts(self):

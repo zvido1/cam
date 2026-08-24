@@ -135,6 +135,10 @@ def _patch_full_pipeline(extraction_result, coverage_spy=None):
 
 # ── Test: canonical abort — Stage 5 must not run ──────────────────────────────
 
+@patch("cam.adapters.lease_review.lease_adapter.GATE_ABORT_RETURNS_DEGRADED", False)
+# Step 476: these assert the RAISE-ON-ABORT contract, which is now the rollback
+# path behind GATE_ABORT_RETURNS_DEGRADED. Pinned to False so they keep testing
+# that contract; the new default is covered by TestDegradedContinuation below.
 class TestCanonicalAbortOnMissingRequired(unittest.TestCase):
     """Required LP empty in canonical → GateAbortError; assess_coverage not invoked."""
 
@@ -230,6 +234,10 @@ class TestKnownAbsentPassesGate(unittest.TestCase):
 
 # ── Test: mixed case ──────────────────────────────────────────────────────────
 
+@patch("cam.adapters.lease_review.lease_adapter.GATE_ABORT_RETURNS_DEGRADED", False)
+# Step 476: these assert the RAISE-ON-ABORT contract, which is now the rollback
+# path behind GATE_ABORT_RETURNS_DEGRADED. Pinned to False so they keep testing
+# that contract; the new default is covered by TestDegradedContinuation below.
 class TestMixedCase(unittest.TestCase):
     """Known-absent pass; required-missing fails; failure list only contains required."""
 
@@ -357,3 +365,66 @@ class TestNonCanonicalDegradedPath(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ── Step 476: the DEFAULT path — degraded continuation, not abort ─────────────
+
+class TestDegradedContinuation(unittest.TestCase):
+    """With GATE_ABORT_RETURNS_DEGRADED True (the default), a canonical completeness
+    failure must NOT raise. It must return a result that is unmissably marked
+    incomplete, name the failed LPs in both the summary and the coverage entries,
+    and reach Stage 5 rather than dying before it."""
+
+    def test_canonical_failure_returns_marked_result_instead_of_raising(self):
+        from cam.adapters.lease_review.lease_adapter import (
+            run_lease_coverage_only, GateAbortError, GATE_ABORT_RETURNS_DEGRADED,
+        )
+        self.assertTrue(GATE_ABORT_RETURNS_DEGRADED, "default must be degraded-continuation")
+        provisions = [
+            _prov("LP-01", "FOUND_BOTH", tenant_text="Tenant pays base rent of $10,000."),
+            _prov("LP-07", "AMBIGUOUS", tenant_text=""),  # fail_missing
+        ]
+        extraction = _make_extraction(provisions)
+        tenant_file = _make_tenant_file()
+        try:
+            with _patch_pre_gate(extraction):
+                try:
+                    result = run_lease_coverage_only(tenant_file, provisions=[], config={})
+                except GateAbortError:
+                    self.fail("canonical completeness failure must not raise under the default flag")
+        finally:
+            os.unlink(tenant_file)
+
+        # Top-level markers
+        self.assertTrue(result["run_degraded"])
+        self.assertEqual(result["degraded_reason"], "extraction_completeness_failed")
+        self.assertTrue(result["extraction_completeness_failed"])
+        self.assertTrue(result["invalid_for_legal_analysis"])
+        self.assertIn("LP-07", result["extraction_completeness_failed_lps"])
+        self.assertIn("NOT VALID FOR LEGAL ANALYSIS", result["degraded_statement"])
+
+        # The summary must carry it — a reader sees the summary first.
+        summary = result["summary"]
+        self.assertTrue(summary.get("REPORT_INCOMPLETE"))
+        self.assertTrue(summary.get("invalid_for_legal_analysis"))
+        self.assertIn("LP-07", summary.get("issue_areas_with_no_evidence", []))
+        self.assertIn("NOT VALID FOR LEGAL ANALYSIS", summary.get("incomplete_statement", ""))
+
+    def test_flag_off_restores_the_raise(self):
+        """Rollback is one edit: with the flag False the old GateAbortError returns."""
+        from cam.adapters.lease_review.lease_adapter import (
+            run_lease_coverage_only, GateAbortError,
+        )
+        provisions = [
+            _prov("LP-01", "FOUND_BOTH", tenant_text="Tenant pays base rent of $10,000."),
+            _prov("LP-07", "AMBIGUOUS", tenant_text=""),
+        ]
+        extraction = _make_extraction(provisions)
+        tenant_file = _make_tenant_file()
+        try:
+            with patch("cam.adapters.lease_review.lease_adapter.GATE_ABORT_RETURNS_DEGRADED", False):
+                with _patch_pre_gate(extraction):
+                    with self.assertRaises(GateAbortError):
+                        run_lease_coverage_only(tenant_file, provisions=[], config={})
+        finally:
+            os.unlink(tenant_file)
