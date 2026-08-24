@@ -72,6 +72,26 @@
 >
 > **5. Whether to extend the seam to the remaining 31 LPs, and at what cost.** Measured `api_calls_total`: **no seam 92; one seamed LP 93/93/94; two seamed LPs 94/94** on a clean panel (91/91 on the degraded panel, where fallbacks alter the count). That is **~+1 call per seamed LP**, consistent with one elicitation call per LP, ±1 run-to-run. Extrapolating: all 33 LPs would be roughly +33 calls on ~92, a ~36% increase — material but not prohibitive. **The blocker on extending is items 1 and 1B, not cost.** Precision has now been measured and the answer is adverse: 2 of 8 found elements are false positives, and a structural under-inclusion means limiting clauses are unreachable by element-driven search. Seaming 31 more LPs multiplies an **understood** defect 31-fold. **Do not extend until 1B is addressed.**
 >
+> ## SECOND DOCUMENT — every finding above is Atlas-shaped (Step 472)
+>
+> **The entire arc is measured on one lease.** Atlas parses at **89 headings**. Across the other real-world fixtures, `_build_heading_index` finds: **albireo 0, atreca (east jamie) 0, atreca (industrial rd) 0, bokf 0**, solidpower 1, ncino 4, quanterix 14. **On the four zero-heading leases the locator prefix and any resolution check are INERT, not degraded** — there is nothing for them to attach to. The 21 synthetic `T-xx` fixtures parse cleanly at 80–117 headings, but they share Atlas's `ARTICLE I` + `Section N.N` heading family and are **not independent evidence**.
+>
+> **Every fixture is over 100k chars except divall (59,255) and the synthetics — and the >100k class has never completed Mode C.** That left exactly one testable non-Atlas document.
+>
+> **THE PIPELINE CANNOT PROCESS `divall_wendys_mtpleasant_lease.txt`.** Four attempts, **6–7 LPs failing the extraction completeness gate every time**, no result produced. **LP-07 — a seamed LP — is itself empty in three of four attempts.** Atlas's single-LP abort is the shallow end of this, not a separate phenomenon.
+>
+> **`section_ref` resolution: 50.0% against Atlas's 99.0%** (31 of 62 tokens). The pattern is perfectly clean — **every `Article N` token resolves; no `Section N.N` token ever does**, because divall numbers its sections as bare `10.1` at line start: **142 occurrences the regex never matches.**
+>
+> **NEW DEFECT: the locator emits `'ARTICLE
+XI'`** — an embedded newline — so the assembled `[locator]
+text` block is split across lines. **Nothing detects it**: the string is truthy, the `located` counter increments, and no warning fires.
+>
+> **NEW DESIGN QUESTION that Atlas could not surface — all-tokens vs any-token resolution.** On Atlas the two rules are indistinguishable (both ~99%). On divall: **strict all-tokens passes 0 of 29; permissive any-token passes 28 of 29.** The rule choice is the difference between 0% and 97%, and Step 471 recommended nothing on that axis because the fixture could not reveal it.
+>
+> **The seam degraded CORRECTLY.** LP-07 returned **zero spans**; `_assemble_span_evidence` logged `produced no verified spans; falling back` and returned `(None, [])`, so the extraction path was used. **No silent substitution** — the failure this seam was built to avoid did not occur. LP-27 returned 3 verified, element-relevant spans. Nothing crashed anywhere; every failure was a designed path, and there was no timeout (~160s against the 300s ceiling on a 1.9× document).
+>
+> **COVERAGE NEVER RAN. There is NO precision or verdict measurement on this document** — the gate aborts upstream of coverage, so extraction and elicitation are all that were exercised. Full detail at `build_log/472_code_status.md`.
+>
 > **STATUS OF THE ARC.** Steps 455–458. Findings at `build_log/FINDING_span_evidence_not_citable.md` and `build_log/FINDING_span_seam_citation_gap.md`; measurements at `build_log/455_code_status.md` and `build_log/457_code_status.md`. Commits `d5eb4ff` (455), `c380942` (456), `f3f1246` (457), `134998b` (458, the seam). **Nothing deployed since `b06a995`.**
 
 ---
