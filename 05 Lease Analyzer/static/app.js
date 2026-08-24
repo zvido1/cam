@@ -3223,6 +3223,7 @@ function renderResults() {
     const mobileFab = $("#chat-fab-mobile");
     if (mobileFab) mobileFab.classList.remove("hidden");
 
+    renderIncompleteBanner();   // Step 477: must run before any summary surface
     renderNavSidebar();
     syncResultsTopBarLayout();
     renderDealBrief();
@@ -18717,3 +18718,42 @@ window.CAM.isPriorityReview = isPriorityReview; // Step 373: shared triage tier
 document.addEventListener("DOMContentLoaded", init);
 
 })();
+
+
+// ── Step 477: incomplete-report banner ───────────────────────────────────────
+// Step 476 made the pipeline continue past an extraction-completeness failure and
+// mark the result invalid_for_legal_analysis instead of dying. Nothing rendered
+// those markers, so a degraded run displayed as a normal completed report -- a
+// silent success in place of a loud failure. This renders the statement ABOVE the
+// deal brief and every summary counter, because Step 461 recorded a counter
+// improving while the answer got worse.
+function renderIncompleteBanner() {
+    var el = document.getElementById('incomplete-report-banner');
+    if (!el) return;
+    if (!currentResults || !currentResults.tenants) { el.classList.add('hidden'); return; }
+
+    var stmts = [];
+    var lps = {};
+    currentResults.tenants.forEach(function (t) {
+        var r = t && t.results;
+        if (!r) return;
+        if (r.invalid_for_legal_analysis || r.extraction_completeness_failed) {
+            if (r.degraded_statement) stmts.push(r.degraded_statement);
+            (r.extraction_completeness_failed_lps || []).forEach(function (lp) { lps[lp] = 1; });
+        }
+    });
+    if (!stmts.length) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+
+    var ids = Object.keys(lps).sort();
+    el.className = 'incomplete-report-banner';
+    el.innerHTML =
+        '<div class="incomplete-report-banner__title">&#9888; INCOMPLETE REPORT &mdash; NOT VALID FOR LEGAL ANALYSIS</div>' +
+        stmts.map(function (m) {
+            return '<div class="incomplete-report-banner__body">' + esc(m) + '</div>';
+        }).join('') +
+        (ids.length
+            ? '<div class="incomplete-report-banner__lps">Issue areas with no evidence: <strong>'
+              + esc(ids.join(', ')) + '</strong></div>'
+            : '');
+    el.classList.remove('hidden');
+}

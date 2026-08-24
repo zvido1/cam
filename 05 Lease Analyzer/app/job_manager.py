@@ -195,6 +195,7 @@ def _build_job_outcome(job_id: str, tenants: list, started_at: str) -> dict:
     has_any_failure = False
     has_any_fallback = False
     has_any_degraded = False
+    has_any_incomplete = False   # Step 477: report marked invalid_for_legal_analysis
 
     for i, t in enumerate(tenants):
         rp = t.get("result_path")
@@ -261,6 +262,20 @@ def _build_job_outcome(job_id: str, tenants: list, started_at: str) -> dict:
 
         api_calls = r.get("api_calls_total", 0)
 
+        # Step 477: the result's own degraded markers. Before this, has_any_degraded
+        # fired only for missing/unreadable result files and never read run_degraded,
+        # so a run the pipeline had marked invalid_for_legal_analysis was aggregated
+        # as a clean completed job. Step 476 made the pipeline continue past an
+        # extraction-completeness failure instead of dying; without this the change
+        # would convert a loud failure into a silent success.
+        _run_degraded = bool(r.get("run_degraded"))
+        _incomplete = bool(r.get("invalid_for_legal_analysis"))
+        _missing_lps = list(r.get("extraction_completeness_failed_lps") or [])
+        if _run_degraded or _incomplete:
+            has_any_degraded = True
+        if _incomplete:
+            has_any_incomplete = True
+
         tenant_row = {
             "tenant_index": i,
             "filename": t.get("filename", ""),
@@ -283,6 +298,12 @@ def _build_job_outcome(job_id: str, tenants: list, started_at: str) -> dict:
             "gap_repairs": gap_repairs,
             "api_calls": api_calls,
             "elapsed_seconds": r.get("elapsed_sec"),
+            # Step 477: per-tenant degraded/incomplete surface
+            "run_degraded": _run_degraded,
+            "degraded_reason": r.get("degraded_reason"),
+            "invalid_for_legal_analysis": _incomplete,
+            "issue_areas_with_no_evidence": _missing_lps,
+            "incomplete_statement": r.get("degraded_statement"),
         }
         per_tenant.append(tenant_row)
 
@@ -302,17 +323,34 @@ def _build_job_outcome(job_id: str, tenants: list, started_at: str) -> dict:
     # Run quality marker
     completed_count = sum(1 for t in per_tenant if t.get("status") == "completed")
     total_count = len(tenants)
-    if has_any_failure or completed_count < total_count:
+    # Step 477: an incomplete report outranks every other quality marker. It is not
+    # "degraded" in the fallback sense -- a fallback means a substitute model answered,
+    # this means required evidence was never extracted and the report is not valid for
+    # legal analysis.
+    if has_any_incomplete:
+        run_quality = "incomplete"
+    elif has_any_failure or completed_count < total_count:
         run_quality = "partial"
     elif has_any_degraded or has_any_fallback:
         run_quality = "degraded"
     else:
         run_quality = "clean"
 
+    _incomplete_rows = [t for t in per_tenant if t.get("invalid_for_legal_analysis")]
+
     return {
         "tenant_count": total_count,
         "completed_count": completed_count,
         "run_quality": run_quality,
+        # Step 477: job-level incompleteness, so a caller polling status sees it
+        # without having to open a per-tenant result file.
+        "report_incomplete": has_any_incomplete,
+        "invalid_for_legal_analysis": has_any_incomplete,
+        "incomplete_statement": (_incomplete_rows[0].get("incomplete_statement")
+                                 if _incomplete_rows else None),
+        "issue_areas_with_no_evidence": sorted({
+            lp for t in _incomplete_rows for lp in (t.get("issue_areas_with_no_evidence") or [])
+        }),
         "totals": job_totals,
         "per_tenant": per_tenant,
         "elapsed_seconds": _safe_elapsed_seconds(started_at),
