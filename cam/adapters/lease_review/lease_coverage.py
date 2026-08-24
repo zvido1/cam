@@ -67,7 +67,7 @@ _HEADING_RE = re.compile(r"^(Section\s+\d+(?:\.\d+)*|ARTICLE\s+[IVXLC0-9]+)\.?",
 # liability cap (15490-15748), because the cap matches no LP-27 element and is
 # therefore unreachable by an element-driven search. Widening to section bounds
 # is one of the two candidate directions recorded there; this measures it.
-SECTION_EXPANDED_SPAN_LPS = {"LP-27"}
+SECTION_EXPANDED_SPAN_LPS: set = set()
 
 
 def _build_heading_index(canonical_text: str) -> list:
