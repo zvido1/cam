@@ -428,3 +428,86 @@ class TestDegradedContinuation(unittest.TestCase):
                         run_lease_coverage_only(tenant_file, provisions=[], config={})
         finally:
             os.unlink(tenant_file)
+
+
+# ── Step 478: applicability-aware abort/degrade partition ────────────────────
+
+class TestApplicabilityAwareGate(unittest.TestCase):
+    """The gate degrades only where the coverage layer short-circuits before Stage 5.
+
+    required / applicable reach the 305 evaluator, where empty evidence becomes an
+    asserted "the lease is silent" and a confident `missing` for every element —
+    exactly what the gate exists to prevent. not_applicable and unclear both
+    short-circuit in lease_coverage.py and emit zero element verdicts, so their
+    output cannot differ and aborting buys nothing.
+    """
+
+    def test_required_lp_still_aborts(self):
+        from cam.adapters.lease_review.lease_adapter import (
+            run_lease_coverage_only, GateAbortError,
+        )
+        from cam.adapters.lease_review.lease_knowledge import is_applicable
+        tenant_file = _make_tenant_file()
+        try:
+            # LP-17 is `required` on this fixture text — must not be degradable.
+            self.assertEqual(is_applicable("LP-17", "this is a commercial lease."), "required")
+            provisions = [
+                _prov("LP-01", "FOUND_BOTH", tenant_text="Tenant pays base rent of $10,000."),
+                _prov("LP-17", "AMBIGUOUS", tenant_text=""),
+            ]
+            with _patch_pre_gate(_make_extraction(provisions)):
+                with self.assertRaises(GateAbortError) as ctx:
+                    run_lease_coverage_only(tenant_file, provisions=[], config={})
+            msg = str(ctx.exception)
+            self.assertIn("LP-17", msg)
+            self.assertIn("Applicability", msg)
+        finally:
+            os.unlink(tenant_file)
+
+    def test_mixed_failure_aborts_on_the_non_degradable_one(self):
+        """One degradable + one not => abort, and the abort names only the blocker."""
+        from cam.adapters.lease_review.lease_adapter import (
+            run_lease_coverage_only, GateAbortError,
+        )
+        tenant_file = _make_tenant_file()
+        try:
+            provisions = [
+                _prov("LP-01", "FOUND_BOTH", tenant_text="Tenant pays base rent of $10,000."),
+                _prov("LP-12", "AMBIGUOUS", tenant_text=""),   # not_applicable -> degradable
+                _prov("LP-17", "AMBIGUOUS", tenant_text=""),   # required       -> blocks
+            ]
+            with _patch_pre_gate(_make_extraction(provisions)):
+                with self.assertRaises(GateAbortError) as ctx:
+                    run_lease_coverage_only(tenant_file, provisions=[], config={})
+            msg = str(ctx.exception)
+            self.assertIn("LP-17", msg)
+            self.assertIn("Failed LPs: ['LP-17']", msg)   # LP-12 is not the blocker
+        finally:
+            os.unlink(tenant_file)
+
+    def test_unclear_is_degradable_and_marked(self):
+        """LP-07 is `unclear` on this fixture: continue, marked, not raised."""
+        from cam.adapters.lease_review.lease_adapter import (
+            run_lease_coverage_only, GateAbortError, DEGRADABLE_APPLICABILITY,
+        )
+        from cam.adapters.lease_review.lease_knowledge import is_applicable
+        self.assertIn("unclear", DEGRADABLE_APPLICABILITY)
+        tenant_file = _make_tenant_file()
+        try:
+            self.assertEqual(is_applicable("LP-07", "this is a commercial lease."), "unclear")
+            provisions = [
+                _prov("LP-01", "FOUND_BOTH", tenant_text="Tenant pays base rent of $10,000."),
+                _prov("LP-07", "AMBIGUOUS", tenant_text=""),
+            ]
+            with _patch_pre_gate(_make_extraction(provisions)):
+                try:
+                    result = run_lease_coverage_only(tenant_file, provisions=[], config={})
+                except GateAbortError:
+                    self.fail("an `unclear` LP must degrade, not abort")
+        finally:
+            os.unlink(tenant_file)
+        self.assertTrue(result["invalid_for_legal_analysis"])
+        self.assertEqual(result["extraction_completeness_failed_lps"], ["LP-07"])
+        self.assertEqual(
+            [d.get("applicability") for d in result["completeness_failures"]], ["unclear"]
+        )

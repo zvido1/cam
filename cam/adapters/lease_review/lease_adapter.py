@@ -139,6 +139,27 @@ class GateAbortError(Exception):
 # decided the extraction is incomplete: report it loudly instead of dying.
 GATE_ABORT_RETURNS_DEGRADED = True
 
+# Step 478. Which applicability values may degrade rather than abort.
+#
+# The gate exists to stop "a confident 'missing' verdict ... for a provision that
+# simply was not extracted". That harm needs the LP to reach the 305 evaluator,
+# where lease_coverage_305 injects "The lease is silent on this topic. Return
+# verdict 'missing' for every element."
+#
+#   required / applicable -> DOES reach 305. Empty evidence becomes asserted
+#                            silence. ABORT: the gate is doing real work.
+#   not_applicable        -> lease_coverage.py short-circuits before Stage 5.
+#   unclear               -> ALSO short-circuits (lease_coverage.py:359-369),
+#                            forcing tenant_text="" and emitting zero element
+#                            verdicts. Verified on real runs: LP-23 and LP-31
+#                            carry 0 element_verdicts, exactly like LP-12.
+#
+# So on both degradable branches the coverage entry is identical whether
+# extraction returned text or nothing, and aborting destroys the whole report to
+# prevent an output that cannot differ. Remove "unclear" from this set to make
+# the stricter choice -- that one edit is the whole rollback of the judgment call.
+DEGRADABLE_APPLICABILITY = {"not_applicable", "unclear"}
+
 
 def _check_cancel(config: dict) -> None:
     """Check if cancellation has been requested for this job.
@@ -1405,12 +1426,29 @@ def run_lease_coverage_only(
             }
             for r in _fail_missing
         ]
-        if _is_canonical and not GATE_ABORT_RETURNS_DEGRADED:
+        # Step 478: partition the failures by applicability. is_applicable() reads the
+        # schema and the full document only -- it has no extraction dependency, so it
+        # is a sound basis for deciding whether this failure can be survived.
+        from cam.adapters.lease_review.lease_knowledge import is_applicable as _is_applicable
+        _doc_lower = tenant_text.lower()
+        _applicability_by_lp = {pid: _is_applicable(pid, _doc_lower) for pid in _failed_ids}
+        _must_abort = [pid for pid, ap in _applicability_by_lp.items()
+                       if ap not in DEGRADABLE_APPLICABILITY]
+        _degradable = [pid for pid in _failed_ids if pid not in _must_abort]
+        print(
+            "[lease_adapter:analyze] completeness gate applicability: %s | must_abort=%s degradable=%s"
+            % (_applicability_by_lp, _must_abort, _degradable),
+            flush=True,
+        )
+
+        if _is_canonical and (not GATE_ABORT_RETURNS_DEGRADED or _must_abort):
+            _abort_ids = _must_abort or _failed_ids
             raise GateAbortError(
-                f"Extraction completeness failure: {len(_fail_missing)} required LP(s) "
+                f"Extraction completeness failure: {len(_abort_ids)} required LP(s) "
                 f"have missing evidence and are not classified NOT_APPLICABLE. "
-                f"Failed LPs: {_failed_ids}. "
+                f"Failed LPs: {_abort_ids}. "
                 "Cannot produce a valid legal analysis report from incomplete evidence. "
+                f"Applicability: {({k: _applicability_by_lp[k] for k in _abort_ids} if _must_abort else _applicability_by_lp)}. "
                 f"Detail: {_failure_detail}"
             )
         elif _is_canonical:
@@ -1421,12 +1459,16 @@ def run_lease_coverage_only(
             # by the non-canonical branch below and read by nothing.
             print(
                 f"[lease_adapter:analyze] COMPLETENESS GATE DEGRADED (canonical): "
-                f"{len(_fail_missing)} required LP(s) missing evidence: {_failed_ids}. "
+                f"{len(_degradable)} LP(s) missing evidence, all on a short-circuit "
+                f"applicability branch: {_degradable}. "
                 "Continuing; run marked invalid_for_legal_analysis.",
                 flush=True,
             )
-            _completeness_failed_ids = _failed_ids
-            _completeness_failure_detail = _failure_detail
+            _completeness_failed_ids = _degradable
+            _completeness_failure_detail = [
+                dict(d, applicability=_applicability_by_lp.get(d["provision_id"]))
+                for d in _failure_detail if d["provision_id"] in set(_degradable)
+            ]
         else:
             # Non-canonical / debug: mark run degraded, surface failure, allow continuation
             print(
