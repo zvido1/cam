@@ -46,7 +46,13 @@
 >
 > **This is not a bad span.** The elicitor retrieves clauses matching an element's *description*; the qualifier matches no LP-27 element, so it is **structurally unreachable** by an element-driven search. **A qualifier the panel cannot see cannot be weighed, and nothing in the output marks its absence.** A lawyer reading *"monetary damages: explicitly present, high confidence"* is not told that the lease caps landlord liability at its equity in the building and excludes consequential damages entirely.
 >
-> Two candidate directions, **neither chosen**: co-retrieval of adjacent text around any returned span, or a "limitations and carve-outs" retrieval pass that is **not** element-driven.
+> **UPDATE 2026-08-23 (Steps 466/467): the section-boundary direction is RULED OUT.** Widening each verified span to its containing section **cannot** reach §11.3 — §11.2's section ends at **15490** and §11.3 begins at **15490**, so containing-section expansion stops at the exact doorstep of the gap. Established **offline before any runs were spent**, and confirmed in two runs: zero mentions of the liability cap, consequential damages or §11.3 in any evaluator's reasoning. Measured, then rolled back — `SECTION_EXPANDED_SPAN_LPS = set()`, machinery retained.
+>
+> **The surviving direction is CO-RETRIEVAL OF ADJACENT TEXT** around any returned span (or a non-element-driven "limitations and carve-outs" pass). It is untested, and it is the only one of the two that can reach a *neighbouring* section.
+>
+> **It inherits the context-widening regression, and any test of it must be designed accordingly.** Step 466 measured what happens when the panel is given more context: element 4 — the one element Step 460 recorded the panel getting *right* by declining a near-miss — regressed from a correct `missing` to `disputed` at low confidence, stably in both runs, because evaluator A read §5.1's security-deposit setoff as satisfying offset-against-rent. **More context did not improve reasoning; it supplied more topically adjacent material to be seduced by.** Co-retrieval is itself a context-widening change and carries the same exposure.
+>
+> **Test criterion, established by Step 467:** an evidence-widening change must be evaluated on **precision over the previously-clean elements**, not only on whether the qualifier arrives. Element 4 was not the target of the change and is where the damage landed. Recorded in full at `build_log/FINDING_context_widening_regression.md`.
 >
 > **DO NOT EXTEND THE SEAM to the remaining 31 LPs until this is addressed.** Every LP has elements whose evidence is generic or topically adjacent, and the exposure concentrates exactly there. Extending now multiplies an understood defect 31-fold. This supersedes cost as the blocker in item 5.
 >

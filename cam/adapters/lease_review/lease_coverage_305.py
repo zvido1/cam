@@ -244,6 +244,37 @@ Hard rules:
 6. Your response MUST start with `[` and end with `]`. Do not wrap in an outer object like {{"verdicts": [...]}}. Do not use markdown code fences. No preamble, no text outside the JSON array. Start immediately with `[`."""
 
 
+# Step 468, LP-27 ONLY. When an LP is listed here, the per-LP user prompt carries
+# the operative-entailment test below. Emptying this set removes the block for every
+# LP -- that one edit is the whole rollback. Evidence, spans, locators and
+# SPAN_EVIDENCE_LPS are untouched by this: it changes how the panel REASONS over
+# what it already has, not what it is shown.
+#
+# Why: build_log/460_LP27_precision_evidence.md measured two false positives that
+# share one mechanism -- topical proximity substituting for entailment. Element 6
+# ("right to monetary damages") rests on Section 11.2, an INDEMNITY; element 7
+# ("specific performance") rests on a savings clause preserving unspecified
+# remedies. build_log/FINDING_context_widening_regression.md then measured that
+# widening the evidence makes this WORSE, not better, which is the argument for
+# operating on the instructions instead.
+ENTAILMENT_TEST_LPS = {"LP-27"}
+
+_ENTAILMENT_TEST_BLOCK = """ENTAILMENT TEST (apply to every element below):
+
+A clause supports an element only if its legal effect entails the element. Topic
+overlap is not sufficient. The test: if this clause were the only clause you had,
+could you truthfully tell the tenant that the lease grants the right the element
+describes, without supplying an unstated legal inference? If you could not, the
+element is not present on the strength of that clause.
+
+The clause's grant, trigger, beneficiary and remedy must each align with the
+element's. A clause may be highly relevant to this issue area and still fail this
+test. Indemnities, waivers, definitions, limitations of liability, and general
+"all remedies available at law or in equity" language do not satisfy an element
+that asks for a specific remedy, unless they create that remedy or expressly
+identify it."""
+
+
 def _build_user_prompt(
     pid: str,
     lp_name: str,
@@ -286,6 +317,10 @@ def _build_user_prompt(
     ]
     if empty_note:
         lines += [empty_note, ""]
+    # Step 468: entailment test, per-LP. Placed before the element list so it
+    # governs every element judgment that follows.
+    if pid in ENTAILMENT_TEST_LPS:
+        lines += [_ENTAILMENT_TEST_BLOCK, ""]
     lines += [
         f"EXPECTED ELEMENTS ({len(elements_305)} total):",
         json.dumps(elements_for_prompt, indent=2),
