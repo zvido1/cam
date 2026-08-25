@@ -2160,7 +2160,11 @@
         "co-tenancy termination",
         "go dark",
         "termination option",
-        "termination fee"
+        "termination fee",
+        "right to terminate this lease",
+        "right to terminate the lease",
+        "elects to terminate",
+        "elect to terminate"
       ],
       "exclusion_clues": [
         "no right to terminate prior to expiration",
