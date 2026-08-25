@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 # clause on the first call. This seam routes LP-07's evidence through the elicitor
 # instead of extraction's bucket, to test whether the false finding flips.
 SPAN_EVIDENCE_ENABLED = True
-SPAN_EVIDENCE_LPS = {"LP-07", "LP-27"}
+SPAN_EVIDENCE_LPS = {"LP-07", "LP-12", "LP-27"}
 
 
 # Heading forms recognised for locator derivation. Anchored at line start ONLY:
@@ -219,12 +219,40 @@ def _assemble_span_evidence(lp_id: str, full_tenant_text: str):
 
 # ── Main entry point ───────────────────────────────────────────────────────────
 
+def build_span_evidence(full_tenant_text: str):
+    """Return (span_evidence, span_evidence_records) for every enabled seamed LP.
+
+    Step 484: hoisted out of assess_coverage so lease_adapter can call it BEFORE the
+    extraction-completeness gate. An LP appears in the returned dict only when
+    elicitation produced verified spans -- a fallback returns (None, []) and is
+    deliberately absent, so a caller can distinguish "seamed" from "seamed AND
+    actually has evidence". The gate needs the second, not the first.
+    """
+    span_evidence: dict = {}
+    span_evidence_records: dict = {}
+    if not SPAN_EVIDENCE_ENABLED:
+        return span_evidence, span_evidence_records
+    for _lp in sorted(SPAN_EVIDENCE_LPS):
+        try:
+            _text, _recs = _assemble_span_evidence(_lp, full_tenant_text)
+        except Exception as _e:
+            logger.error("[span_evidence] %s failed (%s); falling back to extraction",
+                         _lp, type(_e).__name__)
+            _text, _recs = None, []
+        if _text:
+            span_evidence[_lp] = _text
+            span_evidence_records[_lp] = _recs
+    return span_evidence, span_evidence_records
+
+
 def assess_coverage(
     provisions: list,
     full_tenant_text: str,
     negative_space_signals: Optional[dict] = None,
     lp_progress_callback=None,
     cfg: Optional[dict] = None,
+    span_evidence: Optional[dict] = None,
+    span_evidence_records: Optional[dict] = None,
 ) -> list:
     """Assess coverage state for all issue areas.
 
@@ -274,23 +302,20 @@ def assess_coverage(
         if p.get("provision_id") and p.get("tenant_text")
     }
 
-    # 423 seam: compute span-sourced evidence ONCE per enabled LP, before the loop,
-    # so the LP's own assessment and cross-LP injection read the SAME text. Two
-    # different values for one LP in one run is the drift this arc keeps finding.
-    span_evidence: dict = {}
-    span_evidence_records: dict = {}
-    if SPAN_EVIDENCE_ENABLED:
-        for _lp in sorted(SPAN_EVIDENCE_LPS):
-            try:
-                _text, _recs = _assemble_span_evidence(_lp, full_tenant_text)
-            except Exception as _e:
-                logger.error("[span_evidence] %s failed (%s); falling back to extraction",
-                             _lp, type(_e).__name__)
-                _text, _recs = None, []
-            if _text:
-                span_evidence[_lp] = _text
-                span_evidence_records[_lp] = _recs
-                all_lp_texts[_lp] = _text
+    # 423 seam: span-sourced evidence, computed ONCE per enabled LP before the loop so
+    # the LP's own assessment and cross-LP injection read the SAME text. Two different
+    # values for one LP in one run is the drift this arc keeps finding.
+    #
+    # Step 484: the caller may supply this precomputed. lease_adapter does exactly that,
+    # because the extraction-completeness gate runs UPSTREAM of coverage and must know
+    # whether a seamed LP actually produced spans -- membership in SPAN_EVIDENCE_LPS is
+    # not enough, since elicitation can fall back (LP-07 returned zero spans on divall).
+    if span_evidence is None:
+        span_evidence, span_evidence_records = build_span_evidence(full_tenant_text)
+    else:
+        span_evidence_records = span_evidence_records or {}
+    for _lp, _text in span_evidence.items():
+        all_lp_texts[_lp] = _text
 
     assessments = []
 

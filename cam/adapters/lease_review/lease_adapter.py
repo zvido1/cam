@@ -1395,6 +1395,18 @@ def run_lease_coverage_only(
     #
     # Non-canonical / debug: allow diagnostic continuation; mark run degraded so
     # output is never treated as valid legal analysis.
+    # Step 484: build span evidence BEFORE the completeness gate, so the gate can tell
+    # a seamed LP that HAS evidence from a seamed LP whose elicitation fell back. Cost:
+    # ~1 provider call per seamed LP, spent even on runs that then abort for another LP.
+    # That is the price of answering the gate's question honestly.
+    from cam.adapters.lease_review.lease_coverage import build_span_evidence
+    try:
+        _span_evidence, _span_evidence_records = build_span_evidence(tenant_text)
+    except Exception as _se_e:
+        print("[lease_adapter:analyze] span evidence build failed (%s); "
+              "gate falls back to bucket-only reasoning" % type(_se_e).__name__, flush=True)
+        _span_evidence, _span_evidence_records = {}, {}
+
     from cam.adapters.lease_review.lease_extract import check_extraction_completeness
     _completeness_results = check_extraction_completeness(
         extraction["provisions"],
@@ -1426,18 +1438,36 @@ def run_lease_coverage_only(
             }
             for r in _fail_missing
         ]
-        # Step 478: partition the failures by applicability. is_applicable() reads the
+            # Step 484: seam-aware exemption. An LP whose evidence comes from spans, not
+        # buckets, must not be aborted for an empty bucket -- but membership in
+        # SPAN_EVIDENCE_LPS is NOT sufficient, because elicitation can fall back
+        # (LP-07 returned zero verified spans on divall). `_span_evidence` below is
+        # computed BEFORE this gate and contains an LP only when elicitation actually
+        # produced verified spans, so the exemption is conditional on evidence
+        # existing rather than on the LP being listed.
+        _seam_exempt = [pid for pid in _failed_ids if pid in _span_evidence]
+        if _seam_exempt:
+            print(
+                "[lease_adapter:analyze] completeness gate: %d LP(s) exempt -- evidence "
+                "sourced from verified spans, not the extraction bucket: %s"
+                % (len(_seam_exempt), _seam_exempt),
+                flush=True,
+            )
+
+    # Step 478: partition the failures by applicability. is_applicable() reads the
         # schema and the full document only -- it has no extraction dependency, so it
         # is a sound basis for deciding whether this failure can be survived.
         from cam.adapters.lease_review.lease_knowledge import is_applicable as _is_applicable
         _doc_lower = tenant_text.lower()
         _applicability_by_lp = {pid: _is_applicable(pid, _doc_lower) for pid in _failed_ids}
         _must_abort = [pid for pid, ap in _applicability_by_lp.items()
-                       if ap not in DEGRADABLE_APPLICABILITY]
-        _degradable = [pid for pid in _failed_ids if pid not in _must_abort]
+                       if ap not in DEGRADABLE_APPLICABILITY and pid not in _span_evidence]
+        _degradable = [pid for pid in _failed_ids
+                       if pid not in _must_abort and pid not in _span_evidence]
         print(
-            "[lease_adapter:analyze] completeness gate applicability: %s | must_abort=%s degradable=%s"
-            % (_applicability_by_lp, _must_abort, _degradable),
+            "[lease_adapter:analyze] completeness gate applicability: %s | must_abort=%s "
+            "degradable=%s seam_exempt=%s"
+            % (_applicability_by_lp, _must_abort, _degradable, _seam_exempt),
             flush=True,
         )
 
@@ -1545,6 +1575,11 @@ def run_lease_coverage_only(
             extraction["provisions"], tenant_text, negative_space_by_provision,
             lp_progress_callback=_lp_progress_cb_c,
             cfg=cfg,
+            # Step 484: reuse the evidence the gate already saw. Recomputing here would
+            # double the elicitation cost AND risk the gate and coverage disagreeing
+            # about which LPs have span evidence.
+            span_evidence=_span_evidence,
+            span_evidence_records=_span_evidence_records,
         )
         # Step 335: sum coverage evaluator calls (3 per LP via assess_coverage_305)
         total_api_calls += sum(a.get("_coverage_api_calls", 0) for a in coverage_assessment)

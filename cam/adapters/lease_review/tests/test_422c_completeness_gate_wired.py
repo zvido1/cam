@@ -511,3 +511,54 @@ class TestApplicabilityAwareGate(unittest.TestCase):
         self.assertEqual(
             [d.get("applicability") for d in result["completeness_failures"]], ["unclear"]
         )
+
+
+# ── Step 484: seam-aware gate exemption ──────────────────────────────────────
+
+class TestSeamAwareGate(unittest.TestCase):
+    """An LP whose evidence comes from verified spans must not abort for an empty
+    bucket -- but ONLY when elicitation actually produced spans. Membership in
+    SPAN_EVIDENCE_LPS is not sufficient: elicitation can fall back (LP-07 returned
+    zero verified spans on divall), and then the gate's original reasoning applies.
+    """
+
+    def test_seamed_lp_with_span_evidence_does_not_abort(self):
+        from cam.adapters.lease_review.lease_adapter import (
+            run_lease_coverage_only, GateAbortError,
+        )
+        provisions = [
+            _prov("LP-01", "FOUND_BOTH", tenant_text="Tenant pays base rent of $10,000."),
+            _prov("LP-17", "AMBIGUOUS", tenant_text=""),   # `required` -> would abort
+        ]
+        tenant_file = _make_tenant_file()
+        try:
+            with patch("cam.adapters.lease_review.lease_coverage.build_span_evidence",
+                       return_value=({"LP-17": "[Section 9.1]\nspan-sourced evidence text"}, {})):
+                with _patch_pre_gate(_make_extraction(provisions)):
+                    try:
+                        run_lease_coverage_only(tenant_file, provisions=[], config={})
+                    except GateAbortError:
+                        self.fail("a seamed LP WITH span evidence must not abort")
+        finally:
+            os.unlink(tenant_file)
+
+    def test_seamed_lp_whose_elicitation_fell_back_still_aborts(self):
+        """The divall LP-07 case: listed but produced nothing -> no exemption."""
+        from cam.adapters.lease_review.lease_adapter import (
+            run_lease_coverage_only, GateAbortError,
+        )
+        provisions = [
+            _prov("LP-01", "FOUND_BOTH", tenant_text="Tenant pays base rent of $10,000."),
+            _prov("LP-17", "AMBIGUOUS", tenant_text=""),
+        ]
+        tenant_file = _make_tenant_file()
+        try:
+            # elicitation fell back: LP-17 absent from the dict entirely
+            with patch("cam.adapters.lease_review.lease_coverage.build_span_evidence",
+                       return_value=({}, {})):
+                with _patch_pre_gate(_make_extraction(provisions)):
+                    with self.assertRaises(GateAbortError) as ctx:
+                        run_lease_coverage_only(tenant_file, provisions=[], config={})
+            self.assertIn("LP-17", str(ctx.exception))
+        finally:
+            os.unlink(tenant_file)
