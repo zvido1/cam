@@ -188,7 +188,12 @@ def _find_paragraph_by_text(document, search_text: str, min_match_chars: int = 4
 
 
 def _insert_summary_section(doc, results):
-    """Insert a summary section at the top of the DOCX before annotations."""
+    """Insert a summary section at the top of the DOCX before annotations.
+
+    Step 485: when the run is marked invalid_for_legal_analysis, the incompleteness
+    statement is emitted FIRST -- above the title and every finding. A reader handed
+    this file never sees the web banner, so the artefact has to carry it itself.
+    """
     from datetime import datetime
     from docx.shared import Pt, RGBColor
     from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -247,6 +252,16 @@ def _insert_summary_section(doc, results):
             body.insert(list(body).index(insert_before), p)
         else:
             body.append(p)
+
+    # Step 485: incompleteness statement FIRST, before the title and any finding.
+    from cam.adapters.lease_review.lease_display import incomplete_report_lines
+    _inc = incomplete_report_lines(results)
+    if _inc:
+        _add_para(_inc[0], size=12, bold=True, color="B42318",
+                  space_after=4, shading="FEF3F2", border_color="B42318")
+        for _line in _inc[1:]:
+            _add_para(_line, size=9, color="7A271A",
+                      space_after=4, shading="FEF3F2", border_color="B42318")
 
     # Header
     _add_para("CAM Lease Analysis Report", size=16, bold=True, color="1A365D", space_after=4)

@@ -174,6 +174,20 @@ def _coverage_color() -> tuple:
     return (0.88, 0.80, 1.0)  # Light purple
 
 
+
+def _wrap_pdf_text(text: str, width: int):
+    """Step 485: naive word wrap for the banner page. PyMuPDF insert_text does not
+    wrap, and an unwrapped statement would run off the page edge unread."""
+    words, line, out = text.split(), "", []
+    for w in words:
+        if len(line) + len(w) + 1 > width:
+            out.append(line); line = w
+        else:
+            line = (line + " " + w).strip()
+    if line:
+        out.append(line)
+    return out or [""]
+
 def annotate_pdf(
     original_pdf_path: str,
     results: dict,
@@ -405,6 +419,32 @@ def annotate_pdf(
 
     # Save annotated PDF
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    # Step 485: incompleteness statement on a NEW PAGE ONE, inserted after all
+    # annotation work so page indices used above (doc[0] for conflict notes, and the
+    # `for page in doc` search loops) are untouched. A lawyer handed this PDF never
+    # sees the web banner, so the artefact carries it.
+    try:
+        from cam.adapters.lease_review.lease_display import incomplete_report_lines
+        _inc = incomplete_report_lines(results)
+        if _inc:
+            _bp = doc.new_page(0)
+            _r = _bp.rect
+            _bp.draw_rect(fitz.Rect(40, 40, _r.width - 40, 200),
+                          color=(0.706, 0.137, 0.094), fill=(0.996, 0.953, 0.949), width=2)
+            _y = 70
+            _bp.insert_text(fitz.Point(56, _y), _sanitize_for_pdf(_inc[0]),
+                            fontsize=15, fontname="hebo", color=(0.706, 0.137, 0.094))
+            _y += 26
+            for _line in _inc[1:]:
+                for _chunk in _wrap_pdf_text(_sanitize_for_pdf(_line), 95):
+                    _bp.insert_text(fitz.Point(56, _y), _chunk,
+                                    fontsize=10, fontname="helv", color=(0.478, 0.153, 0.102))
+                    _y += 14
+                _y += 4
+            print("[pdf_annotator] Inserted incomplete-report banner page", flush=True)
+    except Exception as _be:
+        print(f"[pdf_annotator] Banner page insertion failed (non-fatal): {_be}", flush=True)
+
     doc.save(output_path)
     doc.close()
 

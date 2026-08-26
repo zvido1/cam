@@ -94,6 +94,26 @@ def generate_tenant_summary(
     title = doc.add_heading("Contract Analysis Summary", level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+    # Step 485: incompleteness statement immediately under the title, above every
+    # finding. This DOCX is downloaded and read outside the web app, so it must
+    # carry the statement itself rather than rely on the results-page banner.
+    try:
+        from cam.adapters.lease_review.lease_display import incomplete_report_lines
+        _inc = incomplete_report_lines(pipeline_results)
+        if _inc:
+            _p = doc.add_paragraph()
+            _r = _p.add_run(_inc[0])
+            _r.bold = True
+            _r.font.size = Pt(13)
+            _r.font.color.rgb = RGBColor(0xB4, 0x23, 0x18)
+            for _line in _inc[1:]:
+                _p2 = doc.add_paragraph()
+                _r2 = _p2.add_run(_line)
+                _r2.font.size = Pt(9)
+                _r2.font.color.rgb = RGBColor(0x7A, 0x27, 0x1A)
+    except Exception as _be:
+        print(f"[summary_generator] Incomplete banner failed (non-fatal): {_be}", flush=True)
+
     # Subtitle with tenant info
     tenant_file = pipeline_results.get("tenant_file", "Unknown")
     template_file = pipeline_results.get("template_file", "Unknown")

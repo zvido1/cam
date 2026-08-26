@@ -351,3 +351,47 @@ def extract_headline(text: str, max_chars: int = 60) -> str:
     if not truncated:
         truncated = text[:max_chars].rstrip()
     return truncated + "..."
+
+
+# ── Step 485: incompleteness statement, shared by every export surface ────────
+# One source of wording for the DOCX annotator, the PDF annotator and the
+# summary generator. Steps 476/477 made the pipeline continue past an
+# extraction-completeness failure and mark the result invalid_for_legal_analysis;
+# Step 477 closed the web surfaces but left the exported artefacts carrying no
+# statement at all -- a lawyer handed a DOCX or PDF never sees the web banner.
+#
+# This module is a formatting helper, not a display surface: it imports nothing
+# from the consumers, so every export can share it without an import cycle.
+
+INCOMPLETE_TITLE = "INCOMPLETE REPORT - NOT VALID FOR LEGAL ANALYSIS"
+
+
+def incomplete_report_lines(results: dict):
+    """Return the banner lines for an incomplete result, or None if complete.
+
+    None means "say nothing" -- a complete report must be byte-identical to what
+    it produced before this step.
+    """
+    if not isinstance(results, dict):
+        return None
+    summary = results.get("summary") or {}
+    incomplete = bool(
+        results.get("invalid_for_legal_analysis")
+        or results.get("extraction_completeness_failed")
+        or summary.get("REPORT_INCOMPLETE")
+    )
+    if not incomplete:
+        return None
+    statement = (
+        results.get("degraded_statement")
+        or summary.get("incomplete_statement")
+        or ""
+    ).strip()
+    lps = (results.get("extraction_completeness_failed_lps")
+           or summary.get("issue_areas_with_no_evidence") or [])
+    lines = [INCOMPLETE_TITLE]
+    if statement:
+        lines.append(statement)
+    if lps:
+        lines.append("Issue areas with no evidence: " + ", ".join(str(x) for x in lps))
+    return lines
