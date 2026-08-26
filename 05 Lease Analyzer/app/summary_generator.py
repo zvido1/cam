@@ -278,6 +278,26 @@ def generate_batch_summary(
     title = doc.add_heading("Batch Lease Analysis Summary", level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
+    # Step 486: name WHICH tenants are incomplete, above the executive summary.
+    # A batch reader must not have to open each section to discover that one of the
+    # reports rests on missing evidence.
+    try:
+        from cam.adapters.lease_review.lease_display import incomplete_tenants, INCOMPLETE_TITLE
+        _inc_t = incomplete_tenants(tenant_results)
+        if _inc_t:
+            _p = doc.add_paragraph()
+            _r = _p.add_run("%s - %d of %d report(s) affected"
+                            % (INCOMPLETE_TITLE, len(_inc_t), len(tenant_results or [])))
+            _r.bold = True; _r.font.size = Pt(13)
+            _r.font.color.rgb = RGBColor(0xB4, 0x23, 0x18)
+            for _name, _lines in _inc_t:
+                _p2 = doc.add_paragraph()
+                _r2 = _p2.add_run("%s -- %s" % (_name, _lines[-1]))
+                _r2.font.size = Pt(9)
+                _r2.font.color.rgb = RGBColor(0x7A, 0x27, 0x1A)
+    except Exception as _be:
+        print(f"[summary_generator] Batch incomplete banner failed (non-fatal): {_be}", flush=True)
+
     # ── Executive Summary ──
     _add_heading_styled(doc, "Executive Summary", level=1)
 
@@ -396,6 +416,17 @@ def generate_batch_summary(
         conforms = s.get("conforms", 0)
 
         doc.add_heading(tenant_file, level=2)
+        # Step 486: mark THIS tenant, so a section read in isolation still carries it.
+        try:
+            from cam.adapters.lease_review.lease_display import incomplete_report_lines
+            _ti = incomplete_report_lines(tr)
+            if _ti:
+                _tp = doc.add_paragraph()
+                _tr_ = _tp.add_run(_ti[0] + (" — " + _ti[-1] if len(_ti) > 1 else ""))
+                _tr_.bold = True; _tr_.font.size = Pt(9)
+                _tr_.font.color.rgb = RGBColor(0xB4, 0x23, 0x18)
+        except Exception:
+            pass
 
         if devs == 0:
             doc.add_paragraph(
@@ -825,6 +856,17 @@ def _generate_fallback_synopsis_pdf(
 
         elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0")))
         elements.append(Paragraph(_esc_xml(tenant_file), styles["TenantHeading"]))
+        # Step 486: mark THIS tenant in the combined PDF too.
+        try:
+            from cam.adapters.lease_review.lease_display import incomplete_report_lines
+            _ti = incomplete_report_lines(tr)
+            if _ti:
+                elements.append(Paragraph(
+                    '<font color="#B42318"><b>%s</b> — %s</font>'
+                    % (_esc_xml(_ti[0]), _esc_xml(_ti[-1])),
+                    styles["Normal"]))
+        except Exception:
+            pass
         elements.append(Paragraph(f"Deviations: {devs}, Conforming: {conforms}", styles["BodyText"]))
 
         provisions = tr.get("provisions", [])
@@ -922,6 +964,27 @@ def _generate_combined_synopsis_inner(
     if job_id:
         subtitle_parts.append(_esc_xml(job_id))
     elements.append(Paragraph(" | ".join(subtitle_parts), styles["SynopsisSubtitle"]))
+
+    # Step 486: incompleteness on PAGE ONE of the synopsis, naming the affected
+    # tenants. Step 485 put a marker on the per-tenant heading of a code path Mode C
+    # never reaches, so it rendered nowhere -- this is the cover every synopsis has.
+    try:
+        from cam.adapters.lease_review.lease_display import incomplete_tenants, INCOMPLETE_TITLE
+        _inc_t = incomplete_tenants(tenant_results)
+        if _inc_t:
+            elements.append(Spacer(1, 8))
+            elements.append(Paragraph(
+                '<font color="#B42318"><b>%s &mdash; %d of %d report(s) affected</b></font>'
+                % (_esc_xml(INCOMPLETE_TITLE), len(_inc_t), len(tenant_results or [])),
+                styles["Normal"]))
+            for _n, _l in _inc_t:
+                elements.append(Paragraph(
+                    '<font color="#7A271A">%s &mdash; %s</font>'
+                    % (_esc_xml(_format_tenant_name(_n)), _esc_xml(_l[-1])),
+                    styles["Normal"]))
+    except Exception as _be:
+        print(f"[summary_generator] Synopsis cover banner failed (non-fatal): {_be}", flush=True)
+
     elements.append(Spacer(1, 10))
 
     # ── Perspective declaration (Step 271) ──
@@ -1249,6 +1312,19 @@ def _generate_combined_synopsis_inner(
             t_name = _format_tenant_name(tr.get("tenant_file", "Unknown"))
             s = tr.get("summary", {})
 
+            # Step 486: mark THIS tenant in the snapshot -- the per-tenant surface
+            # Mode C actually renders.
+            try:
+                from cam.adapters.lease_review.lease_display import incomplete_report_lines
+                _ti = incomplete_report_lines(tr)
+                if _ti:
+                    elements.append(Paragraph(
+                        '<font color="#B42318"><b>%s: %s</b> &mdash; %s</font>'
+                        % (_esc_xml(t_name), _esc_xml(_ti[0]), _esc_xml(_ti[-1])),
+                        styles["Normal"]))
+            except Exception:
+                pass
+
             if is_mode_c:
                 # Mode C: deviates is always 0 in coverage mode — show actual gap count.
                 gap_count = sum(
@@ -1538,6 +1614,18 @@ def _generate_combined_synopsis_inner(
             elements.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e2e8f0"),
                                         spaceBefore=10, spaceAfter=4))
             elements.append(Paragraph(f"TENANT: {_esc_xml(tenant_display)}", styles["TenantHeading"]))
+            # Step 486: mark THIS tenant. The primary synopsis generator, not just the
+            # fallback -- a marker only in the fallback would never be seen in practice.
+            try:
+                from cam.adapters.lease_review.lease_display import incomplete_report_lines
+                _ti = incomplete_report_lines(tr)
+                if _ti:
+                    elements.append(Paragraph(
+                        '<font color="#B42318"><b>%s</b> — %s</font>'
+                        % (_esc_xml(_ti[0]), _esc_xml(_ti[-1])),
+                        styles["Normal"]))
+            except Exception:
+                pass
 
             # Per-tenant contract metadata (matches screen's Contract Summary section)
             t_meta = tr.get("contract_metadata", {})

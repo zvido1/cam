@@ -395,3 +395,19 @@ def incomplete_report_lines(results: dict):
     if lps:
         lines.append("Issue areas with no evidence: " + ", ".join(str(x) for x in lps))
     return lines
+
+
+def incomplete_tenants(tenant_results):
+    """Step 485/486: [(tenant_file, lines)] for every incomplete result in a batch.
+
+    The batch case needs something the single case does not: a reader must see
+    WHICH tenant's report is incomplete, not merely that one of them is. This
+    returns the affected tenants paired with their own statement, so a caller can
+    both list them up front and mark each tenant's own section.
+    """
+    out = []
+    for tr in (tenant_results or []):
+        lines = incomplete_report_lines(tr)
+        if lines:
+            out.append(((tr or {}).get("tenant_file") or "Unknown", lines))
+    return out
