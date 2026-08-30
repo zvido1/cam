@@ -134,6 +134,32 @@ def main(argv=None):
         run_lease_coverage_only, GateAbortError,
     )
 
+    import json as _json
+    import re as _re
+
+    def _failed_lps(msg):
+        """Pull the failed-LP list out of a GateAbortError message."""
+        m = _re.search(r"Failed LPs: \[([^\]]*)\]", msg)
+        return _re.findall(r"'([^']+)'", m.group(1)) if m else []
+
+    _abort_dir = {"path": None}       # set by run_and_persist's first print
+
+    def _dump_aborts(i, aborts):
+        """Persist the abort history for a run that produced no result at all."""
+        d = _abort_dir["path"]
+        if not d:
+            return
+        try:
+            with open(os.path.join(d, "run_%02d_gate_aborts.json" % i),
+                      "w", encoding="utf-8") as f:
+                _json.dump({"run": i, "attempts": len(aborts), "aborts": aborts},
+                           f, indent=2, ensure_ascii=False)
+            print("[run_mode_c] abort history persisted (%d attempts)" % len(aborts),
+                  flush=True)
+        except Exception as e:
+            print("[run_mode_c] could not persist abort history: %s" % str(e)[:160],
+                  flush=True)
+
     def one(i):
         """One run, retrying only on a gate abort. Nothing is tuned between attempts."""
         aborts = []
@@ -145,10 +171,16 @@ def main(argv=None):
                     config={},          # production defaults -- do not tune here
                 )
             except GateAbortError as e:
-                aborts.append({"attempt": attempt, "error": str(e)[:500]})
+                aborts.append({"attempt": attempt, "error": str(e)[:500],
+                               "failed_lps": _failed_lps(str(e))})
                 print("[run_mode_c] run %d attempt %d: GATE ABORT -- %s"
                       % (i, attempt, str(e)[:200]), flush=True)
                 if attempt == args.gate_attempts:
+                    # Step 492: on a total abort no result exists, so the
+                    # per-attempt history had nowhere to live and survived only
+                    # in stdout -- the exact loss Step 490 exists to prevent.
+                    # Write it beside the run before re-raising.
+                    _dump_aborts(i, aborts)
                     raise                      # store records it as EXCEPTION
                 continue
             # Record the abort history ON the result so it persists with the run.
@@ -162,6 +194,7 @@ def main(argv=None):
     out, rows = run_and_persist(
         one, step=args.step, label="%s-modec" % args.fixture, n=args.n,
         notes=args.notes,
+        on_dir=lambda d: _abort_dir.__setitem__("path", d),
     )
 
     ok = [r for r in rows if r.get("outcome") == "ok"]

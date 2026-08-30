@@ -193,7 +193,7 @@ def _git_head():
         return {"head": None, "error": str(e)[:80]}
 
 
-def run_and_persist(fn, step, label, n=1, notes=None, on_result=None):
+def run_and_persist(fn, step, label, n=1, notes=None, on_result=None, on_dir=None):
     """Call `fn(i)` n times, persisting each full result BEFORE inspecting it.
 
     Args:
@@ -205,10 +205,19 @@ def run_and_persist(fn, step, label, n=1, notes=None, on_result=None):
         on_result: optional callback(i, result, run_dir) for per-run reporting.
                    It runs AFTER the result is on disk, so a crash inside it
                    cannot cost the run.
+        on_dir:    optional callback(run_dir), invoked as soon as the directory
+                   exists. Step 492: a run that aborts every attempt produces no
+                   result, so `fn` needs the directory to write failure evidence
+                   of its own -- otherwise that evidence lives only in stdout.
 
     Returns (run_dir, [per-run index rows]).
     """
     out_dir = new_run_dir(step, label)
+    if on_dir:
+        try:
+            on_dir(out_dir)
+        except Exception as e:
+            print("[run_store] on_dir raised: %s" % str(e)[:160], flush=True)
     index = {
         "step": step,
         "label": label,
