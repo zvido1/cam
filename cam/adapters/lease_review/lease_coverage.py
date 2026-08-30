@@ -42,8 +42,14 @@ logger = logging.getLogger(__name__)
 # FINDING_423_stack_verified_live.md then showed the 423C elicitor finds that exact
 # clause on the first call. This seam routes LP-07's evidence through the elicitor
 # instead of extraction's bucket, to test whether the false finding flips.
+# Step 494: LP-17 added. Step 493 measured that divall's LP-17 content IS present
+# in the document -- §14.13 "Applicable Law" plus two attorney's-fee clauses, quoted
+# with offsets -- while extraction returned an empty bucket on all four Step-492
+# attempts, aborting the run. Elicitation for LP-17 succeeds on the first call and
+# returns exactly those three clauses (3 verified spans, 1,056 chars). LP-17 was
+# aborting only because build_span_evidence was never pointed at it.
 SPAN_EVIDENCE_ENABLED = True
-SPAN_EVIDENCE_LPS = {"LP-07", "LP-12", "LP-27"}
+SPAN_EVIDENCE_LPS = {"LP-07", "LP-12", "LP-17", "LP-27"}
 
 
 # Heading forms recognised for locator derivation. Anchored at line start ONLY:
