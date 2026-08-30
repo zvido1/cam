@@ -582,6 +582,40 @@ def mark_job_started(job_id: str) -> Optional[str]:
     return started_at
 
 
+# Step 498: the quality verdict must reach a POLLING CLIENT, not only the event
+# stream. _build_job_outcome computed run_quality correctly from Step 477 onward,
+# but its only consumer was _append_job_event, and GET /api/jobs/{id} returns
+# get_job_snapshot(job) -- the job dict, which never saw it. Steps 491 §4 and 497
+# both ended at this wall: a substituted panel and an incomplete report were both
+# invisible to anything polling status.
+#
+# Only the scalar verdict fields are copied. `per_tenant` and `totals` stay in the
+# event stream: they are large, they change shape, and a status poll does not need
+# them.
+_JOB_QUALITY_FIELDS = (
+    "run_quality",
+    "report_incomplete",
+    "invalid_for_legal_analysis",
+    "incomplete_statement",
+    "issue_areas_with_no_evidence",
+    "panel_substituted",
+    "panel_fallback_noted",
+)
+
+
+def apply_outcome_to_job(job_id: str, outcome: dict) -> None:
+    """Copy the outcome's quality verdict onto the job dict so status polls see it."""
+    if not isinstance(outcome, dict):
+        return
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if not job:
+            return
+        for k in _JOB_QUALITY_FIELDS:
+            if k in outcome:
+                job[k] = outcome[k]
+
+
 def mark_job_completed(job_id: str) -> None:
     """Set job status to completed. Expiry starts immediately (15 min)."""
     config = get_config()
@@ -1595,6 +1629,8 @@ def _process_lease_job(job_id: str, job: dict) -> None:
         try:
             outcome = _build_job_outcome(job_id, tenants, job.get("started_at"))
             _append_job_event(job_id, "job_outcome", **outcome)
+            # Step 498: and onto the job dict, which is what the API returns.
+            apply_outcome_to_job(job_id, outcome)
         except Exception as _oe:
             logger.warning(f"Could not build job outcome event: {_oe}")
         mark_job_completed(job_id)
