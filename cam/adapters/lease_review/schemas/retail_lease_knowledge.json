@@ -2833,14 +2833,12 @@
       "name": "Parking",
       "applicability": "conditional",
       "activation_clues": [
-        "parking",
         "parking spaces",
-        "spaces",
+        "parking rights",
         "garage",
-        "parking area",
-        "parking lot",
         "surface parking",
-        "reserved spaces"
+        "unreserved parking",
+        "reserved parking"
       ],
       "exclusion_clues": [
         "no parking",
