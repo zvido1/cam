@@ -445,6 +445,30 @@ def annotate_pdf(
     except Exception as _be:
         print(f"[pdf_annotator] Banner page insertion failed (non-fatal): {_be}", flush=True)
 
+    # Step 497: panel substitution gets its OWN page, inserted at 0 after the
+    # incompleteness page so that when both apply the reader meets them in order.
+    try:
+        from cam.adapters.lease_review.lease_display import panel_substitution_lines
+        _psl = panel_substitution_lines(results)
+        if _psl:
+            _pp = doc.new_page(0)
+            _pr = _pp.rect
+            _pp.draw_rect(fitz.Rect(40, 40, _pr.width - 40, 210),
+                          color=(0.706, 0.325, 0.035), fill=(1.0, 0.984, 0.922), width=2)
+            _y = 70
+            _pp.insert_text(fitz.Point(56, _y), _sanitize_for_pdf(_psl[0]),
+                            fontsize=14, fontname="hebo", color=(0.706, 0.325, 0.035))
+            _y += 26
+            for _line in _psl[1:]:
+                for _chunk in _wrap_pdf_text(_sanitize_for_pdf(_line), 95):
+                    _pp.insert_text(fitz.Point(56, _y), _chunk,
+                                    fontsize=10, fontname="helv", color=(0.573, 0.251, 0.055))
+                    _y += 14
+                _y += 4
+            print("[pdf_annotator] Inserted panel-substitution banner page", flush=True)
+    except Exception as _pe:
+        print(f"[pdf_annotator] Panel banner page failed (non-fatal): {_pe}", flush=True)
+
     doc.save(output_path)
     doc.close()
 

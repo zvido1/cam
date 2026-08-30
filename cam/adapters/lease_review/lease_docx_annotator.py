@@ -263,6 +263,24 @@ def _insert_summary_section(doc, results):
             _add_para(_line, size=9, color="7A271A",
                       space_after=4, shading="FEF3F2", border_color="B42318")
 
+    # Step 497: panel substitution -- a DIFFERENT fact from incompleteness above,
+    # so it gets its own block and its own colour. Amber, not red: the findings
+    # are not invalid, the panel is simply not the one named.
+    # `_add_para`'s colour argument is written into w:val and needs a HEX STRING,
+    # not RGBColor -- passing RGBColor here silently swallowed the whole summary
+    # section at Step 485.
+    try:
+        from cam.adapters.lease_review.lease_display import panel_substitution_lines
+        _psl = panel_substitution_lines(results)
+        if _psl:
+            _add_para(_psl[0], size=12, bold=True, color="B45309",
+                      space_after=4, shading="FFFBEB", border_color="B45309")
+            for _line in _psl[1:]:
+                _add_para(_line, size=9, color="92400E",
+                          space_after=4, shading="FFFBEB", border_color="B45309")
+    except Exception as _pe:
+        print(f"[docx_annotator] Panel-substitution banner failed (non-fatal): {_pe}", flush=True)
+
     # Header
     _add_para("CAM Lease Analysis Report", size=16, bold=True, color="1A365D", space_after=4)
     date_str = datetime.now().strftime("%B %d, %Y")

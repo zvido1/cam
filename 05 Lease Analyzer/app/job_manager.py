@@ -196,6 +196,8 @@ def _build_job_outcome(job_id: str, tenants: list, started_at: str) -> dict:
     has_any_fallback = False
     has_any_degraded = False
     has_any_incomplete = False   # Step 477: report marked invalid_for_legal_analysis
+    has_any_substituted = False  # Step 497: a seat was substituted or lost
+    has_any_panel_note = False   # Step 497: minor/transient fallback, recorded not bannered
 
     for i, t in enumerate(tenants):
         rp = t.get("result_path")
@@ -275,6 +277,14 @@ def _build_job_outcome(job_id: str, tenants: list, started_at: str) -> dict:
             has_any_degraded = True
         if _incomplete:
             has_any_incomplete = True
+        # Step 497: panel substitution is a DIFFERENT fact from incompleteness --
+        # the document was fully analysed, by a panel other than the one named.
+        # It must not set has_any_incomplete or it would inherit that wording.
+        _psub = r.get("panel_substitution") or {}
+        if r.get("panel_substituted") or _psub.get("tier") == "substituted":
+            has_any_substituted = True
+        elif _psub.get("tier") == "noted":
+            has_any_panel_note = True
 
         tenant_row = {
             "tenant_index": i,
@@ -344,6 +354,8 @@ def _build_job_outcome(job_id: str, tenants: list, started_at: str) -> dict:
         "run_quality": run_quality,
         # Step 477: job-level incompleteness, so a caller polling status sees it
         # without having to open a per-tenant result file.
+        "panel_substituted": has_any_substituted,
+        "panel_fallback_noted": has_any_panel_note,
         "report_incomplete": has_any_incomplete,
         "invalid_for_legal_analysis": has_any_incomplete,
         "incomplete_statement": (_incomplete_rows[0].get("incomplete_statement")

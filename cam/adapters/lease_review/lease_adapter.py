@@ -1844,6 +1844,20 @@ def run_lease_coverage_only(
             "produced normally, but the document has not been fully analysed."
         )
 
+    # Step 497: panel-substitution provenance. Non-fatal by construction -- a
+    # disclosure helper must never be able to kill a completed analysis.
+    _panel_substitution, _panel_statement = None, None
+    try:
+        from cam.adapters.lease_review.lease_display import (
+            panel_substitution as _psub, panel_substitution_lines as _pslines,
+        )
+        _panel_substitution = _psub({"coverage_assessment": coverage_assessment})
+        _pl = _pslines({"coverage_assessment": coverage_assessment})
+        if _pl:
+            _panel_statement = " ".join(_pl[1:])
+    except Exception as _ps_e:
+        print(f"[lease_adapter:analyze] panel_substitution failed (non-fatal): {_ps_e}", flush=True)
+
     # ── Assemble result (deviation-shaped fields empty, not missing) ──
     result = {
         "run_id": run_id,
@@ -1891,6 +1905,13 @@ def run_lease_coverage_only(
         "completeness_failures": _completeness_failure_detail,
         "invalid_for_legal_analysis": bool(_completeness_failed_ids),
         "degraded_statement": _degraded_statement,
+        # Step 497: panel provenance, computed once here so the six disclosure
+        # surfaces read a field instead of each re-deriving it from 606 element
+        # records. DISTINCT from the extraction fields above: those say part of the
+        # DOCUMENT was not analysed; this says the PANEL was not the one claimed.
+        "panel_substitution": _panel_substitution,
+        "panel_substituted": bool(_panel_substitution and _panel_substitution.get("tier") == "substituted"),
+        "panel_substitution_statement": _panel_statement,
         # Step 421B: extraction provenance and integrity fields
         "source_document_hash": source_document_hash,
         "extraction_output_hash": extraction_output_hash,

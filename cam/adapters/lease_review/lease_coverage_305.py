@@ -852,12 +852,24 @@ def _extract_verdicts_for_element(
         _real_label = _actual_label or EVALUATOR_LINEUP_305.get(role, {}).get("label", f"Evaluator {role}")
 
         if not result.get("completed") or not result.get("element_verdicts"):
+            # Step 497: NO model produced this record. Before this it carried
+            # actual_model/actual_label naming the REQUESTED model and
+            # is_fallback=False -- four fields asserting the primary served a
+            # record that exists BECAUSE nothing served it, with the truth living
+            # only in free-text `reasoning`. A census over actual_model therefore
+            # read stubs as service: on Step 487's atlas_1 it reported
+            # claude-sonnet-4-6 serving 6 element verdicts when it served none.
+            # None is the honest value for "what answered"; `served: False` makes
+            # that queryable instead of prose; `requested_model` keeps the
+            # information the old field held, under a name that is true.
             verdicts.append({
                 "role": role,
-                "label": _real_label,
-                "actual_model": _actual_model,
-                "actual_label": _actual_label,
-                "is_fallback": _is_fallback,
+                "label": f"Evaluator {role}",
+                "actual_model": None,
+                "actual_label": None,
+                "is_fallback": None,
+                "served": False,
+                "requested_model": _primary_model,
                 "verdict": "unclear",
                 "citation": None,
                 "reasoning": f"Evaluator {role} did not complete",
@@ -1339,9 +1351,16 @@ def assess_coverage_305(
             "completed": r["completed"],
             "model": r["model"],
             "provider": r.get("provider"),
-            "actual_model": r.get("model"),
-            "actual_label": r.get("label"),
-            "is_fallback": bool(r.get("model")) and r.get("model") != EVALUATOR_LINEUP_305.get(role, {}).get("model"),
+            # Step 497: on a failed evaluator `r["model"]` is the REQUESTED model
+            # (both failure-path returns set it from evaluator_cfg), so reporting
+            # it as actual_* asserted service that did not happen. Null it out and
+            # say so; `completed` above already carries the fact, and
+            # `requested_model` keeps the slot's intent.
+            "actual_model": r.get("model") if r.get("completed") else None,
+            "actual_label": r.get("label") if r.get("completed") else None,
+            "requested_model": EVALUATOR_LINEUP_305.get(role, {}).get("model"),
+            "is_fallback": (bool(r.get("model")) and r.get("model") != EVALUATOR_LINEUP_305.get(role, {}).get("model"))
+                            if r.get("completed") else None,
             "elapsed_sec": r["elapsed_sec"],
             "error": r.get("error"),
             # Token-utilization observability (admin-side only — never lawyer-facing)

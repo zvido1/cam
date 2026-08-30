@@ -397,6 +397,123 @@ def incomplete_report_lines(results: dict):
     return lines
 
 
+PANEL_SUBSTITUTED_TITLE = "PANEL SUBSTITUTED - NOT THE EVALUATOR PANEL THIS REPORT NAMES"
+
+
+def panel_substitution(results: dict):
+    """Step 497: what actually served each evaluator seat, and whether that matters.
+
+    Returns None when every seat was served by its own primary model. Otherwise a
+    dict with `tier`, per-role service counts, and the affected issue areas.
+
+    WHY THIS IS SEPARATE FROM incomplete_report_lines():
+    extraction incompleteness means part of the DOCUMENT was not analysed; panel
+    substitution means the PANEL that analysed it was not the panel claimed. They
+    are different facts about different things and a reader needs both, so they do
+    not share a statement. Step 487's two deployed runs had role A substituted on
+    196 and 202 of 202 verdicts and every disclosure surface stayed silent, because
+    all six keyed on `invalid_for_legal_analysis`, which is False for this case.
+
+    THE THRESHOLD, and why it is this one:
+
+      tier "substituted"  -- disclosed prominently. Either
+          (a) some issue area lost a seat entirely (a role produced no verdict at
+              all there), so that area was decided by two evaluators, not three --
+              a different instrument, not a different model; or
+          (b) some role's own primary served FEWER THAN HALF of that role's
+              element verdicts, i.e. the model the report names did a minority of
+              its own seat's work.
+
+      tier "noted"        -- recorded in detail, no prominent banner: any
+          substitution that clears both bars.
+
+    50% is a majority, not a tuned constant: it is the point at which the named
+    model stops being the one that mostly did the work. Step 487 fires (a) and (b);
+    Step 496's single transient fallback (11 of 202 records on one issue area,
+    claude-haiku-4-5, malformed_response) fires neither and is reported as "noted".
+    Nothing is silently suppressed and a one-LP retry is not called a substitution.
+    """
+    if not isinstance(results, dict):
+        return None
+    served, lost_areas, subs = {}, [], {}
+    for lp in (results.get("coverage_assessment") or []):
+        area = lp.get("issue_area_id")
+        roles_here = {}
+        for ev in (lp.get("element_verdicts") or []):
+            for e in (ev.get("evaluator_verdicts") or []):
+                role = e.get("role")
+                if not role:
+                    continue
+                slot = served.setdefault(role, {})
+                # Step 497: a stub asserts no model. Old results (pre-497) encode
+                # that only in `reasoning`; new ones carry served=False. Honour both,
+                # or a census reads a stub as service -- the Step 487/489 defect.
+                stub = (e.get("served") is False) or (
+                    str(e.get("reasoning") or "").strip() == "Evaluator %s did not complete" % role)
+                model = None if stub else e.get("actual_model")
+                slot[model] = slot.get(model, 0) + 1
+                roles_here.setdefault(role, set()).add(model)
+                if model and e.get("is_fallback"):
+                    subs.setdefault(model, set()).add(area)
+        for role, models in roles_here.items():
+            if models == {None}:
+                lost_areas.append((area, role))
+
+    if not subs and not lost_areas:
+        return None
+
+    primary = {}
+    for role, counts in served.items():
+        real = {m: n for m, n in counts.items() if m}
+        primary[role] = max(real, key=real.get) if real else None
+
+    minority = []
+    for role, counts in served.items():
+        total = sum(counts.values())
+        # The named primary is whichever model is NOT flagged is_fallback; when a
+        # role fell back everywhere there is no such model, which is exactly case (b).
+        non_fb = sum(n for m, n in counts.items() if m and m not in subs)
+        if total and non_fb * 2 < total:
+            minority.append(role)
+
+    tier = "substituted" if (lost_areas or minority) else "noted"
+    return {
+        "tier": tier,
+        "served": {r: {(m or "(no model)"): n for m, n in c.items()} for r, c in served.items()},
+        "substitute_models": {m: sorted(a) for m, a in subs.items()},
+        "seats_lost": sorted(set(lost_areas)),
+        "minority_roles": sorted(minority),
+        "primary_by_role": primary,
+    }
+
+
+def panel_substitution_lines(results: dict):
+    """Banner lines for a substituted panel, or None to say nothing.
+
+    Returns lines only for tier "substituted". Tier "noted" is real and is carried
+    in the structured `panel_substitution` dict for the job aggregate and the report
+    body -- it is not suppressed, it is just not a banner.
+    """
+    ps = panel_substitution(results)
+    if not ps or ps.get("tier") != "substituted":
+        return None
+    lines = [PANEL_SUBSTITUTED_TITLE]
+    bits = []
+    for model, areas in sorted(ps.get("substitute_models", {}).items()):
+        bits.append("%s stood in on %d issue area(s)" % (model, len(areas)))
+    if bits:
+        lines.append("This document was evaluated by a substituted panel: "
+                     + "; ".join(bits) + ".")
+    if ps.get("minority_roles"):
+        lines.append("Evaluator seat(s) %s were served mostly by a model other than the one named."
+                     % ", ".join(ps["minority_roles"]))
+    if ps.get("seats_lost"):
+        areas = sorted({a for a, _ in ps["seats_lost"]})
+        lines.append("Decided by two evaluators rather than three: " + ", ".join(areas) + ".")
+    lines.append("Findings are not invalid, but the evaluator panel is not the one this report names.")
+    return lines
+
+
 def incomplete_tenants(tenant_results):
     """Step 485/486: [(tenant_file, lines)] for every incomplete result in a batch.
 

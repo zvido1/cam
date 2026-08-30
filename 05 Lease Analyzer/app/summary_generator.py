@@ -114,6 +114,25 @@ def generate_tenant_summary(
     except Exception as _be:
         print(f"[summary_generator] Incomplete banner failed (non-fatal): {_be}", flush=True)
 
+    # Step 497: panel substitution -- separate block, separate colour. This writer
+    # uses python-docx runs and DOES take RGBColor (unlike lease_docx_annotator).
+    try:
+        from cam.adapters.lease_review.lease_display import panel_substitution_lines
+        _psl = panel_substitution_lines(pipeline_results)
+        if _psl:
+            _pp = doc.add_paragraph()
+            _pr = _pp.add_run(_psl[0])
+            _pr.bold = True
+            _pr.font.size = Pt(12)
+            _pr.font.color.rgb = RGBColor(0xB4, 0x53, 0x09)
+            for _line in _psl[1:]:
+                _pp2 = doc.add_paragraph()
+                _pr2 = _pp2.add_run(_line)
+                _pr2.font.size = Pt(9)
+                _pr2.font.color.rgb = RGBColor(0x92, 0x40, 0x0E)
+    except Exception as _pe:
+        print(f"[summary_generator] Panel banner failed (non-fatal): {_pe}", flush=True)
+
     # Subtitle with tenant info
     tenant_file = pipeline_results.get("tenant_file", "Unknown")
     template_file = pipeline_results.get("template_file", "Unknown")
@@ -277,6 +296,30 @@ def generate_batch_summary(
     # Title
     title = doc.add_heading("Batch Lease Analysis Summary", level=0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    # Step 497: batch-level panel substitution -- which tenants were evaluated by
+    # a substituted panel. Separate from incompleteness below, and named per tenant
+    # so a section read alone still carries it.
+    try:
+        from cam.adapters.lease_review.lease_display import (
+            panel_substitution_lines as _psl_fn, PANEL_SUBSTITUTED_TITLE as _PST)
+        _sub_t = [(tr.get("tenant_file") or "(unknown)", _psl_fn(tr))
+                  for tr in (tenant_results or [])]
+        _sub_t = [(f, l) for f, l in _sub_t if l]
+        if _sub_t:
+            _p = doc.add_paragraph()
+            _r = _p.add_run("%s - %d of %d report(s) affected"
+                            % (_PST, len(_sub_t), len(tenant_results or [])))
+            _r.bold = True
+            _r.font.size = Pt(12)
+            _r.font.color.rgb = RGBColor(0xB4, 0x53, 0x09)
+            for _f, _l in _sub_t:
+                _p2 = doc.add_paragraph()
+                _r2 = _p2.add_run("%s -- %s" % (_f, _l[1] if len(_l) > 1 else _l[0]))
+                _r2.font.size = Pt(9)
+                _r2.font.color.rgb = RGBColor(0x92, 0x40, 0x0E)
+    except Exception as _pe:
+        print(f"[summary_generator] Batch panel banner failed (non-fatal): {_pe}", flush=True)
 
     # Step 486: name WHICH tenants are incomplete, above the executive summary.
     # A batch reader must not have to open each section to discover that one of the

@@ -3224,6 +3224,7 @@ function renderResults() {
     if (mobileFab) mobileFab.classList.remove("hidden");
 
     renderIncompleteBanner();   // Step 477: must run before any summary surface
+    renderPanelBanner();        // Step 497: panel provenance, distinct from the above
     renderNavSidebar();
     syncResultsTopBarLayout();
     renderDealBrief();
@@ -18755,5 +18756,37 @@ function renderIncompleteBanner() {
             ? '<div class="incomplete-report-banner__lps">Issue areas with no evidence: <strong>'
               + esc(ids.join(', ')) + '</strong></div>'
             : '');
+    el.classList.remove('hidden');
+}
+
+// Step 497: panel substitution. A SEPARATE banner from the one above, because it
+// is a separate fact: incompleteness means part of the document was not analysed,
+// substitution means the panel that analysed it was not the panel named. Runs with
+// run_degraded=True and degraded_reason='evaluator_fallback' set
+// invalid_for_legal_analysis=False, so the banner above stays hidden for them --
+// Step 487's two deployed runs disclosed nothing anywhere.
+// The escaper in this file is esc(), NOT escapeHtml -- see Step 477.
+function renderPanelBanner() {
+    var el = document.getElementById('panel-substitution-banner');
+    if (!el) return;
+    if (!currentResults || !currentResults.tenants) { el.classList.add('hidden'); return; }
+
+    var lines = [];
+    currentResults.tenants.forEach(function (t) {
+        var r = t && t.results;
+        if (!r) return;
+        var ps = r.panel_substitution || {};
+        if (r.panel_substituted || ps.tier === 'substituted') {
+            if (r.panel_substitution_statement) lines.push(r.panel_substitution_statement);
+        }
+    });
+    if (!lines.length) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+
+    el.className = 'panel-substitution-banner';
+    el.innerHTML =
+        '<div class="panel-substitution-banner__title">&#9888; PANEL SUBSTITUTED &mdash; NOT THE EVALUATOR PANEL THIS REPORT NAMES</div>' +
+        lines.map(function (m) {
+            return '<div class="panel-substitution-banner__body">' + esc(m) + '</div>';
+        }).join('');
     el.classList.remove('hidden');
 }

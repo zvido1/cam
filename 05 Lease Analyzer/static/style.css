@@ -13659,3 +13659,28 @@ body.mode-c .card-docview-link {
     font-size: 13px;
     margin-top: 8px;
 }
+
+
+/* Step 497: panel substitution. Amber, deliberately NOT the red of the
+   incompleteness banner -- the findings are not invalid, the panel is not the
+   one named. Two different facts must not look like the same alarm. */
+.panel-substitution-banner {
+    background: #FFFBEB;
+    border: 1px solid #B45309;
+    border-left: 4px solid #B45309;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 0 0 16px 0;
+}
+.panel-substitution-banner__title {
+    color: #B45309;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .02em;
+    margin-bottom: 6px;
+}
+.panel-substitution-banner__body {
+    color: #92400E;
+    font-size: 12px;
+    line-height: 1.5;
+}
