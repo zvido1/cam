@@ -92,6 +92,10 @@ def main(argv=None):
     ap.add_argument("--fixture", default="atlas",
                     help="fixture key (%s) or a path" % "/".join(sorted(FIXTURES)))
     ap.add_argument("--n", type=int, default=1, help="number of runs")
+    ap.add_argument("--gate-attempts", type=int, default=4,
+                    help="max extraction-gate attempts per run before giving up (default 4). "
+                         "A GateAbortError is an extraction-shape failure, not a pipeline "
+                         "fault; retrying re-extracts. Nothing is tuned between attempts.")
     ap.add_argument("--notes", default=None, help="free text stored in index.json")
     ap.add_argument("--dry-run", action="store_true",
                     help="persist a synthetic result; makes no provider calls")
@@ -126,14 +130,34 @@ def main(argv=None):
     print("[run_mode_c] fixture: %s" % tenant_path)
     print("[run_mode_c] runs: %d  (~97 provider calls and ~15-17 min EACH)" % args.n)
 
-    from cam.adapters.lease_review.lease_adapter import run_lease_coverage_only
+    from cam.adapters.lease_review.lease_adapter import (
+        run_lease_coverage_only, GateAbortError,
+    )
 
     def one(i):
-        return run_lease_coverage_only(
-            tenant_path=tenant_path,
-            run_id="s%s_%s_r%02d" % (args.step, args.fixture, i),
-            config={},          # production defaults -- do not tune here
-        )
+        """One run, retrying only on a gate abort. Nothing is tuned between attempts."""
+        aborts = []
+        for attempt in range(1, args.gate_attempts + 1):
+            try:
+                res = run_lease_coverage_only(
+                    tenant_path=tenant_path,
+                    run_id="s%s_%s_r%02d_a%d" % (args.step, args.fixture, i, attempt),
+                    config={},          # production defaults -- do not tune here
+                )
+            except GateAbortError as e:
+                aborts.append({"attempt": attempt, "error": str(e)[:500]})
+                print("[run_mode_c] run %d attempt %d: GATE ABORT -- %s"
+                      % (i, attempt, str(e)[:200]), flush=True)
+                if attempt == args.gate_attempts:
+                    raise                      # store records it as EXCEPTION
+                continue
+            # Record the abort history ON the result so it persists with the run.
+            res["_harness_gate_attempts"] = attempt
+            res["_harness_gate_aborts"] = aborts
+            if aborts:
+                print("[run_mode_c] run %d completed on attempt %d after %d abort(s)"
+                      % (i, attempt, len(aborts)), flush=True)
+            return res
 
     out, rows = run_and_persist(
         one, step=args.step, label="%s-modec" % args.fixture, n=args.n,
