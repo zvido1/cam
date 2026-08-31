@@ -388,10 +388,24 @@ async def send_results_link(body: dict):
         f"{url}\n\n"
         f"Open this link on a desktop browser for the best experience.\n"
     )
-    ok = _send_email(email, subject, text)
-    if not ok:
-        raise HTTPException(status_code=500, detail="Failed to send email")
-    return {"ok": True}
+    # Step 511: _send_email returns a result dict, not a bool. Before this the
+    # guard below could not fire on the failure it existed for: an unconfigured
+    # environment returned True, so `ok` was truthy and the caller was told the
+    # link was sent when nothing left the process.
+    result = _send_email(email, subject, text)
+    if not result.get("sent"):
+        reason = result.get("reason") or "send_failed"
+        if reason == "not_configured":
+            # SERVER misconfiguration, not a bad request and not a provider fault.
+            raise HTTPException(
+                status_code=500,
+                detail="Email is not configured on this server, so no message was sent.",
+            )
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to send email via %s: %s" % (result.get("channel"), reason),
+        )
+    return {"ok": True, "channel": result.get("channel"), "reason": result.get("reason")}
 
 
 @app.get("/api/jobs/{job_id}/results")

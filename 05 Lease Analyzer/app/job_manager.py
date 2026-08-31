@@ -603,6 +603,34 @@ _JOB_QUALITY_FIELDS = (
 )
 
 
+def _record_notification(job_id: str, result) -> None:
+    """Step 511: record whether the notification was delivered, WITHOUT failing the job.
+
+    "Did the job succeed" and "was the notification delivered" are different facts.
+    Before this, both call sites discarded the send result entirely, so a job could
+    complete having notified nobody and nothing anywhere said so.
+
+    Not-configured is NOT an error -- it is a deployment state, and failing the job
+    over it would break dev environments, which is why the original code returned
+    True. The fix is to record it, not to raise. Same disclosure pattern as Step 497:
+    mark the degradation, do not hide it, do not fail the run.
+    """
+    if not isinstance(result, dict):        # defensive: old bool contract
+        result = {"sent": bool(result), "channel": "unknown", "reason": None}
+    with _jobs_lock:
+        job = _jobs.get(job_id)
+        if not job:
+            return
+        job["notification_sent"] = bool(result.get("sent"))
+        job["notification_channel"] = result.get("channel")
+        job["notification_reason"] = result.get("reason")
+    if not result.get("sent"):
+        logger.error("[notification] job %s NOT delivered: channel=%s reason=%s",
+                     job_id, result.get("channel"), result.get("reason"))
+    else:
+        logger.info("[notification] job %s delivered via %s", job_id, result.get("channel"))
+
+
 def apply_outcome_to_job(job_id: str, outcome: dict) -> None:
     """Copy the outcome's quality verdict onto the job dict so status polls see it."""
     if not isinstance(outcome, dict):
@@ -1642,7 +1670,8 @@ def _process_lease_job(job_id: str, job: dict) -> None:
     email = job.get("email")
     if email and not cancelled:
         if job.get("status") == "failed" or all_failed:
-            send_job_failed_email(email, job_id, job_error or "Processing failed")
+            _notif = send_job_failed_email(email, job_id, job_error or "Processing failed")
+            _record_notification(job_id, _notif)
         else:
             # Aggregate summary stats across ALL tenants
             summary = {
@@ -1680,10 +1709,11 @@ def _process_lease_job(job_id: str, job: dict) -> None:
             # Generate attachments
             attachments, att_info = _generate_email_attachments(job_id, tenants, results_dir)
             tenant_filenames = [t.get("filename", "") for t in tenants if t.get("filename")]
-            send_job_complete_email(email, job_id, job_url, summary,
+            _notif = send_job_complete_email(email, job_id, job_url, summary,
                                    attachments=attachments, attachment_info=att_info,
                                    tenant_names=tenant_filenames, mode=mode,
                                    cross_provision_findings=all_cpfs or None)
+            _record_notification(job_id, _notif)
 
 
 def _generate_email_attachments(

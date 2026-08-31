@@ -269,7 +269,7 @@ def send_job_complete_email(
     tenant_names: Optional[List[str]] = None,
     mode: str = "compare",
     cross_provision_findings: Optional[list] = None,
-) -> bool:
+) -> dict:
     """Send notification that analysis is done with link to results.
 
     Step 255: ``mode`` is forwarded to the body builder so Mode A emails get
@@ -300,7 +300,7 @@ def send_job_failed_email(
     to_email: str,
     job_id: str,
     error_summary: str,
-) -> bool:
+) -> dict:
     """Send notification that something went wrong."""
     subject = "Lease Analysis — Error During Processing"
     plain = (
@@ -318,24 +318,61 @@ def _send_email(
     body: str,
     html: Optional[str] = None,
     attachments: Optional[List[str]] = None,
-) -> bool:
-    """Send email via SendGrid → Gmail API → SMTP → log fallback."""
+) -> dict:
+    """Send email via SendGrid -> Gmail API -> SMTP -> log fallback.
+
+    Step 511: returns a RESULT DICT, never a bare bool.
+
+        {"sent": bool, "channel": str, "reason": str | None, "attempts": list}
+
+    Before this, the unconfigured branch returned True -- claiming success for a
+    message that never left the process. Two of three call sites discarded that
+    value, and the one that checked it (main.py, /api/send-results-link) could not
+    detect the failure it was checking for, because `ok` was True. A guard that
+    cannot observe the condition it guards against is not a guard.
+
+    A bool cannot carry the four facts a caller may need, which is why this is a
+    dict: sent-via-sendgrid, sent-via-smtp-after-sendgrid-failed, not-configured
+    and provider-rejected are different outcomes with different remedies.
+
+    `channel` is the transport that ACTUALLY delivered or last attempted, which is
+    why the leaves record into a trace: _send_via_sendgrid falls back to SMTP
+    internally, so the dispatcher cannot infer the real channel from its own branch.
+
+    NOT CONFIGURED IS NOT AN ERROR AND MUST NOT FAIL THE JOB. It returns
+    sent=False with reason="not_configured" and the caller decides. Step 510
+    established the original True was deliberate so dev environments do not break;
+    the fix is to stop conflating "the job succeeded" with "the notification was
+    delivered", not to start failing jobs.
+    """
     config = get_config()
 
     if not email_configured(config) and not sendgrid_configured(config):
         logger.info(
-            f"Email not configured — logging notification:\n"
-            f"  To: {to_email}\n  Subject: {subject}\n  Body:\n{body}"
+            "Email not configured - logging notification: to=%s subject=%s"
+            % (to_email, subject)
         )
-        return True
+        return {"sent": False, "channel": "none", "reason": "not_configured",
+                "attempts": []}
 
+    trace: list = []
     if sendgrid_configured(config):
-        return _send_via_sendgrid(to_email, subject, body, html, attachments, config)
+        ok = _send_via_sendgrid(to_email, subject, body, html, attachments, config, trace)
+    elif gmail_api_configured(config):
+        ok = _send_via_gmail_api(to_email, subject, body, html, attachments, config, trace)
+    else:
+        ok = _send_via_smtp(to_email, subject, body, html, attachments, config, trace)
 
-    if gmail_api_configured(config):
-        return _send_via_gmail_api(to_email, subject, body, html, attachments, config)
-
-    return _send_via_smtp(to_email, subject, body, html, attachments, config)
+    # The LAST trace entry decided the outcome; earlier ones are attempts that fell
+    # through. Both are kept in `attempts` so a caller can see the whole chain.
+    last = trace[-1] if trace else None
+    channel = last["channel"] if last else "unknown"
+    if ok:
+        # Sent, but not by the transport we started with -- a caller may care.
+        reason = ("fallback_after:%s" % trace[0]["channel"]) if len(trace) > 1 else None
+    else:
+        reason = (last or {}).get("reason") or "send_failed"
+    return {"sent": bool(ok), "channel": channel, "reason": reason, "attempts": trace}
 
 
 def _send_via_sendgrid(
@@ -345,6 +382,7 @@ def _send_via_sendgrid(
     html: Optional[str],
     attachments: Optional[List[str]],
     config: dict,
+    trace: Optional[list] = None,
 ) -> bool:
     """Send email using SendGrid REST API (stdlib only — no pip dependency)."""
     try:
@@ -402,11 +440,18 @@ def _send_via_sendgrid(
         with urllib.request.urlopen(req) as resp:
             status = resp.status
             logger.info(f"SendGrid: sent to {to_email} — HTTP {status}")
-            return status in (200, 202)
+            _ok = status in (200, 202)
+            if trace is not None:
+                trace.append({"channel": "sendgrid", "ok": _ok,
+                              "reason": None if _ok else "provider_rejected: HTTP %s" % status})
+            return _ok
 
     except Exception as e:
         logger.error(f"SendGrid failed to {to_email}: {e} — falling back to SMTP")
-        return _send_via_smtp(to_email, subject, plain, html, attachments, config)
+        if trace is not None:
+            trace.append({"channel": "sendgrid", "ok": False,
+                          "reason": "provider_error: %s: %s" % (type(e).__name__, str(e)[:160])})
+        return _send_via_smtp(to_email, subject, plain, html, attachments, config, trace)
 
 
 def _send_via_gmail_api(
@@ -416,6 +461,7 @@ def _send_via_gmail_api(
     html: Optional[str],
     attachments: Optional[List[str]],
     config: dict,
+    trace: Optional[list] = None,
 ) -> bool:
     """Send email using Gmail API with OAuth2 credentials."""
     try:
@@ -461,11 +507,16 @@ def _send_via_gmail_api(
         ).execute()
 
         logger.info(f"Gmail API: sent to {to_email} — id {result['id']}")
+        if trace is not None:
+            trace.append({"channel": "gmail_api", "ok": True, "reason": None})
         return True
 
     except Exception as e:
         logger.error(f"Gmail API failed: {e} — falling back to SMTP")
-        return _send_via_smtp(to_email, subject, plain, html, attachments, config)
+        if trace is not None:
+            trace.append({"channel": "gmail_api", "ok": False,
+                          "reason": "provider_error: %s: %s" % (type(e).__name__, str(e)[:160])})
+        return _send_via_smtp(to_email, subject, plain, html, attachments, config, trace)
 
 
 def _send_via_smtp(
@@ -475,6 +526,7 @@ def _send_via_smtp(
     html: Optional[str],
     attachments: Optional[List[str]],
     config: dict,
+    trace: Optional[list] = None,
 ) -> bool:
     """Send email using SMTP (fallback)."""
     try:
@@ -513,10 +565,15 @@ def _send_via_smtp(
                 server.send_message(msg)
 
         logger.info(f"SMTP: sent to {to_email}: {subject}")
+        if trace is not None:
+            trace.append({"channel": "smtp", "ok": True, "reason": None})
         return True
 
     except Exception as e:
         logger.error(f"SMTP failed to {to_email}: {e}")
+        if trace is not None:
+            trace.append({"channel": "smtp", "ok": False,
+                          "reason": "provider_error: %s: %s" % (type(e).__name__, str(e)[:160])})
         return False
 
 
