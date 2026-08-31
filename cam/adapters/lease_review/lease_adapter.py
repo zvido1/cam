@@ -1279,6 +1279,7 @@ def run_lease_coverage_only(
     config: dict = None,
     run_id: str = None,
     progress_callback=None,
+    preflight_verdict: dict = None,
 ) -> dict:
     """Mode C pipeline: single-document coverage analysis.
 
@@ -1299,6 +1300,50 @@ def run_lease_coverage_only(
     Returns:
         Pipeline results dict with mode="analyze".
     """
+
+    # ── Step 517: per-run provider preflight, BEFORE any work happens ────────
+    #
+    # The boot assertion runs once per container and a container lives for days,
+    # so a run submitted hours later inherits a stale verdict and discovers a
+    # provider failure one LP at a time via fallback. That is the 2026-08-26
+    # shape: the runs COMPLETED. This re-checks, blocking, with a 5-minute TTL.
+    #
+    # ── THE DISSENT, recorded at the decision point and not only in the status ──
+    #
+    # The default below is MARK-AND-PROCEED, not refuse. That is the right default
+    # ONLY because no submission-time consent surface exists.
+    #
+    # Be clear about what it means: when the panel is substituted, the user is
+    # being handed a report produced by models other than the ones it names, having
+    # already spent their run to produce it, and is TOLD AFTERWARDS. The honest
+    # shape is to surface the degradation at submission and let them choose --
+    # informed consent before the spend, not disclosure after it.
+    #
+    # Mark-and-proceed is chosen here for two reasons that are real but temporary:
+    # our own health check has already produced one false positive (Step 504, the
+    # live extractor reported broken on a 16-token probe budget), so a check that
+    # can be wrong should not hold a veto; and a substituted panel is not worthless
+    # (Step 500 measured LP-07/LP-16/LP-27 byte-identical to clean-panel runs).
+    #
+    # IF A SUBMISSION-TIME CONSENT SURFACE IS EVER BUILT, THIS DEFAULT SHOULD BE
+    # REVISITED. It is a stand-in for asking, not a decision that asking is wrong.
+    _preflight = preflight_verdict
+    if _preflight is None:
+        # CAM_SKIP_RUN_PREFLIGHT exists so the test suite stays call-free -- it runs
+        # on every step and must not spend money or need network. It is a DELIBERATE
+        # bypass, never a silent one: the skip is recorded on the result below, so a
+        # run that skipped its preflight says so rather than looking like one that
+        # passed. Step 511's whole finding was a function that could not express
+        # "I did not do the thing".
+        if os.getenv("CAM_SKIP_RUN_PREFLIGHT") == "1":
+            _preflight = {"decision": "skipped", "reason": "CAM_SKIP_RUN_PREFLIGHT",
+                          "substituted": [], "unavailable": [], "seats": {},
+                          "from_cache": False}
+        else:
+            from tools.run_preflight import preflight as _run_preflight
+            _preflight = _run_preflight()      # raises PreflightRefused if unassemblable
+    _panel_substituted_at_start = _preflight.get("decision") == "proceed_marked"
+
     from cam.adapters.lease_review.lease_extract import extract_provisions_single_doc
 
     cfg = {**DEFAULT_CONFIG}
@@ -1912,6 +1957,16 @@ def run_lease_coverage_only(
         "panel_substitution": _panel_substitution,
         "panel_substituted": bool(_panel_substitution and _panel_substitution.get("tier") == "substituted"),
         "panel_substitution_statement": _panel_statement,
+        # Step 517: WE KNEW BEFORE WE STARTED, versus we found out along the way.
+        # `panel_substituted` above is derived AFTER the fact from what the run
+        # actually observed. This is derived BEFORE any work, from the preflight.
+        # They answer different questions and a reader is entitled to both: a run
+        # marked at start was one somebody chose to run degraded; a run marked only
+        # at the end discovered it mid-flight. Keeping them separate is what makes
+        # the Step-516 dissent auditable -- without this field, "we knew and
+        # proceeded" is indistinguishable from "we found out".
+        "panel_substitution_known_at_start": _panel_substituted_at_start,
+        "run_preflight": _preflight,
         # Step 421B: extraction provenance and integrity fields
         "source_document_hash": source_document_hash,
         "extraction_output_hash": extraction_output_hash,

@@ -194,6 +194,16 @@ def try_call(provider, model, attempts=None, backoff=None):
                         "raw_error_type": type(e).__name__,
                         "raw_error": str(e)[:400],
                         "traceback_tail": traceback.format_exc()[-400:]})
+            # Step 517: do NOT retry a permanently fatal error. Retrying exists to
+            # absorb transients -- 429, brief 5xx, connection resets. A missing
+            # adapter or a retired model id will fail identically forever, and
+            # retrying it burns the full 2s+8s backoff for a guaranteed failure.
+            # Measured: `mistral:mistral-large-latest` raises
+            # `FatalProviderError: Unknown provider: mistral` in 0.00s, and this
+            # loop was spending 10 SECONDS of backoff on it in every preflight.
+            if type(e).__name__ == "FatalProviderError":
+                rec["retry_skipped"] = "fatal_not_transient"
+                break
             if attempt < n:
                 time.sleep(waits[min(attempt - 1, len(waits) - 1)])
     return rec
