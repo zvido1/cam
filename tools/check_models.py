@@ -125,39 +125,77 @@ def list_models(provider):
     return None, None, "unknown provider %r" % provider
 
 
-def try_call(provider, model):
-    """One tiny call through the REAL router+adapter path. Returns a dict."""
+# Step 514: retry-within-the-run replaces Step 505's "two consecutive checks".
+#
+# WHY THE OLD RULE HAD TO GO: it was designed with no cadence in mind. At the
+# daily cadence Step 513 costed, "two consecutive checks" means up to 48 HOURS
+# before an outage is reported -- far too slow, and Step 512 measured that state
+# does not even survive a redeploy, so the second check often never happens.
+#
+# WHY 3 ATTEMPTS AT 2s THEN 8s:
+#   * The transients actually observed in this project are HTTP 429, brief 5xx
+#     and connection resets. All recover in seconds, and two spaced retries
+#     covering ~10s absorb them.
+#   * It does NOT absorb a multi-minute outage -- correctly. That IS a real
+#     failure and should alert on the first run rather than the second day.
+#   * Backing off 2s -> 8s rather than 2s -> 2s avoids retrying into the same
+#     rate-limit window that caused the first failure.
+#   * 3 is the smallest count giving two independent retries; more would add
+#     latency to every genuine failure for no additional transient coverage.
+RETRY_ATTEMPTS = 3
+RETRY_BACKOFF_SEC = (2, 8)
+
+
+def try_call(provider, model, attempts=None, backoff=None):
+    """One tiny call through the REAL router+adapter path, retried on failure.
+
+    Returns a dict. `attempts_made` and `transient_recovered` record whether a
+    retry was needed -- a call that succeeds only on retry is NOT the same fact
+    as one that succeeds first time, and a caller may want to know.
+    """
     from cam.core.provider_router import ModelTarget, ProviderRouter, RouterConfig
+    n = attempts or RETRY_ATTEMPTS
+    waits = backoff or RETRY_BACKOFF_SEC
     rec = {"served_model": None, "is_fallback": None, "elapsed_sec": None,
-           "reply": None, "usage": None, "raw_error": None, "raw_error_type": None}
+           "reply": None, "usage": None, "raw_error": None, "raw_error_type": None,
+           "attempts_made": 0, "transient_recovered": False}
     t0 = time.time()
-    try:
-        target = ModelTarget(
-            name="modelcheck-%s-%s" % (provider, model),
-            provider=provider, model=model,
-            # 256, not 16. A reasoning model spends its output budget thinking
-            # before emitting text, so a too-small budget returns empty and the
-            # adapter raises `google_empty_output: no extractable text`. Measured:
-            # gemini-3.1-pro-preview FAILS at 16 and 64, SUCCEEDS at 256 and 1024.
-            # At 16 this check reported the live extractor as broken -- a daily
-            # false alarm, caught only because Part C forced a discrimination test.
-            max_output_tokens=PROBE_OUTPUT_TOKENS,
-            temperature=0.0,           # the parameter anthropic 1.x rejected
-            timeout_sec=90.0,
-        )
-        # Single-target router: no fallback is possible, so a failure here is a
-        # failure of THIS model rather than of the chain.
-        router = ProviderRouter([target], RouterConfig())
-        adapter = router._get_adapter(provider)
-        raw = (adapter.call("Answer in one word.", "Reply with exactly: OK", target) or "").strip()
-        rec.update({"served_model": model, "is_fallback": False,
-                    "elapsed_sec": round(time.time() - t0, 2),
-                    "reply": raw[:40], "usage": getattr(adapter, "last_usage", None)})
-    except Exception as e:
-        rec.update({"elapsed_sec": round(time.time() - t0, 2),
-                    "raw_error_type": type(e).__name__,
-                    "raw_error": str(e)[:400],
-                    "traceback_tail": traceback.format_exc()[-400:]})
+
+    for attempt in range(1, n + 1):
+        rec["attempts_made"] = attempt
+        try:
+            target = ModelTarget(
+                name="modelcheck-%s-%s" % (provider, model),
+                provider=provider, model=model,
+                # 256, not 16. A reasoning model spends its output budget thinking
+                # before emitting text, so a too-small budget returns empty and the
+                # adapter raises `google_empty_output: no extractable text`.
+                # Measured: gemini-3.1-pro-preview FAILS at 16 and 64, SUCCEEDS at
+                # 256 and 1024. At 16 this check reported the LIVE extractor as
+                # broken -- a daily false alarm, caught only because Step 504 Part C
+                # forced a discrimination test.
+                max_output_tokens=PROBE_OUTPUT_TOKENS,
+                temperature=0.0,           # the parameter anthropic 1.x rejected
+                timeout_sec=90.0,
+            )
+            # Single-target router: no fallback is possible, so a failure here is a
+            # failure of THIS model rather than of the chain.
+            router = ProviderRouter([target], RouterConfig())
+            adapter = router._get_adapter(provider)
+            raw = (adapter.call("Answer in one word.", "Reply with exactly: OK", target) or "").strip()
+            rec.update({"served_model": model, "is_fallback": False,
+                        "elapsed_sec": round(time.time() - t0, 2),
+                        "reply": raw[:40], "usage": getattr(adapter, "last_usage", None),
+                        "raw_error": None, "raw_error_type": None,
+                        "transient_recovered": attempt > 1})
+            return rec
+        except Exception as e:
+            rec.update({"elapsed_sec": round(time.time() - t0, 2),
+                        "raw_error_type": type(e).__name__,
+                        "raw_error": str(e)[:400],
+                        "traceback_tail": traceback.format_exc()[-400:]})
+            if attempt < n:
+                time.sleep(waits[min(attempt - 1, len(waits) - 1)])
     return rec
 
 

@@ -128,11 +128,26 @@ def _run_check():
         err = "%s: %s" % (type(e).__name__, e)
         logger.error("[startup_health] check could not run: %s", err)
 
+    # Step 514: the SDK-manifest comparison. No provider call, no scheduler, no
+    # persistent state -- it reads installed metadata and a committed file. This is
+    # the trigger that would have caught 2026-08-26, and boot is exactly when the
+    # change happens, because Railway re-resolves dependencies on every push.
+    sdk_alerts = []
+    try:
+        from app.alerting import check_sdk_manifest
+        sdk_alerts = check_sdk_manifest()
+    except Exception as _me:
+        # Fail closed: an exception here is not a pass.
+        sdk_alerts = [{"kind": "manifest_check_failed", "target": "deps.manifest.json",
+                       "detail": "%s: %s" % (type(_me).__name__, str(_me)[:200])}]
+        logger.error("[startup_health] manifest check itself failed: %s", _me)
+
     failures = [
         "%s:%s (%s)" % (r["provider"], r["model"],
                         r["raw_error_type"] or ("not listed" if r["listed"] is False else "?"))
         for r in rows if (not r["callable"]) or r["listed"] is False
     ]
+    failures += ["%s (%s)" % (a["target"], a["kind"]) for a in sdk_alerts]
     finished = datetime.now(timezone.utc)
     status = "unknown" if err or not rows else ("healthy" if not failures else "unhealthy")
 
@@ -144,6 +159,7 @@ def _run_check():
             "models": rows,
             "sdk_versions": versions,
             "failures": failures,
+            "sdk_alerts": sdk_alerts,
             "error": err,
         })
 

@@ -114,19 +114,27 @@ def evaluate(models: list, sdk_versions: dict, prior: dict) -> tuple:
                     "detail": "no longer listed by the provider (role: %s). A retirement is "
                               "never transient." % row.get("role"),
                 })
-            # (b) healthy -> unhealthy, sustained for two consecutive checks.
-            #     Fires at exactly 2 so it alerts once, not on every later check.
-            #     SUPPRESSED while the target is delisted: a delisted model is also
-            #     unhealthy, so without this its counter reaches 2 one check after
-            #     the `delisted` alert and fires a SECOND message saying nothing new.
-            #     Step 512 Part C caught exactly that -- the cry-wolf failure this
-            #     whole design exists to prevent. Delisting is the specific cause and
-            #     it has already been reported immediately.
-            elif not healthy and consecutive == 2 and listed is not False:
+            # (b) healthy -> unhealthy, on the FIRST confirmed failure.
+            #     Step 514 replaced "two consecutive checks" with retry-within-the-run
+            #     (tools/check_models.try_call: 3 attempts, 2s then 8s backoff). The old
+            #     rule was written with no cadence in mind: at the daily cadence Step 513
+            #     costed it meant up to 48 HOURS before an outage was reported, and Step
+            #     512 measured that state does not survive a redeploy so the second check
+            #     often never happened. The transient absorption now lives in the probe,
+            #     where it costs seconds instead of a day.
+            #     Still fires only on the healthy -> unhealthy TRANSITION, so a known
+            #     failure does not re-alert on every later check.
+            #     SUPPRESSED while delisted: a delisted model is also unhealthy, and
+            #     without this it fires a SECOND message saying nothing new. Step 512
+            #     Part C caught exactly that -- the cry-wolf failure this design exists
+            #     to prevent, produced by the design itself.
+            elif not healthy and was.get("healthy") is not False and listed is not False:
                 alerts.append({
                     "kind": "unhealthy", "target": key,
-                    "detail": "unhealthy on two consecutive checks (role: %s). raw: %s"
-                              % (row.get("role"), (row.get("raw_error") or "")[:200]),
+                    "detail": "unhealthy (role: %s). Probe retried %s time(s) before "
+                              "reporting. raw: %s"
+                              % (row.get("role"), row.get("attempts_made", "?"),
+                                 (row.get("raw_error") or "")[:200]),
                 })
 
         new_models[key] = {
@@ -164,6 +172,11 @@ def _format(alerts: list) -> tuple:
     for a in alerts:
         lines.append("[%s] %s" % (a["kind"].upper(), a["target"]))
         lines.append("    %s" % a["detail"])
+        lines.append("")
+    if any(a["kind"] in ("sdk_change", "manifest_missing", "manifest_unreadable") for a in alerts):
+        lines.append("An SDK version moving without anyone deciding it should is what broke "
+                     "production on 2026-08-26: anthropic 1.x removed `temperature` from "
+                     "Messages.create() and every Anthropic call failed for five days.")
         lines.append("")
     lines.append("This alert keys on the per-model set, not the summary status.")
     return subject, "\n".join(lines)
@@ -233,3 +246,96 @@ def run(models: list, sdk_versions: dict, to_email: str = None, path: str = None
         "dispatch": dispatch_rec,
         "state_persisted": persisted,
     }
+
+
+# ── sdk_change via a COMMITTED MANIFEST (Step 514) ───────────────────────────
+#
+# This closes the 2026-08-26 trigger with NO scheduler, NO volume, NO persistent
+# state and NO provider call. The manifest lives in the repo, which survives a
+# redeploy by construction -- that is what a repo is. The comparison runs at boot,
+# which is WHEN the change happens: Railway re-resolves dependencies on every push.
+#
+# The baseline is generated FROM PRODUCTION, not from local. Step 507 measured
+# local and production differing on 6 of 13 packages, with local the drifted one
+# (it was even below its own declared floor for `anthropic`). A manifest built
+# from a dev box would encode the wrong truth.
+
+MANIFEST_PATH = os.getenv("CAM_DEPS_MANIFEST") or os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "deps.manifest.json")
+
+
+def _installed_versions(names) -> dict:
+    from importlib.metadata import version, PackageNotFoundError
+    out = {}
+    for n in names:
+        try:
+            out[n] = version(n)
+        except PackageNotFoundError:
+            out[n] = "NOT INSTALLED"
+        except Exception as e:                                   # pragma: no cover
+            out[n] = "ERROR: %s" % type(e).__name__
+    return out
+
+
+def check_sdk_manifest(path: str = None, installed: dict = None) -> list:
+    """Compare installed versions against the committed manifest.
+
+    Returns a list of alerts. Empty means the manifest matched -- and ONLY that.
+
+    FAILS CLOSED, and the three not-OK outcomes are DISTINGUISHABLE:
+
+        manifest matches      -> []                       (silent)
+        version differs       -> kind="sdk_change"
+        manifest missing      -> kind="manifest_missing"
+        manifest unreadable   -> kind="manifest_unreadable"
+
+    Step 512's `load_state` collapsed missing and corrupt into a silent cold
+    start, which is fail-OPEN against missing a failure. That defect is
+    deliberately not reproduced here: an absent baseline is not a pass, because
+    "nothing to compare against" and "compared and matched" are different facts.
+    """
+    p = path or MANIFEST_PATH
+
+    if not os.path.exists(p):
+        logger.error("[alerting] deps manifest MISSING at %s -- cannot verify SDK versions", p)
+        return [{
+            "kind": "manifest_missing", "target": os.path.basename(p),
+            "detail": "No dependency manifest at %s. SDK drift cannot be detected at all "
+                      "until this is restored -- this is not a pass." % p,
+        }]
+
+    try:
+        doc = json.load(io.open(p, encoding="utf-8"))
+        expected = doc["packages"]
+        if not isinstance(expected, dict) or not expected:
+            raise ValueError("manifest has no usable `packages` mapping")
+    except Exception as e:
+        logger.error("[alerting] deps manifest UNREADABLE at %s: %s", p, e)
+        return [{
+            "kind": "manifest_unreadable", "target": os.path.basename(p),
+            "detail": "Manifest at %s could not be parsed (%s: %s). Distinct from missing: the file "
+                      "is present but unusable, so SDK drift is undetectable." % (
+                          p, type(e).__name__, str(e)[:160]),
+        }]
+
+    now = installed if installed is not None else _installed_versions(expected.keys())
+    alerts = []
+    for name in sorted(expected):
+        want, got = expected[name], now.get(name, "NOT INSTALLED")
+        if want != got:
+            alerts.append({
+                "kind": "sdk_change", "target": name,
+                # Both versions are reported and the direction is NOT inferred: version
+                # strings do not reliably order (0.125.0 vs 1.2.0 is a major bump; 2.8.1
+                # vs 2.54.0 is not what string comparison suggests). The reader gets the
+                # facts and draws the conclusion.
+                "detail": "expected %s, installed %s" % (want, got),
+                "expected": want, "installed": got,
+            })
+    if alerts:
+        logger.error("[alerting] SDK MANIFEST MISMATCH on %d package(s): %s",
+                     len(alerts), ", ".join(a["target"] for a in alerts))
+    else:
+        logger.info("[alerting] SDK manifest matches installed (%d packages)", len(expected))
+    return alerts
