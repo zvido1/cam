@@ -65,7 +65,6 @@ CHAT_DEFAULTS = {
 DISPLAY_NAMES = {
     # Anthropic
     "claude-sonnet-4-6":           "Claude Sonnet 4.6",
-    "claude-sonnet-4-20250514":    "Claude Sonnet 4.6",
     "claude-opus-4-5-20250514":    "Claude Opus 4.5",
     "claude-haiku-4-5-20251001":   "Claude Haiku 4.5",
     "claude-haiku-4-5":            "Claude Haiku 4.5",

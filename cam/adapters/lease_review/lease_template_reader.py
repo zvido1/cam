@@ -32,7 +32,11 @@ def read_template_summary(text: str) -> dict:
         target = ModelTarget(
             name="anthropic:claude-sonnet",
             provider="anthropic",
-            model="claude-sonnet-4-20250514",
+            # Step 508: same retired id as the gate had. This path returns an EMPTY
+            # summary on failure, so /api/template/summary has been silently returning
+            # nothing. Uses role A's primary rather than the gate's haiku: this extracts
+            # five fields from 12k chars, not a one-word classification.
+            model="claude-sonnet-4-6",
             timeout_sec=30.0,
             max_output_tokens=200,
             temperature=0.0,

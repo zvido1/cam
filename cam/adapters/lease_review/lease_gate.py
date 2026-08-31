@@ -46,7 +46,13 @@ def check_document_is_lease(tenant_text: str, cfg: dict) -> dict:
 
     try:
         # Use fastest/cheapest available model for gate check
-        gate_model = cfg.get("gate_model", "claude-sonnet-4-20250514")
+        # Step 508: was "claude-sonnet-4-20250514", which has been RETIRED and 404s
+        # on every call. The except-block below is fail-open (`is_lease: True`), so the
+        # gate has been a permanent no-op since that id was withdrawn -- every document
+        # passed, including one that is not a lease. claude-haiku-4-5 is the cheapest
+        # and fastest model already in the pipeline (role A's own-chain fallback), which
+        # is exactly what the comment above asks for.
+        gate_model = cfg.get("gate_model", "claude-haiku-4-5-20251001")
         gate_provider = cfg.get("gate_provider", "anthropic")
         gate_timeout = cfg.get("gate_timeout", 30.0)
 

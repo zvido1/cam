@@ -62,7 +62,7 @@ TARGETS = [
     ("xai",       "grok-4.3",                   "panel role C (primary)"),
     ("google",    "gemini-3.1-pro-preview",     "extractor (primary)"),
     ("google",    "gemini-2.5-pro",             "shared fallback pool"),
-    ("anthropic", "claude-sonnet-4-20250514",   "document gate default"),
+    ("anthropic", "claude-haiku-4-5-20251001",  "document gate default (Step 508)"),
 ]
 
 
