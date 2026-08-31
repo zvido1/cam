@@ -2288,6 +2288,35 @@ def get_provider_health(request: Request):
     from app.startup_health import get_state
     state = json.loads(json.dumps(get_state(), default=str))
 
+    # Step 510: which branch send_email would take. Uses the SAME predicates the
+    # dispatcher uses (notifications.py:325-338), imported rather than
+    # reimplemented, and evaluated in the dispatcher's own order -- so this cannot
+    # drift from the real behaviour. Sends nothing; reads config only.
+    try:
+        from app.config import email_configured, gmail_api_configured, sendgrid_configured
+        _cfg = get_config()
+        if not email_configured(_cfg) and not sendgrid_configured(_cfg):
+            _branch = "not_configured"      # dispatcher logs and returns True
+        elif sendgrid_configured(_cfg):
+            _branch = "sendgrid"
+        elif gmail_api_configured(_cfg):
+            _branch = "gmail_api"
+        else:
+            _branch = "smtp"
+        state["email"] = {
+            "branch": _branch,
+            "can_send": _branch != "not_configured",
+            "sendgrid_configured": sendgrid_configured(_cfg),
+            "gmail_api_configured": gmail_api_configured(_cfg),
+            "email_configured": email_configured(_cfg),
+            "sendgrid_from_email_set": bool(_cfg.get("SENDGRID_FROM_EMAIL")),
+            # NOTE: `can_send` means a real send would be ATTEMPTED, not that any
+            # send has ever SUCCEEDED. Nothing here proves delivery -- see Step 510
+            # Part C on send_email's return contract.
+        }
+    except Exception as _ee:
+        state["email"] = {"branch": "error", "error": str(_ee)[:200]}
+
     configured = get_config()["ACCESS_CODE"]
     supplied = request.headers.get("X-Access-Code", "")
     authenticated = bool(configured) and supplied == configured
