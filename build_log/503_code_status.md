@@ -80,3 +80,77 @@ DEGRADABLE_APPLICABILITY       {"not_applicable", "unclear"}
 ```
 
 **All thirteen dependencies bounded in HEAD.** Nothing unexpected; no HALT warranted.
+
+# 3. DEPLOYED RUN — THE FIRST ON THE ACTUAL FROZEN PANEL
+
+**Pushed `691a296..969453e`, branch only, no tags. 0 unpushed, 0 tags on remote.**
+Job `lease_review_20260831_005604_2c7470`, completed in 1,248s wall.
+
+## 3.1 Role A serves claude-sonnet-4-6
+
+```
+role A: {"claude-sonnet-4-6": 202}   fallback=0
+role B: {"gpt-5.5": 202}             fallback=0
+role C: {"grok-4.3": 202}            fallback=0
+
+stubs=0  contradictions=0  fallback_events=0
+run_degraded=False  degraded_reason=None
+calls=97  elapsed=762.0s  extractor=gemini-3.1-pro-preview
+```
+
+**This is the first deployed run in this project's history on the specified three-model panel.**
+Every prior deployed run — Step 487 atlas_1, Step 487 atlas_2, Step 500 — had role A served by
+`gemini-2.5-pro` because `anthropic` 1.x rejected `temperature`. **The pin fixed it in production.**
+
+## 3.2 The disclosure fix's NEGATIVE case — silent, correctly
+
+```
+GET /api/jobs/{id}:
+   run_quality                  'clean'
+   panel_substituted            False
+   panel_fallback_noted         False
+   report_incomplete            False
+   invalid_for_legal_analysis   False
+
+panel_substitution_lines(): None
+incomplete_report_lines():  None
+```
+
+**`run_quality` is `clean` — the first deployed run ever to report it.** Step 500 fired the banner on
+a substituted panel; this proves the other half: **on an intact panel it says nothing.** A disclosure
+that always fires is worthless, and until now the negative case had never been observed deployed.
+
+## 3.3 Seam LPs — deployed now matches local
+
+| LP | local 503 | **DEPLOYED 503** | DEPLOYED 500 |
+|---|---|---|---|
+| **LP-07** | 5/1, 5 spans, 1635 | **5/1, 5 spans, 1635** | 5/1, 5 spans, 1635 |
+| **LP-16** | 3/2, 0 spans, 388 | **3/2, 0 spans, 388** | 3/2, 0 spans, 388 |
+| **LP-27** | 8/1, 9 spans, 1243 | **8/1, 9 spans, 1243** | 8/1, 9 spans, 1243 |
+| LP-12 | review_needed 1/1 | review_needed 0/0 | review_needed 0/0 |
+| LP-17 | covered 6/0 | **partial 5/0** | covered 6/0 |
+
+**LP-07, LP-16 and LP-27 are byte-identical across local and both deployed runs.**
+
+**LP-17 lands at `partial 5/0` here**, where local 503 and deployed 500 both gave `covered 6/0`. That
+is the third distinct value for LP-17 across runs (5/1, 5/0, 6/0) on identical evidence, and it
+**further confirms §1.2**: the 6/0 outcome tracks neither the panel nor the environment. It is
+evaluator variance, and this run — the only one on the correct panel — produced the *lower* value.
+
+## 3.4 Cost
+
+97 calls / 762.0s pipeline. Deployed 500 was 98 / 839.9s; local runs 96–99 / 743–858s. Unremarkable.
+
+---
+
+## WHAT IS NOT ESTABLISHED
+
+- **One deployed run on the correct panel.** Not a rate. Whether Anthropic stays healthy in
+  production across many runs is unmeasured.
+- **divall deployed.** Not attempted this step. It failed at Step 500 on LP-07 with no retry, and the
+  deployed app still does not retry a gate abort.
+- **Whether `client_error` ever fires deployed.** The classifier fix shipped in this deploy and has no
+  live instance — by construction, since the condition it names was just repaired.
+- **The gate's dead model id** (`claude-sonnet-4-20250514`) is unchanged and still 404s on every run.
+- **The Step-500 failed-job gap** — a failed job still carries none of the Step-498 fields — is
+  unfixed.
