@@ -251,6 +251,7 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
             asymmetric_items = []
             review_items = []
             covered_count = 0
+            not_assessed_items = []
             for item in coverage_assessment:
                 bucket = _resolve_display(item, perspective)["bucket"]
                 if bucket == "needs_attention":
@@ -261,6 +262,11 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                     asymmetric_items.append(item)
                 elif bucket == "worth_reviewing":
                     review_items.append(item)
+                elif bucket == "not_assessed":
+                    # Step 522: MUST be its own branch. The pre-522 `else` swept
+                    # this into covered_count, which is how Step 521 measured a
+                    # withheld verdict being reported as "covered".
+                    not_assessed_items.append(item)
                 else:
                     covered_count += 1
 
@@ -273,6 +279,9 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
             if asymmetric_items:
                 summary_parts.append(f"{len(asymmetric_items)} asymmetric term(s)")
             summary_parts.append(f"{len(review_items)} worth reviewing")
+            # Step 522: counted separately and named, never merged into "covered".
+            if not_assessed_items:
+                summary_parts.append(f"{len(not_assessed_items)} NOT ASSESSED")
             summary_parts.append(f"{covered_count} covered.")
             y = add_text(
                 page, M, y,
@@ -306,6 +315,34 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                 # Step 279: single-line item header. Marker carries
                 # severity, the section bucket header above carries
                 # category — so the per-item state label is dropped.
+                #
+                # Step 522 EXCEPTION: the "Not Assessed" section holds two
+                # different facts — never judged, and judged-then-discarded — so
+                # its header cannot carry the category for both. The per-item
+                # label comes back for these, and ONLY these.
+                _astatus = item.get("assessment_status") or "unset"
+                if _astatus != "assessed":
+                    _albl = {
+                        "not_assessed": "NOT ASSESSED",
+                        "suppressed":   "ASSESSMENT DISCARDED",
+                    }.get(_astatus, "ASSESSMENT STATUS NOT RECORDED")
+                    cy = new_page_if_needed(cy, 30)
+                    cy = add_text(page, M, cy, f"{pid} {pname}  [{_albl}]",
+                                  size=10, bold=True, color=tier_color)
+                    # The schema's exposure prose and expected-element list are
+                    # NOT printed here. On an entry nobody judged they are
+                    # boilerplate, and printing "Missing: <six elements>" would
+                    # assert a finding no evaluator produced -- the R4/R5 defect
+                    # Step 521 named. The reason is printed instead.
+                    _why = {
+                        "not_assessed": "No evaluation was performed for this provision.",
+                        "suppressed":   "An evaluation was attempted and its result was discarded; "
+                                        "the state shown elsewhere does not rest on it.",
+                    }.get(_astatus,
+                          "The stage that produced this entry did not record whether it was evaluated.")
+                    cy = new_page_if_needed(cy, 20)
+                    cy = add_text(page, M + 10, cy, _why, size=8.5, color=(0.28, 0.33, 0.40))
+                    return cy
                 if headline:
                     header_text = f"{pid} {pname} — {headline}"
                 else:
@@ -370,6 +407,11 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                 "asymmetric_favor": (0.09, 0.64, 0.29),  # green
                 "asymmetric":       (0.49, 0.23, 0.93),  # purple
                 "coverage_gaps":    (0.76, 0.27, 0.05),  # red/orange
+                # Step 522: slate, NOT the red/orange default. The PDF colours by
+                # section tier; letting this fall through to the gaps colour would
+                # render an unjudged entry as a finding, which is the opposite
+                # error from rendering it as covered but still a false claim.
+                "not_assessed":     (0.28, 0.33, 0.40),  # slate
             }
             for section in sections:
                 tier_color = section_colors.get(section["key"], (0.76, 0.27, 0.05))

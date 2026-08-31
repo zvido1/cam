@@ -31,12 +31,16 @@ BUCKET_SECTION_HEADERS = {
     "asymmetric_terms":        "Asymmetric Terms",
     "worth_reviewing":         "Worth Reviewing",
     "covered":                 "Covered",
+    # Step 522: entries that were never judged, or whose judgment was discarded.
+    # Deliberately NOT folded into "Covered" -- Step 521 measured that fall-through
+    # and found a withheld verdict rendering as a checkmark.
+    "not_assessed":            "Not Assessed",
 }
 
 BUCKET_ORDER_BY_PERSPECTIVE = {
-    "tenant":   ["needs_attention", "worth_reviewing", "covered"],
-    "landlord": ["needs_attention", "favorable_to_your_side", "worth_reviewing", "covered"],
-    "neutral":  ["needs_attention", "asymmetric_terms", "worth_reviewing", "covered"],
+    "tenant":   ["needs_attention", "worth_reviewing", "not_assessed", "covered"],
+    "landlord": ["needs_attention", "favorable_to_your_side", "worth_reviewing", "not_assessed", "covered"],
+    "neutral":  ["needs_attention", "asymmetric_terms", "worth_reviewing", "not_assessed", "covered"],
 }
 
 BUCKET_COLORS_HEX = {
@@ -45,6 +49,9 @@ BUCKET_COLORS_HEX = {
     "asymmetric_terms":        "#7c3aed",
     "worth_reviewing":         "#d97706",
     "covered":                 "#16a34a",
+    # Slate, not amber and not green: this is an absence of information, not a
+    # risk grade. It must not read as either "fine" or "bad".
+    "not_assessed":            "#475569",
 }
 
 # Buckets whose items get a coverage callout in the annotated PDF/DOCX
@@ -108,6 +115,28 @@ def _resolve_display(coverage_item: dict, perspective: Optional[str]) -> dict:
     p = (perspective or "tenant").lower()
     if p not in ("tenant", "landlord", "neutral"):
         p = "tenant"
+
+    # ── Step 522: assessment_status outranks coverage_state ───────────────────
+    # An entry nobody judged has a coverage_state anyway -- `not_applicable`,
+    # `review_needed`, whatever `default_when_unclear` resolved to -- and Step 521
+    # measured every one of those falling through to COVERED. The state describes
+    # WHAT was concluded; this describes WHETHER anything was. Whether must win,
+    # because a conclusion nobody reached is not a conclusion.
+    #
+    # Absent field -> treated as "unset", NOT as assessed. Fail-closed: a result
+    # produced before this field existed, or by a route that forgets it, is shown
+    # as unrecorded rather than silently promoted to a clean verdict.
+    status = coverage_item.get("assessment_status") or "unset"
+    if status != "assessed":
+        _lbl = {
+            "not_assessed": "NOT ASSESSED",
+            "suppressed":   "ASSESSMENT DISCARDED",
+        }.get(status, "ASSESSMENT STATUS NOT RECORDED")
+        return {"bucket": "not_assessed",
+                "label":  _lbl,
+                "tone":   "not_assessed",
+                "marker": "?",
+                "assessment_status": status}
 
     if state == "covered_unfavorable":
         if p == "landlord":
@@ -214,6 +243,7 @@ def resolve_sections(coverage_items: list, perspective: str) -> list:
         "asymmetric_terms":        [],
         "worth_reviewing":         [],
         "covered":                 [],
+        "not_assessed":            [],
     }
     for item in coverage_items or []:
         disp = _resolve_display(item, p)
@@ -221,6 +251,9 @@ def resolve_sections(coverage_items: list, perspective: str) -> list:
 
     coverage_gaps_items = grouped["needs_attention"] + grouped["worth_reviewing"]
     covered_items = grouped["covered"]
+    # Step 522: kept OUT of coverage_gaps_items and OUT of covered_items. It is
+    # neither a finding nor a clean bill, and folding it into either is the defect.
+    not_assessed_items = grouped["not_assessed"]
 
     sections = []
 
@@ -281,6 +314,23 @@ def resolve_sections(coverage_items: list, perspective: str) -> list:
                 ),
                 "items": coverage_gaps_items,
             })
+
+    # Step 522: emitted for all three perspectives, and placed BEFORE "Covered"
+    # so a reader scanning downward meets the unjudged entries before the clean
+    # ones. Every perspective shares this tail; the bucket is perspective-blind
+    # because "nobody judged it" is not a matter of viewpoint.
+    if not_assessed_items:
+        sections.append({
+            "key":   "not_assessed",
+            "title": "Not Assessed",
+            "intro": (
+                "The following provisions were NOT evaluated. They are not "
+                "findings and they are not clean bills of health -- no judgment "
+                "was reached about them, so their absence from the sections above "
+                "means nothing was checked, not that nothing was wrong."
+            ),
+            "items": not_assessed_items,
+        })
 
     if covered_items:
         sections.append({

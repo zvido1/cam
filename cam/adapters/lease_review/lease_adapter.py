@@ -2197,6 +2197,13 @@ def _compute_summary_analyze(
         "total_provisions_checked": provisions_extracted,
         "issue_areas_assessed": len(coverage_assessment),
         "requires_attention": sum(1 for c in coverage_assessment if c.get("requires_attention")),
+        # Step 522: exposed beside requires_attention so an API consumer can tell
+        # "nothing to report" from "nothing was checked" without reading per-LP
+        # entries. Absent status counts as NOT assessed -- fail-closed.
+        "not_assessed": sum(
+            1 for c in coverage_assessment
+            if (c.get("assessment_status") or "unset") != "assessed"
+        ),
         "with_missing_elements": sum(1 for c in coverage_assessment if c.get("elements_missing")),
         "coverage_states": states,
         "materiality": materiality,

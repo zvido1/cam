@@ -1187,6 +1187,12 @@ def _generate_combined_synopsis_inner(
             "favorable_to_your_side":  "favorable terms",
             "asymmetric_terms":        "asymmetric terms",
             "worth_reviewing":         "worth reviewing",
+            # Step 522: capitalised because it is not a severity tier -- it is a
+            # statement that the analysis did not cover these, and it must not
+            # scan as just another quiet count between "worth reviewing" and
+            # "covered". Adding the bucket to BUCKET_ORDER_BY_PERSPECTIVE without
+            # this entry raises KeyError here, which is how the omission was found.
+            "not_assessed":            "NOT ASSESSED",
             "covered":                 "covered",
         }
         parts = [f"{bucket_counts[b]} {bucket_phrase[b]}" for b in order]

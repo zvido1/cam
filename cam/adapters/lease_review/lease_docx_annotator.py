@@ -426,6 +426,44 @@ def _insert_summary_section(doc, results):
                 _add_para(desc, size=9, indent=180)
             _add_para("", size=4, space_after=4)
 
+    # ── Step 522: entries nobody judged ───────────────────────────────────────
+    # The annotated DOCX carries in-document callouts only for ANNOTATED_BUCKETS,
+    # and a not-assessed entry has no anchor text to attach one to -- so before
+    # this block it was invisible in this artefact entirely. A reader handed the
+    # DOCX would see clean margins and conclude the provision was checked.
+    # Listed here, in the summary, where absence of a callout can be explained.
+    _na_items = [
+        c for c in (results.get("coverage_assessment") or [])
+        if (c.get("assessment_status") or "unset") != "assessed"
+    ]
+    if _na_items:
+        _add_para("", size=4, space_after=4)
+        _add_para(
+            f"NOT ASSESSED — {len(_na_items)} provision(s)",
+            size=10, bold=True, color="475569", shading="F1F5F9", border_color="475569",
+            space_after=2,
+        )
+        _add_para(
+            "These provisions were not evaluated. They carry no margin callout below, "
+            "and that absence means nothing was checked — not that nothing was wrong.",
+            size=9, indent=180, space_after=3,
+        )
+        _na_labels = {
+            "not_assessed": "NOT ASSESSED",
+            "suppressed":   "ASSESSMENT DISCARDED",
+        }
+        for _c in _na_items:
+            _st = _c.get("assessment_status") or "unset"
+            _add_para(
+                "%s %s  [%s]" % (
+                    _c.get("issue_area_id", ""),
+                    _c.get("issue_area_name", "") or "",
+                    _na_labels.get(_st, "ASSESSMENT STATUS NOT RECORDED"),
+                ),
+                size=9, indent=180, space_after=1,
+            )
+        _add_para("", size=4, space_after=4)
+
     # Disclaimer + divider. Step 277: Mode A uses the multi-evaluator
     # adjudication pipeline; Mode C uses a single-model coverage layer.
     # Pick the phrasing that matches what actually generated this run.

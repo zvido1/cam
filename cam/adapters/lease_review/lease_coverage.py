@@ -368,6 +368,10 @@ def assess_coverage(
             except Exception:
                 pass
 
+        # Step 522: did the 305 panel run and raise? R8 below is reached both
+        # normally and as the 305 exception fallback, and those are different facts.
+        _status_legacy = "assessed"
+
         # ── Step 1: Applicability ─────────────────────────────────────────────
         applicability_result = is_applicable(pid, full_tenant_text)
 
@@ -382,6 +386,8 @@ def assess_coverage(
                 applicability=applicability_result, evidence_summary=reason,
                 supporting_provisions=[], negative_space=[],
                 elements_found=[], elements_missing=[], tenant_text="",
+                # Step 522 R1 applicability excluded/not_applicable -- no judgment made
+                assessment_status="not_assessed",
             )
             assessments.append(_a)
             _emit(_a)
@@ -395,6 +401,8 @@ def assess_coverage(
                 evidence_summary=f"Cannot determine whether this issue area applies; defaulting to '{default_state}'",
                 supporting_provisions=[], negative_space=ns_signals.get(pid, []),
                 elements_found=[], elements_missing=[], tenant_text="",
+                # Step 522 R2 applicability unclear -- routed to default_when_unclear, nothing judged
+                assessment_status="not_assessed",
             )
             assessments.append(_a)
             _emit(_a)
@@ -428,6 +436,8 @@ def assess_coverage(
                 ),
                 supporting_provisions=[], negative_space=[],
                 elements_found=[], elements_missing=[], tenant_text="",
+                # Step 522 R3 extraction status NOT_APPLICABLE -- short-circuit, nothing judged
+                assessment_status="not_assessed",
             )
             assessments.append(_a)
             _emit(_a)
@@ -460,6 +470,8 @@ def assess_coverage(
                 supporting_provisions=[pid] if prov else [], negative_space=ns,
                 elements_found=[], elements_missing=get_expected_elements(pid),
                 tenant_text=tenant_text,
+                # Step 522 R4 reserved/omitted signal -- elements_missing asserted, no evaluator ran
+                assessment_status="not_assessed",
             )
             assessments.append(_a)
             _emit(_a)
@@ -496,6 +508,8 @@ def assess_coverage(
                     supporting_provisions=[], negative_space=ns,
                     elements_found=[], elements_missing=get_expected_elements(pid),
                     tenant_text="",
+                    # Step 522 R5 no tenant text -- elements_missing asserted, no evaluator ran
+                    assessment_status="not_assessed",
                 )
                 assessments.append(_a)
                 _emit(_a)
@@ -513,6 +527,8 @@ def assess_coverage(
                 supporting_provisions=[pid], negative_space=ns,
                 elements_found=elements_found, elements_missing=elements_missing,
                 tenant_text=tenant_text,
+                # Step 522 R6 global-scan path -- deterministic element matching DID judge this
+                assessment_status="assessed",
             )
             assessments.append(_a)
             _emit(_a)
@@ -584,6 +600,8 @@ def assess_coverage(
                     elements_found=_result_305.get("elements_present", []),
                     elements_missing=_result_305.get("elements_missing", []),
                     tenant_text=tenant_text,
+                    # Step 522 R7 Step 305 panel -- the only route where evaluators voted
+                    assessment_status="assessed",
                 )
                 _a["coverage_method"] = _result_305.get("coverage_method", "step_305_per_element")
                 _a["element_verdicts"] = _result_305.get("element_verdicts", [])
@@ -615,6 +633,10 @@ def assess_coverage(
                     f"[lease_coverage] Step 305 assessment failed for {pid}: {_e_305}; "
                     f"falling through to legacy path"
                 )
+                # Step 522: the panel ran and its product was discarded. That is not
+                # the same fact as "a deterministic path assessed this", and before
+                # this line nothing on the assessment recorded it.
+                _status_legacy = "suppressed"
                 # Fall through to existing element assessment below
 
         elements_found, elements_missing = _assess_elements(
@@ -634,6 +656,8 @@ def assess_coverage(
             supporting_provisions=[pid] if prov else [], negative_space=ns,
             elements_found=elements_found, elements_missing=elements_missing,
             tenant_text=tenant_text,
+            # Step 522 R8 legacy path; "suppressed" when the 305 panel raised and was discarded
+            assessment_status=_status_legacy,
         )
         assessments.append(_a)
         _emit(_a)
@@ -1007,7 +1031,7 @@ def _check_unenforceable_patterns(pid, text_lower):
 
 def _build_assessment(pid, area, coverage_state, applicability, evidence_summary,
                       supporting_provisions, negative_space, elements_found, elements_missing,
-                      tenant_text=""):
+                      tenant_text="", assessment_status="unset"):
     from cam.adapters.lease_review.lease_knowledge import (
         get_caution_signals, get_caution_signal_definition,
         get_exposure_statement, get_risk_if_missing, get_related_issue_areas,
@@ -1038,6 +1062,17 @@ def _build_assessment(pid, area, coverage_state, applicability, evidence_summary
             "missing", "broken_xref", "covered_unfavorable",
             "partial", "potentially_unenforceable", "review_needed"
         ),
+        # Step 522: was this entry actually judged, and by what?
+        #   assessed     -- a judgment was produced for this LP (panel or deterministic)
+        #   not_assessed -- no judgment was made; the entry is a routing artefact
+        #   suppressed   -- a judgment was attempted and its product was DISCARDED
+        #   unset        -- the emitting site did not say
+        # FAIL-CLOSED: the default is "unset", never "assessed". A route that
+        # forgets must not have the schema claim a judgment nobody made -- that is
+        # the exact defect this field exists to prevent, so the absent case is
+        # surfaced as loudly as not_assessed rather than absorbed into the clean
+        # bucket. Every one of the eight call sites passes this explicitly.
+        "assessment_status": assessment_status,
         # Step 297d.J-fix: which party is adversely affected when state is covered_unfavorable.
         # Read from schema area.covered_unfavorable_adverse_to; null for non-unfavorable states.
         # Frontend uses this (not exposure_perspective) to determine viewer-favorability.

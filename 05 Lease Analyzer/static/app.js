@@ -18147,6 +18147,20 @@ function classifyFindingType(finding, mode, context) {
     // Consequence tier (UNCHANGED — use_impact.materiality + partial_class + use_consequence).
     // Wrapped so the hard_flag floor below can run as the genuine LAST step (promote-only).
     var _consequenceBucket = (function() {
+        // Step 522: an entry nobody judged must never reach 'addressed'. It has a
+        // coverage_state regardless -- not_applicable, review_needed, whatever
+        // default_when_unclear produced -- and Step 521 measured those landing in
+        // the clean bucket on every surface. Absent field counts as not assessed.
+        // Routed to the EXISTING 'review_needed' bucket, not to a new
+        // 'not_assessed' value. Every downstream consumer here is an if/else-if
+        // chain over risk / review_needed / improvement; a novel value falls
+        // through all of them and the entry disappears from the page entirely --
+        // which trades a false all-clear for a silent omission. Surfacing it in
+        // Needs Review is correct-in-kind and uses machinery that already works.
+        // The per-LP label does not yet say WHICH kind of review; that needs the
+        // web surface exercised, which this step did not do.
+        var _astatus = finding.assessment_status || 'unset';
+        if (_astatus !== 'assessed') return 'review_needed';
         if (state === 'covered' || state === 'covered_typical' || state === 'not_applicable') return 'addressed';
         if (state === 'potentially_unenforceable') return 'risk';
 
