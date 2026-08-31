@@ -1,33 +1,52 @@
 # CAM Lease Analyzer — Python Dependencies
 # Install: pip install -r requirements.txt
+#
+# ── EVERY DEPENDENCY IS UPPER-BOUNDED. Step 502. ─────────────────────────────
+# Railway rebuilds on every push and resolves each `>=` to whatever is newest at
+# build time. `anthropic>=0.78.0` was unbounded from initial deployment; on the
+# 2026-08-26 push it resolved to 1.x, which had REMOVED `temperature` from
+# Messages.create(), and every Anthropic call in production failed client-side
+# for five days. See build_log/FINDING_deployed_anthropic_sdk_break.md.
+#
+# POLICY
+#   ceiling = the next breaking boundary above the VERIFIED version:
+#             next major for >=1.0 packages, next minor for 0.x (0.x makes
+#             breaking changes in minors -- anthropic 0.125.0 -> 1.0.0 is the
+#             case in point, and fastapi/httpx behave the same way).
+#   floor   = the existing declared floor, RAISED only where the verified
+#             version sits in a different major than that floor allowed.
+#
+# Versions below were the ones actually installed and exercised on 2026-08-30:
+# 367 tests passing, plus live calls to gemini-2.5-pro, gemini-3.1-pro-preview,
+# claude-sonnet-4-6, gpt-5.5 and grok-4.3. They are not guesses.
+#
+# Raising a ceiling is a deliberate act: bump it, reinstall, run the suite AND a
+# live call per provider, then deploy. Do not widen one to resolve a conflict.
 
 # ── Web framework ──
-fastapi>=0.110.0
-uvicorn[standard]>=0.27.0
-python-multipart>=0.0.6
+fastapi>=0.110.0,<0.125.0
+uvicorn[standard]>=0.27.0,<0.35.0
+python-multipart>=0.0.6,<0.1.0
 
 # ── Environment variables ──
-python-dotenv>=1.0.0
+python-dotenv>=1.0.0,<2.0.0
 
 # ── AI providers ──
-# Step 501: anthropic 1.0.0 REMOVED `temperature` from Messages.create(). The
-# floor was unbounded from initial deployment (ec692d3, 2026-03-16), so Railway
-# resolved to 1.x on the 2026-08-26 rebuild and EVERY Anthropic call has raised
-# `TypeError: Messages.create() got an unexpected keyword argument 'temperature'`
-# since -- client-side, in ~1ms, before any HTTP request. provider_router.py:458
-# sets that argument unconditionally outside extended-thinking mode.
-# Verified by wheel inspection: 0.125.0 accepts it, 1.0.0 and 1.2.0 do not.
-# The ceiling is the fix; migrating the adapter to the 1.x API is separate work.
+# anthropic: 1.0.0 removed `temperature` from Messages.create(); provider_router
+# sets it unconditionally outside extended-thinking mode. Ceiling is the fix.
 anthropic>=0.78.0,<1.0.0
-openai>=2.0.0
-google-genai>=1.74.0
-httpx>=0.27.0
+openai>=2.0.0,<3.0.0
+# google-genai: floor RAISED from 1.74.0. Local resolved 2.20.0, which crosses a
+# major boundary the old floor did not cover; 2.20.0 is the version verified
+# against both gemini models, so the floor now names the major that was tested.
+google-genai>=2.0.0,<3.0.0
+httpx>=0.27.0,<0.29.0
 
 # ── Google APIs ──
-google-api-python-client>=2.100.0
-google-auth>=2.23.0
+google-api-python-client>=2.100.0,<3.0.0
+google-auth>=2.23.0,<3.0.0
 
 # ── Document parsing ──
-python-docx>=1.1.0
-PyMuPDF>=1.24.0
-reportlab>=4.0.0
+python-docx>=1.1.0,<2.0.0
+PyMuPDF>=1.24.0,<2.0.0
+reportlab>=4.0.0,<5.0.0

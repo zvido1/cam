@@ -158,6 +158,18 @@ def _is_split_model(model: str) -> bool:
     return (model or "").lower().startswith("gpt-5")
 
 
+# Step 502: builtin exception types that can only be raised INSIDE this process.
+# A call that raises one of these never reached the provider, so classifying it as
+# an API error asserts something that did not happen. Deliberately narrow: SDK
+# exceptions (APIStatusError, RateLimitError, APIConnectionError, ...) are NOT here
+# -- those did reach, or did try to reach, the network.
+_CLIENT_SIDE_EXCEPTIONS = (
+    "typeerror", "attributeerror", "nameerror", "importerror",
+    "modulenotfounderror", "indexerror", "keyerror", "syntaxerror",
+    "unboundlocalerror", "notimplementederror",
+)
+
+
 def _classify_failure(error_msg: str, model: str) -> str:
     """Classify why a primary evaluator call failed (Step 372c observability).
 
@@ -168,6 +180,18 @@ def _classify_failure(error_msg: str, model: str) -> str:
     m = (error_msg or "").lower()
     if "degraded" in m or "already claimed" in m:
         return "provider_unavailable"
+    # Step 502: a wrapped exception whose TYPE is a Python builtin never left the
+    # process. provider_router wraps every adapter exception as
+    # "<provider>_error: <TypeName>: <message>" (e.g. :474), so the `_error:`
+    # clause below matches the PREFIX every provider exception carries -- it
+    # detects "came from an adapter", not "the API responded with an error", and
+    # being first it shadows every clause after it. On 2026-08-26 that labelled
+    # `TypeError: Messages.create() got an unexpected keyword argument
+    # 'temperature'` as api_error; the call failed client-side in ~1ms having
+    # never made a request, and the investigation went to the billing dashboard.
+    # This check runs BEFORE that clause and changes nothing else.
+    if any((": %s:" % _n) in m for _n in _CLIENT_SIDE_EXCEPTIONS):
+        return "client_error"
     if ("_error:" in m or "timeout" in m or "timed out" in m or "rate" in m
             or "429" in m or "connection" in m or "unauthorized" in m
             or "401" in m or " 500" in m or " 502" in m or " 503" in m):
