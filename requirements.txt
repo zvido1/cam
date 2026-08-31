@@ -10,7 +10,15 @@ python-multipart>=0.0.6
 python-dotenv>=1.0.0
 
 # ── AI providers ──
-anthropic>=0.78.0
+# Step 501: anthropic 1.0.0 REMOVED `temperature` from Messages.create(). The
+# floor was unbounded from initial deployment (ec692d3, 2026-03-16), so Railway
+# resolved to 1.x on the 2026-08-26 rebuild and EVERY Anthropic call has raised
+# `TypeError: Messages.create() got an unexpected keyword argument 'temperature'`
+# since -- client-side, in ~1ms, before any HTTP request. provider_router.py:458
+# sets that argument unconditionally outside extended-thinking mode.
+# Verified by wheel inspection: 0.125.0 accepts it, 1.0.0 and 1.2.0 do not.
+# The ceiling is the fix; migrating the adapter to the 1.x API is separate work.
+anthropic>=0.78.0,<1.0.0
 openai>=2.0.0
 google-genai>=1.74.0
 httpx>=0.27.0
