@@ -2255,27 +2255,45 @@ async def delete_job(job_id: str):
 
 
 @app.get("/api/provider-health")
-def get_provider_health():
-    """Cached boot-time provider health. Step 506.
+def get_provider_health(request: Request):
+    """Cached boot-time provider health. Step 506, gated at Step 507.
 
-    ALWAYS RETURNS HTTP 200, deliberately. Health lives in the BODY, not the
-    status code. railway.toml configures no healthcheckPath, but a healthcheck
-    could be set in the Railway dashboard where this repo cannot see it -- and a
-    non-200 from a path a platform polls for liveness would restart the container,
-    turning a provider blip into an outage. Step 505 flagged exactly that loop.
-    Separating the channels removes the risk regardless of what the dashboard says:
-    the status code is what platforms act on, the body is what monitors read.
+    ALWAYS RETURNS HTTP 200, deliberately, authenticated or not. Health lives in
+    the BODY, not the status code. railway.toml configures no healthcheckPath, but
+    one could be set in the Railway dashboard where this repo cannot see it -- and
+    a non-200 from a path a platform polls for liveness would restart the
+    container, turning a provider blip into an outage (Step 505 flagged that loop).
+    Separating the channels removes the risk regardless of the dashboard: the
+    status code is what platforms act on, the body is what monitors read. The path
+    is also deliberately NOT /health, /healthz or / -- none of the conventional
+    liveness paths a platform polls by default.
 
-    The path is also deliberately NOT /health, /healthz or / -- none of the
-    conventional liveness paths a platform would poll by default.
+    ANONYMOUS  -> {"status": ...} only.
+    AUTHENTICATED -> the full record: per-model listed/callable/served, raw errors,
+                     and the installed version of every pinned SDK.
 
-    `status` is one of: unknown (never ran, still running, or crashed -- treat as
-    UNHEALTHY), healthy, unhealthy. Makes no provider calls; reads the cached
-    boot-time result.
+    Auth is the app's EXISTING shared access code (`config["ACCESS_CODE"]`, the same
+    value compared at :303 and :709) supplied as the `X-Access-Code` header. A GET
+    has no form body, and a query parameter was deliberately NOT offered: it would
+    put the shared secret into Railway's request logs.
+
+    DIVERGENCE, stated because it is deliberate: /api/auth/verify treats an unset
+    ACCESS_CODE as "gate disabled, allow all". This endpoint does the opposite --
+    unset means anonymous-only. Following the existing convention would publish SDK
+    versions and provider reachability from any misconfigured deploy, and that is
+    fingerprinting information. Fail closed.
+
+    Makes no provider calls; reads the cached boot-time result.
     """
     from app.startup_health import get_state
-    return JSONResponse(content=json.loads(json.dumps(get_state(), default=str)),
-                        status_code=200,
+    state = json.loads(json.dumps(get_state(), default=str))
+
+    configured = get_config()["ACCESS_CODE"]
+    supplied = request.headers.get("X-Access-Code", "")
+    authenticated = bool(configured) and supplied == configured
+
+    body = state if authenticated else {"status": state.get("status")}
+    return JSONResponse(content=body, status_code=200,
                         headers={"Cache-Control": "no-store"})
 
 
