@@ -203,6 +203,17 @@ def startup():
     from cam.core.config import find_and_load_env
     find_and_load_env()
 
+    # Step 506: boot-time provider health assertion. Runs on a daemon thread so
+    # boot is never delayed and a failing provider cannot stop the service coming
+    # up. Status starts "unknown", which callers treat as UNHEALTHY -- absence of
+    # a result is never a pass. Launched AFTER find_and_load_env() because it needs
+    # the provider keys.
+    try:
+        from app.startup_health import start_background_check
+        start_background_check()
+    except Exception as _sh_e:
+        logger.error(f"[startup_health] launch failed (status stays unknown): {_sh_e}")
+
     # Ensure directories exist
     Path(config["UPLOAD_DIR"]).mkdir(parents=True, exist_ok=True)
     Path(config["RESULTS_DIR"]).mkdir(parents=True, exist_ok=True)
@@ -2241,6 +2252,31 @@ async def delete_job(job_id: str):
 
     job_manager.delete_job(job_id)
     return {"status": "deleted", "job_id": job_id}
+
+
+@app.get("/api/provider-health")
+def get_provider_health():
+    """Cached boot-time provider health. Step 506.
+
+    ALWAYS RETURNS HTTP 200, deliberately. Health lives in the BODY, not the
+    status code. railway.toml configures no healthcheckPath, but a healthcheck
+    could be set in the Railway dashboard where this repo cannot see it -- and a
+    non-200 from a path a platform polls for liveness would restart the container,
+    turning a provider blip into an outage. Step 505 flagged exactly that loop.
+    Separating the channels removes the risk regardless of what the dashboard says:
+    the status code is what platforms act on, the body is what monitors read.
+
+    The path is also deliberately NOT /health, /healthz or / -- none of the
+    conventional liveness paths a platform would poll by default.
+
+    `status` is one of: unknown (never ran, still running, or crashed -- treat as
+    UNHEALTHY), healthy, unhealthy. Makes no provider calls; reads the cached
+    boot-time result.
+    """
+    from app.startup_health import get_state
+    return JSONResponse(content=json.loads(json.dumps(get_state(), default=str)),
+                        status_code=200,
+                        headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/models")
