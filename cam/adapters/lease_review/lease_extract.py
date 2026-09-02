@@ -343,9 +343,34 @@ MISTRAL_MAX_TOKENS = 32_000
 # Timeouts — both primary and fallback use the same generous limit.
 # Fallback models are invoked when primary is unavailable, meaning the API is
 # likely stressed. Stressed APIs generate tokens more slowly (40-70 tok/s vs 115).
-# At 50 tok/s, a 16k-token chunk response takes ~332s — 300s covers this with margin.
-EXTRACTION_PRIMARY_TIMEOUT = 300.0
-EXTRACTION_FALLBACK_TIMEOUT = 300.0
+#
+# Step 525: RAISED 300.0 -> 540.0. The prior comment's own arithmetic did not
+# support 300 -- it computed a 16k-token response at ~332s and then called 300
+# "margin". The real corpus made that binding: atreca (160,244 chars) failed with
+# "Router timeout exceeded: 308.8s > 300.0s", and because canonical mode
+# suppresses fallback, the run produced NO RESULT AT ALL.
+#
+# The new value is fit to two measured extraction times, not chosen round:
+#     atlas    31,755 chars -> 105.74 s   (measured, Step 524 _stage_data)
+#     atreca  160,244 chars -> >= 308.8 s (CENSORED -- it timed out)
+#   slope = (308.8 - 105.74) / (160,244 - 31,755) = 0.001580 s/char
+#   intercept = 105.74 - 0.001580 * 31,755      = 55.6 s
+#   t(chars) ~= 55.6 + 0.001580 * chars
+#
+#   540 s  ->  (540 - 55.6) / 0.001580 = 306,539 chars = 299.4 KB
+#
+# That covers the largest document in the corpus, everbridge at 294,492 chars
+# (288.6 KB), by about 4%. It is a LOWER bound on capability, because the atreca
+# point is censored -- the true elapsed was >= 308.8s, so the true slope is
+# steeper and the true capacity lower. Treat 299 KB as optimistic.
+#
+# WHY NOT HIGHER: the Google adapter's httpx client is constructed with
+# timeout=600.0 (cam/core/provider_router.py). A router ceiling above 600 would
+# be shadowed by the transport and could never fire. 540 sits deliberately under
+# it, leaving the router timeout as the governing limit with 60s of headroom.
+# Raising past 600 means raising the transport timeout first, in cam/core.
+EXTRACTION_PRIMARY_TIMEOUT = 540.0
+EXTRACTION_FALLBACK_TIMEOUT = 540.0
 
 # Output token caps
 EXTRACTION_MAX_TOKENS_SINGLE = 65_000  # Single-call path — raised from 32k (Step 421B: headroom above observed 27-31k Gemini output)
