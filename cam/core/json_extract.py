@@ -151,7 +151,10 @@ def _extract_all_json_candidates(text: str) -> List[Tuple[int, str, Dict]]:
             try:
                 parsed = json.loads(json_str)
                 if isinstance(parsed, dict):
-                    candidates.append((start_pos, json_str, parsed))
+                    # Step 528: 4th element records whether this candidate needed
+                    # a repair to parse. Appended rather than replacing the shape,
+                    # so existing 3-tuple unpacking keeps working.
+                    candidates.append((start_pos, json_str, parsed, False))
                 continue
             except json.JSONDecodeError:
                 pass
@@ -161,7 +164,7 @@ def _extract_all_json_candidates(text: str) -> List[Tuple[int, str, Dict]]:
                 fixed_json = _fix_latex_escapes(json_str)
                 parsed = json.loads(fixed_json)
                 if isinstance(parsed, dict):
-                    candidates.append((start_pos, fixed_json, parsed))
+                    candidates.append((start_pos, fixed_json, parsed, True))
             except json.JSONDecodeError:
                 continue
     
@@ -181,8 +184,8 @@ def _collect_provision_objects(candidates: list) -> Optional[Dict[str, Any]]:
     if 2+ unique provision objects are found, else None.
     """
     provision_objects = [
-        parsed for _, _, parsed in candidates
-        if _PROVISION_SHAPE.issubset(parsed.keys())
+        c[2] for c in candidates
+        if _PROVISION_SHAPE.issubset(c[2].keys())
     ]
     if len(provision_objects) < 2:
         return None
@@ -203,6 +206,21 @@ def _collect_provision_objects(candidates: list) -> Optional[Dict[str, Any]]:
 
 
 def safe_json_extract(text: str) -> Dict[str, Any]:
+    """Backwards-compatible wrapper: returns only the parsed object.
+
+    Step 528: 107 call sites depend on this signature, so it is unchanged. Any
+    caller that needs to know whether the parse required a repair calls
+    `safe_json_extract_with_meta` instead. Keeping the bare form available is a
+    deliberate compromise -- but note that a caller using THIS function still
+    cannot distinguish a clean parse from a salvaged one, which is precisely the
+    defect Step 527 recorded. The extraction path was migrated; other callers
+    were not, and that is stated rather than hidden.
+    """
+    obj, _meta = safe_json_extract_with_meta(text)
+    return obj
+
+
+def safe_json_extract_with_meta(text: str):
     r"""
     Extract JSON object from a string that might contain extra text.
     Uses balanced brace counting to handle nested JSON structures.
@@ -225,14 +243,15 @@ def safe_json_extract(text: str) -> Dict[str, Any]:
             # Only take the fast path if it's a priority-key wrapper or not a provision object
             # (i.e., don't short-circuit with a single provision object)
             if not _PROVISION_SHAPE.issubset(result.keys()) or any(k in result for k in PRIORITY_KEYS):
-                return result
+                return result, {"repaired": False, "path": "fast_path", "repair_kinds": []}
             # Single provision object on fast path — fall through to full extraction
         except json.JSONDecodeError:
             try:
                 fixed = _fix_latex_escapes(normalized)
                 result = json.loads(fixed)
                 if not _PROVISION_SHAPE.issubset(result.keys()) or any(k in result for k in PRIORITY_KEYS):
-                    return result
+                    return result, {"repaired": True, "path": "fast_path_latex_fixed",
+                                    "repair_kinds": ["latex_escapes"]}
             except json.JSONDecodeError:
                 pass
 
@@ -241,7 +260,7 @@ def safe_json_extract(text: str) -> Dict[str, Any]:
 
     if candidates:
         def score_candidate(item):
-            start_pos, json_str, parsed = item
+            start_pos, json_str, parsed = item[0], item[1], item[2]
             # Priority key presence: any priority key wins with score 1000
             priority_score = 1000 if any(k in parsed for k in PRIORITY_KEYS) else 0
             cam_key_count = sum(1 for k in CAM_KEYS if k in parsed)
@@ -255,22 +274,27 @@ def safe_json_extract(text: str) -> Dict[str, Any]:
 
         # If best candidate has a priority key, return it directly
         if any(k in best[2] for k in PRIORITY_KEYS):
-            return best[2]
+            return best[2], {"repaired": bool(best[3]), "path": "candidate_priority_key",
+                             "repair_kinds": ["latex_escapes"] if best[3] else []}
 
         # No priority-key wrapper found — try collecting individual provision objects
         synthetic = _collect_provision_objects(candidates)
         if synthetic is not None:
-            return synthetic
+            # ALWAYS a repair: the wrapper did not exist in the model's output,
+            # it was assembled here from whichever objects happened to close.
+            return synthetic, {"repaired": True, "path": "collected_provisions",
+                               "repair_kinds": ["synthetic_wrapper"]}
 
         # Fall back to best-scored candidate
-        return best[2]
+        return best[2], {"repaired": bool(best[3]), "path": "candidate_best_scored",
+                         "repair_kinds": ["latex_escapes"] if best[3] else []}
 
     # Try the original text too (before normalization)
     if text != normalized:
         candidates = _extract_all_json_candidates(text)
         if candidates:
             def score_candidate(item):
-                start_pos, json_str, parsed = item
+                start_pos, json_str, parsed = item[0], item[1], item[2]
                 priority_score = 1000 if any(k in parsed for k in PRIORITY_KEYS) else 0
                 cam_key_count = sum(1 for k in CAM_KEYS if k in parsed)
                 field_count = len(parsed)
@@ -281,13 +305,16 @@ def safe_json_extract(text: str) -> Dict[str, Any]:
             best = candidates[0]
 
             if any(k in best[2] for k in PRIORITY_KEYS):
-                return best[2]
+                return best[2], {"repaired": bool(best[3]), "path": "raw_candidate_priority_key",
+                                 "repair_kinds": ["latex_escapes"] if best[3] else []}
 
             synthetic = _collect_provision_objects(candidates)
             if synthetic is not None:
-                return synthetic
+                return synthetic, {"repaired": True, "path": "raw_collected_provisions",
+                                   "repair_kinds": ["synthetic_wrapper"]}
 
-            return best[2]
+            return best[2], {"repaired": bool(best[3]), "path": "raw_candidate_best_scored",
+                             "repair_kinds": ["latex_escapes"] if best[3] else []}
 
     # If nothing worked, give error with context
     excerpt = text[-500:] if len(text) > 500 else text

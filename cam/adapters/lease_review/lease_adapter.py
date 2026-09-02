@@ -1857,13 +1857,25 @@ def run_lease_coverage_only(
     # Step 476: an incomplete extraction degrades the run, and takes precedence in
     # `degraded_reason` because it is the most serious of the three -- a fallback
     # means a substitute model answered, this means the evidence was never there.
+    # Step 528: a REPAIRED extraction degrades the run. The JSON parsed, but only
+    # because code closed a structure the model left open -- so an unknown amount
+    # of evidence never arrived, and the user must not receive that as a clean
+    # result. Uses the existing Step 476-478 degraded path; no new surface.
+    _parse_repaired_c = bool(extraction["meta"].get("parse_repaired"))
     _run_degraded_c = (
         bool(_fallback_events_c) or _run_config_degraded_c or bool(_completeness_failed_ids)
+        or _parse_repaired_c
     )
+    # Precedence: completeness failure first (evidence provably absent for a named
+    # LP), then a repaired parse (evidence truncated, extent unknown), then the
+    # substitution reasons. A repair ranks above fallback because a fallback means
+    # a different model answered in full, while this means SOME model answered in
+    # part and we do not know what was lost.
     _degraded_reason_c = (
         "extraction_completeness_failed" if _completeness_failed_ids
-        else ("evaluator_fallback" if _fallback_events_c
-              else ("chain_config_degraded" if _run_config_degraded_c else None))
+        else ("extraction_truncated_and_repaired" if _parse_repaired_c
+              else ("evaluator_fallback" if _fallback_events_c
+                    else ("chain_config_degraded" if _run_config_degraded_c else None)))
     )
 
     # Step 476: make the failed LPs identifiable in the COVERAGE OUTPUT, not only in
@@ -1975,9 +1987,18 @@ def run_lease_coverage_only(
         "extraction_primary_provider": extraction["meta"].get("primary_provider", "google"),
         "extraction_primary_model": extraction["meta"].get("primary_model", "gemini-3.1-pro-preview"),
         "extraction_fallback_used": extraction["meta"].get("fallback_used", False),
-        "extraction_degraded": extraction["meta"].get("fallback_used", False),
+        "extraction_degraded": bool(extraction["meta"].get("fallback_used", False)) or _parse_repaired_c,
         "extraction_attempt_chain": extraction["meta"].get("extraction_attempt_chain", []),
         "extraction_failure_reason": None,
+        # Step 528: parse provenance on the run record, not only in a log line.
+        "extraction_parse_repaired": _parse_repaired_c,
+        "extraction_parse_path": extraction["meta"].get("parse_path"),
+        "extraction_parse_repair_kinds": extraction["meta"].get("parse_repair_kinds", []),
+        "extraction_provisions_recovered": extraction["meta"].get("provisions_recovered"),
+        "extraction_bytes_discarded": extraction["meta"].get("bytes_discarded"),
+        "extraction_finish_reason": extraction["meta"].get("finish_reason"),
+        "extraction_usage": extraction["meta"].get("usage"),
+        "extraction_raw_char_len": extraction["meta"].get("raw_char_len"),
         "exposure_summary": exposure_summary,
         "conflicts": conflicts_c,
         "jurisdiction": {

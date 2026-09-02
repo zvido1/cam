@@ -27,7 +27,7 @@ from cam.core.provider_router import (
     RouterConfig,
     ProviderError,
 )
-from cam.core.json_extract import safe_json_extract
+from cam.core.json_extract import safe_json_extract, safe_json_extract_with_meta
 from cam.core.provider_health import get_health_tracker
 
 
@@ -197,11 +197,18 @@ def _validate_extraction(obj: dict) -> Tuple[bool, Optional[str]]:
     return True, None
 
 
-def _repair_truncated_json(fragment: str) -> Optional[dict]:
+def _repair_truncated_json(fragment: str):
     """Attempt to repair truncated JSON by closing open structures.
 
     When the model hits max_output_tokens, the JSON is cut off mid-provision.
     We try to close open strings and brackets to salvage completed provisions.
+
+    Step 528: returns `(obj, meta)` or None. Previously it returned a bare dict,
+    structurally identical to a clean parse, and announced the repair only with a
+    print() that nothing captured -- so a truncated extraction and a complete one
+    were the same object to every consumer downstream. `bytes_discarded` is the
+    size of the tail that was thrown away, which is the closest thing available
+    to "how much evidence never arrived".
     """
     # Find the last complete provision object (ends with })
     # Work backwards to find a point where we can close the array and wrapper
@@ -238,14 +245,22 @@ def _repair_truncated_json(fragment: str) -> Optional[dict]:
     try:
         obj = json.loads(truncated)
         if isinstance(obj, dict) and "provisions" in obj and isinstance(obj["provisions"], list):
-            print(f"[lease_extract] Repaired truncated JSON: {len(obj['provisions'])} provisions recovered", flush=True)
-            return obj
+            discarded = len(fragment) - (last_complete + 1)
+            print(f"[lease_extract] Repaired truncated JSON: {len(obj['provisions'])} provisions recovered, "
+                  f"{discarded} bytes discarded", flush=True)
+            return obj, {
+                "repaired": True,
+                "path": "truncation_repair",
+                "repair_kinds": ["closed_truncated_array"],
+                "provisions_recovered": len(obj["provisions"]),
+                "bytes_discarded": discarded,
+            }
     except json.JSONDecodeError:
         pass
     return None
 
 
-def _extract_provisions_json(raw: str) -> dict:
+def _extract_provisions_json(raw: str):
     """Extract the {"provisions": [...]} wrapper from Gemini's response.
 
     The core safe_json_extract picks individual provision objects over the
@@ -262,7 +277,7 @@ def _extract_provisions_json(raw: str) -> dict:
     try:
         obj = json.loads(text)
         if isinstance(obj, dict) and "provisions" in obj:
-            return obj
+            return obj, {"repaired": False, "path": "fast_path_whole_text", "repair_kinds": []}
     except json.JSONDecodeError:
         pass
 
@@ -302,7 +317,7 @@ def _extract_provisions_json(raw: str) -> dict:
         try:
             obj = json.loads(candidate)
             if isinstance(obj, dict) and "provisions" in obj and isinstance(obj["provisions"], list):
-                return obj
+                return obj, {"repaired": False, "path": "balanced_wrapper", "repair_kinds": []}
         except json.JSONDecodeError:
             continue
 
@@ -316,20 +331,24 @@ def _extract_provisions_json(raw: str) -> dict:
             fragment = text[start:]
             repaired = _repair_truncated_json(fragment)
             if repaired:
-                return repaired
+                return repaired  # already an (obj, meta) pair
 
     # Check if model returned a bare array of provisions (no wrapper)
     try:
         arr = json.loads(text)
         if isinstance(arr, list) and len(arr) > 0 and isinstance(arr[0], dict) and "provision_id" in arr[0]:
-            return {"provisions": arr}
+            # The wrapper is synthesised here -- the model returned a bare array.
+            return {"provisions": arr}, {"repaired": True, "path": "bare_array_wrapped",
+                                         "repair_kinds": ["synthetic_wrapper"]}
     except (json.JSONDecodeError, IndexError, KeyError):
         pass
 
     # Last resort: fall back to core extractor (may pick wrong object)
-    obj = safe_json_extract(raw)
+    obj, _core_meta = safe_json_extract_with_meta(raw)
     if isinstance(obj, dict) and "provisions" in obj:
-        return obj
+        _m = dict(_core_meta)
+        _m["path"] = "core_fallback:" + _m.get("path", "?")
+        return obj, _m
 
     raise ValueError("Could not find {'provisions': [...]} in Gemini response")
 
@@ -545,7 +564,14 @@ def _run_extraction_call(
                 continue
 
             try:
-                obj = _extract_provisions_json(raw)
+                obj, _parse_meta = _extract_provisions_json(raw)
+                # Step 528: capture the provider's own truncation signal and token
+                # usage alongside the parse outcome. The adapter has populated both
+                # by now; before this step neither was ever read on this path.
+                _parse_meta = dict(_parse_meta)
+                _parse_meta["finish_reason"] = getattr(adapter, "last_finish_reason", None)
+                _parse_meta["usage"] = getattr(adapter, "last_usage", None)
+                _parse_meta["raw_char_len"] = len(raw)
             except ValueError as ve:
                 elapsed_so_far = time.time() - start_time
                 print(f"{label_prefix} {model_name} JSON extraction failed: {ve}", flush=True)
@@ -861,6 +887,9 @@ def extract_provisions_single_doc(
     start_time = time.time()
     errors = []
     obj = None
+    # Step 528: initialised so a run that never reaches a successful parse cannot
+    # NameError on the way to reporting WHY it failed.
+    _parse_meta: dict = {}
     actual_model = EXTRACTION_CHAIN[0][1]
     actual_provider = EXTRACTION_CHAIN[0][0]
     primary_provider = EXTRACTION_CHAIN[0][0]
@@ -942,7 +971,14 @@ def extract_provisions_single_doc(
                 continue
 
             try:
-                obj = _extract_provisions_json(raw)
+                obj, _parse_meta = _extract_provisions_json(raw)
+                # Step 528: capture the provider's own truncation signal and token
+                # usage alongside the parse outcome. The adapter has populated both
+                # by now; before this step neither was ever read on this path.
+                _parse_meta = dict(_parse_meta)
+                _parse_meta["finish_reason"] = getattr(adapter, "last_finish_reason", None)
+                _parse_meta["usage"] = getattr(adapter, "last_usage", None)
+                _parse_meta["raw_char_len"] = len(raw)
             except ValueError as ve:
                 # ── Raw failure capture (Part 6) ─────────────────────────────
                 print(f"[lease_extract single-doc] {model_name} JSON extraction failed: {ve}", flush=True)
@@ -1069,6 +1105,19 @@ def extract_provisions_single_doc(
             "errors": errors,
             "single_doc": True,
             "extraction_attempt_chain": attempt_chain,
+            # ── Step 528: parse provenance ───────────────────────────────────
+            # Whether the JSON handed back was a straight parse or a salvage, and
+            # the provider's own account of why generation stopped. Step 527 could
+            # not answer "did Atlas or divall ever truncate" because none of this
+            # was recorded anywhere -- the repair announced itself only to stdout.
+            "parse_repaired": bool(_parse_meta.get("repaired")),
+            "parse_path": _parse_meta.get("path"),
+            "parse_repair_kinds": _parse_meta.get("repair_kinds", []),
+            "provisions_recovered": _parse_meta.get("provisions_recovered"),
+            "bytes_discarded": _parse_meta.get("bytes_discarded"),
+            "finish_reason": _parse_meta.get("finish_reason"),
+            "usage": _parse_meta.get("usage"),
+            "raw_char_len": _parse_meta.get("raw_char_len"),
         },
     }
 

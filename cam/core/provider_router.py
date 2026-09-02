@@ -299,6 +299,11 @@ def _extract_usage(resp) -> Optional[dict]:
 class BaseAdapter:
     # Step 372c: most recent call's token usage (None until a call populates it).
     last_usage: Optional[dict] = None
+    # Step 528: the provider's own statement about why generation stopped.
+    # Google sets MAX_TOKENS when it truncates; before this field the value was
+    # read, matched, and dropped on the floor (see the `pass` below), so nothing
+    # downstream could tell a complete response from a cut-off one.
+    last_finish_reason: Optional[str] = None
 
     def call(self, system_prompt: str, user_prompt: str, target: ModelTarget) -> str:
         raise NotImplementedError
@@ -504,7 +509,12 @@ class GoogleGenAIAdapter(BaseAdapter):
 
     def call(self, system_prompt: str, user_prompt: str, target: ModelTarget) -> str:
         import signal
-        
+
+        # Step 528: clear before the call. A stale MAX_TOKENS from a previous
+        # call read as truncation on this one, which would be a false positive of
+        # exactly the kind this field exists to prevent.
+        self.last_finish_reason = None
+
         provider_start_time = time.time()
         router_start_time = time.time()
         
@@ -583,6 +593,27 @@ class GoogleGenAIAdapter(BaseAdapter):
                 if hasattr(signal, "SIGALRM") and _in_main_thread:
                     signal.alarm(0)
                 
+                # Step 528: capture the finish reason and usage from the LAST chunk
+                # of the stream. STREAMING IS THE PRIMARY PATH here (see the comment
+                # above about the SDK's MAX_TOKENS bug), so recording finish_reason
+                # only in the non-streaming fallback below left it None on every
+                # real call -- and a None that means "not recorded" is
+                # indistinguishable from a None that means "not truncated", which
+                # is the exact ambiguity this step exists to remove.
+                if last_chunk is not None:
+                    try:
+                        _lc_cands = getattr(last_chunk, "candidates", None) or []
+                        if _lc_cands:
+                            _fr = getattr(_lc_cands[0], "finish_reason", None)
+                            if _fr:
+                                self.last_finish_reason = str(_fr)
+                        _um = getattr(last_chunk, "usage_metadata", None)
+                        if _um is not None:
+                            self.last_usage = _extract_usage(last_chunk)
+                    except Exception:
+                        # Never let telemetry capture break a successful call.
+                        pass
+
                 # If we got text from streaming, return it
                 if chunks:
                     result = "".join(chunks).strip()
@@ -650,7 +681,13 @@ class GoogleGenAIAdapter(BaseAdapter):
             finish_reason = getattr(cand[0], "finish_reason", None)
             if finish_reason:
                 finish_str = str(finish_reason)
-                # MAX_TOKENS means response was truncated but still has content
+                # Step 528: RECORD it. This branch previously executed `pass` --
+                # the truncation was detected, named in a comment, and discarded,
+                # so a caller had no way to know the JSON it received was a cut-off
+                # prefix. Behaviour is unchanged: MAX_TOKENS still continues to
+                # extraction, because truncated content is still worth salvaging.
+                # What changes is that the salvage is now visible.
+                self.last_finish_reason = finish_str
                 if "MAX_TOKENS" in finish_str:
                     # Continue to extract - truncated content is still valid
                     pass
