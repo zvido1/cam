@@ -663,6 +663,24 @@ def assess_coverage(
         _emit(_a)
 
     logger.info(f"[lease_coverage] Coverage assessment complete: {len(assessments)} issue areas assessed")
+
+    # ── Step 524: qualifier cross-reference ───────────────────────────────────
+    # Runs AFTER every verdict is final and writes ONLY `qualifier_annotations`.
+    # It must never touch tenant_text, span_evidence, element_verdicts or any
+    # coverage state -- the panel's input being byte-identical is what makes the
+    # Step-466 precision regression impossible here, and that guarantee is a
+    # property of this call site, not of the module. Wrapped: an annotation
+    # failing must never cost a run its verdicts.
+    try:
+        from cam.adapters.lease_review.lease_qualifier_xref import annotate_assessments
+        _n_q = annotate_assessments(assessments, full_tenant_text)
+        if _n_q:
+            logger.info(
+                f"[lease_coverage] Step 524: qualifier annotations attached to {_n_q} LP(s)"
+            )
+    except Exception as _e_q:
+        logger.warning(f"[lease_coverage] Step 524 qualifier cross-reference failed: {_e_q}")
+
     _log_coverage_summary(assessments)
     return assessments
 

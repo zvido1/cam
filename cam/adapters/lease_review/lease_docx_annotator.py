@@ -464,6 +464,42 @@ def _insert_summary_section(doc, results):
             )
         _add_para("", size=4, space_after=4)
 
+    # ── Step 524: qualifier cross-reference ───────────────────────────────────
+    # Rendered as an ANNOTATION block, visually separate from the findings above
+    # and explicitly labelled with what the panel did not do. It carries no
+    # severity colour and no marker that a verdict uses.
+    _qa_items = [
+        c for c in (results.get("coverage_assessment") or [])
+        if c.get("qualifier_annotations")
+    ]
+    if _qa_items:
+        _add_para("", size=4, space_after=4)
+        _add_para(
+            "NOT WEIGHED BY THE EVALUATORS — %d provision(s) have a nearby clause "
+            "that was not in evidence" % len(_qa_items),
+            size=10, bold=True, color="475569", shading="F1F5F9", border_color="475569",
+            space_after=2,
+        )
+        _add_para(
+            "These are ANNOTATIONS, not findings. Each names a clause that bears on the "
+            "provision but was not part of the evidence the evaluators judged. Nobody has "
+            "decided whether it limits the finding — that judgement is yours.",
+            size=9, indent=180, space_after=3,
+        )
+        for _c in _qa_items:
+            for _qa in (_c.get("qualifier_annotations") or [])[:3]:
+                _add_para(
+                    "%s %s  —  %s not weighed" % (
+                        _c.get("issue_area_id", ""),
+                        _c.get("issue_area_name", "") or "",
+                        _qa.get("section_ref") or "a clause elsewhere in the lease",
+                    ),
+                    size=9, bold=True, indent=180, space_after=1,
+                )
+                _add_para('"%s"' % (_qa.get("quote") or ""),
+                          size=8.5, color="475569", indent=280, space_after=2)
+        _add_para("", size=4, space_after=4)
+
     # Disclaimer + divider. Step 277: Mode A uses the multi-evaluator
     # adjudication pipeline; Mode C uses a single-model coverage layer.
     # Pick the phrasing that matches what actually generated this run.

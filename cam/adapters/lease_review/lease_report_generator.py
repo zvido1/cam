@@ -359,6 +359,25 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                     cy = new_page_if_needed(cy, 30)
                     cy = add_text(page, M + 10, cy, exposure, size=9)
 
+                # ── Step 524: qualifier annotations ───────────────────────────
+                # An ANNOTATION, not a verdict, and it has to read as one. Slate,
+                # never a tier colour; prefixed "NOT WEIGHED"; and the sentence
+                # says what the panel did NOT do. It asserts only that the clause
+                # exists and was absent from this finding's evidence -- never that
+                # it limits the finding, which nobody has judged.
+                for _qa in (item.get("qualifier_annotations") or [])[:3]:
+                    _ref = _qa.get("section_ref") or "elsewhere in the lease"
+                    cy = new_page_if_needed(cy, 16)
+                    cy = add_text(
+                        page, M + 10, cy,
+                        f"NOT WEIGHED - {_ref} was not part of the evidence for this "
+                        f"finding and was not judged by the evaluators:",
+                        size=8.5, bold=True, color=(0.28, 0.33, 0.40),
+                    )
+                    cy = new_page_if_needed(cy, 24)
+                    cy = add_text(page, M + 20, cy, '"%s"' % _qa.get("quote", ""),
+                                  size=8.5, color=(0.28, 0.33, 0.40))
+
                 # Lawyer's coverage resolution (same lookup key as PDF annotator)
                 cov_resolutions = results.get("cov_resolutions") or {}
                 cov_res = (

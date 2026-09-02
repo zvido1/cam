@@ -2204,6 +2204,13 @@ def _compute_summary_analyze(
             1 for c in coverage_assessment
             if (c.get("assessment_status") or "unset") != "assessed"
         ),
+        # Step 524: LPs carrying a qualifier ANNOTATION. Deliberately a separate
+        # counter from requires_attention and not_assessed -- an annotation is
+        # neither a finding nor a gap in assessment, and merging it into either
+        # would be the one-field-two-facts defect this arc keeps removing.
+        "with_qualifier_annotations": sum(
+            1 for c in coverage_assessment if c.get("qualifier_annotations")
+        ),
         "with_missing_elements": sum(1 for c in coverage_assessment if c.get("elements_missing")),
         "coverage_states": states,
         "materiality": materiality,
