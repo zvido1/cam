@@ -565,8 +565,19 @@ def _format_coverage_callout_text(coverage_item: dict, cov_resolution: dict = No
     # element. Every other state keeps [GAP] exactly as before. `covered_unfavorable`
     # with an empty missing list is a different case (a term, not an omission) and
     # is NOT addressed here.
+    # Step 547: `partial` joins `review_needed`. A `partial` whose adverse-missing
+    # list is empty is in exactly the position Step 546 fixed for review_needed --
+    # measured on ex6-4 LP-05, "[GAP] ... Use restrictions absent or undefined"
+    # beside "Resolved: 3 of 4 expected elements confirmed present" and no Missing:
+    # line, because that line is emitted only for a non-empty list. Nothing in the
+    # record names a gap, so the marker must not claim one.
+    #
+    # Still narrow: these two states only. `covered_unfavorable` with an empty
+    # missing list is a term rather than an omission and is NOT addressed here.
     _state = coverage_item.get("coverage_state", "")
-    _tag = "[REVIEW]" if (_state == "review_needed" and not elements_missing) else "[GAP]"
+    _tag = ("[REVIEW]"
+            if (_state in ("review_needed", "partial") and not elements_missing)
+            else "[GAP]")
 
     if headline:
         lines = [f"{_tag} {pid} {pname} — {headline} ({mat_label} materiality)"]

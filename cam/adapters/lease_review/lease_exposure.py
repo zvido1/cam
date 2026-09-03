@@ -160,6 +160,63 @@ def _get_exposure_statement(issue_area_def, perspective):
     return stmt
 
 
+def _build_scope_exposure(assessment: dict, adverse_missing: list,
+                          reason_code: str):
+    """Compose exposure prose from the record's own element counts, or decline.
+
+    Returns None -- meaning "fall through to the caller's existing handling" --
+    when the item carries no element verdicts, or when nothing was confirmed
+    present. Both are cases where the canned schema statement is either the only
+    thing available or is accurate, and softening them would be the opposite
+    error to the one this fixes.
+
+    `adverse_missing` MUST be the perspective-stripped list (`elements_missing` /
+    `_perspective_adverse_missing`), never a raw count of `missing` verdicts.
+    Step 374Z removes absences whose polarity favours the selected perspective,
+    and narrating those as gaps reports a benefit as a risk. Step 547 measured 17
+    of 99 `partial` LPs where the raw and adverse counts differ -- including
+    three of the 19 this branch newly serves -- so the distinction is not
+    theoretical here.
+    """
+    from cam.adapters.lease_review.lease_display import (
+        summarize_resolution, resolution_split_is_consensus_failure,
+    )
+    res = summarize_resolution(assessment)
+    n_total = res["total_elements"]
+    n_present = res["settled_present"]
+    n_unres = res["unresolved_elements"]
+    if not n_total or not n_present:
+        return None
+
+    unres_labels = res["unresolved_labels"]
+    why = ("evaluators split"
+           if resolution_split_is_consensus_failure(res)
+           else "not resolved on the evidence")
+    head = f"{n_present} of {n_total} expected elements are confirmed present"
+    if adverse_missing:
+        head += f" and {len(adverse_missing)} absent"
+    if n_unres:
+        shown = "; ".join(str(x) for x in unres_labels[:2] if x)
+        tail = (f". {n_unres} element{'s' if n_unres != 1 else ''} "
+                f"unresolved ({why})")
+        if shown:
+            tail += f": {shown}"
+        stmt = head + tail + "."
+        headline = (f"{n_unres} of {n_total} elements unresolved"
+                    if n_total != 1 else "1 element unresolved")
+    else:
+        stmt = head + ". Flagged for review."
+        headline = f"{n_present} of {n_total} elements present — review flagged"
+    return {
+        "exposure_statement": stmt,
+        "exposure_headline":  headline,
+        "exposure_source":    "schema",
+        "exposure_reason_code": reason_code,
+        "exposure_confidence_note": None,
+        "exposure_elements_used": unres_labels[:2],
+    }
+
+
 def _build_schema_exposure(assessment: dict, perspective: str = "tenant") -> dict:
     """Build a schema-path exposure result.
 
@@ -200,70 +257,38 @@ def _build_schema_exposure(assessment: dict, perspective: str = "tenant") -> dic
         stmt = schema_statement or f"{name} is absent from this lease."
         return _shape(stmt, [])
 
-    # ── Step 546: review_needed must not inherit the absence prose ────────────
-    # `review_needed` matches none of the branches above and fell to the
-    # catch-all, which emits the LP's STATIC schema `exposure_statement` --
-    # written for the absent case, keyed to the LP id, and never consulting the
-    # record. Step 545 measured Atlas LP-26 and ex6-4 LP-25 rendering
-    # "absent or undefined" with `elements_missing: []` -- an empty list -- and
-    # ex6-4 LP-11 rendering "absent or incomplete" with 15 of 17 elements
-    # confirmed present.
+    # ── Step 546/547: a state must not inherit prose written for absence ─────
+    # `review_needed` (546) and `partial` with an empty adverse-missing list
+    # (547) both matched none of the branches above and fell to the catch-all,
+    # which emits the LP's STATIC schema `exposure_statement` -- written for the
+    # absent case, keyed to the LP id, and never consulting the record.
     #
-    # `review_needed` can never reach the model path (it is in neither
-    # `_MODEL_STATES` nor the high-materiality partial/missing branch), so this
-    # branch is the only place the string can be made truthful.
+    # Measured: Atlas LP-26 and ex6-4 LP-25 rendered "absent or undefined" with
+    # `elements_missing: []`; ex6-4 LP-11 rendered "absent or incomplete" with 15
+    # of 17 elements present; ex6-4 LP-05 rendered "Use restrictions absent or
+    # undefined" with 3 of 4 present.
+    #
+    # Neither state can reach the model path -- neither is in `_MODEL_STATES`,
+    # and the high-materiality branch admits only `partial` WITH a non-empty
+    # adverse-missing list -- so this is the only place the string can be made
+    # truthful for them.
     #
     # THE BOTTOM OF THE RANGE IS CORRECT AND IS PRESERVED. When nothing was
     # found present, the provision genuinely is absent and the schema statement
-    # is the right thing to say -- LP-20 at 0 of 7 and LP-02 at 0 of 4 fall
-    # through to the catch-all untouched. This branch only fires where the
-    # record contradicts the canned prose.
-    if state == "review_needed":
-        from cam.adapters.lease_review.lease_display import (
-            summarize_resolution, resolution_split_is_consensus_failure,
+    # is the right thing to say -- ex6-4 LP-20 at 0 of 7 and LP-02 at 0 of 4 fall
+    # through to the catch-all untouched. `_build_scope_exposure` returns None on
+    # that case and on any item carrying no element verdicts.
+    #
+    # Step 547 scope note: `partial` reaches here ONLY when the adverse-missing
+    # list is empty; a partial with a real gap keeps the branch above unchanged.
+    if state in ("review_needed", "partial"):
+        scoped = _build_scope_exposure(
+            assessment, missing,
+            reason_code=("review_needed_scope" if state == "review_needed"
+                         else "partial_scope"),
         )
-        res = summarize_resolution(assessment)
-        n_total = res["total_elements"]
-        n_present = res["settled_present"]
-        n_unres = res["unresolved_elements"]
-        # No element verdicts (degraded / non-305 route), or nothing confirmed
-        # present: the canned statement is either the only thing available or is
-        # accurate. Fall through to the catch-all unchanged.
-        if n_total and n_present:
-            unres_labels = res["unresolved_labels"]
-            why = ("evaluators split"
-                   if resolution_split_is_consensus_failure(res)
-                   else "not resolved on the evidence")
-            head = f"{n_present} of {n_total} expected elements are confirmed present"
-            # Step 374Z: the absent count in PROSE must be the perspective-adverse
-            # one (`missing`, already stripped upstream), never the raw count of
-            # `missing` verdicts in `res["settled_absent"]`. Measured on Atlas
-            # LP-22: 4 elements carry a `missing` verdict and all four are
-            # `absence_adverse_to: landlord` -- favorable absences for this tenant,
-            # which `elements_missing` correctly reports as []. Narrating "and 4
-            # absent" would report a tenant benefit as a gap.
-            if missing:
-                head += f" and {len(missing)} absent"
-            if n_unres:
-                shown = "; ".join(str(x) for x in unres_labels[:2] if x)
-                tail = (f". {n_unres} element{'s' if n_unres != 1 else ''} "
-                        f"unresolved ({why})")
-                if shown:
-                    tail += f": {shown}"
-                stmt = head + tail + "."
-                headline = (f"{n_unres} of {n_total} elements unresolved"
-                            if n_total != 1 else "1 element unresolved")
-            else:
-                stmt = head + ". Flagged for review."
-                headline = f"{n_present} of {n_total} elements present — review flagged"
-            return {
-                "exposure_statement": stmt,
-                "exposure_headline":  headline,
-                "exposure_source":    "schema",
-                "exposure_reason_code": "review_needed_scope",
-                "exposure_confidence_note": None,
-                "exposure_elements_used": unres_labels[:2],
-            }
+        if scoped is not None:
+            return scoped
 
     stmt = schema_statement or f"{name}: {state}."
     return _shape(stmt, missing[:2])
