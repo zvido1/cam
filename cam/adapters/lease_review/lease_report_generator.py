@@ -290,6 +290,26 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                 summary_parts.append(f"{len(minor_gap_items)} substantially addressed with minor gaps")
             if not_assessed_items:
                 summary_parts.append(f"{len(not_assessed_items)} NOT ASSESSED")
+            # Step 543: if callouts could not be placed beside their clause, say
+            # so. Every finding is still listed below, so nothing is lost -- but a
+            # reader working through the marked-up document clause by clause would
+            # otherwise never learn that some findings have no margin note. Only
+            # rendered when it actually happened; silent otherwise.
+            _ann = (results.get("annotation_reports") or {})
+            _drops = []
+            for _k in ("pdf", "docx"):
+                for _d in (_ann.get(_k) or {}).get("anchor_drops", []):
+                    if _d.get("lp_id") and _d["lp_id"] not in _drops:
+                        _drops.append(_d["lp_id"])
+            if _drops:
+                y = new_page_if_needed(y, 26)
+                y = add_text(
+                    page, M, y,
+                    "Note: %d finding(s) below could not be placed beside a clause in the "
+                    "marked-up document and appear in this summary only: %s."
+                    % (len(_drops), ", ".join(_drops)),
+                    size=8.5, color=(0.28, 0.33, 0.40),
+                )
             summary_parts.append(f"{covered_count} covered.")
             y = add_text(
                 page, M, y,

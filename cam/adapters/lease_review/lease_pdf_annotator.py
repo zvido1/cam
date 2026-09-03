@@ -344,6 +344,8 @@ def annotate_pdf(
 
     cov_annotations_added = 0
     cov_not_found = 0
+    _anchor_drops: list = []
+    _skipped_missing: list = []
     cov_color = _coverage_color()
 
     for cov in coverage_assessment:
@@ -415,6 +417,15 @@ def annotate_pdf(
 
         if not found:
             cov_not_found += 1
+            # Step 543: record rather than only print -- same contract as the
+            # DOCX annotator. A dropped callout leaves the margin holding fewer
+            # findings than the summary, with nothing on the result saying so.
+            _anchor_drops.append({
+                "lp_id": pid,
+                "issue_area_name": issue_area_name or "",
+                "coverage_state": state,
+                "reason": "no_anchor_found",
+            })
             print(f"[pdf_annotator] Could not anchor coverage gap for {pid}", flush=True)
 
     # Save annotated PDF
@@ -479,4 +490,16 @@ def annotate_pdf(
         flush=True,
     )
 
-    return output_path
+    # Step 543: same annotation report as the DOCX path, same reasons.
+    _report = {
+        "output_path": output_path,
+        "coverage_callouts_added": cov_annotations_added,
+        "coverage_admitted": cov_annotations_added + len(_anchor_drops),
+        "anchor_drops": _anchor_drops,
+        "anchor_drop_count": len(_anchor_drops),
+        "skipped_absent_provisions": _skipped_missing,
+        "complete": len(_anchor_drops) == 0,
+    }
+    if isinstance(results, dict):
+        results.setdefault("annotation_reports", {})["pdf"] = _report
+    return _report

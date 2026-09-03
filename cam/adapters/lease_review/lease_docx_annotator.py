@@ -729,6 +729,9 @@ def annotate_docx(
 
     coverage_callouts_added = 0
     coverage_not_found = 0
+    # Step 543: every admitted callout that could not be placed, with why.
+    _anchor_drops: list = []
+    _skipped_missing: list = []
 
     for cov in coverage_assessment:
         disp = _resolve_display(cov, perspective)
@@ -736,6 +739,10 @@ def annotate_docx(
             continue
         state = cov.get("coverage_state", "covered")
         if state == "missing":
+            # By design, not a failure: an absent provision has no paragraph to
+            # attach to. Recorded separately from anchor FAILURES so the two are
+            # never conflated -- one is expected, the other is not.
+            _skipped_missing.append(cov.get("issue_area_id", ""))
             continue
 
         pid = cov.get("issue_area_id", "")
@@ -772,6 +779,21 @@ def annotate_docx(
 
         if para is None:
             coverage_not_found += 1
+            # Step 543: RECORD it. This branch previously printed and dropped, so
+            # a result carried no evidence that the margin holds fewer findings
+            # than the summary lists. Four callouts vanished this way on ex6-4.
+            _anchor_drops.append({
+                "lp_id": pid,
+                "issue_area_name": issue_area_name or "",
+                "coverage_state": state,
+                "reason": "no_anchor_found",
+                "anchors_tried": [
+                    {"kind": "tenant_text", "available": bool(anchor_text)},
+                    {"kind": "section_ref", "available": bool(section_ref)},
+                    {"kind": "issue_area_name", "available": bool(issue_area_name)},
+                    {"kind": "issue_area_id", "available": bool(pid)},
+                ],
+            })
             print(f"[docx_annotator] Could not anchor coverage gap for {pid}", flush=True)
             continue
 
@@ -789,4 +811,28 @@ def annotate_docx(
         flush=True,
     )
 
-    return output_path
+    # ── Step 543: the annotation report ───────────────────────────────────────
+    # Returned AND written onto `results`. Both, because the two call paths
+    # differ: `generate_outputs` persists `results` afterwards, while the
+    # download endpoint in main.py loads it from disk and discards it, so only
+    # the return value reaches that caller.
+    #
+    # Step 511's rule: never a bare success for something partially done. This
+    # function used to return `output_path` -- the same string whether it placed
+    # 23 of 27 callouts or 0 of 27. No caller reads the return value today, so
+    # widening it is safe; a caller wanting only the path takes ["output_path"].
+    _report = {
+        "output_path": output_path,
+        "deviations_annotated": annotations_added,
+        "coverage_callouts_added": coverage_callouts_added,
+        "coverage_admitted": coverage_callouts_added + len(_anchor_drops),
+        "anchor_drops": _anchor_drops,
+        "anchor_drop_count": len(_anchor_drops),
+        # Absent provisions, skipped because there is nothing to annotate. NOT a
+        # failure, and kept in its own field so it is never summed with the above.
+        "skipped_absent_provisions": _skipped_missing,
+        "complete": len(_anchor_drops) == 0,
+    }
+    if isinstance(results, dict):
+        results.setdefault("annotation_reports", {})["docx"] = _report
+    return _report
