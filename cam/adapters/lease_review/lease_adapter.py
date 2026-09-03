@@ -117,9 +117,42 @@ class PipelineCancelledError(Exception):
 
 
 class GateAbortError(Exception):
-    """Raised when the document gate check fails — not a lease."""
-    def __init__(self, message: str):
+    """Raised when a gate stops the run. NOT necessarily "not a lease".
+
+    Step 533: the old docstring said "not a lease" and that was wrong for five of
+    the six raise sites. Four of them are statements about OUR pipeline -- the
+    extractor failed, the response was unparseable, evidence was incomplete, a
+    declared parameter dependency was unsatisfied -- and only the classifier is
+    entitled to say anything about what the document IS.
+
+    `reason_code` exists because the frontend previously received one opaque
+    string and mapped every one of them to "Not a commercial lease". everbridge
+    logged `is_lease=True` four times and its user was told it is not a lease.
+    Callers branch on this code, never on the prose.
+
+    `detail` carries structured payload (e.g. the failed LP ids) so a message can
+    name what is missing instead of gesturing at it.
+    """
+
+    # The classifier's own verdict. THE ONLY code permitted to tell a user that
+    # their document is not a commercial lease.
+    NOT_A_LEASE = "not_a_lease"
+    # Our extractor failed or was suppressed. Not the document's fault.
+    EXTRACTOR_FAILED = "extractor_failed"
+    # Every extractor returned something we could not parse. Ours, not theirs.
+    EXTRACTION_UNPARSEABLE = "extraction_unparseable"
+    # 422C: a required issue area has no extracted evidence.
+    INCOMPLETE_EVIDENCE = "incomplete_evidence"
+    # Gate B: a declared parameter dependency is unsatisfied.
+    PARAMETER_DEPENDENCY = "parameter_dependency"
+
+    def __init__(self, message: str, reason_code: str = None, detail: dict = None):
         self.message = message
+        # Default is deliberately NOT `not_a_lease`. A site that forgets to
+        # classify itself must not inherit the one code that blames the user's
+        # document -- fail toward "we do not know", never toward accusation.
+        self.reason_code = reason_code or "unspecified"
+        self.detail = detail or {}
         super().__init__(message)
 
 
@@ -343,7 +376,8 @@ def run_lease_analysis(
         gate_result = check_document_is_lease(tenant_text, cfg)
         print(f"[lease_adapter] Gate: is_lease={gate_result['is_lease']} in {gate_result['elapsed_sec']}s", flush=True)
         if gate_result.get("abort"):
-            raise GateAbortError(gate_result["abort_message"])
+            raise GateAbortError(gate_result["abort_message"],
+                                 reason_code=GateAbortError.NOT_A_LEASE)
 
     # ── Stage 1: Provision Extraction & Alignment ──
     if progress_callback:
@@ -1388,7 +1422,8 @@ def run_lease_coverage_only(
     total_api_calls += 1  # Step 335: gate call was not counted before
     print(f"[lease_adapter:analyze] Gate: is_lease={gate_result['is_lease']} in {gate_result['elapsed_sec']}s", flush=True)
     if gate_result.get("abort"):
-        raise GateAbortError(gate_result["abort_message"])
+        raise GateAbortError(gate_result["abort_message"],
+                             reason_code=GateAbortError.NOT_A_LEASE)
 
     _check_cancel(cfg)
 
@@ -1410,7 +1445,9 @@ def run_lease_coverage_only(
         raise GateAbortError(
             f"Extraction integrity failure: primary extractor failed and canonical mode "
             f"prohibits silent fallback. Errors: {[e.get('error', '')[:120] for e in _eie.errors[-3:]]}. "
-            f"Re-run or use debug mode."
+            f"Re-run or use debug mode.",
+            reason_code=GateAbortError.EXTRACTOR_FAILED,
+            detail={"errors": [e.get("error", "")[:200] for e in _eie.errors[-3:]]},
         )
     total_api_calls += 1
     meta = extraction["meta"]
@@ -1424,7 +1461,9 @@ def run_lease_coverage_only(
         raise GateAbortError(
             "Extraction failed: all extractors returned unparseable responses. "
             "Cannot produce a valid legal analysis report from empty evidence. "
-            f"Errors: {[e.get('error', '')[:80] for e in meta.get('errors', [])[-3:]]}"
+            f"Errors: {[e.get('error', '')[:80] for e in meta.get('errors', [])[-3:]]}",
+            reason_code=GateAbortError.EXTRACTION_UNPARSEABLE,
+            detail={"errors": [e.get("error", "")[:200] for e in meta.get("errors", [])[-3:]]},
         )
 
     # ── Extraction completeness gate (422C) ────────────────────────────────────
@@ -1502,7 +1541,10 @@ def run_lease_coverage_only(
     # Step 478: partition the failures by applicability. is_applicable() reads the
         # schema and the full document only -- it has no extraction dependency, so it
         # is a sound basis for deciding whether this failure can be survived.
-        from cam.adapters.lease_review.lease_knowledge import is_applicable as _is_applicable
+        from cam.adapters.lease_review.lease_knowledge import (
+            is_applicable as _is_applicable,
+            get_issue_area,
+        )
         _doc_lower = tenant_text.lower()
         _applicability_by_lp = {pid: _is_applicable(pid, _doc_lower) for pid in _failed_ids}
         _must_abort = [pid for pid, ap in _applicability_by_lp.items()
@@ -1524,7 +1566,19 @@ def run_lease_coverage_only(
                 f"Failed LPs: {_abort_ids}. "
                 "Cannot produce a valid legal analysis report from incomplete evidence. "
                 f"Applicability: {({k: _applicability_by_lp[k] for k in _abort_ids} if _must_abort else _applicability_by_lp)}. "
-                f"Detail: {_failure_detail}"
+                f"Detail: {_failure_detail}",
+                reason_code=GateAbortError.INCOMPLETE_EVIDENCE,
+                # Step 533: the failed LP ids and their human names travel WITH the
+                # error, so the user-facing message can name the issue areas that
+                # have no evidence instead of gesturing at "a gate". The payload
+                # already existed per Steps 476-478; nothing new is computed here.
+                detail={
+                    "failed_lps": list(_abort_ids),
+                    "failed_lp_names": [
+                        (get_issue_area(_p) or {}).get("name", _p) for _p in _abort_ids
+                    ],
+                    "applicability": {k: _applicability_by_lp.get(k) for k in _abort_ids},
+                },
             )
         elif _is_canonical:
             # Step 476: canonical path continues, marked degraded. The gate's verdict

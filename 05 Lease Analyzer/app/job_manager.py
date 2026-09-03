@@ -540,8 +540,15 @@ def update_tenant_status(
     status: str,
     stage: str = None,
     error: str = None,
+    error_reason: str = None,
+    error_detail: dict = None,
 ) -> None:
-    """Update a specific tenant's processing status within a job."""
+    """Update a specific tenant's processing status within a job.
+
+    Step 533: `error_reason` and `error_detail` are ADDITIVE. The `error` string
+    keeps its exact shape, so any consumer matching on "GATE_ABORT:" is
+    unaffected; new consumers branch on the code instead of parsing prose.
+    """
     with _jobs_lock:
         job = _jobs.get(job_id)
         if not job:
@@ -553,6 +560,10 @@ def update_tenant_status(
                 tenants[tenant_index]["stage"] = stage
             if error is not None:
                 tenants[tenant_index]["error"] = error
+            if error_reason is not None:
+                tenants[tenant_index]["error_reason"] = error_reason
+            if error_detail is not None:
+                tenants[tenant_index]["error_detail"] = error_detail
 
 
 def mark_job_started(job_id: str) -> Optional[str]:
@@ -903,7 +914,12 @@ def _run_incremental_tenants(job_id: str, start_index: int) -> None:
         except Exception as e:
             from cam.adapters.lease_review.lease_adapter import GateAbortError
             if isinstance(e, GateAbortError):
-                update_tenant_status(job_id, i, "failed", error=f"GATE_ABORT: {e.message}")
+                update_tenant_status(
+                    job_id, i, "failed",
+                    error=f"GATE_ABORT: {e.message}",
+                    error_reason=getattr(e, "reason_code", "unspecified"),
+                    error_detail=getattr(e, "detail", None) or {},
+                )
                 any_failed = True
                 logger.warning(f"Gate abort (incremental) {job_id} tenant {i}: {e.message}")
                 timing = _finalize_tenant_runtime(job_id, i)
@@ -1589,7 +1605,12 @@ def _process_lease_job(job_id: str, job: dict) -> None:
             # Check gate abort first
             from cam.adapters.lease_review.lease_adapter import GateAbortError
             if isinstance(e, GateAbortError):
-                update_tenant_status(job_id, i, "failed", error=f"GATE_ABORT: {e.message}")
+                update_tenant_status(
+                    job_id, i, "failed",
+                    error=f"GATE_ABORT: {e.message}",
+                    error_reason=getattr(e, "reason_code", "unspecified"),
+                    error_detail=getattr(e, "detail", None) or {},
+                )
                 any_failed = True
                 job_error = e.message
                 logger.warning(f"Gate abort {job_id} tenant {i}: {e.message}")

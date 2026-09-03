@@ -5486,7 +5486,7 @@ function renderContractStatusPanel() {
 
         if (!s) {
             // No results (cancelled/error)
-            const msg = t.status === "cancelled" ? "Cancelled" : (t.error && t.error.startsWith("GATE_ABORT:") ? "Not a commercial lease" : (t.error || "No results"));
+            const msg = t.status === "cancelled" ? "Cancelled" : (t.error && t.error.startsWith("GATE_ABORT:") ? gateAbortMessage(t) : (t.error || "No results"));
             html += `<div class="contract-card contract-card-empty ${isActive ? "contract-card-active" : ""}"
                          data-tenant="${i}">
                 <div class="contract-card-header">
@@ -5587,7 +5587,11 @@ function renderBatchTable() {
             const msg = t.status === "cancelled"
                 ? '<span class="cancelled-badge">Cancelled</span>'
                 : (t.error && t.error.startsWith("GATE_ABORT:")
-                    ? "This document does not appear to be a commercial lease. Please check the uploaded file."
+                    // Step 533: third site, found by the item-4 census after the
+                    // other two were fixed. Same conflation, different ternary
+                    // shape, so a grep for the exact string at the other two
+                    // sites would have missed it.
+                    ? esc(gateAbortMessage(t))
                     : (t.error ? esc(t.error) : "No results"));
             return `<tr data-index="${i}">
                 <td>${esc(formatTenantName(t.filename))}</td>
@@ -12097,6 +12101,43 @@ function _buildMergeTraceHtml(disagElems) {
     return html;
 }
 
+
+// ── Step 533: what a stopped run tells the user ──────────────────────────────
+// Every GATE_ABORT used to render as "Not a commercial lease". Six sites raise
+// that error and only ONE of them -- the document classifier -- is entitled to
+// say anything about what the document is. everbridge logged is_lease=True four
+// times and its user was told it is not a lease.
+//
+// Branch on the reason code, never on the prose. An unknown or missing code
+// falls through to a neutral message: a run we cannot classify must not be
+// reported as the user's fault.
+function gateAbortMessage(t) {
+    var reason = t && t.error_reason;
+    var d = (t && t.error_detail) || {};
+    switch (reason) {
+        case 'not_a_lease':
+            // The ONLY case where this sentence is true.
+            return 'Not a commercial lease';
+        case 'extractor_failed':
+            return 'Analysis could not run — our extraction service failed. This is not a problem with your document. Please try again.';
+        case 'extraction_unparseable':
+            return 'Analysis could not run — we could not read the extraction result. This is not a problem with your document. Please try again.';
+        case 'incomplete_evidence': {
+            var names = d.failed_lp_names || d.failed_lps || [];
+            var which = names.length ? ' (' + names.slice(0, 4).join(', ')
+                        + (names.length > 4 ? ', +' + (names.length - 4) + ' more' : '') + ')' : '';
+            return 'Incomplete analysis — no evidence was found for '
+                 + (names.length || 'some') + ' issue area' + (names.length === 1 ? '' : 's')
+                 + which + '. Your document was read successfully; these provisions could not be located in it.';
+        }
+        case 'parameter_dependency':
+            return 'Incomplete analysis — a required parameter could not be determined from the lease. Your document was read successfully.';
+        default:
+            // Includes 'unspecified' and any code this build does not know.
+            return 'Analysis stopped before completion. Your document was read; the run did not finish.';
+    }
+}
+
 function buildCoverageAuditSection(items) {
     var _POSITIVE = new Set(['explicitly_present', 'implicitly_present', 'covered_by_default_law', 'covered_in_other_LP']);
     var html = '<div class="audit-cov-section"><div class="audit-cov-section-heading">Coverage Evaluation — ' + items.length + ' pilot LP' + (items.length > 1 ? 's' : '') + ' (Step 305)</div>';
@@ -14390,7 +14431,7 @@ function renderRunSnapshot() {
                     + '</div>'
                     + '</div>';
             } else if (!s) {
-                var msg = t.status === "cancelled" ? "Cancelled" : (t.error && t.error.startsWith("GATE_ABORT:") ? "Not a commercial lease" : (t.error || "No results"));
+                var msg = t.status === "cancelled" ? "Cancelled" : (t.error && t.error.startsWith("GATE_ABORT:") ? gateAbortMessage(t) : (t.error || "No results"));
                 html += '<div class="snapshot-card snapshot-card-empty' + activeClass + '" data-tenant="' + i + '">'
                     + '<div class="snapshot-card-header">'
                     + '<span class="snapshot-card-name">' + nameEsc + '</span>'

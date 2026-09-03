@@ -245,7 +245,11 @@ def enforce_gate_b(
             f"Gate B failure: {len(failures)} declared parameter dependency(ies) unsatisfied: "
             f"{[(f['lp_id'], f['dependency']) for f in failures]}. "
             "Cannot produce a valid legal analysis without required parameters. "
-            "Agreement among evaluators cannot substitute for a satisfied dependency."
+            "Agreement among evaluators cannot substitute for a satisfied dependency.",
+            reason_code=GateAbortError.PARAMETER_DEPENDENCY,
+            detail={"failures": [
+                {"lp_id": f.get("lp_id"), "dependency": f.get("dependency")} for f in failures
+            ]},
         )
 
     return {"gate_status": "degraded", "failures": failures}
