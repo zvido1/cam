@@ -529,7 +529,7 @@ def _format_coverage_callout_text(coverage_item: dict, cov_resolution: dict = No
     and PDF coverage callouts read the same. Step 273: state_label is now
     perspective-aware via `_resolve_display`.
     """
-    from cam.adapters.lease_review.lease_display import extract_headline
+    from cam.adapters.lease_review.lease_display import extract_headline, summarize_resolution
 
     pid = coverage_item.get("issue_area_id", "?")
     # Step 279: prefer the schema's clean issue_area_name over
@@ -553,15 +553,48 @@ def _format_coverage_callout_text(coverage_item: dict, cov_resolution: dict = No
     # medium vs low isn't carried by the marker). The state label
     # (UNFAVORABLE TERMS / FAVORABLE TERMS / etc.) was redundant with
     # the marker + materiality and is dropped.
+    # ── Step 546: the marker must not assert a gap the record does not contain ──
+    # `[GAP]` was an unconditional literal chosen by display bucket, not by
+    # evidence. Step 545 measured Atlas LP-26 and ex6-4 LP-25 rendering
+    # "[GAP] ... absent or undefined" with `elements_missing: []` -- and, because
+    # the Missing: line below is emitted only for a non-empty list, with no
+    # missing element named anywhere in the callout. The marker was the only gap
+    # claim on the line and the record did not support it.
+    #
+    # Narrow by design: this fires ONLY for review_needed with no adverse missing
+    # element. Every other state keeps [GAP] exactly as before. `covered_unfavorable`
+    # with an empty missing list is a different case (a term, not an omission) and
+    # is NOT addressed here.
+    _state = coverage_item.get("coverage_state", "")
+    _tag = "[REVIEW]" if (_state == "review_needed" and not elements_missing) else "[GAP]"
+
     if headline:
-        lines = [f"[GAP] {pid} {pname} — {headline} ({mat_label} materiality)"]
+        lines = [f"{_tag} {pid} {pname} — {headline} ({mat_label} materiality)"]
     else:
-        lines = [f"[GAP] {pid} {pname} ({mat_label} materiality)"]
+        lines = [f"{_tag} {pid} {pname} ({mat_label} materiality)"]
     lines.append("")
 
     if elements_missing:
         missing_str = ", ".join(str(e) for e in elements_missing[:5])
         lines.append(f"Missing: {missing_str}")
+        lines.append("")
+
+    # Step 546: resolution scope. `element_verdicts` appeared ZERO times in either
+    # annotator, so an export reader was told "REVIEW NEEDED" with no way to learn
+    # whether one element of seventeen was unsettled or all four of four. This is
+    # the count and the unresolved element labels -- NOT `per_evaluator_lp_verdicts`,
+    # which Step_305_Architecture.md:39 forbids as a basis for state ("not from a
+    # direct LP-state vote") and which would invite a reader to count votes against
+    # the merged verdict.
+    _res = summarize_resolution(coverage_item)
+    if _res["total_elements"] and _res["unresolved_elements"]:
+        lines.append(
+            f"Resolved: {_res['settled_present']} of {_res['total_elements']} "
+            f"expected elements confirmed present."
+        )
+        _unres = [str(x) for x in _res["unresolved_labels"][:3] if x]
+        if _unres:
+            lines.append(f"Unresolved ({_res['unresolved_elements']}): " + "; ".join(_unres))
         lines.append("")
 
     if exposure:

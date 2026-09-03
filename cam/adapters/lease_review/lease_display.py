@@ -237,10 +237,20 @@ def _resolve_display(coverage_item: dict, perspective: Optional[str]) -> dict:
         # The panel withheld a verdict. That is a review item by definition --
         # it is the state the dispute signal sets when a critical element is
         # disputed and the majority is withheld.
+        #
+        # Step 546: the state stays; the LABEL now carries its scope. Step 545
+        # measured 19 LPs reaching review_needed through the unclear veto with
+        # present-fractions from 0% to 88% -- a continuous spectrum rendering
+        # under one indistinguishable label. The suffix is appended only when
+        # element verdicts exist to compute it, so a degraded item keeps the
+        # bare label rather than gaining a fabricated "0 OF 0".
+        _res = summarize_resolution(coverage_item)
+        _scope = resolution_scope_phrase(_res)
         return {"bucket": "worth_reviewing",
-                "label":  "REVIEW NEEDED",
+                "label":  f"REVIEW NEEDED — {_scope}" if _scope else "REVIEW NEEDED",
                 "tone":   "review",
-                "marker": "○"}
+                "marker": "○",
+                "resolution": _res}
 
     if state == "ambiguous":
         return {"bucket": "worth_reviewing",
@@ -339,6 +349,85 @@ def summarize_display_buckets(coverage_items: list, perspective: str = None) -> 
         "worth_reviewing_count": counts.get("worth_reviewing", 0),
         "not_assessed_count": counts.get("not_assessed", 0),
     }
+
+
+# Step 546: element verdicts the merge did NOT settle. `unclear` is the merge's
+# own abstention (no_consensus, or the citation gate); `disputed` is a split
+# spanning presence and absence. Both mean the panel did not settle the element.
+#
+# NOTE a deliberate divergence: `derive_lp_state` folds `disputed` in with
+# `missing` when deriving the LP state (Supplement #21 Phase 1). That is a
+# decision about STATE. This set answers a different question -- was the element
+# resolved -- and a split evaluator cohort has not resolved anything. Counting
+# `disputed` as settled-absent here would report "0 of 11 unresolved" on the 11
+# review_needed LPs that reach that state through the Phase-3 disputed-critical
+# override with no `unclear` element at all. No state is derived from this set.
+_UNRESOLVED_ELEMENT_VERDICTS = frozenset({"unclear", "disputed"})
+
+# Reason codes that mean "the evaluators split", as opposed to a merge rule
+# firing on a single cohort. Used only to phrase the parenthetical.
+_SPLIT_REASONS = frozenset({"no_consensus", "distant_split_presence_missing"})
+
+
+def summarize_resolution(coverage_item: dict) -> dict:
+    """Deterministic resolution scope for one coverage item, from element verdicts alone.
+
+    Step 545 measured that `review_needed` is scope-free: an LP with 1 unresolved
+    element of 17 and an LP with 4 of 4 render identically, and the reader cannot
+    tell them apart. This partitions the LP's elements into settled-present,
+    settled-absent, and unresolved, so every surface can say HOW MUCH is unsettled
+    rather than only THAT something is.
+
+    Reads `element_verdicts` and nothing else. No API call, no state derived, no
+    verdict altered. `total_elements == 0` means the item carries no element
+    verdicts (a degraded or non-305 route); callers must treat that as "no scope
+    available" and fall back to their prior behaviour rather than reporting zeros.
+    """
+    evs = coverage_item.get("element_verdicts") or []
+    present, absent, unresolved = [], [], []
+    reasons = {}
+    for e in evs:
+        v = (e.get("verdict") or "")
+        label = e.get("element_label") or e.get("element_id") or ""
+        if v in _POSITIVE_ELEMENT_VERDICTS:
+            present.append(label)
+        elif v in _UNRESOLVED_ELEMENT_VERDICTS:
+            unresolved.append(label)
+            r = e.get("reason") or "unspecified"
+            reasons[r] = reasons.get(r, 0) + 1
+        else:
+            absent.append(label)
+    return {
+        "_source": "lease_display.summarize_resolution",
+        "total_elements": len(evs),
+        "settled_present": len(present),
+        # POLARITY-BLIND. This counts every non-present, non-unresolved element,
+        # including Step-374Z favorable absences (a missing burden on the selected
+        # perspective). It is a structural count, NOT a gap count -- do not narrate
+        # it as one. `elements_missing` on the assessment is the perspective-adverse
+        # list and is what prose must use.
+        "settled_absent": len(absent),
+        "unresolved_elements": len(unresolved),
+        "unresolved_labels": unresolved,
+        "unresolved_reasons": reasons,
+        "present_labels": present,
+        "absent_labels": absent,
+    }
+
+
+def resolution_scope_phrase(res: dict) -> str:
+    """"1 OF 17 ELEMENTS UNRESOLVED" -- the label suffix. Empty when no scope exists."""
+    total = res.get("total_elements") or 0
+    n = res.get("unresolved_elements") or 0
+    if not total or not n:
+        return ""
+    return f"{n} OF {total} ELEMENT{'S' if total != 1 else ''} UNRESOLVED"
+
+
+def resolution_split_is_consensus_failure(res: dict) -> bool:
+    """True when every unresolved element is unresolved because evaluators split."""
+    reasons = res.get("unresolved_reasons") or {}
+    return bool(reasons) and all(r in _SPLIT_REASONS for r in reasons)
 
 
 def resolve_sections(coverage_items: list, perspective: str) -> list:
