@@ -280,7 +280,34 @@ def _extract_usage(resp) -> Optional[dict]:
     try:
         u = getattr(resp, "usage", None)
         if u is None:
-            return None
+            # Step 530: Google returns `usage_metadata`, not `usage`, with its own
+            # field names. Before this branch every Gemini call recorded
+            # last_usage=None, so Step 529's nine-document survey had no real token
+            # counts and reported raw_char_len/4 throughout.
+            #
+            # Field names read from the installed SDK
+            # (google.genai.types.GenerateContentResponseUsageMetadata), not from
+            # memory:
+            #   candidates_token_count  -> output_tokens
+            #   prompt_token_count      -> input_tokens
+            #   thoughts_token_count    -> reasoning_tokens
+            #
+            # Mapped into the EXISTING {output_tokens, input_tokens,
+            # reasoning_tokens} shape rather than a Google-specific one, so every
+            # consumer keeps working unchanged.
+            #
+            # NOTE for anyone comparing against max_output_tokens: on a thinking
+            # model the budget is consumed by candidates AND thoughts, so the
+            # figure to compare is output_tokens + reasoning_tokens, not
+            # output_tokens alone.
+            um = getattr(resp, "usage_metadata", None)
+            if um is None:
+                return None
+            return {
+                "output_tokens": getattr(um, "candidates_token_count", None),
+                "input_tokens": getattr(um, "prompt_token_count", None),
+                "reasoning_tokens": getattr(um, "thoughts_token_count", None),
+            }
         out = getattr(u, "completion_tokens", None)
         if out is None:
             out = getattr(u, "output_tokens", None)
