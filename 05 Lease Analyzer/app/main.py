@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.staticfiles import NotModifiedResponse
@@ -184,6 +185,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Compression (Step 552) ────────────────────────────────────────────────────
+#
+# Step 551 measured the deployed service serving 1,337,587 bytes of JS and CSS
+# with `Content-Encoding: None` on every asset -- nothing was compressed, and
+# there was no compression middleware in the app at all. Measured gzip on the
+# same files: 1,370,065 -> 291,889 bytes, 21.3%.
+#
+# This is the larger 78% of the transfer problem and it carries none of the risk
+# of the smaller 21%. It saves on the FIRST load, which caching by definition
+# cannot -- and the emailed `/results/{job_id}` link is usually a cold load in a
+# later session, so the first load is the one that matters most here.
+#
+# `no-store` is deliberately UNCHANGED (Step 551 §5): the remaining 292 KB is
+# worth having only after the hash binding is independently tested, which is what
+# this step's other half does.
+#
+# minimum_size guards against spending CPU on responses too small to benefit; the
+# 500-byte default is fine and is stated rather than relied on silently.
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 
 # ── Startup ──
 
@@ -299,29 +320,31 @@ if static_dir.exists():
 # FAILS OPEN. A missing or unreadable asset leaves its literal `?v=` untouched
 # rather than raising -- the page must still serve. The test suite is what makes
 # a stale literal visible, not a 500 in production.
-_ASSET_VERSION_CACHE: dict = {}
+# Step 552: NO CACHE. The Step-550 key was `(mtime_ns, size)`, and Step 551
+# demonstrated it returning a stale hash when a file changed with both unchanged
+# -- a cache whose failure mode is "serve the wrong version number", which under
+# any caching policy is the one failure that cannot self-correct.
+#
+# Measured cost of hashing all nine assets from scratch, per page load:
+#     read from disk   0.80 ms
+#     sha256           0.60 ms
+#     total            1.39 ms
+#
+# Against a page load that already reads index.html from disk and ships ~292 KB
+# gzipped, 1.4 ms buys the removal of an entire failure class. A permanent
+# process-lifetime cache would also be correct in production -- Railway ships an
+# immutable container -- but wrong under `uvicorn --reload`, where an edited
+# asset would keep its old hash. Correct everywhere beats fast and conditional.
 _ASSET_REF_RE = re.compile(rb'(/static/([A-Za-z0-9_.\-]+))\?v=[0-9A-Za-z._\-]+')
 
 
 def asset_version(name: str, root=None) -> Optional[str]:
-    """Short content hash for a static asset, cached on (mtime_ns, size)."""
+    """Short content hash for a static asset. Computed from the bytes, every time."""
     base = root if root is not None else static_dir
     try:
-        path = base / name
-        st = path.stat()
+        return hashlib.sha256((base / name).read_bytes()).hexdigest()[:10]
     except (OSError, ValueError):
         return None
-    key = (str(base), name)
-    stamp = (st.st_mtime_ns, st.st_size)
-    hit = _ASSET_VERSION_CACHE.get(key)
-    if hit and hit[0] == stamp:
-        return hit[1]
-    try:
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()[:10]
-    except OSError:
-        return None
-    _ASSET_VERSION_CACHE[key] = (stamp, digest)
-    return digest
 
 
 def stamp_asset_versions(html: bytes, root=None) -> bytes:
@@ -2541,12 +2564,20 @@ def download_batch_summary(job_id: str):
 
 @app.get("/results/{job_id}")
 def serve_results_page(job_id: str):
-    """Serve the frontend for viewing results (same index.html, JS handles routing)."""
+    """Serve the frontend for viewing results (same index.html, JS handles routing).
+
+    Step 552: this route stamps too. Step 550 patched `serve_index` alone and
+    reported it as covering the page -- but this is the route in every emailed
+    `results_url`, and it was serving the hand-maintained literals. Under
+    `no-store` that was invisible; under any caching policy it would have meant
+    two different URLs for the same asset, with the results page's URL frozen
+    forever. Both shell routes now go through `stamp_asset_versions`.
+    """
     index_path = static_dir / "index.html"
     if index_path.exists():
         from fastapi.responses import Response as PlainResponse
         return PlainResponse(
-            content=index_path.read_bytes(),
+            content=stamp_asset_versions(index_path.read_bytes()),
             media_type="text/html",
             headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
         )

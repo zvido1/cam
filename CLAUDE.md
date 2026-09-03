@@ -149,9 +149,27 @@ Code and Tzvi share the same filesystem (`C:\Users\Owner\OneDrive\CAM`), so a lo
 - Never edit files outside `C:\Users\Owner\OneDrive\CAM`
 - Never force-push
 
-### Version numbers
+### Version numbers — DO NOT HAND-BUMP. Corrected 2026-09-03 (Step 552).
 
-The `index.html` version bump applies **only to frontend changes**. Backend, pipeline, investigation, and spec steps do not touch it and are not gated on it.
+**The `?v=` literals in `index.html` are decorative. Editing one has no effect.**
+
+Both shell routes (`serve_index` and `serve_results_page` in `05 Lease Analyzer/app/main.py`) rewrite
+every `/static/<file>?v=...` with a SHA-256 content hash of the file at serve time. Whatever number is
+in the file on disk is overwritten before the page reaches a browser.
+
+**If you recall this file saying "bump `index.html` for frontend changes", you are recalling the old,
+wrong version.** That instruction described a discipline that had already failed twice unnoticed —
+Steps 477 and 497 each changed `app.js`, `index.html` **and** `style.css` and bumped nothing, leaving
+`style.css?v=400` 87 days and five commits stale.
+
+**What is required now: nothing.** Change a frontend file and the version follows. Three tests in
+`cam/adapters/lease_review/tests/test_550_asset_versions.py` enforce it — including one that computes
+the expected hash independently, so a hash function that is wrong but self-consistent fails, and one
+that scans `main.py` for any route serving `index.html` without stamping.
+
+**Do not add a route that serves `index.html` without calling `stamp_asset_versions`.** Step 550 patched
+one of the two shell routes and reported it as covering the page; the test now exists so that mistake
+cannot be repeated silently.
 
 ### If There Are Merge Conflicts on Main
 Report under "Decisions Needed" — do not force-push, do not resolve unilaterally.
