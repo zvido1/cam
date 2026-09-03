@@ -1,0 +1,801 @@
+# SOURCE FIXTURE - The Bank of Nashville / Carothers at Bakers Bridge, LLC retail_shopping_center lease
+# Carothers at Bakers Bridge Shopping Center, Franklin, TN. Effective Date 2000-11-20.
+# Real executed commercial lease, filed as SEC EX-10.01 (source: ex1001lease.htm).
+# Accession: 0001138560-02-000007  CIK: 852677
+# Imported 2026-06-14 for the EDGAR mini-corpus (Tier-1 external validation, CAM NEW_THREAD_PROMPT).
+# Landlord's-Work / Work-Letter: POPULATED -- Shopping centre lease. Tenant Exclusive at 2.8 with termination remedy. Percentage Rent 5.4 STRUCK THROUGH; 1.10 and 1.14 both NA.
+#
+# Text extracted from the SEC HTML filing via build_edgar_corpus.py (regenerable).
+# Page-number artifacts from the filing are left inline.
+# ============================================================================
+
+EX-1
+3
+ex1001lease.htm
+EXHIBIT 10.01 LEASE AGREEMENT
+Exhibit 10.01 - Lease
+Exhibit 10.01
+LEASE
+CAROTHERS at BAKERS BRIDGE,
+LLC,
+LANDLORD
+THE BANK OF NASHVILLE,
+TENANT
+CAROTHERS AT BAKERS BRIDGE SHOPPING CENTER
+LOCATED AT CAROTHERS PARKWAY
+AND BAKERS BRIDGE
+FRANKLIN, TN.
+TABLE OF CONTENTS
+ARTICLE I. BASIC LEASE PROVISIONS
+Section 1. Basic Lease Provisions
+1.1 Shopping Center
+1.2 Premises
+1.3 Square Footage
+1.4 Term
+1.4a Option
+1.5 Commencement Date
+1.6 Expiration Date
+1.7 Possession Date
+1.8 Use
+1.9 Base Rent
+1.10 Percentage Rent
+1.11 Trade Name
+1.12 Security Deposit
+1.13 Notices
+1.14 Guarantor
+1.15 Broker
+1.16 Common Area Maintenance Charge
+1.17 Real Estate Tax Charge
+1.18 Insurance Cost
+1.19 Monthly Marketing Fund
+1.19a Merchant Assessment
+1.20 Radius Restriction
+1.21 Rent Payment Address
+1.22 Exhibit List
+ARTICLE II PREMISES; USE; PROPORTIONATE SHARE; COMMON AREA
+Section 2.1. Premises.
+Section 2.2. Proportionate Share.
+Section 2.3. Use.
+Section 2.4. Common Area.
+Section 2.5. Anchor Tenant.
+Section 2.6. Relocation of Premises
+Section 2.7 Option
+Section 2.8 Exclusive Use
+ARTICLE III LEASE TERM
+Section 3.1. Term.
+Section 3.2. Lease Year Defined.
+Section 3.3. Change in Possession Date/Commencement Date.
+Section 3.4. Confirmation of Dates.
+ARTICLE IV SECURITY DEPOSIT
+ARTICLE V BASE RENT AND PERCENTAGE RENT
+Section 5.1. Payment.
+Section 5.2. Past Due Base Rent and Late Charge.
+Section 5.3. Base Rent.
+Section 5.4. Percentage Rent.
+Section 5.5. Additional Rent.
+ARTICLE VI UTILITIES
+ARTICLE VII MARKETING FUND; MERCHANTS ASSOCIATION
+Section 7.1. Marketing Fund
+Section 7.2. Merchant Association
+ARTICLE VIII ACCEPTANCE OF POSSESSION
+ARTICLE IX LABOR RELATIONS
+ARTICLE X OTHER OPERATIONS
+ARTICLE XI ASSIGNMENT OR SUBLETTING
+ARTICLE XII CONDUCT OF BUSINESS
+Section 12.1. Operations/Trade Name.
+Section 12.2. Business Hours.
+Section 12.3 Tenant Advertising.
+ARTICLE XIII COMMON AREA MAINTENANCE CHARGES; REAL ESTATE TAX CHARGES
+Section 13.1. Common Area Maintenance Charges
+Section 13.2. Real Estate Tax Charges
+Section 13.3. Additional Taxes
+Section 13.4. Tenant's Right to Audit
+Section 13.5. Tenant's Taxes
+ARTICLE XIV DEFAULT BY TENANT/LANDLORD
+Section 14.1. Tenant Default/Right to Reenter and Remedies.
+Section 14.2. Tenant Default/Right to Relet.
+Section 14.3. Legal Expenses.
+Section 14.4. Tenant Default/Default in Other Centers
+Section 14.5. Landlord Default
+ARTICLE XV INSURANCE
+Section 15.1. By Landlord.
+Section 15.2. By Tenant.
+Section 15.3. Mutual Waiver of Subrogation Rights.
+Section 15.4. Mutual Waiver of Claims.
+Section 15.5. Increase in Fire Insurance Premium.
+Section 15.6. Mutual Indemnification.
+ARTICLE XVI NO PERSONAL LIABILITY OF LANDLORD
+ARTICLE XVII ACCESS TO PREMISES
+ARTICLE XVIII ALTERATIONS
+Section 18.1. Alterations by Tenant.
+Section 18.2. Roof and Walls.
+ARTICLE XIX REPAIRS AND MAINTENANCE
+Section 19.1. Landlord's Obligations.
+Section 19.2. Tenant's Obligations.
+ARTICLE XX LIENS
+ARTICLE XXI DESTRUCTION OF PREMISES
+Section 21.1. Fire, Explosion or Other Casualty.
+Section 21.2. Repair of Landlord's and Tenant's Work.
+Section 21.3. Determination of Damage.
+ARTICLE XXII CONDEMNATION
+ARTICLE XXIII FORCE MAJEURE
+ARTICLE XXIV LANDLORD'S LIEN
+ARTICLE XXV SUCCESSION TO LANDLORD'S INTEREST
+Section 25.1. Attornment.
+Section 25.2. Subordination.
+Section 25.3. Mortgagee's Approval.
+Section 25.4. Estoppel Certificate.
+ARTICLE XXVI SURRENDER OF DEMISED PREMISES
+Section 26.1. Condition of Demised Premises.
+Section 26.2. Hold Over.
+ARTICLE XXVII SIGNS, AWNINGS, CANOPIES, FIXTURES
+Section 27.1. Fixtures.
+Section 27.2. Removal and Restoration by Tenant.
+Section 27.3. Signs, Awnings and Canopies.
+ARTICLE XXVIII MISCELLANEOUS
+Section 28.1. Partial Invalidity.
+Section 28.2. Successors and Assigns.
+Section 28.3. Waiver.
+Section 28.4. No Partnership.
+Section 28.5. Time Is Of The Essence.
+Section 28.6. Broker's Commission.
+Section 28.7. Entire Agreement.
+Section 28.8. Applicable Law.
+Section 28.9. Notices.
+Section 28.10. Quiet Enjoyment.
+Section 28.11. Compliance with Law.
+Section 28.12. Recording.
+Section 28.13. Tenant and Guarantor.
+Section 28.14. Objections to Statements.
+Section 28.15. Execution of Lease.
+Section 28.16. Accord and Satisfaction.
+Section 28.17. Corporate Tenant.
+Section 28.18. REIT Qualifications.
+Section 28.19. Waiver of Jury Trial.
+Section 28.20. Default Rate.
+ARTICLE XXIX ENVIRONMENTAL MATTERS
+ARTICLE XXX AMERICANS WITH DISABILITIES ACT
+CAROTHERS at BAKERS BRIDGE
+FRANKLIN, TN.
+LEASE
+THIS LEASE is made as of the 20 th day of November , 2000 by and between Carothers at Bakers Bridge, LLC ("Landlord") and The Bank of Nashville ("Tenant"),:
+ARTICLE I
+BASIC LEASE PROVISIONS AND EXHIBITS
+Section 1. Basic Lease Provisions.
+The descriptions, capitalized words and amounts set forth below are qualified by their language elsewhere in this Lease, including those Articles and/or Sections referred to in parentheses:
+1.1
+Shopping Center (Section 2.1):Carothers at Bakers Bridge, Franklin, TN. and legally described on Exhibit B (the "Shopping Center")
+1.2
+Premises (Section 2.1): Space Number: A-1
+1.3
+Square Footage (Section 2.1): approximately, 3,800 square feet
+1.4
+Term (Section 3.1): 10 Lease Years, plus the partial calendar month occurring prior to the Commencement Date.
+1.4a
+Option (Section 2.7) : Two Five (5) year options
+1.5
+Commencement Date (Section 3.1): 120 days after Landlord has delivered premises or when Tenant opens for business whichever is first.
+1.6
+Expiration Date (Section 3.1): 120 months after Commencement Date
+1.7
+Possession Date (Section 3.3 & Article VIII):
+1.8
+Permitted Use (Section 2.3): For general business use with the exclusive right within the shopping center to operate a full service financial institution, which shall include any service or activity approved by Tenant's regulatory authorities, but no other purpose shall be permitted without Landlords prior written consent.
+1.9
+Base Rent (Section 5.1):
+Monthly
+Annually
+$7,283.33
+Commencement date to forty-eight months
+$87,400.00
+$7,916.67
+Forty-nine months to ninety-six months
+$95,000.00
+$8,233.33
+Ninety-seven months to one hundred and twenty months
+$98,800.00
+1.9a
+Option (Section 2.7):
+Tenant to be granted two (2) five (5) year options at market rate not to exceed the CPI
+index increase over the same time period.
+1.10
+Percentage Rent (Section 5.4):
+NA
+1.11
+Trade Name (Section 12.1):
+The Bank of Nashville
+1.12
+Security Deposit (Article IV):
+NA
+1.13
+Notices (Section 28.9):
+Tenant Notices:
+The Bank of Nashville
+Attn. Corporate Secretary
+P. O. Box 198986
+Nashville, TN 37219
+Landlord Notices:
+Carothers at Bakers Bridge, LLC
+c/o Southland Management Co.
+PO Box 680515
+Franklin, IN. 37068
+1.14
+Guarantor(s):
+NA
+1.15
+Brokers (Section 28.6):
+Grub Ellis Centennial.
+1.16
+Common Area Maintenance Charge
+(Section 13.1):
+Tenant's Estimated Monthly Charge -
+$395.83
+1.17
+Real Estate Tax Charge
+(Section 13.2):
+Tenant's Estimated Monthly Charge -$475.00
+1.18
+Insurance Costs (Section 15.1):
+Tenant's Estimated Monthly Charge -$46.67
+1.19
+Monthly Marketing Fund (Section 7.1):
+NA
+1.19a
+Merchant Assessment (Section 7.2):
+$ NA
+1.20
+Radius Restriction (Article X):
+NA miles from any exterior boundary of the Shopping Center.
+1.21
+Rent Payment Address:
+Carothers at Bakers Bridge, LLC
+c/o Southland Management &
+Development Co.
+P.O. Box 680515
+Franklin, TN. 37068
+1.22
+The following exhibits are attached hereto and made a part of this Lease:
+Exhibit A
+A site plan of the Shopping Center showing generally the location of the Premises.
+Exhibit B
+Legal description of the Shopping Center.
+Exhibit C
+Landlords Work
+Exhibit D
+Tenant's Work.
+Exhibit E
+Tenant Sign Criteria.
+Exhibit F
+HVAC Maintenance Contract Requirements
+Exhibit G
+Rules & Regulations
+ARTICLE II
+PREMISES; USE; PROPORTIONATE SHARE;
+COMMON AREA
+Section 2.1. Premises.
+Landlord leases to Tenant, and Tenant rents from Landlord, the space in the Shopping Center designated at Section 1.2 hereof and crosshatched on the site plan attached hereto as Exhibit A (herein called the "Premises").
+The Premises contains the approximate number of square feet set forth in Section 1.3, measured to the center line of all party or common walls, to the exterior faces of all other walls, and to the lease line where there is no wall. Landlord shall have the right to verify the actual square feet in the Premises from time to time during the Term of this Lease and to adjust the Base Rent payable hereunder based upon the actual square feet of the Premises as determined by such measurement; however, the adjustment shall not exceed a ten percent (10%) increase or decrease from the square footage of the Premises specified in Section 1.3 hereof.
+The legal description of the Shopping Center contained on Exhibit B may exclude from the description of the Shopping Center certain real estate, outlots and other real property not owned by Landlord. Landlord reserves the right, at any time during the term of this Lease, and from time to time, to acquire all or any part of said real estate, outlots or other real property, and to include same as part of the Shopping Center, at Landlord's sole discretion. Provided, however, that any such acquisition shall not result in an increase to Tenant s common area maintenance charges. Further, Exhibit A is provided for informational purposes only, and shall not be deemed to be a warranty, representation or agreement by Landlord that the Shopping Center or buildings and/or stores will be exactly as indicated on said Exhibit, or that the other tenants which may be referenced on said Exhibit will be occupants of the Shopping Center. The shopping center shall be similar to Exhibit A as it relates to the leased premises in square footage, exterior appearance and interior layout.
+Section 2.2. Proportionate Share.
+Tenant's proportionate share of the Leasable area of the Shopping Center shall be the percentage equal to a fraction, the numerator of which shall be the square footage of the Premises specified in Section 1.3 and the denominator of which shall be the square footage of the constructed Leasable area of the Shopping Center. Said percentage shall hereinafter be referred to as Tenant's "Proportionate Share". Tenant's Proportionate Share may be adjusted from time to time as the square footage of the Leasable area of the Premises or of the Shopping Center changes, for whatever reason.
+Section 2.3. Use.
+Tenant is permitted to use the Premises for the purposes specified in Section 1.8, and for no other purpose whatsoever. The specific use specified in Section 1.8 is a material consideration to Landlord in order that there be maintained within the Shopping Center an appropriate tenant mix so as to achieve the maximum Gross Sales for all tenants and to assure the continued operation of a full service shopping center development. Tenant shall obtain, at its own expense, all necessary governmental licenses and permits for such use. Tenant acknowledges that no representations have been made to Tenant that any other tenant will lease space within the Shopping Center.
+Section 2.4. Common Area.
+The "Common Area" shall mean all areas of the Shopping Center which are now or hereafter made available by Landlord, from time to time, for the common and joint use and benefit of Landlord, the Anchor Tenants, the Tenant, other lessees within the Shopping Center, and any other persons or owners of other real estate, outlots or other real property outside the boundaries of the Shopping Center, if any, their respective customers and invitees. The Common Area shall include, but shall not be limited to, package pickup stations, elevators, escalators, stairways, pedestrian sidewalks, parking areas and structures (whether in tiers or at, or below grade), curbs, driveways and roads, malls, arcades, concourses, service corridors, loading platforms and truck docks, delivery areas, directory signs and equipment, public restrooms, courts and ramps, landscaped and vacant areas, retaining walls, retention and detention ponds, building enclosures and roofs covering Shopping Center buildings, perimeter walls and fences, bus stops, first-aid and comfort stations, lighting facilities, sewer lines, water mains, drinking fountains, mechanical equipment, pipes, ducts, conduit wires, and other improvements.
+The Shopping Center and the Common Area shall at all times be subject to the exclusive control and management of Landlord. So long as the Lease remains in effect and Tenant is not in default hereunder, Tenant and its business invitees, employees and customers shall have the nonexclusive right, in common with Landlord and all others to whom Landlord has granted or may hereafter grant rights, to use the Common Area subject to such reasonable regulations as Landlord may from time to time impose and the rights of Landlord set forth herein. Tenant shall comply with the rules and regulations set forth in Exhibit G attached hereto and all reasonable amendments thereto. Tenant agrees to cause its concessionaires, officers, employees, agents, customers and invitees to abide by such rules and regulations. Tenant agrees to participate in any parking validation program initiated by Landlord.
+Without limiting the generality of the foregoing, Landlord has the right in its management, control and operation of the Shopping Center and Common Area to do and perform such acts in and to the Shopping Center and Common Area as Landlord determines to be advisable for the Shopping Center and the Common Area, including, but not limited to: obstructing or closing off all or any part of the Common Area or the Shopping Center for the purpose of maintenance, repair, construction, to prevent the acquisition of public rights therein or for other reasonable purposes; using any part of the Common Area or Shopping Center for merchandising, display, decorations, entertainment, and structures designed for retail selling or special features or promotional activities; changing the area, level, location, arrangement or use of Shopping Center, Common Area or any part thereof; constructing other buildings, structures, or improvements in the Shopping Center or the Common Area and making alterations thereof, additions thereto, subtractions therefrom, or rearrangements thereof; build additional stories on any building, and constructing additional buildings or facilities adjoining or proximate to the Shopping Center or the Common Area; constructing multiple deck, elevated or underground parking facilities, and expand, reduce or alter same in any manner whatsoever; erecting both temporary and permanent kiosks; exclude, expand, change, modify, add to or subtract from (I) the size and dimensions of the Shopping Center, the Common Area, any part thereof or any property adjoining the same, (ii) the number, location and dimensions of the stores and floors in the Shopping Center,( iii) the identity and type of stores and tenants in the Shopping Center, (iv) the signs (pylon and otherwise) installed or to be installed in the Shopping Center, and (v) the design or decorating of any portion of the Shopping Center or the Common Area. Landlord's rights under this paragraph may be performed so long as access to the Premises is not unreasonably denied. Tenant shall not interfere with Landlord's or other tenants' rights to use any part of the Common Area.
+Notwithstanding any provision in this Lease to the contrary, Landlord shall not obstruct or close any part of the shopping center which impedes ingress and egress to the Leased Premises during normal business hours.
+Section 2.5, Anchor Tenant.
+This section lined through (deleted)
+Section 2.6, Relocation of Premises
+This section lined through (deleted)
+Section 2.7. Option to Extend Term
+A. Tenant, by written notice to Landlord given no later than six (6) full calendar months before the Expiration Date, shall have the option to renew this Lease for an additional Five (5) Year period (the "First Option Period") commencing on the expiration of the Term of this Lease, pursuant to all of the terms, covenants, and conditions of this Lease and at the Option Price set forth in Section 1.9a hereof, provided that at the time the notice hereinabove referred to is given and at the time the First Option Period commences, Tenant is open and operating the Premises for the use set forth in Section 2.3 and is not materially in default hereunder.
+B. Tenant, by written notice to Landlord given no later than six (6) full calendar months before the expiration of the First Option Period, shall have the option to renew this Lease for an additional Five (5) Year period (the "Second Option Period") commencing on the expiration of the First Option Period, pursuant to all of the terms, covenants, and conditions of this Lease and at the Option Price set forth in Section 1.9a hereof, provided that at the time the notice hereinabove referred to is given and at the time the First Option Period commences, Tenant is open and operating the Premises for the use set forth in Section 2.3 and is not materially in default hereunder.
+Section 2.8. Tenant Exclusive.
+So long as Tenant is open and operating its business as provided for in this Lease (condemnation and casualty excepted) and is not otherwise in default under this Lease (after the expiration of any applicable cure periods), then Landlord covenants and agrees that during the Term hereof, no space in the Shopping Center will be leased or allowed to be leased for a full service financial institution as described in Section 1.8.
+Landlord acknowledges that in the event of a breach of this restriction, Tenant shall give Landlord written notice of such breach and Landlord shall have thirty (30) days from the date of said notice (or such longer period as may be reasonably required if Landlord is diligently attempting to remedy same) to remedy same. If Landlord fails to remedy such breach within said thirty (30) day period (or such longer period as may be reasonably required if Landlord is diligently attempting to remedy same), Tenant shall have the rights set forth in the next paragraph as its sole and exclusive remedy because of such breach. So long as Landlord is diligently attempting to remedy the breach of said restriction, Tenants remedies shall be postponed.
+In the event Landlord fails to proceed with all diligence to remedy such violation, then, upon the expiration of thirty (30) days from the date of Tenants notice, Tenant shall have, as its sole and exclusive remedy under this Lease, the right to either (i) decrease annual Base Rent by 50% during the period such store (the "Competing Store") is open and operating (although Tenant shall still pay Landlord all Percentage Rent and Additional Rent due under this Lease), or (ii) terminate this Lease, which right Tenant shall elect by delivering to Landlord further written notice of its intention. If Tenant elects (ii) above, then this Lease shall terminate as of the 90th day after Tenants election, and neither Tenant nor Landlord shall have any further obligation under this Lease. If Tenant elects (i) above, then Tenant shall resume paying full Base Rent on the date such Competing Store ceases violating the restriction. If such Competing Store continues to violate the restriction for 180 days after the date said Competing Store opened for business, then Tenant shall have the further right to terminate this Lease by delivering to Landlord, no earlier than 180 days, and no later than 210 days after the date the Competing Store opened for business, written notice of its intention to terminate and this Lease shall terminate on the 90th day after Tenant's notice to Landlord. If Tenant fails to provide Landlord with written notice of its intention to terminate this Lease under this Section by the 210th day after the date the Competing Tenant opens for business, then Tenant's right to terminate the Lease under this Section shall be null and void and Tenant shall immediately begin paying to Landlord full Base Rent.
+ARTICLE III
+LEASE TERM
+Section 3.1. Term.
+The Term of this Lease shall be as set forth in Section 1.4, commencing on the Commencement Date specified in said Section 1.5 and ending on the Expiration Date specified in said Section 1.6, unless sooner terminated pursuant to any provision of this Lease.
+Section 3.2. Lease Year Defined.
+The term "Lease Year" means a period of twelve (12) consecutive calendar months, the first full Lease Year shall commence on the first day of the calendar month immediately following the Commencement Date, and each succeeding Lease Year shall commence upon the anniversary date of the first Lease Year.
+Section 3.3. Change in Possession Date/Commencement Date.
+If for any reason Landlord cannot deliver possession of the Premises to Tenant on the Possession Date set forth in Section 1.7, Landlord shall not be subject to any liability therefor, nor shall such failure affect the validity of this Lease or the obligations of the Tenant hereunder. However, and in such case, Tenant shall not be obligated under the provisions of Article V of this Lease until the passage, from the actual Possession Date, of the same number of days as between the Possession Date set forth in Section 1.7 and the Commencement Date set forth in Section 1.5, which date shall be the new Commencement Date, (unless Tenant shall open the Premises for business prior to such new Commencement Date, in which event, the date of Tenant's opening shall be the new Commencement Date) and the Expiration Date shall remain unchanged. In the event that Landlord shall permit Tenant to occupy Premises prior to said new Commencement Date, such occupancy shall be subject to all of the provisions of this Lease. Said early possession shall not advance the Expiration Date.
+If Landlord is unable to deliver possession of the Premises within 210 days of the execution of this agreement, Tenant shall have the right to terminate this lease without further liabilities or obligations.
+Section 3.4. Confirmation of Dates
+Upon the request of either party, both Tenant and Landlord agree to execute a written installment certifying the Possession Date, the Commencement Date, the Expiration Date of this Lease as well as the date Tenant opened the Premises for business to the general public, provided that this Lease shall not be affected in any manner if either party fails or refuses to execute such instrument.
+ARTICLE IV
+SECURITY DEPOSIT
+This Article was lined through (deleted).
+ARTICLE V
+BASE RENT
+Section 5.1. Payment.
+All Base Rent shall be payable in advance, without prior demand or any right of offset or deduction, in monthly installments on the first day of each calendar month of the Term hereof. Tenant shall pay all Base Rent to Landlord in lawful money of the United States of America at the address stated in Section 1.21 or to such other persons or at such other places as Landlord may designate in writing.
+Notwithstanding anything to the contrary contained herein, after the Expiration Date or earlier termination of this Lease, Landlord shall have the right to reconcile all Base Rent and Additional Rent (defined hereinafter) billed, paid and/or owed by Tenant during the Term hereof and thereafter submit a final billing to Tenant. Upon receipt thereof, Tenant shall submit payment in full to Landlord within thirty (30) days. The provisions of this paragraph shall survive the expiration or sooner termination of this Lease.
+Tenant s covenant to pay Base Rent and Additional Rent under this Lease is an independent covenant of Tenant and shall not be subject to any abatement, deduction, counterclaim, reduction, set off or defense of any kind whatsoever, except as set forth herein.
+Section 5.2. Past Due Base Rent and Late Charge.
+Any Base Rent or Additional Rent to be paid by Tenant which is not paid when due shall bear interest from the date due until the date paid at the Default Rate. In addition, if Tenant shall fail to pay any Base Rent or Additional Rent within seven (7) days after the same is due, Tenant shall be obligated to pay a late payment charge equal to the Fifty Dollars ($50.00) to reimburse Landlord for its additional administrative costs.
+Any payment by Tenant or acceptance by Landlord of a lesser amount then shall be due from Tenant to Landlord shall be treated as a payment on account. The acceptance by Landlord of a check for a lesser amount with an endorsement or statement thereon, or upon any letter accompanying such check, that such lesser amount is payment in full shall be given no effect, and Landlord may accept such check without prejudice to any other rights or remedies which Landlord may have against Tenant.
+The Fifty Dollar ($50.00) additional administrative fee set forth above is intended as reasonable estimate of Landlord's administrative costs and damages because of Tenant's failure to pay Base Rent or Additional Rent on a timely basis. The parties agree that this administrative fee is reasonable, bears significant relation to the actual administrative costs that Landlord might sustain, which administrative costs Tenant and Landlord agree would be uncertain and difficult to prove, and is not a penalty for Tenant's failure to pay Base Rent and Additional Rent. The acceptance by Landlord of said administrative fee shall not preclude Landlord from seeking and pursuing any other remedy under this Lease.
+Section 5.3. Base Rent.
+Payment of Base Rent shall begin on the Commencement Date. If the Commencement Date occurs on a day other than the first day of a calendar month, then Base Rent (as well as all Additional Rent) shall be prorated for the balance of that month based upon the actual number of days from the Commencement Date through the last day of said calendar month. The amount of each monthly installment of Base Rent for the Premises for the Term of this Lease shall be as specified in Section 1.9.
+Section 5.4. Percentage Rent.
+This Section was lined through (deleted).
+Section 5.5. Additional Rent.
+Tenant and Landlord agree that all other sums excepting Base Rent which may become due under this Lease shall be deemed "Additional Rent". Additional Rent shall include, and shall not be limited to: late charges, interest, Common Area Maintenance Charges, Real Estate Tax Charges, Tenant's Proportionate Share of Insurance Costs, attorneys' fees and security deposits and any other sum coming due to or advanced by Landlord in performance of its obligations. Additional Rent shall be payable monthly in advance on the first (1st) day of each month on and after the Commencement Date.
+ARTICLE VI
+UTILITIES
+Tenant shall make application for, obtain, pay for and be solely responsible for all utilities required, used or consumed in the Premises, including, but not limited to, gas, water, (including water for domestic uses and for fire protection), telephone, electricity, sewer service, garbage collection services and any similar service. Landlord shall bear the expense of providing access to all such utilities and connections thereto up to the Leased Premises. In the event that any charge for any utility supplied to the Premises is not paid by Tenant to the supplier when due, then Landlord may, but shall not be required to, pay such charge for and on behalf of Tenant, with any such amount paid by Landlord being repaid by Tenant to Landlord as Additional Rent promptly upon demand. Additionally, if Landlord shall elect to supply any utilities to the Premises, then Tenant shall pay to Landlord the cost of its utility consumption. Landlord agrees that the cost to Tenant of any utilities supplied by Landlord shall not exceed the amount Tenant would have paid if it independently obtained such service from the local utility supplier to the extent that a relationship exists.
+Landlord and Tenant hereby agree that Landlord shall not be liable for any interruptions or curtailment in utility services due to causes beyond its reasonable control or due to Landlord's alteration, repair or improvement of the Premises or the Shopping Center unless such interruption or curtailment continues for more than five (5) business days, in which event Tenant s rental obligation shall be proportionately abated until such interruption or curtailment is fully restored.
+ARTICLE VII
+MARKETING FUND; MERCHANDISE' ASSOCIATION
+This article was lined through (deleted).
+ARTICLE VIII
+ACCEPTANCE OF POSSESSION
+Section 8.1. Landlord's Work.
+Landlord shall, at its expense, construct the Premises in substantial accordance with plans and specifications prepared by Landlord's architect, incorporating in such construction all work described in Exhibit C attached hereto as being required of Landlord (herein called "Landlord's Work"). All construction work to be performed by Landlord hereunder shall be performed in a good and workmanlike manner in full compliance with all applicable laws, codes and building requirements of the local authorities.
+Section 8.2. Tenant's Work.
+All work not provided herein to be done by Landlord shall be performed by Tenant, at Tenant's expense, and deemed to be "Tenant's Work". The performance of Tenant's Work, if any, shall include all work designated as Tenant's Work in Exhibit D. All Tenants Work shall be performed diligently and promptly at Tenant's expense and in accordance with the following provisions.
+Section 8.3. Tenant's Obligations Before Commencement Date.
+Before performing any Tenant Work in the Premises, Tenant shall prepare plans and specifications of Tenant's Work (which plans and specifications shall be prepared consistent with Exhibit D hereof) and submit same to Landlord within a time frame allowing for (a) a reasonable time for the Landlord's review, approval and resubmittals by Tenant, required by the term of this Section 8.3.A and (b) a sufficient time for completion of Tenant's Work and Tenant's opening for business on or before the Commencement Date, but in no event shall such plans and specifications be submitted later than ninety (90) business days after the date of this Lease or ninety (90) days after the date Landlord provides Tenant with plans and specifications in form sufficient to allow Tenant to prepare the plans and specifications for Tenant's work, whichever is later. Tenant's submission to Landlord will include a reproducible (sepia) set of plans and specifications and four (4) prints of Tenant's Work to be done. As soon as reasonably possible thereafter, Landlord shall notify Tenant of any failure of Tenant's plans to meet with Landlord's approval. Tenant shall, within fifteen (15) days after receipt of any such notice, cause Tenant's plans to be revised and resubmitted to the Landlord for Landlord's approval. When Landlord or its designated agent has approved the original or revised Tenant's plans, Landlord shall initial and return one set of approved Tenant's plans to Tenant and the same shall become a part hereof as Exhibit D-1. Tenant shall not commence any of Tenant's Work until Landlord has approved Exhibit D-1. Tenant shall not be permitted to commence any work in the Premises until Tenant's plans and specifications have been submitted and approved by Landlord. Landlord shall review Tenant s plans within five (5) business days after receipt of said plans. Failure by Tenant to timely submit plans shall not delay the occurrence of the Commencement Date.
+Section 8,4, Tenant's Construction.
+Landlord shall substantially complete Landlord's Work, and Tenant shall take possession of the Premises, on the Possession Date set forth in Section 1.7 hereof. Tenant shall commence Tenant's Work on the Possession Date or as soon as reasonably possible agree all plans have been approved, complete the same in strict accordance with applicable Exhibits, install all store and trade fixtures, signs, equipment, stock in trade, merchandise and inventory, and open for business therein not later than the Commencement Date. In no event shall Tenant's failure to fulfill its obligations under Section 8.3.A affect the Commencement Date or any obligation of Tenant hereunder, and no such failure shall be construed in any way to extend the Lease Term.
+Notwithstanding anything contained in this Lease to the contrary, if Tenant shall (with Landlord's consent) accept possession of the Premises prior to either (I) the Possession Date; or (ii) receipt of a fully executed original of this Lease, then and in either of such events, Tenant agrees (a) to be bound by all of the terms, covenants and conditions in this Lease from and after any such acceptance of possession, and (b) that the dates herein provided for the Commencement of Tenant's obligations arising prior to the Commencement Date, and any time limits for performance imposed upon Tenant hereunder, shall be deemed to have commenced as of the date of such acceptance of the Premises.
+Prior to opening its Premises for business to the public, Tenant shall deliver to Landlord a certificate, satisfactory in form and substance to the Landlord for insurance purposes, certifying to the full insurable value of all of the Tenant's Work described in Exhibits D and D-I.
+All construction work to be performed by Tenant hereunder shall be performed in a good and workmanlike manner in full compliance with all applicable laws, codes and building requirements of the local authorities. Tenant agrees to procure and pay for all necessary permits, licenses and consents required in connection with such construction and that Tenant's Work shall not unreasonably interfere with the conduct of Landlord's or any other tenant's business in the Shopping Center.
+Section 8.5. Condition of Premises.
+Tenant's taking possession of the Premises shall be conclusive evidence of Tenant's (i) acceptance thereof in good order and satisfactory condition; (ii) acknowledgment that the same are in the condition called for hereunder; and (iii) agreement that the obligations of Landlord imposed hereunder, if any, have been fully performed, except for latent defects and punch list items. Tenant agrees that except as specifically set forth herein, no representations respecting the condition of the Premises and no promises to decorate, alter, repair or improve the Premises either before or after the execution hereof have been made by Landlord or its agents to Tenant.
+ARTICLE IX
+LABOR RELATIONS
+This Article was lined through (deleted).
+ARTICLE X
+OTHER OPERATIONS
+This Article was lined through (deleted).
+ARTICLE XI
+ASSIGNMENT OR SUBLETTING
+Tenant shall not voluntarily or by operation of law transfer, assign, sublet, license, concession, mortgage or otherwise transfer or encumber all or any part of Tenant's interest (to include the sale or other transfer of stock in any percentage sufficient to change the effective voting control of Tenant) in this Lease or in the Premises (collectively a "Transfer) without Landlord's prior written consent, which consent shall not be unreasonably withheld, nor shall Tenant suffer or permit the Premises or any part thereof to be used or occupied by others without Landlord's prior written consent, which consent shall not be unreasonably withheld. Notwithstanding the foregoing, however, Tenant shall have the right to lease, assign, or sublease a portion of the Leased Premises to any third party, so long as the third party does not violate the use provision outlined in Section 1.8 and so long as Tenant remains Liable under the terms and conditions of this Lease. Any attempted Transfer without such consent shall be void and shall constitute a breach of the Lease. Regardless of Landlord's consent, no Transfer shall release Tenant of Tenant's obligation or alter the primary liability of Tenant to pay Base Rent and Additional Rent and to perform all other obligations to be performed by Tenant hereunder.
+This Article XI shall not prohibit any acquirer or successor in interest of Tenant to continue operation of the Leased Premises to continue operation of the Leased Premises in accordance with all of the terms and conditions of this Lease as long as such acquirer of successor in interest shall be of equal or greater financial condition in the opinion of the Landlord which shall not be unreasonably withheld.
+ARTICLE XII
+CONDUCT OF BUSINESS
+Section 12.1. Operation/Trade Name.
+A. Tenant covenants and agrees that, continuously and uninterruptedly from and after its initial opening for business, it will operate and conduct within the Premises the business it is permitted to operate and conduct under the provisions of this lease, except while the Premises are untenantable by reason of fire or other casualty. Tenant agrees to conduct its business at all times in a first class manner consistent with reputable business standards, and that it will at all times keep and maintain within and upon the Premises an adequate stock of merchandise and trade fixtures to service and supply the usual and ordinary demands and requirements of its customers and that it will keep the Premises in a neat, clean and orderly condition. Tenant also agrees to conduct Tenant's business under the trade name as stated in Section 1.11 hereof and for the use stated in Section 1.8 hereof. Tenant shall not conduct any secondhand, auction, distress, fire, bankruptcy or going-out-of-business sales.
+Section 12.2. Business Hours.
+Tenant agrees to keep open the Premises and to operate the business conducted therein during normal business hours except legal bank holidays.
+Section 12.3. Tenant Advertising.
+This Section was lined through (deleted).
+ARTICLE XIII
+COMMON AREA MAINTENANCE CHARGES;
+REAL ESTATE TAX CHARGES
+Section 13.1 Common Area Maintenance Charges.
+"Common Area Maintenance Charges", as used herein, shall mean Tenant's Proportionate Share of all operating expenses incurred by Landlord regarding the Common Area and Shopping Center. The operating expenses of the Common Area and Shopping Center are those amounts paid or payable in connection with the management, maintenance, repair, replacement and operation of the Common Area and the Shopping Center. Said Common Area Maintenance Charges include, but shall not be limited to, those costs and expenses associated with: landscaping; sprinklers; security; repaving, replacing, repairing and restriping parking lots; public utilities; insuring the Shopping Center (including, but not limited to, fire and extended coverage insurance on the Shopping Center, rent loss, insurance against liability for personal injury, death and property damage and workman's compensation insurance as set forth in Article XV); roof repairs and replacements; all repairs to the buildings located on the Shopping Center; lighting; maintenance; removal of snow, trash, rubbish, garbage and other refuse; repair, replacement and maintenance of machinery and equipment used in maintenance including all heating, ventilating and air conditioning machinery and equipment if any; personnel to implement services, salary expenses, including unemployment taxes, social security taxes, disability benefits, hospitalization, group insurance; uniforms of personnel directly servicing the Shopping Center; direct parking of the Shopping Center; Landlord's compliance with present and future laws and ordinances; cleaning, and painting the Common Area and the improvements located on the Shopping Center; maintenance of sanitary sewers, storm sewers, domestic water, storm water, detention, retention basins, water filtration and treatment facilities, if any; pylon sign (except the individual sign panels); directional and traffic signs and signals; security and security patrols; fire protection; installing, maintaining and repairing burglar or fire alarm systems; and fifteen percent (15%) of all the foregoing costs as and for Landlord's administrative and overhead costs. Tenant shall pay to Landlord, on the first day of each calendar month, commencing on the Commencement Date and continuing throughout the term of the Lease, Tenant s Proportionate Share of Common Area Maintenance Charges as reasonably estimated by Landlord, which may be adjusted from time to time. On an annual or other basis, Landlord shall deliver to Tenant a statement of reconciliation of Common Area Maintenance Charges and a calculation of Tenant's Proportionate Share thereof for the preceding calendar year. Tenant shall pay Landlord for Tenant's Proportionate Share, less any previous payments attributable to that period, of estimated Common Area Maintenance Charges for the fiscal period to which such expenses apply, within ten (10) days after receipt thereof. Tenant's obligations shall be prorated to account for any fractional portion of a fiscal period included in the term of its Lease. Tenant shall also pay to Landlord, on the first day of each calendar month, commencing on the Commencement Date and continuing throughout the term of the Lease, Tenant's Proportionate Share of the estimated Common Area Maintenance Charges which may be adjusted by Landlord from time to time. Common Area Maintenance Charges shall be deemed Additional Rent hereunder.
+Notwithstanding the foregoing, Common Area Maintenance Charges shall not, however, include (I) interest and amortization on mortgages and other debt costs; (ii) improvements, repairs or alterations to spaces leased to other tenants; (iii) the cost of providing any service directly to and paid directly by, any tenant; (iv) costs of items to the extent Landlord receives reimbursement from insurance proceeds; (v) any duplicative charges or expenses; and (vi) capital expenditures, as defined by generally accepted accounting principals (except those made primarily to reduce Common Area Maintenance Charges, or to comply with present and future laws and ordinances or other governmental requirements).
+If Landlord elects to exclude from the determination of Tenant s Proportionate Share any floor area in the Shopping Center which is leased to Anchor Tenants or is not owned by Landlord (pursuant to Section 2.2 hereof), Common Area Maintenance Charges shall be reduced by the amounts actually received by Landlord as contributions toward Common Area Maintenance Charges from said Anchor Tenants or parties.
+Section 13.2 Real Estate Tax Charges.
+"Real Estate Tax Charges", as used herein, shall mean Tenant's Proportionate Share of general and special taxes, assessments, duties and levies charged and levied upon or assessed against the Shopping Center and/or any improvement situated on the real property on which the Shopping Center stands, any leasehold improvement, and all costs and fees (including, without limitation, reasonable attorneys fees) incurred by Landlord in contesting or negotiating with the public authorities as to same; provided that if the Premises are part of a tax parcel that is separate from the rest of the Shopping Center, Real Estate Tax Charges in such instance, and at Landlord s option, shall mean Tenant's Pro Rata Share of general and special taxes, assessments, duties and levies charged and levied upon or assessed against the separate tax parcel on which the Premises stands, and all costs and fees (including, without limitation, reasonable attorneys fees) incurred by Landlord in contesting or negotiating with the public authorities as to same and "Tenant s Pro Rata Share" shall mean the percentage equal to a fraction, the numerator of which shall be the square footage of the Premises specified in Section 1.3 and the denominator of which shall be the square footage of the constructed leasable area of all buildings existing on the separate tax parcel of which the Premises are part.
+Tenant shall pay to Landlord, on the first day of each calendar month, commencing on the Commencement Date and continuing throughout the term of the Lease, the estimated Real Estate Tax Charges which may be adjusted from time to time. Upon receipt of the tax bill(s), Landlord shall deliver to Tenant a statement of Real Estate Tax Charges, along with a copy of the tax bill, and Landlord's calculation of Tenant's Proportionate Share thereof. Tenant shall pay Landlord for Tenant's Proportionate Share, less any payments of estimated Real Estate Tax Charges for the fiscal year to which such Real Estate Tax Charges apply, within ten (10) days after receipt thereof. Tenant obligations shall be prorated for any fractional portion of a tax fiscal year included in the term of its Lease. Real Estate Tax Charges shall be deemed Additional Rent hereunder.
+In the event of the enactment, adoption or enforcement by any governmental authority of any assessment, levy or tax, whether sales, use or otherwise, on or in respect of the Base Rent and Additional Rent set forth herein, or on or in respect of the right to lease or occupy the Shopping Center, the Premises, or both, Tenant shall pay such assessment, levy or tax to Landlord, or at Landlord's option, Tenant shall pay such assessment, levy or tax directly to the governmental authority. If such assessment, levy or tax is imposed on or in respect of all of the Base Rent derived from the Shopping Center, or is imposed on or in respect of the Shopping Center as a whole, Tenant shall pay to Landlord Tenant's Proportionate Share of such assessment, levy or tax. Notwithstanding the foregoing, this shall not impose upon Tenant the obligation to reimburse Landlord for any income, gift, inheritance or estate tax as such taxes are now structured.
+If Landlord elects to exclude from the determination of Tenant s Proportionate Share any floor area in the Shopping Center which is leased to Anchor Tenants (pursuant to Section 2.2 hereof), Real Estate Tax Charges shall be reduced by the amounts actually received by Landlord as contributions toward Real Estate Tax Charges from said Anchor Tenants.
+Section 13.3 Additional Taxes.
+If Landlord is assessed additional taxes or if its present taxes are increased as a result of any value placed on Tenant's leasehold, fixtures or furnishings, or goods and services, then immediately upon demand Tenant shall pay to Landlord the amount of said additional tax, or the amount of the increase.
+Section 13.4 Tenant Right to Audit .
+Tenant shall have the right, at Tenant's sole cost and expense, to audit the Landlord's records of Common Area Maintenance Charges ("CAM Costs") provided that all the following criteria are met: (a) before conducting any audit, Tenant must pay the full amount of any Common Area Maintenance Charges due, and must not be in default of any other provisions of this Lease; (b) in conducting the audit, Tenant must utilize an independent certified public accountant ("CPA") experienced in auditing shopping center records, which CPA will be subject to Landlord's reasonable prior approval; (c) the audit shall be conducted at Landlord's main offices or such other site as Landlord may determine; (d) upon receipt thereof, Tenant will deliver to Landlord a copy of the audit report and all accompanying data; (e) Tenant will keep confidential all agreements involving the rights provided in this section and the results of any audit conducted hereunder, and shall cause the CPA conducting said audit to keep such information confidential; (f) Tenant shall not conduct an audit more often than once each calendar year; and (g) Tenant's audit rights shall not cover a period of time in excess of the one calendar year immediately preceding the audit.
+If in the course of an audit, it is determined that Landlord has overcharged Tenant for CAM Costs, Landlord shall refund to Tenant the amount of the overcharge within thirty (30) days of the verification of the overcharge.
+Section 13.5 Tenant's Taxes.
+Tenant shall pay all such taxes which may be lawfully charged, assessed or imposed upon its fixtures and equipment of every type and also upon all of its personal property in the Premises.
+ARTICLE XIV
+DEFAULT BY TENANT/LANDLORD
+Section 14.1. Tenant Default/Right to Reenter and Remedies.
+In the event of (a) any failure of Tenant to pay any Base Rent, Additional Rent or any other amount due hereunder for more than five (5) days after written notice of such default shall have been given to Tenant, or (b) any failure to perform any other of the terms, conditions or covenants of this Lease to be observed or performed by Tenant for more than thirty (30) days after written notice of such default shall have been given to Tenant, or an agent of Tenant shall falsify any report required to be furnished to Landlord pursuant to the terms of this Lease, or (d) if Tenant or any guarantor of this Lease shall become insolvent, or file any debtor proceedings or take or have taken against Tenant or any guarantor of this Lease in any court pursuant to any statute of any state a petition for reorganization or for the appointment of a receiver or trustee of all or a portion of Tenant's or any such guarantor's property, or (e) if Tenant or any such guarantor makes an assignment for the benefit of creditors, or petitions for or enters into an agreement, or (f) if Tenant shall abandon the Premises, or suffer this Lease to be taken under any writ of execution, or does not do business in the Premises for a period of ten (10) consecutive days, or (g) if Tenant during the Term hereof shall have been in default in the payment of Base Rent, Additional Rent or other amount due hereunder more than two (2) times in any calendar year and because of such defaults Landlord shall have served upon Tenant two (2) or more five (5) day notices (a default of this provision shall be deemed non-curable), or (h) if Tenant breaches or violates the provisions of Article XXIX hereof for more than five (5) business days after written notice from Landlord, then Landlord, in addition to other rights or remedies it may have, shall have the immediate right to terminate Tenant's right to possession of the Premises and to reenter and may remove all persons and property from the Premises. Such property may be removed and stored in a public warehouse or elsewhere at the cost of, and for the account of, Tenant, all without service of notice (except as provided herein) or resort to legal process and without being deemed guilty of trespass or becoming liable for any loss or damage which may be occasioned thereby.
+Section 14.2. Tenant Default/Right to Relet.
+Should Tenant be in default as provided in Section 14.1 above and Landlord elects to reenter, as herein provided, or should it take possession pursuant to legal proceedings or pursuant to any notice provided for by law, or should Tenant fail to cure a default (after expiration of the applicable notice period) it may either terminate this Lease or may, from time to time without terminating this Lease, make such alterations and repairs as may be necessary in order to relet the Premises, and relet the Premises or any part thereof for such term or terms (which may be for a term extending beyond the Lease Term) and at such rental or rentals and upon such other terms and conditions as Landlord, in its sole discretion may deem advisable. Upon each such reletting, all rentals received by Landlord therefrom shall be applied: first, to any indebtedness other than Base Rent due hereunder from Tenant to Landlord; second, to pay any costs and expenses of reletting, including Additional Rent, concessions, or abatements, brokers' fees and attorneys' fees, and of costs of such alterations and repairs; third, to the payment of Base Rent due and unpaid hereunder; and the residue, if any, shall be held by Landlord and applied in payment of future Base Rent as the same may become due and payable hereunder. If such rentals received from such reletting during any month shall be less than that to be paid during that month by Tenant hereunder, Tenant shall pay any such deficiency to Landlord. Such deficiency shall be calculated and paid monthly. No such reentry or taking possession of the Premises by Landlord shall be construed as an election on its part to terminate this Lease unless a written notice of such intention be given to Tenant or unless the termination thereof be decreed by a court of competent jurisdiction. Landlord should be entitled to recover from Tenant any Base Rent which would otherwise have been payable under the terms of this Lease but for concessions or abatements previously granted by Landlord to Tenant. Notwithstanding any such reletting without termination, Landlord may at any time thereafter elect to terminate this Lease for such previous breach. Should Landlord at any time terminate this Lease for any breach, in addition to any other remedies it may have, it may recover from Tenant all damages it may incur by reason of such breach, including the cost of recovering the Premises, reasonable attorneys' fees, and including the worth at the tune of such termination of the excess, if any, of the amount of Base Rent reserved in this Lease for the remainder of the Lease Term over the then reasonable rental value of the Premises for the remainder of the Lease Term, all of which amounts shall be immediately due and payable from Tenant to Landlord. If Tenant has previously paid Percentage Rent to Landlord, then in determining the Base Rent which would be payable by Tenant hereunder subsequent to default the Base Rent for each year of the unexpired Term shall be equal to the average annual Base and Percentage Rents payable by Tenant from the commencement of the Lease Term to the time of default, or during the preceding three (3) full calendar years, whichever period is shorter.
+Nothing contained herein shall prevent the enforcement of any claim Landlord may have against Tenant for anticipatory breach of the unexpired term of this Lease. In the event of a breach or anticipatory breach by Tenant of any of life covenants or provisions hereof, Landlord shall have the right of injunction and the right to invoke any remedy allowed at law or in equity as if re-entry, summary proceedings and other remedies were not provided for herein.
+Mention in this Lease of any particular remedy shall not precede Landlord from any other remedy at law, in equity or by statute. Tenant hereby acknowledges that Landlord shall have the right to exercise any remedy available to it under this Lease, at law, in equity or by statute and unless clearly stated to the contrary in this Lease, no right or remedy conferred upon or reserved to the Landlord under this Lease is intended to be exclusive of any other right or remedy given herein or now or hereinafter existing at law, in equity or by statute.
+Section 14.3. Legal Expenses.
+If suits shall be brought for recovery of possession of the Premises, for the recovery of Base Rent, Additional Rent or any other amount due under the provisions of this Lease, or because of the breach of any term, covenants or condition herein contained on the part of either party to be kept or performed, and a breach shall be established, the defaulting party shall pay all expenses incurred therefor, including reasonable attorneys' fees.
+Section 14.4. Tenant Default/Default in Other Centers.
+This Section was lined through (deleted).
+Section 14.5. Landlord Default.
+Landlord shall not be in default in the performance of any of its obligations under his Lease unless and until Landlord shall have failed to perform such obligation within thirty (30) days or such additional time as is reasonably required to correct such default after written notice by Tenant to Landlord stating with specificity the nature of Landlord s failure to perform such obligation. In the event of a Landlord default, Tenant shall be entitle to exercise all rights and remedies available to it under this Lease, at law or in equity.
+ARTICLE XV
+INSURANCE
+Section 15.1. By Landlord.
+Landlord shall carry Commercial General Liability insurance on the Common Area and Shopping Center providing coverage for each such area of not less than Two Million Dollars and 00/100 ($2,000,000) against liability for bodily injury, personal injury or death, property damage or destruction (including loss of use thereof) per occurrence.
+Landlord shall also carry insurance for fire, extended coverage, vandalism, malicious mischief and other coverage and endorsements deemed advisable by Landlord, insuring all improvements owned by Landlord in the Shopping Center (excluding Tenant's merchandise, trade fixtures, furnishings, equipment, personal property, Tenant's Work or betterments and plate glass) for the full insurable value thereof, with such deductibles as Landlord reasonably deems advisable.
+To the extent not included in Tenant's Proportionate Share of Common Area Maintenance Charges pursuant to Section 13.1 hereof, Tenant agrees to pay Landlord, upon the Commencement Date, as Additional Rent hereunder, Tenant's Proportionate Share of the cost for such public liability, fire and other peril insurance carried by Landlord on the Shopping Center, as well as the cost to maintain such other insurance coverages and endorsements deemed advisable by Landlord, in equal installments on the first day of every calendar month during the Lease Term (herein referred to as "Tenant's Proportionate Share of Insurance Costs"). At the end of the first full calendar year, and each calendar year thereafter, the amount of Tenant's Proportionate Share of Insurance Costs shall be adjusted in direct ratio to the increase or decrease in the cost of the premiums paid by Landlord for the aforesaid insurance coverage.
+Section 15.2. By Tenant.
+Tenant agrees to carry Commercial General Liability insurance on the Premises during the Term hereof, covering the Tenant and naming the Landlord, Landlord's mortgagee, Landlord's agents and beneficiaries and such other parties as reasonably requested by Landlord as additional insureds with terms and companies satisfactory to Landlord for limits of not less that Two Million Dollars and 00/100 ($2,000,000) for bodily injury, including death, and personal injury for any one occurrence, One Million Dollars and 00/100 ($1,000,000) property damage insurance or combined single limit of Two Million Dollars and 00/100 ($2,000,000). Tenant shall also carry contractual liability coverage recognizing this Lease, products and/or completed operations liability and shall provide that Landlord and Tenant shall be given a minimum of thirty (30) days' written notice by the insurance company prior to cancellation, termination or change in such insurance. Tenant also agrees to carry insurance against fire, sprinkler damage and such other risks as are from time to time included in standard "all risk" and/or "special peril" forms of insurance (including business interruption, business income and extra expense coverage and insuring against flood and all other forms of water damage) for the full insurable value, covering all of Tenant's Work and betterments, Tenant's merchandise, trade fixtures, furnishings, wall coverings, plate glass, floor coverings, carpeting, drapes, equipment and all items of personal property of Tenant located on or within the Premises. Tenant's business interruption coverage shall also include coverage for off Premises public utility interruption and said business interruption insurance shall have limits sufficient to pay Base Rent, Percentage Rent and Additional Rent for a period of not less than twelve (12) months. At the Commencement Date, Tenant shall provide Landlord with copies of the policies or certificates evidencing that such insurance is in full force and effect and stating the terms thereof. The minimum limits of the comprehensive general liability policy of insurance shall in no way limit or diminish Tenant's liability under Section 15.6 hereof and Tenant's insurance obligation shall be subject to increases, additional and/or different types of insurance at any time, and from time to time, during the Term hereof if Landlord, in the exercise of its reasonable judgment, shall deem same necessary for adequate protection. Within twenty (20) days after demand therefor by Landlord, Tenant shall furnish Landlord with evidence that such demand has been complied with.
+Section 15.3. Mutual Waiver of Subrogation Rights.
+Whenever any loss, cost, damage or expense resulting from fire, explosion or any other casualty or occurrence (including negligence) is incurred by either of the parties to this Lease in connection with the Premises or the Shopping Center, and such loss, cost, damage or expense is required to covered by insurance under this Lease, then the party so damaged hereby releases the other party from any liability it may have on account of such loss, cost, damage or expense and waives any right of subrogation which might otherwise exist in or accrue to that party on account thereof, provided that such release of liability and waiver of the right of subrogation shall not be operative in any case where the effect thereof is to invalidate such insurance coverage or increase the cost thereof (provided that in the case of increased cost, the other party shall have the right, within thirty (30) days following written notice, to pay such increased cost and thereupon keeping such release and waiver in full force and effect).
+Section 15.4. Mutual Waiver of Claims A.
+A. To the extent permitted by law, Landlord, its agents and employees, shall not be liable for, and Tenant hereby releases the Landlord from any liability whatsoever, and hereby waives all claims for losses and damages, including, but not limited to, actual and consequential loss and damage to property (including betterments and including the loss of use thereof) sustained by Tenant resulting from any accident or occurrence (including the negligence of Landlord) in or upon any part of the Premises, the Common Area or the Shopping Center, including any right of subrogation which might otherwise exist in or accrue to any person on account thereof. It is the intention of this Section 15.4 that all property of Tenant kept in the Premises, the Common Area and the Shopping Center shall be so kept at Tenant's sole risk.
+B. To the extent permitted by law, Tenant, its agents and employees, shall not be liable for, and Landlord hereby releases the Tenant from any liability whatsoever, and hereby waives all claims for losses and damages, including, but not limited to, actual and consequential loss and damage to property (including the loss of use thereof) sustained by Landlord resulting from any accident or occurrence (including the negligence of Tenant) in or upon any part of the Premises, the Common Area or the Shopping Center, including any right of subrogation which might otherwise exist in or accrue to any person on account thereof.
+Section 15.5. Increase in Fire Insurance Premium.
+Tenant agrees that it will not keep, use, sell or offer for sale in or upon the Premises any article which may be prohibited by the standard form of fire insurance policy. Tenant agrees to pay any increase in premiums for fire and extended coverage or other insurance that may be charged during the Lease Term on the amount of such insurance which may be carried by Landlord on the Premises or the Shopping Center resulting from the type of merchandise sold by Tenant in the Premises, whether or not Landlord has consented to the same. In determining whether increased premiums are the result of Tenant's use of the Premises, a schedule, issued by the organization making the insurance rate on the Premises showing the various components of such rate, shall be conclusive evidence of the several items and charges which make up the fire insurance rate on the Premises.
+In the event Tenant's occupancy causes any increase of premium for the public liability, fire and other peril insurance rates on the Premises or Shopping Center or any part thereof above the rate for the least hazardous type of occupancy legally permitted in the Premises, the Tenant shall pay the additional premium on such insurance policies by reason thereof. Bills for such additional premiums shall be rendered by Landlord to Tenant at such times as Landlord may elect, and shall be due from Tenant when rendered, and the amount thereof shall be deemed to be, and be paid as, Additional Rent.
+Section 15.6. Mutual Indemnification.
+A. Except to the extent caused by Landlord's negligence, Tenant shall indemnify and forever save harmless Landlord, its agents and employees from and against any and all third party personal injury and third party personal property liabilities, liens, claims, demands, damages, expenses, attorneys' fees, costs, suits, proceedings, actions and causes of action of any and every kind and nature arising or growing out of, or in any way connected with, Tenant's use, occupancy, management or control of the Premises or Tenant's conduct or activities in the Shopping Center or Common Area or any part thereof, or occasioned wholly or in part by any act or omission of Tenant, its invitees, agents, contractors, employees or servants.
+B. Except to the extent caused by Tenant's negligence, Landlord shall indemnify and forever save harmless Tenant, its agents and employees from and against any and all third party personal injury and third party personal property liabilities, liens, claims, demands, damages, expenses, attorneys' fees, costs, suits, proceedings, actions and causes of action of any and every kind and nature arising or growing out of, or in any way connected with, Landlord's management and control of the Shopping Center or Common Area or any part thereof, or Landlord's conduct or activities in the Premises or occasioned wholly or in part by any act or omission of Landlord, its invitees, agents, contractors, employees or servants.
+ARTICLE XVI
+NO PERSONAL LIABILITY OF LANDLORD
+"Landlord", as used in this Lease insofar as covenants or obligations on the part of Landlord are concerned, shall be limited to mean and include only the owner or owners at the time in question of the Premises. In the event of any transfer of title, the Landlord named herein shall automatically be freed and relieved from and after the date of such transfer of conveyance of all liability as respects the performance of any Covenants or obligations on the part of Landlord contained in this Lease thereafter to be performed, provided that any funds in the hands of such Landlord at the time of such transfer shall be turned over to the grantee. Tenant shall look solely to the estate or interest of Landlord in the Shopping Center of which the Premises are a part for the satisfaction of Tenant's remedies for collection of a judgement or other judicial process requiring the payment of money by Landlord in the event of any default or breach by Landlord of any of the terms, covenants and conditions of Lease to be observed and/or performed by Landlord, and no other property or assets of Landlord, its partners or agents shall be subject to levy, execution or other enforcement procedure for the satisfaction of Tenant's remedies.
+ARTICLE XVII
+ACCESS TO PREMISES
+Landlord, its agents, representatives and designees shall have the right to enter the Premises at any time upon reasonable prior notice to examine and inspect the same, or to make such repairs, additions or alterations as Landlord may reasonably deem necessary or proper for the safety, improvement or preservation thereof. Landlord shall also have the right to enter the Premises upon reasonable prior notice during Tenant's regular business hours, to exhibit same to prospective purchasers, mortgages, lessees and tenants. During the ninety (90) days prior to the Expiration Date, Landlord may place upon the Premises "For Lease" or other similar signs which Tenant shall permit to remain thereon displayed.
+ARTICLE XVIII
+ALTERATIONS
+Section 18.1. Alterations By Tenant.
+Tenant shall not make any structural or mechanical alterations in any portion of the Premises, nor make any alterations in the storefront or the exterior of the Premises. Tenant shall not make any interior alterations at a cost in excess of Five Thousand Dollars ($5,000.00) without first obtaining the written consent of Landlord, which shall not be unreasonably withheld. Any such interior alterations made by Tenant without Landlord's consent shall be subject to the following conditions: (i) such alterations shall not affect the mechanical, electrical, plumbing or utility systems in the Premises; (ii) Tenant shall deliver not less than thirty (30) days prior written notice to Landlord of such proposed alterations specifying in detail the nature thereof; and (iii) any such alterations shall comply with the provisions of this Lease and the design criteria supplied by Landlord. All alterations, additions and improvements provided for herein shall become, upon completion, the property of Landlord subject to the terms of this Lease.
+At any time Tenant either desires to or is required to make repairs or alterations in accordance with this Lease, Landlord may require Tenant, at Tenant's sole cost and expense, to obtain and provide to Landlord a lien and completion bond (or such other security acceptable to Landlord) in an amount equal to the estimated cost of such improvements to insure Landlord against liability including but not limited to liability for mechanics' and materialmen's liens and to insure completion of the work.
+Tenant will not create, permit to be created or to remain, and will discharge, any lien (including, but not limited to, the liens of mechanics, laborers or materialmen for work or materials alleged to be done or furnished in connection with the Premises), encumbrance or other charge upon the Premises or any part thereof and upon Tenant's leasehold interest therein and performed by or through Tenant, provided that Tenant shall not be required to discharge any such liens, encumbrances or charges as may be placed upon the Premises by the act of Landlord.
+Section 18.2 Roof and Walls.
+Landlord shall have the exclusive right to use all or any part of the roof or exterior walls and floor of the Premises for any purpose, including, but not limited to: erecting signs or other structures on or over all or any part of the same; erecting scaffolds and other aids to the construction, maintenance and installation of the same; and in installing, maintaining, using, repairing and replacing pipes, ducts, conduits and wires and all other mechanical equipment leading through, to or from the Premises and serving other parts of the Shopping Center in locations which do not materially interfere with Tenant's use of the Premises.
+ARTICLE XIX
+REPAIRS AND MAINTENANCE
+Section 19.1. Landlord's Obligations.
+Subject to reimbursement by Tenant pursuant to Article XIII hereof, Landlord shall keep or cause to be kept the foundations, roof and structural portions of the walls of the Premises in good order, repair and condition except for damage thereto due to the act or omissions of Tenant, its employees, agents, contractors or invitees. Landlord shall commence required repairs as soon as reasonably practicable after receiving written notice from Tenant thereof. This Section shall not apply in case of damage or destruction by fire or other casualty or condemnation or eminent domain, in which event the obligations of Landlord shall be controlled by Articles XXI and XXII. Except as provided in this Section 19.1, Landlord shall not be obligated to make repairs, replacements or improvements of any kind upon the Premises, or to any equipment, merchandise, stock in trade, facilities or fixtures therein, all of which shall be Tenant's responsibility, but Tenant shall give Landlord prompt written notice of any accident, casualty, damage or other similar occurrence in or to the Premises or the Common Area of which Tenant has knowledge. Landlords costs and expenses to comply with this Section 19.1 may be included in Common Area Maintenance Charges as set forth in Section 13.1 hereof.
+Section 19.2. Tenant's Obligations.
+Tenant shall at all times keep the Premises (including all entrances and vestibules) and all partitions, windows and window frames and moldings, signs, glass, doors, door openers, fixtures, equipment and appurtenances thereof (including lighting, electrical, plumbing, heating, ventilating and air conditioning fixtures and systems ("HVAC") and other mechanical equipment and appurtenances serving the Premises exclusively) and all parts of the Premises not required herein to be maintained by Landlord, in good order, condition and repair, and clean (including redecorating), orderly, sanitary and safe, damage by unavoidable casualty excepted (including, but not limited to, doing such things, at Tenant's sole cost and expense, as are necessary to cause the Premises to comply with applicable laws, ordinances, rules, regulations, directions, requirements and orders of governmental and public bodies and agencies which are now in force or which may hereafter be in force, which shall impose any duty upon Tenant with respect to the use, occupation or alteration of the Premises, such as, but not limited to, the Williams-Steiger Occupational Safety and Health Act and the Americans with Disabilities Act).
+If replacement of equipment, fixtures, units, systems and appurtenances thereto are necessary, Tenant shall replace the same with equipment, fixtures, units, systems and appurtenances of the same quality, and shall repair all damages done in or by such replacement. Tenant shall be obligated to pay the cost of replacing or altering the HVAC system for the Premises which occurs as a result of any governmental mandatory regulation, law or the like, related to the elimination of chlorofluorocarbons in the HVAC system.
+If Tenant refuses or neglects to make repairs and/or to maintain the Premises or any part thereof in a manner reasonably satisfactory to Landlord, Landlord shall have the right, but not the obligation, upon giving Tenant not less than ten (10 business days written notice of its election to do so, to make such repairs or perform such maintenance on behalf of and for the account of Tenant. Such work shall be paid for by Tenant, as Additional Rent, promptly upon receipt of a bill therefor with a ten (10%) administration charge added to the total.
+Tenant shall, as part of its maintenance and repair obligations hereunder, enter into a service contract with a local, approved contractor for service, maintenance and repair of the HV AC equipment within and servicing the Premises, which shall provide for servicing by such contractor no less often than quarterly. Such Maintenance Contract for the HV AC shall include but not be limited to those requirements appearing on Exhibit F attached hereto and made a part hereof.
+ARTICLE XX
+LIENS
+Tenant shall not suffer liens of any kind to be placed upon the Premises or the Shopping Center. If any lien is placed upon the Premises or the Shopping Center as a result of any work done, or materials furnished to, on behalf of Ten ant, or as a result of any goods or services sold or rendered to Tenant, then Tenant shall, within ten (10) days of the imposition of the lien, cause said lien to be released of record, at Tenant's sole expense. If permitted by taw, Landlord may post on the Premises in one or more locations a notice of non-responsibility with respect to the cost, expense and payment of any work done in the Premises by Tenant or at the direction of the Tenant.
+Tenant shall indemnify and forever save harmless Landlord, its agents and employees from and against any and all liabilities, liens, claims, demands, damages, expenses, attorneys' fees, costs, suits, proceedings, actions and causes of action of any and every kind and nature arising or growing out of, or in any way connected with, any work done, or materials furnished to the premises, on behalf of Tenant, or as a result of any goods or services sold or rendered to Tenant in the Premises or the Shopping Center by persons other than Landlord, or its employees, agents or contractors. In case Landlord shall be made a party to any litigation commenced against Tenant by regarding same, then Tenant shall protect and forever hold Landlord, its agents and employees harmless and shall pay all costs, expenses and reasonable attorneys' fees incurred or paid by Landlord in connection with such litigation.
+ARTICLE XXI
+DESTRUCTION OF PREMISES
+Section 21.1. Fire, Explosion or Other Casualty.
+In the event the Premises are damaged by fire, explosion or any other casualty to an extent which is less than fifty percent (50%) of the cost of replacement of the Premises, the damage, except as is otherwise provided in this Article XXI, shall promptly be repaired by Landlord at Landlord's expense, provided that Landlord shall not be obligated to expend for such repair an amount in excess of the insurance proceeds recovered as a result of such damage and that in no event shall Landlord be required to repair or replace Tenant's Work or betterments, Tenant's stock in trade, fixtures, furniture, furnishings, floor coverings, equipment or plate glass. In the event of any such damage and (a) Landlord is not required to repair as hereinabove provided; (b) the Premises shall be damaged to the extent of fifty percent (50%) or more of the cost of replacement; or (c) the Shopping Center or the Common Area are damaged to the extent of twenty-five percent (25%) or more of the cost of replacement; or (d) if the premises of any Anchor Tenant is substantially destroyed or rendered unfit for business for a period of one hundred eighty (180) days or more, either party may elect to terminate this Lease upon giving notice of such election in writing to Tenant within ninety (90) days after the occurrence of the event causing the damage. If the casualty, repairing or rebuilding shall render the Premises untenantable, in whole or in part, and the damage shall not have been due to the fault or neglect of Tenant, a proportionate abatement of Base Rent shall be allowed from the date when the damage occurred until the date Landlord completes its work, said proportion to be computed on the basis of the relation which the gross square foot area of the space rendered untenantable bears to the square footage of the Premises as set forth in Section 1.3 hereof.
+Section 21.2, Repair of Landlord's and Tenant's Work.
+The provisions of this Article XXI with respect to repair by Landlord shall be limited to such repair as is necessary to place the Premises in the condition that existed on the Possession Date, and when placed in such condition, the Premises shall be deemed restored and rendered tenantable. Within ninety (90) days thereafter, Tenant, at Tenant's expense, shall complete Tenant's Work, replace its stock in trade, fixtures, furniture, furnishings, floor coverings, equipment and plate glass, and, if Tenant has closed, Tenant shall reopen for business within such ninety (90) day period.
+Section 21.3 Determination of Damage,
+If all or any part of the Premises, Shopping Center or Common Area is destroyed or damaged as set forth in Section 21.1, an architect designated by Landlord shall determine the extent of the destruction or damage and provide Landlord with a certificate attesting to the condition of the Premises, Common Area or Shopping Center, as the case may be. Said certificate shall bind the parties as to:
+(a) the percentage of area of the Shopping Center, Premises or Common Area damaged or destroyed; and
+(b) the estimated replacement cost for any damaged or destroyed areas; and
+(c) whether any Anchor Tenant's premises has been wholly or substantially destroyed, or will be rendered unfit for business for a period of one hundred eighty (180) days or more after the occurrence of the damage or destruction.
+ARTICLE XXII
+CONDEMNATION
+If the Premises shall be taken by right of eminent domain, in whole or in part, for public purposes or should be sold by Landlord under the threat of the exercise of such power, then this Lease, at the option of Landlord, shall terminate and all Base Rent and Additional Rent shall be properly apportioned to the date of such taking, and the Landlord shall receive the entire award for the lands and improvements so taken, or the entire amount of any payment made under the threat of the exercise of power of eminent domain, and Tenant shall have no claim for the value of any portion of its leasehold estate so terminated except any claim to which Tenant is solely entitled not affecting Landlord's claim. If either party does not terminate this Lease as provided above and if less than a substantial part of the Premises shall be taken, this Lease shall not terminate but Landlord, at its sole expense, shall promptly restore and reconstruct the Premises, provided such restoration and reconstruction shall make the same reasonably suitable for the uses for which the Premises are leased, but in no event shall Landlord be required to expend any amount greater than the amount received by Landlord as compensation for the portion of the Premises taken by the condemnor. Tenant's rental obligations during the unexpired portion of this Lease shall be adjusted proportionately to reflect the gross leasable area remaining in the Premises, as of the date on which the condemning authority takes title or possession. Notwithstanding anything contained herein to the contrary, if, in Landlord's determination, any significant portion of the Shopping Center or the floor area of the building in which the Premises are located shall be taken by the exercise, or under the threat of the exercise of, the power of eminent domain, Landlord may, by notice in writing to Tenant delivered on or before the day of surrendering possession to the public authority, terminate this Lease, and Base Rent shall be paid or refunded as of the date of termination.
+ARTICLE XXIII
+FORCE MAJEURE
+In the event that either party hereto shall be delayed or hindered in or prevented from the performance of any act required hereunder by reason of strikes, lockouts, inability to procure materials, loss of utility services, restrictive governmental laws or regulations, riots, insurrection, war, acts of God, or other reason of a like nature not the fault of the party delayed in performing work or doing acts required under the terms of this Lease then performance of any such act shall be extended for a period equivalent to the period of such delay. The provisions of this Section shall not operate to excuse Tenant from the prompt payment of Base Rent, Additional Rent or any other charges under this Lease.
+ARTICLE XXIV
+LANDLORD'S LIEN
+This Article was lined through (deleted).
+ARTICLE XXV
+SUCCESSION TO LANDLORD'S INTEREST
+Section 25.1. Attornment.
+Upon receipt of a Non-Disturbance Agreement Tenant shall attorn and be bound to any of Landlord's successors under all the terms, covenants and conditions of this Lease for the balance of the remaining Term.
+Section 25.2. Subordination.
+(A) Mortgage. This lease shall be subject and subordinate to the liens of any mortgages or any lien resulting from any method of financing or refinancing (hereinafter collectively referred to as "Mortgage") now or hereafter existing against all or any part of the Shopping Center owned by the Landlord, and to all renewals, modifications, replacements, consolidations and extensions thereof. Tenant shall execute and deliver all documents requested by any such mortgagee or security holder, provided such mortgagee or security holder agrees in writing with Tenant not to disturb Tenant's possession while Tenant is not in default hereunder. The foregoing notwithstanding any mortgagee or beneficiary may at its option subordinate such Mortgage, trust, deed or other financing instrument to this Lease.
+(B) Construction, Operation and Reciprocal Easement Agreements. This Lease may be subject and subordinate to one or more construction, operation and easement or similar agreements (hereinafter referred to as "Operating Agreements") between Landlord and other owners or lessees of real estate within or near the Shopping Center and to any and all easements and easement agreements which may be or have been entered into with or granted to any persons heretofore or hereafter, whether such persons are located within or upon the Shopping Center and Tenant shall execute such instruments as Landlord requests to evidence such subordination. At lease execution date there are no existing Construction, Operation or Reciprocal Easement Agreements in place. Landlord agrees to notify Tenant if any such agreements are executed that would effect the Shopping Center.
+Section 25.3. Mortgagee's Approval.
+If any mortgagee of the Shopping Center requires any modification of the terms and provisions of this Lease as a condition to such financing as Landlord may desire, then Landlord shall have the right to cancel this Lease if Tenant fails or refuses to approve and execute such modification(s) within one hundred twenty (120) days after Landlord's request therefor, provided said request is made prior to the Commencement Date specified in Section 1.5 hereof. Upon such cancellation by Landlord, this Lease shall be null and void and neither party shall have any liability either for damages or otherwise to the other by reason of such cancellation. In no event, however, shall Tenant be required to agree, and Landlord shall not have any right of cancellation for Tenant's refusal to agree, to any modification of the provisions of this Lease relating to the amount of Base Rent, Additional Rent or other charges reserved herein, the size and/or location of the Premises, the duration of, and/or commencement date of, the Lease Term, or the improvements to be made by Landlord to the Premises prior to delivery and possession.
+Section 25.4. Estoppel Certificate.
+Within ten (10) days after request therefor by Landlord or in the event that upon any sale, assignment, or hypothecation of the Premises and/or the land thereunder by Landlord an estoppel certificate shall be required from Tenant, Tenant agrees to deliver in recordable form a certificate to any proposed mortgagee or purchaser, or to Landlord, certifying that this Lease is unmodified and in full force and effect (or if modified, that the same is in full force and effect as modified, and stating the modifications), that there are no defenses or offsets thereto (or stating those claimed by Tenant), the dates to which Base Rent and Additional Rent have been paid, and such other reasonable matters as Landlord or other such party shall request.
+ARTICLE XXVI
+SURRENDER OF PREMISES
+Section 26.1. Condition of Premises.
+At the expiration or earlier termination of this Lease, Tenant shall surrender the Premises to Landlord broom clean and in the same condition as when tendered by Landlord on the Possession Date, reasonable wear and tear and insured casualty excepted. Tenant shall promptly repair any damage to the Premises caused by the removal of any furniture, trade fixtures or other personal property placed in the Premises and Tenant's obligations hereunder shall survive the expiration or sooner termination of this Lease.
+Section 26.2. Hold Over.
+If Tenant holds over or occupies the Premises beyond the Term (it being agreed there shall be no such holding over or occupancy without Landlord's written consent), Tenant shall pay Landlord for each day of such holding over a sum equal to 125% of the Base Rent prorated for the number of days of such holding over, plus Tenant's Proportionate Share of all Additional Rent which Tenant would have been required to pay hereunder had this Lease been in effect. In addition thereto, Tenant shall be liable to Landlord for any and all damages which Landlord shall suffer by reason thereof, and Tenant will indemnify Landlord against all claims and demands made by any succeeding tenants against Landlord, founded upon delay by Landlord in delivering possession of the Premises to such succeeding tenant. If Tenant holds over with or without Landlord's written consent, Tenant shall occupy the Premises on a tenancy from month to month and all other terms and provisions of this Lease shall be applicable to such period.
+ARTICLE XXVII
+SIGNS, AWNINGS, CANOPIES, FIXTURES
+Section 27.1. Fixtures.
+All fixtures installed by Tenant shall be new or completely reconditioned in condition satisfactory to Landlord.
+Section 27.2. Removal and Restoration by Tenant.
+Any alterations, changes, additions and improvements made by Tenant to the Premises shall upon the termination of this Lease, or be deemed abandoned by Tenant and such abandoned property shall, at Landlord's option, become Landlord's property.
+Section 27.3. Signs, Awnings and Canopies.
+Tenant will not place or permit on any exterior door or window or any wall of the Premises visible from the exterior of the Premises or otherwise, any sign, awning, canopy, advertising matter, decoration, lettering or other thing of any kind which does not comply with the Design Criteria for Tenant's signs in Exhibit E. In the event Tenant installs any signage in violation of either the provisions of this Section 27.3 or the Tenant's Sign Criteria, the Landlord shall have the right to remove the same after the giving of five (5) days prior written notice.
+Prior to or simultaneously with the execution of this Lease, Tenant may submit to Landlord Tenant's proposed signage which Landlord shall approve, consistent with the Design Criteria set forth in Exhibit E.
+ARTICLE XXVIII
+MISCELLANEOUS
+Section 28.1. Partial Invalidity.
+If any term, covenant or condition of this Lease or the application thereof to any person or circumstance shall, to any extent, be invalid or unenforceable, the remainder of this Lease, or the application of such term, covenant or condition to persons or circumstance other than those as to which it is held invalid or unenforceable, shall not be affected thereby, and each term, covenant or condition of this Lease shall be valid and be enforced to the fullest extent permitted by law.
+Section 28.2. Successors and Assigns.
+Except as otherwise provided herein, this Lease shall be binding upon and inure to the benefit of the parties hereto and their respective heirs, personal representatives, executors, successors and assigns.
+Section 28.3. Waiver.
+The waiver by Landlord of any breach of any term, covenant or condition herein contained shall not be deemed to be a waiver of any subsequent breach of the same or any other term, covenant or condition herein contained. No covenant, term or condition of this Lease shall be deemed to have been waived by Landlord, unless such waiver be in writing by Landlord.
+Section 28.4. No Partnership.
+Landlord does not, in any way or for any purpose, become a partner, employer, principal, master, agent or joint venturer of or with Tenant.
+Section 28.5. Time Is Of The Essence.
+Time is of the essence of this agreement.
+Section 28.6. Broker's Commission.
+Tenant and Landlord warrant each to the other that it has had no dealings with any broker or agent in connection with this Lease except as designated in Section 1.15, which Landlord shall compensate. Each party covenants to pay, hold harmless and indemnify the other from and against any and all costs expense or liability for any compensation, commissions and charges claimed by any broker or agent with respect to this Lease or the negotiation thereof other than the Broker listed in Section 1.15.
+Section 28.7. Entire Agreement.
+This Lease and the Exhibits attached hereto and forming a part hereof, set forth all the covenants, promises, agreements, conditions and understandings between Landlord and Tenant concerning the Premises and there are no covenants, promises, agreements, conditions or understanding, either oral or written, between them other than as are herein set forth. No subsequent alteration, amendment, change or addition to this Lease shall be binding upon Landlord or Tenant unless reduced to writing and signed by them.
+Landlord and Tenant acknowledge that this Lease has been highlighted to show the changes, alterations, deletions and additions to Landlord s initial form draft. The highlighting has been computer generated and may consist of (I) lines drawn through certain numbers and words, (ii) lines drawn under certain numbers and words and (iii) the shading or bolding of certain numbers and words. The lines drawn through certain numbers and words is intended to delete those words and numbers. The lines drawn under, and shading or bolding of words and numbers is intended to show the addition of these words and numbers to this document. These highlighted provisions are intended to benefit Landlord's agents, lenders and prospective purchasers only. When interpreting this Lease: (a) the highlighted provisions that are intended to delete certain words and numbers should be construed as though said words and numbers are deleted, and (b) the highlighted provisions that are intended to show the addition of words and numbers to this document should be construed (x) as though said words and numbers are part of this document and (y) without giving said words and numbers any special emphasis or consideration.
+Section 28.8. Applicable Law.
+The validity, performance and enforcement of this Lease shall be governed by the laws of the state in which the Shopping Center is located.
+Section 28.9. Notices.
+Whenever under this Lease provision is made for any demand, notice or declaration of any kind, or where it is deemed desirable or necessary by either party to give or serve any such notice, demand or declaration to the other party, it shall be in writing and sent either by (I) certified mail, return receipt requested, postage prepaid, (ii) personal delivery, or (iii) via an overnight carrier delivery (such as Federal Express or Airborne Express) to the address set forth in Section 1.13 hereof, or to such other address as may be given by a party to the other by proper notice hereunder. The (I) day after the certified mail is deposited with the United States Postal Service, (ii) the day personal delivery is attained, or (ii) the date the notice is delivered by the overnight carrier shall be the date on which any notice hereunder shall be deemed given.
+Section 28.10. Quiet Enjoyment.
+Tenant, on payment of the sums due hereunder and performance of all the covenants, conditions and provisions on Tenant's part to be observed and performed hereunder, shall peacefully and quietly have, hold and enjoy the Premises during the Term of this Lease and any extension or renewal hereof, subject, nevertheless, to the terms of this Lease.
+Section 28.11. Compliance With Law.
+Landlord and Tenant shall comply with all present and future laws, ordinances and regulations (specifically including, but not limited to, the Americans with Disabilities Act) applicable to the use or occupancy of the Shopping Center and the Premises, as appropriate, and shall promptly comply with all governmental orders and directives for the correction, prevention and abatement of nuisance in, upon or connected with the Premises, all at Tenant's sole expense.
+Section 28.12. Recording.
+The parties shall not record this Lease.
+Section 28.13. Tenant and Guarantor.
+In the event that there is a guarantor of this Lease, said guarantor shall have the same obligations as Tenant under this Lease. If Tenant is not a corporation, the liability of each party executing this Lease shall be joint and several.
+Section 28.14. Objection to Statements.
+Tenant's failure to object to any statement, invoice or billing rendered by Landlord within a period of thirty (30) days after receipt thereof shall constitute Tenant's acquiescence with respect thereto and shall render such statement, invoice or billing an account stated between Landlord and Tenant.
+Section 28.15. Execution of Lease.
+The submission of this Lease for examination or signature does not constitute a reservation of or option for the Premises and this Lease shall become effective as a lease only upon full execution thereof by both Landlord and Tenant, and the delivery of same to each other.
+Section 28.16. Accord and Satisfaction.
+Landlord is entitled to accept, receive and cash or deposit any payment made by Tenant for any reason or purpose or in any amount whatsoever, and apply the same at Landlord's option to any obligation of Tenant and the same shall not constitute payment of any amount owed except that to which Landlord has applied the same.
+No endorsement or statement on any check or letter of Tenant shall be deemed an accord and satisfaction or otherwise recognized for any purpose whatsoever. The acceptance of any such check or payment shall be without prejudice to Landlord's right to recover any and all amounts owed by Tenant hereunder and Landlord's right to pursue any other available remedy.
+Section 28.17 Corporate Tenant.
+If Tenant is a corporation, (I) Tenant shall furnish Landlord with such evidence as Landlord reasonably requires to evidence the binding effect on Tenant of the execution and delivery of this Lease; (ii) the persons executing this Lease on behalf of Tenant hereby covenant, represent and warrant that Tenant is a duly incorporated or duly qualified (if foreign) corporation and is authorized to do business in the State where the Shopping Center is located, and that the person executing this Lease on behalf of Tenant is an officer of such Tenant, and is duly authorized to sign and execute this Lease.
+Section 28.18 REIT Qualifications.
+Tenant and Landlord agree that Base Rent, Percentage Rent and all items of Additional Rent (hereinafter referred to in this Section as "Rent") paid to Landlord under this Lease shall qualify as "rents from real property" as defined in the Internal Revenue Code ("Code") Section 856 (d) and as further defined in Treasury Regulation ("Regulation") Section 1.856-4. Should the requirements of the Code section and Regulation section be amended so that any Rent payable to Landlord under this Lease no longer qualifies as "rents from real property" for the purposes of the Code and associated Regulation, such Rent payable to Landlord under this Lease shall be adjusted so that it will qualify as "rents from real property" under the Code and Regulation, as amended; provided, however, that any adjustments required pursuant to this Article shall be made so as to produce the equivalent (in economic terms) Rent as payable prior to such adjustment. Tenant and Landlord shall enter into such amendment or amendments required to effect the foregoing provisions.
+Section 28.19 Waiver of Jury Trial.
+The parties hereto shall and they hereby do waive trial by jury in any action, proceeding or counterclaim brought by either of the parties hereto against the other on any matters whatsoever arising out of or in any way connected with the non-payment of any money due under this Lease. In the event Landlord commences any proceedings for nonpayment of any rent, Tenant will not interpose any counterclaim of whatever nature or description in any such proceedings. This shall not, however, be construed as a waiver of the Tenant's right to assert such claims in any separate action or actions brought by the Tenant.
+Section 28.20 Default Rate.
+The "Default Rate" as used herein, shall mean two (2%) percent per annum in excess of the "Prime Rate" published in the Wall Street Journal.
+ARTICLE XXIX
+ENVIRONMENTAL MATTERS
+Tenant shall not use or permit the use of the Premises or any portion of the Shopping Center for any activities involving, directly or indirectly, the use, generation, treatment, storage, or disposal of any hazardous or toxic chemical, material, substance or waste, including without limitation, (1) asbestos in any form; (2) urea formaldehyde foam insulation; (3) transformers or other equipment which contain dielectric fluid containing polychlorinated byphenyls; (4) any other hazardous or toxic chemical, material, substance or waste, exposure to which is prohibited, limited or regulated by any Federal, State, County, Regional or Local authority (all being hereinafter referred to collectively as "Hazardous Substances").
+During the term of this Lease Landlord shall have the option to retain a consultant who will conduct an investigation of the Shopping Center to verify that no portion of the Shopping Center (including the Premises) is being used for any activities involving, directly or indirectly, the use, generation, treatment, storage or disposal of any Hazardous Substance. Tenant hereby grants to Landlord, its agents, employees, consultants and contractors the right to enter upon the Premises and to perform such tests on the Premises as are reasonably necessary to conduct any such investigation.
+Tenant covenants to Landlord that the Premises shall not at any time prior or subsequent to the Commencement Date, be used by Tenant, any subtenant or any other person or entity, claiming by, through or under Tenant, for any activities involving, directly or indirectly, the use, generation, treatment, storage or disposal of any Hazardous Substance.
+Tenant agrees to indemnify, defend, and forever hold Landlord harmless from and against any claims, losses, damages, actions, liabilities, causes of action, suits, investigations and judgments of any nature whatsoever, including, without limitation, reasonable attorneys' fees and costs of litigation, incurred by Landlord in connection with any breach of the provisions contained in this Article. The foregoing indemnity shall survive the expiration or earlier termination of this Lease.
+ARTICLE XXX
+AMERICANS WITH DISABILITIES ACT
+The parties hereto acknowledge that the Americans With Disabilities Act of 1990 (42
+U.S.C. Section 12101 et seq.) and regulations and guidelines promulgated thereunder, as all of the same may be amended or supplemented from time to time (collectively referred to as "ADA") establish requirements for business operations, accessibility and barrier removal, and that such requirements may or may not apply to the Premises and the Shopping Center depending on, among other things: (a) whether Tenant's business is deemed a "public accommodation" or "commercial facility", (b) whether such requirements are "readily achievable", and (c) whether a given alteration affects a "primary function area" or triggers "path of travel" requirements. The parties hereby agree that: (I) Landlord shall be responsible for ADA Title III compliance in the Common Areas, except as provided below; (ii) Tenant shall be responsible for ADA Title III compliance in the Premises, including any leasehold improvements or other work to be performed in the Premises under or in connection with this Lease, and (iii) Landlord may perform, or require that Tenant perform, and Tenant shall be responsible for the cost of, ADA Title III "path of travel" requirements triggered by alterations in the Premises. Tenant shall be solely responsible for requirements under Title I of the ADA relating to Tenant's employees.
+IN WITNESS WHEREOF, the parties have subscribed their respective signatures in execution hereof, on the day and year written.
+Carothers at Bakers Bridge,
+LLC:
+By: _________________________
+Its: Chief Manager
+The Bank of Nashville:
+By: /s/ JOAN B. MARSHALL
+Its: SVP and Corp. Secretary
+EXHIBIT A
+SITE PLAN
+CAROTHERS AT BAKERS BRIDGE SHOPPING CENTER
+Picture of site plan.
+EXHIBIT B
+LEGAL DESCRIPTION
+CAROTHERS AT BAKERS BRIDGE SHOPPING CENTER
+Picture of property and surrounding area with descriptions.
+EXHIBIT C
+LANDLORD'S WORK
+EXHIBIT C
+CAROTHERS AT BAKERS BRIDGE SHOPPING CENTER
+DESCRIPTION OF LANDLORD'S WORK
+The following work shall be performed for or by the Landlord, except as otherwise specified. Refer to Tenant Print Package for additional information on individual spaces. Each Tenant has the responsibility to visit the building and verify all existing conditions prior to the preparation of its Construction Documents.
+I. STRUCTURE
+A. Masonry exterior walls.
+B. Exposed concrete block on interior faces of exterior walls.
+C. Structural steel columns, beams, joists and metal roof deck.
+D. Insulated built-up tar and gravel roof, or other at Landlord's option.
+E. Demising partitions between tenants shall be 1 hour U.L. rated construction of metal studs, 16" on center, 5/8" gypsum board taped and sanded, ready for Tenant finishes. Columns in demising partitions shall be furred with gypsum board, taped and sanded, ready for Tenant finished. Demising walls will not be closed up by Landlord until Tenant has installed all electrical, cabling, and phone conduit and other Tenant furnished items to be located within the wall cavity.
+F. Floor shall be existing concrete slab on grade, with trowel finish. Finish elevation shall be +/- 1/4" in 10 ft. Floor shall be structurally strong enough to hold a 4 '0" x 6'0" vault.
+G. Storefront materials will consist of masonry, aluminum, or other bulkhead material selected by Landlord, plate glass or tempered glass where required by codes, and hinged aluminum and glass door in aluminum frame.
+H. Ceiling. Metal suspension system (white enamel) non-combustible 2' x 2 ' 4 ' lay-in acoustical panels at building standard ceiling height.
+2. PLUMBING
+A. Two toilet rooms with construction of metal or wood studs at 16" on center and gypsum board partitions and acoustical tile ceiling, wood door in metal frame with privacy hardware, mirror and toilet paper holder.
+B. Fixtures shall consist of a water closet, lavatory, floor drain and electric hot water heater, piped to floor drain; all connected to water service and sanitary sewer.
+3. ELECTRIC
+A. Electric service: 120/208 volt, 3-phase general service, sized to accommodate approximately 11 watts per square foot of the Leased Premises. Distribution panel to be located at the rear wall complete with circuit breakers. Meter and meter socket provided by Landlord. Any additional electrical service required by Tenant shall be provided by Landlord or Tenant, at Landlord's option, at Tenant's expense.
+B. Conduit and wires shall be provided to service Landlord supplied HVAC equipment, lighting fixtures, and duplex wall outlets. Duplex wall outlets shall be provided and located approximately 20' on centers on demising partitions.
+C. Ceiling lighting: recessed 2' x 2" lay-in fluorescent light fixtures, with parabolic 18 cell lens approximately one per 70 square feet of floor area, switched from distribution panel.
+4. HVAC
+A. Landlord shall furnish a rooftop gas heating and electric cooling unit set in place on a flashed and roofed curb. System shall include single trunk ductwork, ceiling grilles and thermostat, connected, wired and ready for use.
+B. Landlord has designed the HVAC system in accordance with the following minimum design requirements: outside air 0.1 CFM per square foot; inside design conditions 68 degrees F 50% RH for heating based on -10 degrees F outside temperature, 78 degrees F 50% RH for air conditioning based on 94 degrees F outside temperature.
+C. Toilet rooms shall have an exhaust fan with exhaust ductwork to rear wall, or roof.
+5. FIRE PROTECTION
+A. A Landlord-designed automatic fire sprinkler system with pendant heads designed for 130 square feet of coverage per head. Coverage shall be in compliance with code requirements for leased space as shown in the Tenant Print Package. Additional heads required by code for Tenant's store configuration shall be added by Landlord's contractor at Tenant's expense and with Landlord's prior written approval.
+6. GENERAL
+A. Landlord shall have the right to run roof drainage lines, utility lines, pipes, conduits, ductwork and/or component parts of all mechanical and electrical systems where necessary or desirable below floor, above finished ceiling, through attic space, column space or other parts of the Premises, to repair, alter, replace or remove the same.
+B. Any equipment and/or fixtures hung from the ceiling or soffit shall be attached to structural members only, and not from any ductwork, decking, ceiling, etc.
+C. If Tenant requests credits from Landlord for Landlord installed work prior to installation, credits shall be based on the unit prices established between Landlord and its General Contractor.
+D. Any deviation from Landlord's standard plans shall be at Tenant's sole expense and shall only be permitted with prior written approval from the Landlord.
+E. Landlord's standard plans shall govern in the event of a discrepancy with the provisions of this Exhibit "C".
+7. TENANT PRINT PACKAGE
+A. When and to the extent reasonably available, Landlord will issue Tenant Print Package containing information provided by Landlord's Architect to identify dimensions of the Leased Premises and basic design criteria. Tenant shall verify all physical dimensions, field conditions and service connections at the job. If Tenant finds any variations, Tenant shall notify Landlord prior to the start of Tenant's construction.
+B. Tenant shall be responsible for the preparation and submittal to Landlord of its
+construction drawings, specifications and finish material samples in a timely manner. Landlord shall be allowed ten (10) working days to review, approve or otherwise comment on Tenant's documents upon receipt of same. Tenant's failure to complete and submit its documents in a timely manner shall in no way alleviate Tenant of its obligations under Lease Article 1.5.
+C. At Landlord's option or by reason of code, the as-built construction in the leased space may differ in some instances from what is shown on the initial drawings. The scope of Landlord's Work shall not vary from this Exhibit "C".
+The Above description of Landlord's Work, entitled Exhibit "C", shall be a part of, and is hereby attached to the Lease.
+EXHIBIT D
+TENANT'S WORK
+EXHIBIT "D"
+CAROTHERS AT BAKERS BRIDGE
+DESCRIPTION OF TENANTS WORK
+TENANTS WORK: All Work required to complete and place the Leased Premises in a finished condition for opening for business is to be done by Tenant, at Tenant's expense, in accordance with plans and specifications to be submitted to and approved by Landlord and thereafter attached to the Lease as Exhibit "D- I". Tenant shall verify all existing conditions prior to preparation of construction drawings and acceptance of same.
+Tenant's Work includes, but is not limited to, the following:
+1. SHOW WINDOWS
+All show window work, show window backs, floors and ceilings and show window lighting installations. No alterations to the storefronts shall be made without prior written approval by Landlord. Any storefront alterations required by Tenant or code shall be done by Landlord at Tenant's expense.
+2. CEILINGS
+Tenant shall provide any ceilings and soffits in addition to those specified in Landlord's Work and required by Tenant's plans. All material shall be non-combustible acoustic tile or gypsum board or other approved material suspended by adequate non-combustible suspension systems to conform to applicable codes. The space above the ceiling, which is not occupied by or allotted to Landlord's Work may be used for the installation of the suspended ceilings and recessed light fixtures. All construction materials above the ceiling or exposed to the ceiling attic space shall be non-combustible and code approved.
+3. INTERIOR WALLS
+Tenant shall provide partitions between Sales Area and stock Area. All interior walls, metal studs and 5/8" fire code gypsum board with taped joints shall be of non-combustible construction, in conformance with applicable codes. No exposed concrete block is permitted except in stock areas. Interior walls for food service facilities shall meet all applicable code requirements.
+4. COLUMNS
+Centerline of Tenant demising walls may or may not be on the centerline of columns. Any special treatment or finishes of those columns occurring in the Tenant demising walls over and above standard drywall finish shall be by the Tenant, in accordance with applicable building and fire codes.
+5. INTERIOR PAINTING
+All interior painting and decoration, including taping and sanding of wall partitions, except taping and sanding of demising partitions by Landlord. All interior decor shall be in accordance with the drawings and sample board submitted by Tenant and approved in writing by Landlord.
+6. FURNITURE, FIXTURES, AND SIGNS
+All furnishings and related parts shall be first-quality and installed by Tenant. Location and design of all signs shall be subject to prior written consent of the Landlord and in conformance with Exhibit "E". No fixtures shall be attached to or supported from demising partitions or roof structure unless adequate structural provisions are incorporated into Tenant's plans and approved by Landlord.
+7. ROOF OPENING AND ACCESSORIES
+Roof hatches, covers, curbs at openings, support framing, special venting or openings through roof and counter flashing, if required by Tenant's Work and if approved in writing by Landlord, shall be installed by Landlord's contractor only, at Tenant's expense. Antennas and satellite dishes, where required to conduct Tenant's business, must be approved in writing by Landlord as to location, size, and height and design of mounting or support and grounding, such approval shall not be unreasonably withheld. Antennas and satellite dishes not approved may be removed by Landlord without notice to Tenant.
+8. FLOORS
+A. Tenant shall provide a finish floor covering of carpet, wood, ceramic tile, quarry tile or other Landlord-approved material in the Sales Area of the Premises. Exposed concrete surfaces are permitted in non-sales areas only and shall have 2 coats of an epoxy resin sealer by Tenant. Tenant is responsible for all floor penetrations and patching necessary to facilitate additional utility connections. Any additional floor patching to accommodate Tenant's floor tile will be Tenant's responsibility.
+B. Floor cutting shall be performed only with prior written consent of the Landlord. Where Tenant cuts a slab-on-grade, any excavated material shall be removed and replaced with granular backfill at 95% compaction and a wire mesh reinforced concrete slab to match thickness of existing slab or 4" minimum. Concrete mix shall be designed to achieve 3000 PSI at 28 days.
+9. SPECIAL EQUIPMENT
+Alarm systems or other protective devices, P.A. systems, fire extinguishers, conveyors, time clock, delivery door buzzers, storm enclosures, dry chemical fire protection systems, etc., shall be installed by Tenant at its expense.
+10. PLUMBING
+Any plumbing in addition to the Work set forth in Exhibit "C".
+11. ELECTRICAL
+Tenant shall furnish any electrical fixtures including lighting fixtures, lamps and equipment required, transformers, meters, disconnect switches and installation of service in addition to that provided by Landlord. Tenant shall furnish and install all systems where required for telephones, intercommunications, music, antenna, material handling or conveyor, burglar alarm, vault wiring, fire protection alarm and clock, time clocks and all necessary disconnect switches for all motors. Tenant electrical load shall be approved by Landlord prior to any installation. Tenant to secure all permits required for electrical work performed in Tenant space other than work performed by Landlord. Landlord assumes no responsibility for Tenant Work performed in space other than Work specifically installed by Landlord.
+12. HVAC
+Tenant at its own expense, may modify the existing ductwork system provided by Landlord and shall provide all special systems, facilities and equipment if required by its plans and specifications. Tenant shall be responsible for maintaining balanced conditions in its space if area is subdivided with partition.
+13. FIRE PROTECTION
+A. Any modifications and additions to Landlord's sprinkler system required by Tenant's construction drawings and applicable codes, and approved by Landlord, its fire protection consultant and its insurance underwriter, shall be performed by Landlord's contractor at Tenant's expense.
+B. Fire Extinguishers. Each Tenant will furnish and install fire extinguishers throughout its Leased Premises to meet applicable code requirements. This requirement is necessary for insurance ratings, and locations must be approved by Landlord's fire protection consultant.
+14. TELEPHONE
+A. Tenant, at its expense, shall make its own arrangements directly with the telephone company for extension of service to and in the Leased Premises and for installation of equipment.
+B. If Tenant provides a telephone for public use, it shall be indicated on the plans and the location approved by Landlord.
+C. All conduit or wires shall be concealed within walls or ceilings.
+D. Landlord shall provide a standard telephone board in the demised premises.
+15. ADDITIONAL REQUIREMENTS FOR FOOD TENANTS
+A. Each Food Tenant shall modify its plumbing, electrical, HVAC and fife protection systems to comply with its design drawings and all applicable code requirements.
+B. The necessary exhaust, make-up air and additional cooling equipment shall be mounted on rooftop curbs-with all required roof deck openings, framing and roofing repairs performed by Landlord's contractor, at Tenant's expense. Location of equipment to be as approved by Landlord.
+C. Roof exhaust fans shall be up-blast type, with a drainage area at the bottom of the unit and a residue trough to be regularly cleaned by Tenant. Exhaust fans shall be no less than 20' from any air intakes to avoid contaminating air supplies of other Tenants.
+D. Make-up air units utilizing exposed ductwork over the roof or side draft HVAC equipment shall be mounted on equipment supports as manufactured by Thycurb or Landlord-approved equal. Equipment supports will extend a minimum of 12' on either side of equipment or ductwork and be located so as to occur over joists supporting roof deck.
+E. Kitchen exhaust hoods and ductwork shall have automatic fire extinguishing equipment installed in accordance with NFPA Standard 96, latest edition, Section 10. The system shall be U.L. CO2 or dry chemical system and shall provide protection for ranges, grilles, broilers and deep-fat fryers.
+F. If Tenant's equipment requires larger capacity electric service then provided by Landlord, Tenant shall make direct arrangements with each utility company. Modifications to these services shall be at Tenant's expense, after it obtains Landlord's approval of revisions.
+G. All food spaces shall have grease interceptors, as required by the Health Department and local ordinances, connected to the Landlord's sanitary sewer at Tenant's expense.
+H. Tenants requiring gas service of a larger capacity than provided by Landlord shall make arrangements directly with the local gas utility company for connection and extension of service from the utility gas main at Tenant's expense. Any roof gas piping shall be mounted or creosoted 4" x 4" timbers placed on roof protection boards.
+I. If additional HVAC equipment is required by Tenant's plans, it shall be of the same manufacturer as the Landlord supplied equipment.
+16. TENANT CONSTRUCTION DOCUMENTS
+A. Tenant shall submit for approval within forty five (45) business days from receiving final plans from Landlord, all working drawings, specifications, sign designs and necessary calculations for revisions to mechanical, heating, cooling and electrical equipment prepared by licensed architect and engineer(s). Drawings shall consist of 2 sepias and 5 sets of prints submitted to Landlord. Tenant shall also submit a sample board indicating all interior finishes for Landlord's review and approval. Tenant's failure to complete and submit its documents in a timely manner shall in no way alleviate Tenant of its obligations under Lease Article 1.5.
+B. Tenant shall not commence construction until all documents are approved in writing by Landlord and Tenant has obtained required permits from all applicable local authorities.
+C. Tenant shall prepare all its documents and perform all Work to comply with all governing statutes, ordinances, regulations, codes, insurance rating boards and Tenant Print Package; take out all necessary permits and obtain Certificates of Occupancy for the Work performed by it. Landlord's approval of Tenant's plans does not relieve Tenant from its obligation to complete the development in accordance with the terms of its Lease, nor does it relieve Tenant of the necessity of complying with the laws, rules, regulations and requirements of local governing authorities. Certificates of Occupancy or copies thereof are mandatory and shall be filed with Landlord before Tenant opens for business.
+D. Any revisions, addition or cutting of Landlord's structure shall be designed by Tenant's structural engineer, be clearly identified on drawings and specifically requested in writing when transmitting drawings to Landlord. Any costs for review by Landlord's structural engineer shall be reimbursed by Tenant to Landlord.
+E. Tenant shall describe in its transmittal letter, or attach to submittal drawings, a list of any variations proposed from the standards set forth in the Lease Exhibits.
+F. Incomplete or sketchy submittals will not be considered a submittal for approval by Landlord, Interior of Food Premises exposed to outside shall be approved for a store layout, materials and colors.
+G. Tenant is responsible for verifying all dimensions, field conditions and service collections at the job, prior to preparation and submittal of its documents. Refer to Tenant Print Package for additional information on individual spaces.
+H. Tenant's contractor shall construct leased premises using drawings stamped and approved by the local building department and the Landlord.
+17. PERMITS
+It is each Tenant's responsibility to verify code requirements and to procure permits for its Premises. Tenant shall present such permits and receipts of fees paid at the time Tenant assumes possession of the Leased Premises.
+18. CHANGES AND ALTERATIONS
+Landlord reserves the right to require changes in Tenant's Work when necessary by reason of code requirements, building facilities or directives of Landlord's insurance underwriters. Tenant shall comply with all code requirements requested prior to issuance of permit and requested during construction.
+19. TEMPORARY SERVICES
+During Tenant's construction period, Tenant shall provide and pay for heat, electric and water and for connections and meters for water and electric service. Additional temporary capacities required by Tenant shall be provided by Tenant at Tenant's expense. Landlord may elect to provide all or part of these services, in which case the cost will be paid by Tenant.
+20. GENERAL PROVISIONS
+All Work performed by Tenant shall be governed in all respects by, and be subject to, the following:
+A. Approvals and Coordination.
+(1) Tenant shall not commence Work until it has secured Landlord's written approval, which approval shall not be unreasonably withheld, of all contractors to be used in performing the Work and of the plans and specifications required. Landlord's approval of plans and specifications does not relieve Tenant from full responsibility of complying with all design criteria required under this Lease and under the documents provided. No approval by Landlord shall be deemed valid unless the same shall be in writing and signed by the Landlord or its agent.
+(2) Tenant Work shall be coordinated with the Work being done by the Landlord and/or other Tenants of Landlord to such degree that such Work will not interfere with or delay the completion of Work by Landlord and/or other Tenants of Landlord. Tenant and/or its contractor and/or subcontractors are limited to performing the Work, including any office or storage for construction purposes, to the use of the Premises only. Landlord shall have the right to require Tenant to furnish a bond or other security in form satisfactory to Landlord for prompt and faithful performance by Tenant of its Work.
+(3) Tenant shall permit Landlord to inspect its Leased Premises during the Tenant's construction period.
+(4) Landlord's approvals are for conformance to Landlord's design and construction standards only. Landlord does not represent nor warrant the methods of construction, conformance to codes, ordinances, or regulations, design methods or construction safety precautions.
+(5) Tenant shall apply and pay for all utility meters except for water and sewer.
+(6) Landlord shall have the right to order any Tenant or Tenant's General Contractor who willfully violates the requirements herein to cease work and to remove himself, his equipment, and his employees from the Landlord's property, after proper written notice to Tenant and Tenant has had reasonable time to correct the violation.
+B. Compliance with Codes. All Tenant's Work shall conform to applicable statutes, ordinances, regulations, codes and the requirements of Landlord's fire underwriter. Tenant shall obtain and convey to Landlord all approvals with respect to electrical, gas, water, heating and cooling, sprinkler or fire protection and telephone work, all as may be required by the utility company supplying the service or Landlord's underwriter. Tenant shall comply with any existing or future city, state, county or federal regulations or legislation regarding the control of pollution and with all current provisions of the Occupational Safety and Health Act (OSHA) that may apply to its operations.
+C. Workmanship and Warranties.
+(1) Tenant's Work shall be performed in a first-class, workmanlike manner and shall be in good and usable condition at the date of completion thereof. Tenant shall require any party performing any such Work to guarantee the same to be free from any and all defects in workmanship and materials for one (1) year from the date of completion thereof. Tenant shall also require any such party to be responsible for the replacement or repair, without additional charge, of any and all Work done or furnished by or through such party which shall become defective within one (1) year after substantial completion of the Work. The correction of such Work shall include, without additional charge all expenses and damages in connection with such removal, replacement or repair of any part of the Work which may be damaged or disturbed thereby.
+(2) All warranties or guarantees of materials or workmanship on or with respect to Tenant's Work shall be contained in the contract or subcontract which shall be written so that such guarantees or warranties shall inure to the benefit of both Landlord and Tenant.
+(3) All contractors engaged by Tenant shall be bondable, licensed contractors, capable of performing quality workmanship and working in harmony with Landlord's General Contractor and other contractors on the job.
+D. Tenant Work by Landlord. Landlord shall have the right (but shall not be obligated) to cause the performance by its own contractor or subcontractor, on behalf of and for the account of Tenant, any Tenant Work which Landlord determines should be performed and Landlord shall notify Tenant prior to Lease execution. Generally, such Work shall be Work which effects any structural components or Work of other Tenants, or the general utility systems for the building in which the Premises are located. If Landlord so determines, it shall so notify Tenant prior to the commencement of such Work. Tenant shall promptly, on demand, reimburse Landlord for all costs of planning and performing such Work when and as incurred by Landlord, and for all permits in connection therewith.
+E. Pre-Construction Requirements.
+Tenant or Tenant's General contractor shall complete and submit the following information and items to Landlord's Field Representative, at least five (5) days prior to the commencement of construction.
+(I) The names and addresses of all contractors Tenant has engaged in the construction of Tenant's Work.
+(2) Certificate indicating the total cost of the construction, complete with a trade-by-trade
+breakdown.
+(3) The actual commencement date of construction and the estimated date of completion of construction work and fixturing.
+(4) Certificates of insurance as called for herein. Tenant shall not permit its contractors(s) to commence any Work until all required insurance has been obtained and certified copies of policies or certificates have been delivered to Landlord.
+(5) Payment and performance bonds for Tenant's contractors, if required by Landlord.
+(6) Copy of Tenant's construction drawings bearing stamp and approval of the local building department and Landlord.
+(7) Copy of City issued building permit and receipts of fees paid.
+(8) Statement indicating that the Tenant or its representative has accepted the space and that Landlord's Work has been completed. This information to be included on form prepared by Landlord and signed by Tenant or its representative.
+F. Insurance. Prior to commencement of Tenant's Work and until completion thereof commencement of the Lease Term, whichever is the last to occur, Tenant shall effect, maintain, and provide the certificates of insurance policies as set forth in the Lease: Builder's Risk Insurance to cover Landlord, Landlord's Architect, Landlord's agents and beneficiaries, Landlord's general contractor, and Tenant and Tenant's contractor, as their interests may appear, against loss or damage by fire, vandalism and malicious mischief and such other risks as are customarily covered by a so- called "extended coverage endorsement" upon all Tenant's Work in place and all material stored at the site of Tenant's Work and builder's machinery, tools and equipment, all while forming a part or contained in such improvements or temporary structures while on the Leased Premises or within one hundred (100) feet thereof, or when adjacent thereto, or while on malls, drives, sidewalks, streets or addition, Tenant agrees to require all contractors and subcontractors engaged in the performance of Tenant's Work to effect and maintain and deliver to Tenant Certificates evidencing the existence of, prior to the commencement of Tenant's Work and until completion thereof, the following coverages:
+(1) Workman's Compensation Insurance in accordance with the laws of the State of Tennessee including Employer's Liability Insurance to the limit of $300,000.00.
+(2) Comprehensive General Liability Insurance, excluding "Automobile Liability", against personal injury, including death resulting therefrom, to the limits of $1,000,000.00 for any one person and $2,000,000.00 for more than one person in any one accident, and against property damage to the limit of $150,000.00.
+(3) Automobile Insurance, including "non-owned" automobiles, against personal injury, including death resulting therefrom to the limits of $500,000.00 for anyone person and $1,000,000.00 for more than one person in anyone accident, and against property damage to the limit of $150,000.00.
+(4) All insurance Certificates of Tenant, Tenant's General contractor and all subcontractors shall name the following Additionally Insured for all coverages and include the paragraph below:
+CAROTHERS CORNER PARTNERSHIP, LLC Partnership
+c/o Southland Management Co.
+PO. Box 680515
+Franklin, 1N. 37068
+And all principals, beneficiaries and agents of all of the foregoing "The coverage afforded the Additional Insureds under this policy shall be primary insurance. If the Additional Insured has other insurance which is applicable to the loss, such other insurance shall be on an excess basis. The amount of the company's liability under this policy shall not be reduced by the existence of such other insurance."
+Protection of Work and Property.
+(I) The Tenant's contractor shall continuously maintain adequate protection of all its Work from damage and shall protect the Landlord's property from injury of loss arising in connection with the Contract. It shall promptly make good any such damage, injury or loss. It shall adequately protect adjacent property as provided by law and the Contract Documents.
+(2) Should the Tenant's contractor cause damage to any separate contractor on the Work, the Tenant's contractor agrees, upon due notice, to settle with such contractor by agreement. The Landlord shall determine responsibilities where no agreement is reach, and its decision shall be final.
+(3) Tenant's contractor shall not make any attachments to or penetrations through the roof deck.
+H. Fire Protection and Prevention. The Tenant's contractor shall take all necessary fire precautions and shall adhere to the requirements set forth by the State Fire Marshall or any other governmental authority, as well as the Landlord, should it find it necessary to impose requirements.
+I. Clean Up. Tenant shall be responsible for keeping the Premises clean and in a workmanlike condition at all times during its portion of the construction. Tenant shall be responsible for promptly removing all rubbish and debris from the Premises and from the Shopping Center Site using its own containers. No accumulation of rubbish will be permitted within the Premises or Shopping Center Site. If Landlord finds it necessary to remove Tenant's accumulated trash, the charge to Tenant shall be 1.5 times the Landlord cost.
+J. Tenant Closeout Process. Before the construction account can be closed, Tenant shall complete all Work in accordance with the Lease, Exhibits, Plans and Specifications, have the Premises open for business with all signs installed and operating and make payments for all rent charges and construction charges due. Within thirty (30) days of the actual store opening date, Tenant shall submit to Landlord the following items:
+(I) Properly executed statement and estoppel certificate pursuant to the Lease;
+(2) Tenant's Affidavit setting forth the names and addresses of all parties with whom the Tenant contracted for the furnishing of labor and materials, the nature of each contract and the amount paid thereunder;
+(3) General contractor's Original Sworn Statement for Contractor and Subcontractor to Owner from each of the parties named in Tenant's statement;
+(4) Contractor's Original Affidavit for each subcontractor named on the General Contractor's Sworn Statement;
+(5) Original Waivers of Lien from the General contractor and all subcontractors, subsubcontractors and materialmen.
+(6) Record sepia drawings indicating dimensioned locations of concealed piping, ductwork and other equipment revised from locations shown on construction drawing.
+The above Description of Tenant's Work, entitled Exhibit "D", shall be a part of, and is hereby attached to the Lease.
+EXHIBIT "E"
+Sign Criteria
+CAROTHERS AT BAKERS BRIDGE
+Franklin, Tennessee
+GENERAL
+This sign criteria is intended to encourage and develop creative and diversified signing for the stores in the Center which provides for not only effective store identification, but also a good design practice. Any deviations in this criteria must be approved in writing by Landlord.
+SIGNS
+I. The design and location of all signs must be approved in writing by Landlord and shall be subject to Landlord's sole discretion as to design, size, and location. All signs shall be individual letters mounted to a raceway which is to be attached to the "sign band". Raceway is to be painted to match existing brick facia. Signs shall be limited in length to a maximum of seventy-five percent (75%) of space designated as "sign facade" at leased premises. Tenant shall submit sign working drawings to Landlord and no sign shall be installed until Landlord's written approval has been obtained by Tenant. The working drawings must indicate the following:
+a. The type and sizes of all lettering.
+b. The location of the sign in relation to the store facade.
+c. Section through the sign to show its construction.
+d. Colors, Finishes and types of all materials.
+e. Wattage and light intensity.
+2. Illuminated sign cabinets or modules or signs of the flashing, rotating, moving, blinking or animated type signs are not permitted. "Troffer" or surface mounted "box" signs are not
+allowed,except for box signs that identify a corporate logo.
+3. Tenant's sign shall be located within the limits of Tenant's storefront and shall be mounted to the sign raceway. Signs are not to be mounted to any brick in the sign area.
+4. Printed signs on storefront or show windows are prohibited.
+5. Painted signs on the exterior surface of any wall of the Demised Premises are prohibited.
+6. Paper, cloth material or cardboard signs, stickers, banners or flags are prohibited.
+7. No exposed raceways, ballast boxes or electrical transformers will be permitted except as required by code.
+8. Sign company names or stamps shall be concealed if permitted by code.
+9. Only one sign for each Tenant at sign facade will be permitted unless otherwise approved by Landlord in writing.
+10. No roof mounted signs will be permitted.
+11. Painted signs on exterior masonry walls are prohibited.
+12. Tenant to" provide at Tenant's expense an under canopy sign. Design must be approved by Landlord.
+EXHIBIT F
+MINIMUM SERVICES REQUIRED FOR MAINTENANCE CONTRACT
+OF THE HVAC EQUIPMENT
+INCLUDING
+ROOF TOP, FAN COILS AND EXHAUST SYSTEM
+Lessee will provide (4) inspections per year, with a qualified and licensed contractor, which will include the following items:
+LUBRICATE MOTORS & BEARINGS AS APPLICABLE.
+CHANGE AIR FILTERS.
+CHECK BELTS FOR WEAR. ADJUST TO 1" DEFLECTION.
+INSPECT EVAPORATOR & CONDENSING COILS. CLEAN AS REQUIRED.
+(USE FOAM ACTION CLEANER OF H.P. CLEANER OF 300 psi. MAX)
+INSPECT FAN & COMPRESSOR CONTACTORS FOR ARCING DAMAGE. CLEAN OR REPLACE IF EVIDENCED.
+CHECK ATMOSPHERIC BURNERS AND PILOT ASSEMBLY. CLEAN AS REQUIRED.
+INSPECT EVAPORATOR & CONDENSOR FAN BLADES & WHEELS FOR BALANCED OPERATION & CLEANLINESS. CLEAN AS REQUIRED.
+INSPECT REFRIGERANT PIPING & INSULATION FOR DETERIORATION AND EVIDENCE OF REFRIGERANT LEAKAGE.
+CHECK THERMOSTAT ACCURACY (+ or -2 degrees)
+CHECK OPERATING PRESSURES, O.A. TEMP., SUCTION, DISCHARGE.
+CHECK GENERAL CONDITION OF CABINETRY, DUCTlNG, CURB FLASHING AND UTILITY OPENING.
+VISUALLY INSPECT WHEEL FOR EXCESSIVE DIRT OR GREASE BUILD-UP. CLEAN AS REQUIRED.
+CHECK GREASE DRAINS, FIRE DAMPERS & FUSIBLE LINKS (KITCHEN FANS ONLY)
+CHECK EXTERNAL MOUNTING PLATES, BOLTS, COVER HOLD-DOWNS FOR FATIGUE OR STRESS CRACKS OR EXCESSIVE VIBRATION.
+VISUALLY INSPECT COUPLINGS & SPRINGS FOR FATIGUE OR WATER/OIL LEAKAGE.
+VISUALLY INSPECT FOR LEAKAGE, FATIGUE CRACKS & GASKET FAILURE.
+PHYSICALLY REMOVE ANY EXTERIOR DIRT ACCUMULATION.
+EXHIBIT "G"
+CAROTHERS AT BAKERS BRIDGE
+RULES & REGULATIONS
+A. GENERAL PROVISIONS:
+1. Definitions: For purposes of these Rules & Regulations, the following terms shall be defined as set forth below:
+Tenant: Any person(s) or entity leasing or subleasing space within a building located in the Center.
+Landlord: Carothers Comer, LLC.
+Developer: Southland Management & Development Co. Premises: Any leasable building area leased by Tenant.
+Center: The entire improvements and real property comprising the retail shopping center called Carothers Comer.
+2. Applicability: These Rules & Regulations shall apply to all Tenants of Carothers Comer except as specifically provided herein to the contrary. The Landlord/Developer of the Center shall be permitted (but not required) to grant relief to one or more Tenants within the Center upon written request therefor and good cause shown in the sole opinion of the Landlord/Developer.
+3. Additional Rules and Amendments: The Landlord/Developer reserves the right to make such other reasonable rules and regulations which it determines, from time to time, are necessary or appropriate for the safety, care, protection, cleanliness or good order of the Center. Any such additional rules & regulations shall be binding upon each Tenant with the same force and effect as if the same had been included herein and in existence at the time the Tenant acquired its interest in the Premises. The Landlord/Developer reserves the right at any time to modify or revoke any existing rules or regulations.
+B. OPERATION OF PREMISES:
+1. Hours of Operation: All Tenants of the Center shall be open for business daily, fully fixtured, stocked and staffed (Sundays, Christmas Day, New Years Day, Thanksgiving and national holidays excepted). Refer to Section 12.2 in the attached lease for specific hours of operation.
+2. Illumination of Signs and Displays: All Tenants of the center shall keep their display windows, shadow boxes, if any, and exterior signs lighted until at least 10:00 P.M. local time of each business day. All Tenants of the Premises within the Center shall maintain night lights within the Premises at all times during which the same are not open for business.
+3. Signs and Advertising: No signs or advertising of any kind shall be placed within twelve inches (12") of the interior surface of any display window or the front customer doors except for banners relating to the promotion of Center special events within the display window. No signs or advertising matter of any nature shall be placed on the surface of any display window or customer door. No "For Sale" or "For Rent" or similar sign shall be displayed in any Premises so as to be visible outside the Premises.
+4. Character of Operations: In order to establish and preserve the character of the Center as a high quality development, no Tenant will conduct an auction, fire, bankruptcy, going out of business or closeout sales nor conduct business in a manner which is commonly known and accepted in a retail trade as a wholesale store, outlet store or surplus store; provided, however, this provision shall not preclude the conduct of periodic, seasonal, promotional, or clearance sales nor shall it be deemed to give Landlord/Developer a right to approve or disapprove the price at which any business offers its merchandise for sale.
+5. Deliveries: Each Tenant shall use its best efforts to cause all delivery vehicles serving the Premises to load and unload all supplies, goods, packages, furniture, equipment and all other items being delivered to the Tenant prior to 10:00 o'clock A.M. Delivery during other business hours shall not be absolutely prohibited, provided such deliveries do not, in the reasonable opinion of the Landlord/Developer, constitute a nuisance to the operation of the Center.
+6. Theft or Loss: Each Tenant is fully responsible for the protection of its Premises and the contents thereof from robbery, theft, vandalism, pilferage or other loss.
+C. RESTRICTIONS AND PROHIBITIONS:
+1. Nuisances: No business will use or permit the use of any apparatus for sound production or transmission or any exterior lighting such as flashing lights, search lights, etc. or television or radio broadcast or permit live entertainment within or outside of the Premises in such a manner so that the media may be heard or experienced outside the Premises. No Tenant will cause or permit objectionable odors to emanate or be dispelled from the Premises.
+2. Television and Radio Equipment: No Tenant shall be permitted to install any antenna, satellite dish or aerial wire, or radio or television equipment outside the Premises without the prior written approval of the Landlord/Developer which may specify the terms and conditions for any such installation.
+3. Vending Machines: No Tenant may operate for use by the general public any coin or token operated vending machine or similar device for the sale of any goods, wares, merchandise, food, beverages or services including, but not limited to, pay telephones, pay lockers, pay toilets, scales, amusement devices, machines for the sale of beverages, foods, candy, cigarettes, or other commodities without the prior written consent of Landlord/Developer. Any tenant may install said vending machine or devices for the use only by such Tenant and its employees, provided such installation is in a non-sales area.
+4. Trash and Garbage: No Tenant shall permit the accumulation of rubbish, trash garbage and other refuse in and around its premises. Every Tenant will remove the same at its own expense to areas designated by the Landlord/Developer and the Landlord/Developer shall make arrangements for removal of such rubbish, trash, garbage, and other refuse from such designated areas. No burning of trash, refuse or waste material shall be allowed.
+5. Hazardous Substances or Conditions: No Tenant shall overload the floor of its Premises or use or operate any machinery, equipment or other device which is harmful to the Premises. No Tenant shall keep in its Premises any inflammable, combustible or explosive substance nor any substance which could create or tend to create a dangerous or combustible condition. Furthermore, no Tenant shall install electrical or other equipment which the Landlord/Developer determines might cause impairment or interference with the provision of service to the Center. Any Tenant whose business requires use or possession of extra hazardous substances or entails extra hazardous operations or conditions, shall advise the Landlord/Developer and shall obtain its consent prior to bringing such substance onto or creating such condition within the Premises. Any damage to persons or property resulting or arising out of such use shall be the sole responsibility of such Tenant.
+6. Animals: No animals shall be permitted within any of the Leased Premises except in the event of a pet store, veterinary clinic, or similar business specifically approved by the Landlord/Developer.
+7. Exterior Painting and Decorating: Following completion of its Premises, no Tenant shall change the color, type of paint or stain or other covering in any part of the exterior of its premises or otherwise change the architectural treatment thereof, without first obtaining the Landlord/Developer written approval ,which shall not be unreasonable withheld, of any such painting or decorating. Upon notice from the Landlord/Developer, any tenant will promptly remove any paint or decoration or alteration which has been so applied or installed without the Landlord/Developer written approval, or take such action with reference thereto as the Landlord/Developer may direct.
+8. Insurance Rates: No Tenant shall permit or suffer anything to be done or kept in its Premises which will increase the rate of insurance for such Premises or the Center.
+D. USE OF COMMON AREAS AND OPERATION OF CENTER:
+1. Use of Sidewalks and parking Areas: No Tenant may use any sidewalk, or walkway or any vestibule or entrance of its Premises, for keeping, displaying, advertising or sale of any merchandise, equipment, devices or objects. Every Tenant's right to use all sidewalks, vestibules, entrances, parking areas, corridors and other common areas of the Center is limited to ingress and egress and parking for such Tenant and its employees, licensees and invitees and for no other use. No Tenant shall permit the encumbrance or obstruction of any portion of the common areas. The Landlord/Developer reserves the right to control and operate all common areas in such a manner as it deems best for the benefit of the Center generally. No Tenant shall obstruct, litter, mar, or damage any part of the hallways, corridors, exterior doors or walls, landscaped areas, or any portion of the common areas, and any Tenant shall be responsible for any such damage caused by it or its employees, agents or contractors.
+2. Employee Parking: The Landlord/Developer shall have the right from time to time to designate those spaces which shall be used for parking by employees of Tenants. In the event such designation is made, no employees may park in any parking area other than that specifically designated for their use. Any employees vehicle parked in any un designated area shall be subject to such fines as are established by the Landlord/Developer.
+3. Security: The Landlord/Developer may take all the measures it may deem reasonably necessary or appropriate for the security of the Center, the Tenants and their invitees, licensees, or employees including, but not limited to, searching for cause or suspected cause of any person entering, leaving or within the Center, the evacuation of the Center, or any part thereof for drill purposes or otherwise, the temporary denial to Tenants and their invitees, employees or licensees of access to the Center or any portion thereof, and the closing of the Center on non-business days, legal holidays, and after business hours.
+4. Solicitations: Solicitation, including the distribution of hand bills or other advertising matter by any Tenant is prohibited within the entirety of the Center unless specifically authorized in advance by the Landlord/Developer and any cost incurred to clean up, if done, will be paid by Tenant.
+E. ENFORCEMENT:
+1. Compliance: Every Tenant shall comply with these rules & regulations as set forth herein and any and all rules & regulations which from time to time may be adopted. Failure of Tenant to so comply shall be grounds for action which may include, without limitation, an action to recover sums due for damages, injunctive relief or any combination thereof.
