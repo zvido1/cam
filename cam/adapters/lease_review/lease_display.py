@@ -38,6 +38,11 @@ BUCKET_SECTION_HEADERS = {
     "asymmetric_terms":        "Asymmetric Terms",
     "worth_reviewing":         "Worth Reviewing",
     "covered":                 "Covered",
+    # Step 539: a partial is an INCOMPLETE provision. Absorbing it into "Covered"
+    # made the Step-537 report say "18 covered" about a lease with ZERO LPs in
+    # state `covered` -- every one of the 18 was a partial reclassified on low
+    # materiality. This is its own top line so the distinction survives.
+    "minor_gaps":              "Substantially Addressed - Minor Gaps",
     # Step 522: entries that were never judged, or whose judgment was discarded.
     # Deliberately NOT folded into "Covered" -- Step 521 measured that fall-through
     # and found a withheld verdict rendering as a checkmark.
@@ -45,9 +50,9 @@ BUCKET_SECTION_HEADERS = {
 }
 
 BUCKET_ORDER_BY_PERSPECTIVE = {
-    "tenant":   ["needs_attention", "worth_reviewing", "not_assessed", "covered"],
-    "landlord": ["needs_attention", "favorable_to_your_side", "worth_reviewing", "not_assessed", "covered"],
-    "neutral":  ["needs_attention", "asymmetric_terms", "worth_reviewing", "not_assessed", "covered"],
+    "tenant":   ["needs_attention", "worth_reviewing", "minor_gaps", "not_assessed", "covered"],
+    "landlord": ["needs_attention", "favorable_to_your_side", "worth_reviewing", "minor_gaps", "not_assessed", "covered"],
+    "neutral":  ["needs_attention", "asymmetric_terms", "worth_reviewing", "minor_gaps", "not_assessed", "covered"],
 }
 
 BUCKET_COLORS_HEX = {
@@ -59,6 +64,8 @@ BUCKET_COLORS_HEX = {
     # Slate, not amber and not green: this is an absence of information, not a
     # risk grade. It must not read as either "fine" or "bad".
     "not_assessed":            "#475569",
+    # Amber, not green: an incomplete provision is not a clean one.
+    "minor_gaps":              "#d97706",
 }
 
 # Buckets whose items get a coverage callout in the annotated PDF/DOCX
@@ -70,6 +77,12 @@ ANNOTATED_BUCKETS = {
     "favorable_to_your_side",
     "asymmetric_terms",
     "worth_reviewing",
+    # Step 539: partials now get a margin callout. LP-30 Estoppel Certificate on
+    # butler_crossing was 5 of 6 elements present with requires_attention True
+    # and appeared NOWHERE in the annotated DOCX, because `covered` is excluded
+    # here and partial_typical resolved to covered. Its one missing element was
+    # invisible to a reader of the document itself.
+    "minor_gaps",
 }
 
 
@@ -257,7 +270,15 @@ def _resolve_display(coverage_item: dict, perspective: Optional[str]) -> dict:
     # display says covered -- and it is NOT this step's target. Naming it here
     # converts it from an omission into a recorded decision without changing
     # what a reader sees.
-    if state in ("covered", "partial"):
+    if state == "partial":
+        # partial_material and partial_review were matched above via
+        # partial_class; anything reaching here is partial_typical or unclassed.
+        return {"bucket": "minor_gaps",
+                "label":  "MINOR GAPS",
+                "tone":   "review",
+                "marker": "◐"}
+
+    if state == "covered":
         return {"bucket": "covered",
                 "label":  "COVERED",
                 "tone":   "covered",
@@ -288,6 +309,38 @@ PERSPECTIVE_SCOPE_DISCLOSURE = {
 }
 
 
+def summarize_display_buckets(coverage_items: list, perspective: str = None) -> dict:
+    """THE single source of truth for top-line counts. Step 539.
+
+    Before this, two independent definitions of "covered" coexisted:
+      * `summarize_coverage` counted `state_counts["covered"]`;
+      * `lease_report_generator` counted the residue of a bucket if/elif chain.
+    On the Step-537 butler_crossing run they returned 0 and 18. The report told a
+    reader "18 covered" about a lease in which NOT ONE provision was assessed as
+    covered -- all 18 were partials reclassified on low materiality.
+
+    Every surface that states a count must call this. A seventh formula appearing
+    somewhere else is the failure mode this exists to prevent, so the returned
+    dict carries `_source` naming this function.
+    """
+    counts = {k: 0 for k in BUCKET_SECTION_HEADERS}
+    for item in coverage_items or []:
+        counts[_resolve_display(item, perspective)["bucket"]] += 1
+    return {
+        "_source": "lease_display.summarize_display_buckets",
+        "buckets": counts,
+        "total": len(coverage_items or []),
+        # Named aliases for the surfaces that want a scalar. `covered_count` is
+        # the bucket count, which after Step 538/539 means state == "covered"
+        # only -- partials are `minor_gaps`, review items are `worth_reviewing`.
+        "covered_count": counts.get("covered", 0),
+        "minor_gaps_count": counts.get("minor_gaps", 0),
+        "needs_attention_count": counts.get("needs_attention", 0),
+        "worth_reviewing_count": counts.get("worth_reviewing", 0),
+        "not_assessed_count": counts.get("not_assessed", 0),
+    }
+
+
 def resolve_sections(coverage_items: list, perspective: str) -> list:
     """Group coverage items into perspective-aware Synopsis sections.
 
@@ -314,6 +367,7 @@ def resolve_sections(coverage_items: list, perspective: str) -> list:
         "worth_reviewing":         [],
         "covered":                 [],
         "not_assessed":            [],
+        "minor_gaps":              [],
     }
     for item in coverage_items or []:
         disp = _resolve_display(item, p)
@@ -324,6 +378,9 @@ def resolve_sections(coverage_items: list, perspective: str) -> list:
     # Step 522: kept OUT of coverage_gaps_items and OUT of covered_items. It is
     # neither a finding nor a clean bill, and folding it into either is the defect.
     not_assessed_items = grouped["not_assessed"]
+    # Step 539: kept out of coverage_gaps AND out of covered. A partial is
+    # neither a finding nor a clean provision.
+    minor_gap_items = grouped["minor_gaps"]
 
     sections = []
 
@@ -389,6 +446,18 @@ def resolve_sections(coverage_items: list, perspective: str) -> list:
     # so a reader scanning downward meets the unjudged entries before the clean
     # ones. Every perspective shares this tail; the bucket is perspective-blind
     # because "nobody judged it" is not a matter of viewpoint.
+    if minor_gap_items:
+        sections.append({
+            "key":   "minor_gaps",
+            "title": "Substantially Addressed - Minor Gaps",
+            "intro": (
+                "These provisions are present and largely complete, but at least one "
+                "expected element was not found. They are not gaps in coverage and they "
+                "are not clean -- each is listed with what is missing."
+            ),
+            "items": minor_gap_items,
+        })
+
     if not_assessed_items:
         sections.append({
             "key":   "not_assessed",

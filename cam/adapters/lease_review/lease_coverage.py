@@ -1154,13 +1154,21 @@ def summarize_coverage(assessments: list) -> dict:
     state_order = {"missing": 0, "broken_xref": 1, "potentially_unenforceable": 2,
                    "covered_unfavorable": 3, "partial": 4, "ambiguous": 5, "review_needed": 6}
     attention_items.sort(key=lambda x: state_order.get(x["state"], 99))
+    from cam.adapters.lease_review.lease_display import summarize_display_buckets
+    _display_summary = summarize_display_buckets(assessments)
     return {
         "total_assessed": len(assessments),
         "state_counts": state_counts,
         "attention_count": len(attention_items),
         "attention_items": attention_items,
         "not_applicable_count": state_counts.get("not_applicable", 0),
-        "covered_count": state_counts.get("covered", 0),
+        # Step 539: delegated to the shared helper so this cannot drift from what
+        # the report prints. It previously read state_counts["covered"], which
+        # gave 0 on butler_crossing while the PDF said 18 -- two definitions of
+        # the same word in one result object.
+        "covered_count": _display_summary["covered_count"],
+        "display_buckets": _display_summary["buckets"],
+        "display_summary_source": _display_summary["_source"],
     }
 
 

@@ -1192,6 +1192,9 @@ def _generate_combined_synopsis_inner(
             # scan as just another quiet count between "worth reviewing" and
             # "covered". Adding the bucket to BUCKET_ORDER_BY_PERSPECTIVE without
             # this entry raises KeyError here, which is how the omission was found.
+            # Step 539: omitting this raises KeyError at parts=[...] below, the
+            # same trap Step 522 hit when it added not_assessed.
+            "minor_gaps":              "substantially addressed with minor gaps",
             "not_assessed":            "NOT ASSESSED",
             "covered":                 "covered",
         }

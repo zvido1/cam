@@ -252,6 +252,7 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
             review_items = []
             covered_count = 0
             not_assessed_items = []
+            minor_gap_items = []
             for item in coverage_assessment:
                 bucket = _resolve_display(item, perspective)["bucket"]
                 if bucket == "needs_attention":
@@ -262,6 +263,11 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                     asymmetric_items.append(item)
                 elif bucket == "worth_reviewing":
                     review_items.append(item)
+                elif bucket == "minor_gaps":
+                    # Step 539: MUST be its own branch. Without it these land in
+                    # the else and the report says "18 covered" about a lease
+                    # with zero LPs in state `covered`.
+                    minor_gap_items.append(item)
                 elif bucket == "not_assessed":
                     # Step 522: MUST be its own branch. The pre-522 `else` swept
                     # this into covered_count, which is how Step 521 measured a
@@ -280,6 +286,8 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                 summary_parts.append(f"{len(asymmetric_items)} asymmetric term(s)")
             summary_parts.append(f"{len(review_items)} worth reviewing")
             # Step 522: counted separately and named, never merged into "covered".
+            if minor_gap_items:
+                summary_parts.append(f"{len(minor_gap_items)} substantially addressed with minor gaps")
             if not_assessed_items:
                 summary_parts.append(f"{len(not_assessed_items)} NOT ASSESSED")
             summary_parts.append(f"{covered_count} covered.")
@@ -431,6 +439,7 @@ def _build_summary_cover_pdf(results: dict, output_dir: str) -> Optional[Path]:
                 # render an unjudged entry as a finding, which is the opposite
                 # error from rendering it as covered but still a false claim.
                 "not_assessed":     (0.28, 0.33, 0.40),  # slate
+                "minor_gaps":       (0.85, 0.47, 0.02),  # amber
             }
             for section in sections:
                 tier_color = section_colors.get(section["key"], (0.76, 0.27, 0.05))
