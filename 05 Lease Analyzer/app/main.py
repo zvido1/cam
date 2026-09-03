@@ -8,6 +8,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import shutil
 import threading
 import time
@@ -276,6 +277,63 @@ if static_dir.exists():
 # GENERIC ROUTES (domain-agnostic — work for any CAM adapter)
 # ══════════════════════════════════════════════════════════════════════════════
 
+# ── Step 550: asset versions are STAMPED, never hand-maintained ──────────────
+#
+# index.html carried nine `?v=N` query strings, each bumped by hand. Measured at
+# Step 550: `style.css?v=400` was last bumped 2026-06-04 and the file had changed
+# in FIVE commits since (Steps 398, 400, 402, 477, 497) -- 87 days stale. Steps
+# 477 and 497 each changed app.js, index.html AND style.css and bumped nothing.
+#
+# A discipline that requires someone to remember fails silently, so this removes
+# the remembering: every `/static/<file>?v=...` in the served HTML is rewritten
+# with a short content hash of the file it points at.
+#
+# CONTENT HASH, NOT GIT_SHA. GIT_SHA is already available and would be one line,
+# but it changes on every deploy -- this repo pushed 11 commits in a day, of which
+# ONE touched a static asset -- so it would invalidate 1.25 MB of JS and CSS on
+# every backend-only deploy. The hash changes when, and only when, the bytes do.
+#
+# Cost is negligible and paid once: the hash is cached on (mtime_ns, size), so a
+# warm process does two stat() calls per asset per page load and no reads.
+#
+# FAILS OPEN. A missing or unreadable asset leaves its literal `?v=` untouched
+# rather than raising -- the page must still serve. The test suite is what makes
+# a stale literal visible, not a 500 in production.
+_ASSET_VERSION_CACHE: dict = {}
+_ASSET_REF_RE = re.compile(rb'(/static/([A-Za-z0-9_.\-]+))\?v=[0-9A-Za-z._\-]+')
+
+
+def asset_version(name: str, root=None) -> Optional[str]:
+    """Short content hash for a static asset, cached on (mtime_ns, size)."""
+    base = root if root is not None else static_dir
+    try:
+        path = base / name
+        st = path.stat()
+    except (OSError, ValueError):
+        return None
+    key = (str(base), name)
+    stamp = (st.st_mtime_ns, st.st_size)
+    hit = _ASSET_VERSION_CACHE.get(key)
+    if hit and hit[0] == stamp:
+        return hit[1]
+    try:
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()[:10]
+    except OSError:
+        return None
+    _ASSET_VERSION_CACHE[key] = (stamp, digest)
+    return digest
+
+
+def stamp_asset_versions(html: bytes, root=None) -> bytes:
+    """Rewrite every `/static/<file>?v=...` with that file's content hash."""
+    def _sub(m):
+        version = asset_version(m.group(2).decode("utf-8", "replace"), root)
+        if not version:
+            return m.group(0)          # fail open: leave the literal alone
+        return m.group(1) + b"?v=" + version.encode()
+    return _ASSET_REF_RE.sub(_sub, html)
+
+
 @app.get("/")
 def serve_index():
     """Serve the frontend index.html."""
@@ -283,7 +341,7 @@ def serve_index():
     if index_path.exists():
         from fastapi.responses import Response as PlainResponse
         return PlainResponse(
-            content=index_path.read_bytes(),
+            content=stamp_asset_versions(index_path.read_bytes()),
             media_type="text/html",
             headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
         )
