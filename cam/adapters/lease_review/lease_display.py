@@ -24,6 +24,13 @@ consistent voice instead of contradicting itself.
 
 from typing import Optional
 
+# Step 538: element verdicts that count as the element being FOUND. Mirrors the
+# `_POSITIVE` set in app.js's coverage audit section.
+_POSITIVE_ELEMENT_VERDICTS = frozenset({
+    "explicitly_present", "implicitly_present",
+    "covered_by_default_law", "covered_in_other_LP",
+})
+
 
 BUCKET_SECTION_HEADERS = {
     "needs_attention":         "Needs Attention",
@@ -194,10 +201,73 @@ def _resolve_display(coverage_item: dict, perspective: Optional[str]) -> dict:
                 "tone":   "warning",
                 "marker": "✕"}
 
-    return {"bucket": "covered",
-            "label":  "COVERED",
-            "tone":   "covered",
-            "marker": "✓"}
+    # ── Step 538: ZERO ELEMENTS PRESENT CANNOT READ AS COVERED ────────────────
+    # Step 537 measured LP-20 Exclusivity on butler_crossing at 0 of 7 elements
+    # present, review_needed, requires_attention True -- and inside the 27
+    # "covered". A retail tenant with no exclusivity protection was told the
+    # provision was covered.
+    #
+    # This guard is evidence-based, not state-based, so a state nobody has
+    # thought of yet cannot slip past it. Measured safe: across the Step-524,
+    # -528 and -537 runs, NO LP whose state is `covered` has zero elements
+    # present, so this can only demote LPs that were already contradictory.
+    _evs = coverage_item.get("element_verdicts") or []
+    if _evs and not any(
+        (e.get("verdict") or "") in _POSITIVE_ELEMENT_VERDICTS for e in _evs
+    ):
+        return {"bucket": "needs_attention",
+                "label":  "NO ELEMENTS FOUND",
+                "tone":   "warning",
+                "marker": "✕"}
+
+    if state == "review_needed":
+        # The panel withheld a verdict. That is a review item by definition --
+        # it is the state the dispute signal sets when a critical element is
+        # disputed and the majority is withheld.
+        return {"bucket": "worth_reviewing",
+                "label":  "REVIEW NEEDED",
+                "tone":   "review",
+                "marker": "○"}
+
+    if state == "ambiguous":
+        return {"bucket": "worth_reviewing",
+                "label":  "AMBIGUOUS",
+                "tone":   "review",
+                "marker": "○"}
+
+    if state in ("not_applicable", "applicability_unclear"):
+        # Not a clean bill of health -- nothing was judged on the merits.
+        return {"bucket": "not_assessed",
+                "label":  ("NOT APPLICABLE" if state == "not_applicable"
+                           else "APPLICABILITY UNCLEAR"),
+                "tone":   "not_assessed",
+                "marker": "?"}
+
+    # Step 538: `covered` is now a MEMBERSHIP TEST, not a fall-through. Before
+    # this, the function ended in an unconditional `return covered`, so six of
+    # the ten schema states landed there BY OMISSION rather than by decision --
+    # including review_needed, which carries requires_attention True. A state
+    # added to the schema tomorrow would have inherited "COVERED" silently.
+    #
+    # `partial` is listed here DELIBERATELY and its behaviour is unchanged. A
+    # partial whose materiality is low gets `partial_typical` from
+    # `_classify_partial` and has always rendered as covered; the material and
+    # review tiers were matched earlier via partial_class. Step 521 recorded
+    # that as an open question -- requires_attention is True on these while the
+    # display says covered -- and it is NOT this step's target. Naming it here
+    # converts it from an omission into a recorded decision without changing
+    # what a reader sees.
+    if state in ("covered", "partial"):
+        return {"bucket": "covered",
+                "label":  "COVERED",
+                "tone":   "covered",
+                "marker": "✓"}
+
+    # Unrecognised state: fail LOUD, never clean.
+    return {"bucket": "worth_reviewing",
+            "label":  "UNCLASSIFIED STATE: %s" % (state or "none"),
+            "tone":   "review",
+            "marker": "○"}
 
 
 # ── Step 275: Section-grouping logic ──
