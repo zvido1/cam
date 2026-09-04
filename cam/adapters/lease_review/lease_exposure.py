@@ -204,6 +204,14 @@ def _build_scope_exposure(assessment: dict, adverse_missing: list,
         stmt = head + tail + "."
         headline = (f"{n_unres} of {n_total} elements unresolved"
                     if n_total != 1 else "1 element unresolved")
+    elif adverse_missing:
+        # Step 562: when nothing is unresolved but something IS absent, the
+        # headline names the absence rather than the presence. The canned string
+        # this replaces was written for total absence; the honest replacement is
+        # the same claim, quantified. ex6-4 LP-14 goes from "No excused
+        # performance" (2 of 6 elements ARE present) to "4 of 6 elements absent".
+        stmt = head + "."
+        headline = f"{len(adverse_missing)} of {n_total} elements absent"
     else:
         stmt = head + ". Flagged for review."
         headline = f"{n_present} of {n_total} elements present — review flagged"
@@ -246,49 +254,53 @@ def _build_schema_exposure(assessment: dict, perspective: str = "tenant") -> dic
             "exposure_elements_used": elements_used,
         }
 
+    # These two compose their prose from the state itself, not from the LP's
+    # static schema string, so they cannot contradict the record.
     if state == "covered":
         return _shape(f"{name} is addressed and consistent with standard form.", [])
     if state == "not_applicable":
         return _shape(f"{name} does not apply to this lease.", [])
+
+    # ── Step 562: ONE GUARD, EVERY STATE. A headline must never assert absence
+    # ── when the record shows presence.
+    #
+    # Everything below this point uses the LP's STATIC schema string --
+    # `exposure_statement`, or `risk_if_missing` for `missing` and `broken_xref`
+    # (`lease_coverage.py:1061`). Both are written for the ABSENT case, keyed to
+    # the LP id, and neither consults the assessment.
+    #
+    # Steps 546 and 547 fixed this one state at a time -- review_needed, then
+    # partial-with-no-gap -- and Step 549, 558 and 561 each found it again
+    # somewhere else. Recomputed across 311 schema-sourced entries in eleven
+    # runs, 100 still asserted absence over a record showing presence:
+    #
+    #     partial + adverse-missing (the pre-existing branch)   93
+    #     missing  (the pre-existing branch)                     6
+    #     the catch-all                                          1
+    #
+    # So the catch-all was 1 of 100 and the per-state branches were 99. Guarding
+    # the catch-all alone would have fixed the smallest case and left the rest,
+    # which is the pattern the last four steps have been repeating. This guard
+    # runs BEFORE every remaining branch instead.
+    #
+    # THE INVARIANT IS THE GUARD'S OWN CONDITION. `_build_scope_exposure`
+    # returns None when `total_elements == 0` or `settled_present == 0`, so an LP
+    # with nothing found present -- ex6-4 LP-20 at 0 of 7 -- falls through to the
+    # branches below and keeps its canned absence prose, which is TRUE of it.
+    # Step 546's invariant is not preserved alongside this rule; it IS this rule.
+    scoped = _build_scope_exposure(
+        assessment, missing, reason_code=f"{state or 'unknown'}_scope")
+    if scoped is not None:
+        return scoped
+
+    # Below here: settled_present == 0, or the item carries no element verdicts.
+    # The static string is either accurate or the only thing available.
     if state == "partial" and missing:
         stmt = schema_statement or f"{name} is present but {missing[0]} is absent."
         return _shape(stmt, missing[:2])
     if state == "missing":
         stmt = schema_statement or f"{name} is absent from this lease."
         return _shape(stmt, [])
-
-    # ── Step 546/547: a state must not inherit prose written for absence ─────
-    # `review_needed` (546) and `partial` with an empty adverse-missing list
-    # (547) both matched none of the branches above and fell to the catch-all,
-    # which emits the LP's STATIC schema `exposure_statement` -- written for the
-    # absent case, keyed to the LP id, and never consulting the record.
-    #
-    # Measured: Atlas LP-26 and ex6-4 LP-25 rendered "absent or undefined" with
-    # `elements_missing: []`; ex6-4 LP-11 rendered "absent or incomplete" with 15
-    # of 17 elements present; ex6-4 LP-05 rendered "Use restrictions absent or
-    # undefined" with 3 of 4 present.
-    #
-    # Neither state can reach the model path -- neither is in `_MODEL_STATES`,
-    # and the high-materiality branch admits only `partial` WITH a non-empty
-    # adverse-missing list -- so this is the only place the string can be made
-    # truthful for them.
-    #
-    # THE BOTTOM OF THE RANGE IS CORRECT AND IS PRESERVED. When nothing was
-    # found present, the provision genuinely is absent and the schema statement
-    # is the right thing to say -- ex6-4 LP-20 at 0 of 7 and LP-02 at 0 of 4 fall
-    # through to the catch-all untouched. `_build_scope_exposure` returns None on
-    # that case and on any item carrying no element verdicts.
-    #
-    # Step 547 scope note: `partial` reaches here ONLY when the adverse-missing
-    # list is empty; a partial with a real gap keeps the branch above unchanged.
-    if state in ("review_needed", "partial"):
-        scoped = _build_scope_exposure(
-            assessment, missing,
-            reason_code=("review_needed_scope" if state == "review_needed"
-                         else "partial_scope"),
-        )
-        if scoped is not None:
-            return scoped
 
     stmt = schema_statement or f"{name}: {state}."
     return _shape(stmt, missing[:2])

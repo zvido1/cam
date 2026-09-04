@@ -107,10 +107,21 @@ class TestPartialHeadline(unittest.TestCase):
                       out["exposure_statement"])
         self.assertNotIn("absent", out["exposure_statement"].lower())
 
-    def test_partial_with_a_real_gap_is_untouched(self):
+    def test_partial_with_a_real_gap_now_ALSO_reports_scope(self):
+        """CHANGED AT STEP 562, deliberately. This test used to assert the opposite.
+
+        Step 547 left `partial`-with-a-gap on the canned string and said so. Step
+        549 measured that as still broken, and Step 562 recomputed the whole
+        corpus: of 100 schema-sourced headlines still asserting absence over a
+        record showing presence, 93 were THIS branch. The old assertion --
+        `reason_code == "schema_default"` -- was pinning the largest remaining
+        instance of the defect in place.
+        """
         out = _build_schema_exposure(PARTIAL_WITH_GAP, "tenant")
-        self.assertEqual(out["exposure_reason_code"], "schema_default")
-        self.assertNotIn("unresolved", out["exposure_headline"].lower())
+        self.assertEqual(out["exposure_reason_code"], "partial_scope")
+        self.assertEqual(out["exposure_headline"], "1 of 4 elements absent")
+        self.assertIn("3 of 4 expected elements are confirmed present",
+                      out["exposure_statement"])
 
     def test_branch_declines_when_nothing_is_present(self):
         out = _build_schema_exposure(PARTIAL_NOTHING_PRESENT, "tenant")
