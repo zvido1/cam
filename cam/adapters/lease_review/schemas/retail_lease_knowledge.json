@@ -5,7 +5,7 @@
   "contract_type": "retail_lease",
   "display_name": "Retail / Commercial Lease",
   "description": "Issue-area knowledge schema for retail and commercial lease analysis. Defines expected coverage, applicability gating, exposure statements, caution signals, and negative-space clues.",
-  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants. v1.2.0: Added LP-19 Utilities (required), LP-20 Exclusivity (conditional, extracted from LP-05), LP-21 Guaranty of Lease (conditional, promoted from discovered_provision_patterns). LP-05 expected_elements updated: removed 'exclusive use right scope' (now LP-20's responsibility); related_issue_areas updated to include LP-20. discovered_provision_patterns updated: removed 'Guaranty' pattern (now LP-21). v1.3.0: Added LP-22 SNDA, LP-23 Percentage Rent, LP-24 Damage & Destruction, LP-25 Condemnation/Eminent Domain, LP-26 Quiet Enjoyment, LP-27 Landlord Default & Tenant Remedies, LP-28 Compliance with Laws, LP-29 Right of Entry/Landlord Access, LP-30 Estoppel Certificate, LP-31 Co-Tenancy, LP-32 Hazardous Materials. Promoted SNDA, Percentage Rent, Co-Tenancy, and Hazardous Materials from discovered_provision_patterns. Schema now covers 32 issue areas per CAM_Schema_Selection_Methodology.md. v1.4.0: Added `potentially_unenforceable` patterns to LP-09, LP-12, LP-29. Added `conflict_rules` block with 3 initial rules (CR-01 FM-vs-continuous-operation, CR-04 SNDA-without-landlord-default, CR-09 no-exit-strategy). Added `jurisdiction_rules` block with New York rules for LP-09 (sole discretion ג†’ potentially_unenforceable when governing law is NY) and LP-11 (self-help re-entry ג†’ potentially_unenforceable when governing law is NY). Step 297a foundation only ג€” additional rules deferred to 297b after empirical validation on real corpus. v1.4.1: CR-01 trigger loosened (LP-05 condition now anchors on elements_present_includes alone, dropping coverage_state requirement). CR-04 renamed and trigger refined to detect partial-LP-27 cases where critical tenant remedies are missing. Added elements_missing_includes_any condition type to schema spec. CR-01 LP-14 evidence_contains changed to evidence_contains_any to handle both wholly/totally untenantable and wholly untenantable evidence_summary variants. v1.4.2: Step 298a element-matching calibration. LP-08: waiver of subrogation now found via full-text fallback in lease_coverage._assess_elements (cross-article: Section 15.4 in Indemnification article). LP-29: global scan added for empty tenant_text on required LPs; _ELEMENT_KEYWORDS entries for entry-rights embedded in maintenance articles. LP-30: _ELEMENT_KEYWORDS entries for obligation/deadline patterns; false-positive frequency-limit match fixed (bare \"request\" keyword replaced with multi-word phrases). No cam/core/ changes. No evaluation semantics changes. | v1.4.3: Step 298b. LP-29 misrouted-extraction guard added in lease_coverage.assess_coverage. When extractor routes irrelevant text to a global-scan LP (verified by absence of any LP anchor keyword in tenant_text), the routed text is discarded and global scan is attempted instead. Defensive layer above 298a empty-tenant_text path. No schema content changes. | v1.4.4: Step 297d.J-fix. Added covered_unfavorable_adverse_to=\"tenant\" to all 32 issue_areas. Used by lease_coverage.py to write covered_unfavorable_adverse_to on CA entries; used by frontend _isFavorable logic instead of exposure_perspective comparison. | v1.4.5: Step 301. Stage 5d (use-aware coverage classification) added to pipeline. No issue_area, conflict_rule, or jurisdiction_rule content changes. | v1.4.6: Step 303. Stage 5d Call 2 upgraded to three-evaluator parallel execution (claude-sonnet-4-6 / gpt-5.5 / grok-4) with deterministic merge function and structured abstention pathway. use_aware_consensus and use_aware_abstained fields added to every CA entry. use_aware_governance audit trail block added to pipeline_results. STAGE_5D_ENABLED flipped to True after variance acceptance test. No issue_area, conflict_rule, or jurisdiction_rule content changes. | v2.2.0: Step 355 (Supplement #21 Phase 2). Added `criticality` field to all elements in expected_elements_305. Values: critical | important | supplementary. Derived from absence_severity, must_be_explicit, default_law_covers, and implicit_coverage_acceptable with manual overrides. Phase 3 will use criticality to route parent LPs with Disputed critical elements to Review Needed.",
+  "notes": "v1.1: Added applicability gating. v1.1.1: Removed bare 'security' from LP-04 activation_clues. v1.1.2: LP-12 activation_clues tightened to prevent false positives on default/remedies language. v1.1.3: LP-14 extended with partial-abatement expected_element and 'wholly untenantable only' unfavorable-pattern detection. v1.1.4: LP-13 covered_unfavorable extended to detect materially asymmetric mutual indemnification (per cross-model audit 2026-04-28). LP-11 rule precedence clarified between covered_unfavorable and potentially_unenforceable per same audit. v1.1.5: exposure_statement field on LP-02, LP-03, LP-08, LP-10, LP-12, LP-17 extended from string to object with tenant/landlord/neutral perspective variants. v1.2.0: Added LP-19 Utilities (required), LP-20 Exclusivity (conditional, extracted from LP-05), LP-21 Guaranty of Lease (conditional, promoted from discovered_provision_patterns). LP-05 expected_elements updated: removed 'exclusive use right scope' (now LP-20's responsibility); related_issue_areas updated to include LP-20. discovered_provision_patterns updated: removed 'Guaranty' pattern (now LP-21). v1.3.0: Added LP-22 SNDA, LP-23 Percentage Rent, LP-24 Damage & Destruction, LP-25 Condemnation/Eminent Domain, LP-26 Quiet Enjoyment, LP-27 Landlord Default & Tenant Remedies, LP-28 Compliance with Laws, LP-29 Right of Entry/Landlord Access, LP-30 Estoppel Certificate, LP-31 Co-Tenancy, LP-32 Hazardous Materials. Promoted SNDA, Percentage Rent, Co-Tenancy, and Hazardous Materials from discovered_provision_patterns. Schema now covers 32 issue areas per CAM_Schema_Selection_Methodology.md. v1.4.0: Added `potentially_unenforceable` patterns to LP-09, LP-12, LP-29. Added `conflict_rules` block with 3 initial rules (CR-01 FM-vs-continuous-operation, CR-04 SNDA-without-landlord-default, CR-09 no-exit-strategy). Added `jurisdiction_rules` block with New York rules for LP-09 (sole discretion → potentially_unenforceable when governing law is NY) and LP-11 (self-help re-entry → potentially_unenforceable when governing law is NY). Step 297a foundation only — additional rules deferred to 297b after empirical validation on real corpus. v1.4.1: CR-01 trigger loosened (LP-05 condition now anchors on elements_present_includes alone, dropping coverage_state requirement). CR-04 renamed and trigger refined to detect partial-LP-27 cases where critical tenant remedies are missing. Added elements_missing_includes_any condition type to schema spec. CR-01 LP-14 evidence_contains changed to evidence_contains_any to handle both wholly/totally untenantable and wholly untenantable evidence_summary variants. v1.4.2: Step 298a element-matching calibration. LP-08: waiver of subrogation now found via full-text fallback in lease_coverage._assess_elements (cross-article: Section 15.4 in Indemnification article). LP-29: global scan added for empty tenant_text on required LPs; _ELEMENT_KEYWORDS entries for entry-rights embedded in maintenance articles. LP-30: _ELEMENT_KEYWORDS entries for obligation/deadline patterns; false-positive frequency-limit match fixed (bare \"request\" keyword replaced with multi-word phrases). No cam/core/ changes. No evaluation semantics changes. | v1.4.3: Step 298b. LP-29 misrouted-extraction guard added in lease_coverage.assess_coverage. When extractor routes irrelevant text to a global-scan LP (verified by absence of any LP anchor keyword in tenant_text), the routed text is discarded and global scan is attempted instead. Defensive layer above 298a empty-tenant_text path. No schema content changes. | v1.4.4: Step 297d.J-fix. Added covered_unfavorable_adverse_to=\"tenant\" to all 32 issue_areas. Used by lease_coverage.py to write covered_unfavorable_adverse_to on CA entries; used by frontend _isFavorable logic instead of exposure_perspective comparison. | v1.4.5: Step 301. Stage 5d (use-aware coverage classification) added to pipeline. No issue_area, conflict_rule, or jurisdiction_rule content changes. | v1.4.6: Step 303. Stage 5d Call 2 upgraded to three-evaluator parallel execution (claude-sonnet-4-6 / gpt-5.5 / grok-4) with deterministic merge function and structured abstention pathway. use_aware_consensus and use_aware_abstained fields added to every CA entry. use_aware_governance audit trail block added to pipeline_results. STAGE_5D_ENABLED flipped to True after variance acceptance test. No issue_area, conflict_rule, or jurisdiction_rule content changes. | v2.2.0: Step 355 (Supplement #21 Phase 2). Added `criticality` field to all elements in expected_elements_305. Values: critical | important | supplementary. Derived from absence_severity, must_be_explicit, default_law_covers, and implicit_coverage_acceptable with manual overrides. Phase 3 will use criticality to route parent LPs with Disputed critical elements to Review Needed.",
   "coverage_states": {
     "covered": "Provision present and consistent with standard form",
     "covered_unfavorable": "Present but materially one-sided against tenant",
@@ -64,11 +64,11 @@
       ],
       "negative_space_clues": [
         "Section marked 'Reserved' or 'Intentionally Omitted'",
-        "Reference to 'Exhibit A ג€” Rent Schedule' with no Exhibit A attached",
+        "Reference to 'Exhibit A — Rent Schedule' with no Exhibit A attached",
         "Blank dollar amount placeholder not filled in"
       ],
       "common_tenant_modifications": [
-        "Grace period extensions (5 days ג†’ 10 days)",
+        "Grace period extensions (5 days → 10 days)",
         "Reduced late fee percentage",
         "Removal of additional rent catch-all definition"
       ],
@@ -373,8 +373,8 @@
         "Reference to 'Option to Renew' in Table of Contents but section absent from body"
       ],
       "common_tenant_modifications": [
-        "Extended notice period for renewal (90 days ג†’ 12 months)",
-        "Added renewal options (1 ג†’ 2 or 3)",
+        "Extended notice period for renewal (90 days → 12 months)",
+        "Added renewal options (1 → 2 or 3)",
         "Capped renewal rent at fixed percentage over expiring rent"
       ],
       "covered_unfavorable_adverse_to": "tenant",
@@ -524,7 +524,7 @@
       "related_issue_areas": [
         "LP-11"
       ],
-      "notes": "Bare 'security' removed from activation_clues v1.1.1 ג€” too broad.",
+      "notes": "Bare 'security' removed from activation_clues v1.1.1 — too broad.",
       "expected_elements": [
         "deposit amount",
         "return deadline after lease expiration",
@@ -690,11 +690,11 @@
       ],
       "negative_space_clues": [
         "Exclusive use clause header present but body blank",
-        "Reference to 'Exhibit B ג€” Exclusive Use Area' with no exhibit attached"
+        "Reference to 'Exhibit B — Exclusive Use Area' with no exhibit attached"
       ],
       "common_tenant_modifications": [
         "Broadened permitted use description",
-        "Weakened continuous operation obligation (shall ג†’ may)",
+        "Weakened continuous operation obligation (shall → may)",
         "Added co-tenancy condition tied to anchor tenant"
       ],
       "covered_unfavorable_adverse_to": "tenant",
@@ -1153,7 +1153,7 @@
       "common_tenant_modifications": [
         "Reduced minimum coverage amounts",
         "Removal of business interruption requirement",
-        "Mutual waiver of subrogation (one-way ג†’ two-way)"
+        "Mutual waiver of subrogation (one-way → two-way)"
       ],
       "covered_unfavorable_adverse_to": "tenant",
       "expected_elements_305": [
@@ -1301,7 +1301,7 @@
         "missing": "No assignment provision",
         "partial": "Consent requirement present but affiliate exception, recapture, or profit sharing absent",
         "covered_unfavorable": "Landlord consent in sole and absolute discretion; no affiliate exception",
-        "potentially_unenforceable": "Landlord consent in 'sole and absolute discretion' WITHOUT reasonableness standard ג€” unenforceable in jurisdictions implying good faith and reasonableness in commercial leases (escalation governed by jurisdiction_rules; see governing_law_sensitive caution signal)",
+        "potentially_unenforceable": "Landlord consent in 'sole and absolute discretion' WITHOUT reasonableness standard — unenforceable in jurisdictions implying good faith and reasonableness in commercial leases (escalation governed by jurisdiction_rules; see governing_law_sensitive caution signal)",
         "broken_xref": "Affiliate defined by cross-reference to definition section not present in document"
       },
       "risk_if_missing": "Assignment rights undefined; tenant unable to sell business or transfer lease in routine transactions",
@@ -1778,7 +1778,7 @@
         "Notice requirement section marked Reserved"
       ],
       "common_tenant_modifications": [
-        "Extended cure periods (5 days ג†’ 10 days monetary; 30 days ג†’ 45 days non-monetary)",
+        "Extended cure periods (5 days → 10 days monetary; 30 days → 45 days non-monetary)",
         "Notice required before every default declaration",
         "Added third-party cure right (mortgagee or guarantor may cure)"
       ],
@@ -2188,7 +2188,7 @@
         "missing": "Termination right referenced elsewhere in lease but no termination provision found",
         "partial": "Termination right exists but penalty formula, notice period, or survival obligations absent",
         "covered_unfavorable": "Termination fee includes unamortized brokerage commissions",
-        "potentially_unenforceable": "Termination fee structured as penalty (e.g., 'all rent due for remainder of term plus damages and costs') rather than a reasonable estimate of liquidated damages ג€” voidable as penalty clause in most jurisdictions",
+        "potentially_unenforceable": "Termination fee structured as penalty (e.g., 'all rent due for remainder of term plus damages and costs') rather than a reasonable estimate of liquidated damages — voidable as penalty clause in most jurisdictions",
         "broken_xref": "Termination fee formula cross-references amortization schedule exhibit not attached",
         "not_applicable": "No termination right language anywhere in document; absence is by design"
       },
@@ -2338,7 +2338,7 @@
       ],
       "coverage_state_rules": {
         "missing": "No indemnification provision",
-        "partial": "One-way indemnification present (tenant ג†’ landlord only) without reciprocal protection",
+        "partial": "One-way indemnification present (tenant → landlord only) without reciprocal protection",
         "covered_unfavorable": "No liability cap; consequential damages not excluded; OR mutual indemnification structurally present but materially asymmetric (e.g. tenant indemnifies for broad scope including ordinary negligence while landlord indemnification is limited to gross negligence or willful misconduct)",
         "potentially_unenforceable": "Indemnification for indemnitee's own gross negligence"
       },
@@ -3202,7 +3202,7 @@
         "Consequential damages section marked Reserved"
       ],
       "common_tenant_modifications": [
-        "Holdover rate reduced (200% ג†’ 150%)",
+        "Holdover rate reduced (200% → 150%)",
         "Consequential damages excluded",
         "Month-to-month characterization confirmed (prevents automatic term renewal)"
       ],
@@ -3512,7 +3512,7 @@
       "related_issue_areas": [
         "LP-05"
       ],
-      "notes": "Extracted from LP-05 in schema v1.2.0. Most retail leases include exclusivity for the tenant's primary business; absence is meaningful for retail tenants but normal for office or industrial tenants. Carve-outs swallow exclusivity if too broad ג€” material question for any retail tenant whose competitive moat depends on this clause.",
+      "notes": "Extracted from LP-05 in schema v1.2.0. Most retail leases include exclusivity for the tenant's primary business; absence is meaningful for retail tenants but normal for office or industrial tenants. Carve-outs swallow exclusivity if too broad — material question for any retail tenant whose competitive moat depends on this clause.",
       "expected_elements": [
         "specific exclusive use scope (protected business activities defined precisely)",
         "carve-outs for existing tenants at center",
@@ -3543,7 +3543,7 @@
       "negative_space_clues": [
         "Exclusive use clause header present but body blank or marked Reserved",
         "Carve-outs section present but list blank",
-        "Reference to 'Exhibit C ג€” Exclusive Use Area' or similar with no exhibit attached",
+        "Reference to 'Exhibit C — Exclusive Use Area' or similar with no exhibit attached",
         "Definition of 'competing use' absent from Definitions article",
         "Remedies section blank or limited to 'landlord shall use commercially reasonable efforts'",
         "Radius restriction percentage or distance blank"
@@ -3940,7 +3940,7 @@
         "Estoppel certificate obligation references SNDA but no SNDA found"
       ],
       "common_tenant_modifications": [
-        "Non-disturbance covenant added (key negotiating point ג€” landlord often resists)",
+        "Non-disturbance covenant added (key negotiating point — landlord often resists)",
         "Lender SNDA form subject to tenant's reasonable approval",
         "Lender required to execute SNDA within 30 days of tenant's written request",
         "SNDA extends to all future mortgages, not just existing encumbrances",
@@ -4200,7 +4200,7 @@
         "LP-01",
         "LP-02"
       ],
-      "notes": "Promoted from discovered_provision_patterns in schema v1.3.0. Common in retail leases, particularly for food service, soft goods, and high-traffic retail. The calculation methodology and gross sales definition are the primary dispute vectors ג€” broad gross sales definitions favor landlord; broad exclusions favor tenant.",
+      "notes": "Promoted from discovered_provision_patterns in schema v1.3.0. Common in retail leases, particularly for food service, soft goods, and high-traffic retail. The calculation methodology and gross sales definition are the primary dispute vectors — broad gross sales definitions favor landlord; broad exclusions favor tenant.",
       "expected_elements": [
         "gross sales definition (what is included and excluded)",
         "percentage rate applied to gross sales above breakpoint",
@@ -4356,7 +4356,7 @@
         "LP-14",
         "LP-12"
       ],
-      "notes": "Required in every commercial lease. The landlord repair deadline and tenant's termination right are the key negotiating points ג€” landlord wants maximum time and minimum termination exposure; tenant wants a hard deadline with a clean termination right. The 'total loss' threshold determines which party can exit.",
+      "notes": "Required in every commercial lease. The landlord repair deadline and tenant's termination right are the key negotiating points — landlord wants maximum time and minimum termination exposure; tenant wants a hard deadline with a clean termination right. The 'total loss' threshold determines which party can exit.",
       "expected_elements": [
         "landlord's obligation to repair or rebuild following insured casualty",
         "rent abatement during period of repair (full vs. partial based on usability)",
@@ -4550,7 +4550,7 @@
         "LP-12",
         "LP-03"
       ],
-      "notes": "Required in every commercial lease. Often treated as a companion to the damage and destruction provision. The allocation of condemnation awards ג€” particularly tenant's right to a separate award for trade fixtures, leasehold improvements, and business losses ג€” is the primary negotiating point.",
+      "notes": "Required in every commercial lease. Often treated as a companion to the damage and destruction provision. The allocation of condemnation awards — particularly tenant's right to a separate award for trade fixtures, leasehold improvements, and business losses — is the primary negotiating point.",
       "expected_elements": [
         "definition of total taking vs. material partial taking",
         "lease termination right on total taking or material partial taking",
@@ -4567,7 +4567,7 @@
         "covered_unfavorable": "Landlord entitled to entire condemnation award including value of leasehold; OR tenant has no termination right on partial taking that destroys utility of premises; OR no restoration obligation after partial taking",
         "broken_xref": "Condemnation award allocation or restoration procedure cross-references exhibit not attached"
       },
-      "risk_if_missing": "On condemnation, tenant has no guaranteed right to share in the award, no termination right if partial taking renders premises unusable, and no rent reduction right ג€” all defaults to state law which may be unfavorable",
+      "risk_if_missing": "On condemnation, tenant has no guaranteed right to share in the award, no termination right if partial taking renders premises unusable, and no rent reduction right — all defaults to state law which may be unfavorable",
       "exposure_statement": {
         "tenant": "Condemnation rights are undefined; tenant may receive no portion of the condemnation award, have no termination right on material partial taking, and face full rent obligation on diminished premises",
         "landlord": "Condemnation provisions are undefined; landlord faces uncertain obligations to restore, reduce rent, or allow termination after a partial taking, with increased dispute exposure",
@@ -4743,7 +4743,7 @@
         "LP-11",
         "LP-27"
       ],
-      "notes": "Required in every commercial lease. A fundamental landlord covenant ג€” its absence may be supplied by state law in many jurisdictions, but an express covenant is preferred to avoid jurisdictional ambiguity. The covenant should survive against lenders and successors for SNDA compatibility.",
+      "notes": "Required in every commercial lease. A fundamental landlord covenant — its absence may be supplied by state law in many jurisdictions, but an express covenant is preferred to avoid jurisdictional ambiguity. The covenant should survive against lenders and successors for SNDA compatibility.",
       "expected_elements": [
         "express quiet enjoyment covenant by landlord",
         "covenant conditioned on tenant's performance of lease obligations (not absolute)",
@@ -4755,7 +4755,7 @@
         "partial": "Quiet enjoyment clause present but not conditioned on tenant performance OR does not bind successors and lenders",
         "ambiguous": "Quiet enjoyment referenced without definition of scope or conditions",
         "covered_unfavorable": "Covenant is conditioned on landlord's receipt of rent from tenant rather than tenant's compliance with all lease obligations; OR covenant explicitly does not bind lenders or successors in interest",
-        "potentially_unenforceable": "Quiet enjoyment covenant purports to be absolute (not conditioned on tenant's performance) ג€” may conflict with landlord's right to re-enter on tenant default"
+        "potentially_unenforceable": "Quiet enjoyment covenant purports to be absolute (not conditioned on tenant's performance) — may conflict with landlord's right to re-enter on tenant default"
       },
       "risk_if_missing": "Tenant's right to undisturbed possession depends on state law implied covenant, which varies by jurisdiction and may be narrower than an express covenant; particularly material if property is mortgaged and SNDA does not independently protect tenant",
       "exposure_statement": {
@@ -4996,7 +4996,7 @@
         "LP-26",
         "LP-22"
       ],
-      "notes": "The counterpart to LP-11 (tenant default). Often conspicuously weaker or absent in landlord-form leases ג€” landlords frequently attempt to limit tenant remedies to specific performance only, eliminating offset rights, self-help rights, and termination rights. The tenant's ability to offset rent against uncured landlord obligations is a major negotiating point.",
+      "notes": "The counterpart to LP-11 (tenant default). Often conspicuously weaker or absent in landlord-form leases — landlords frequently attempt to limit tenant remedies to specific performance only, eliminating offset rights, self-help rights, and termination rights. The tenant's ability to offset rent against uncured landlord obligations is a major negotiating point.",
       "expected_elements": [
         "definition of landlord default events (failure to perform material obligations after notice and cure)",
         "notice and cure period before tenant may exercise remedies (typically 30 days written + additional reasonable time for complex repairs)",
@@ -5013,7 +5013,7 @@
         "covered_unfavorable": "Tenant remedy limited to specific performance only (no termination, no offset, no self-help); OR notice and cure period so long as to render remedies impractical; OR landlord default provision explicitly excludes rent offset right",
         "broken_xref": "Landlord default cure procedure cross-references notice article or lender SNDA not present in document"
       },
-      "risk_if_missing": "On landlord's failure to perform (e.g., failure to maintain HVAC, roof, or common areas), tenant has no clear self-help right, no rent offset, and may be unable to terminate ג€” all remedies default to litigation, which is slow and expensive",
+      "risk_if_missing": "On landlord's failure to perform (e.g., failure to maintain HVAC, roof, or common areas), tenant has no clear self-help right, no rent offset, and may be unable to terminate — all remedies default to litigation, which is slow and expensive",
       "exposure_statement": {
         "tenant": "Landlord default remedies undefined; tenant has no self-help right, no rent offset, and may be unable to terminate if landlord fails to maintain the premises or perform material obligations",
         "landlord": "No contractual landlord default framework exists in this lease. Tenant remedies for Landlord default are limited to what background law provides, which may be favorable to Landlord in this jurisdiction. This provision is typically absent from landlord-form leases by design.",
@@ -5494,10 +5494,10 @@
         "partial": "Entry right defined but notice period, permitted purposes, or emergency entry limitation absent",
         "ambiguous": "Entry permitted 'at reasonable times' without defined notice period or purpose limitation",
         "covered_unfavorable": "No notice required for any entry (not just emergencies); OR unlimited entry purposes including showing to competitors; OR no obligation to minimize interference with tenant's business; OR tenant's representative right absent",
-        "potentially_unenforceable": "Landlord may enter at any time without notice for any purpose ג€” conflicts with implied covenant of quiet enjoyment; may be voidable as substantive breach of leasehold rights",
+        "potentially_unenforceable": "Landlord may enter at any time without notice for any purpose — conflicts with implied covenant of quiet enjoyment; may be voidable as substantive breach of leasehold rights",
         "broken_xref": "Entry notice procedure cross-references notice article not found in document"
       },
-      "risk_if_missing": "Landlord may enter premises without notice, at any time, for any purpose ג€” disrupting tenant's business operations, exposing confidential business information, and interfering with customers",
+      "risk_if_missing": "Landlord may enter premises without notice, at any time, for any purpose — disrupting tenant's business operations, exposing confidential business information, and interfering with customers",
       "exposure_statement": {
         "tenant": "Landlord access terms undefined; landlord may enter without notice at any time, disrupting business operations, exposing confidential information, and interfering with customers",
         "landlord": "Landlord access terms undefined; landlord faces uncertain rights to inspect, maintain, and show the property without a defined notice and entry framework",
@@ -6052,7 +6052,7 @@
         "broken_xref": "Hazardous materials exhibit, environmental baseline report, or permitted substances schedule referenced but not attached",
         "potentially_unenforceable": "Tenant required to waive CERCLA or RCRA statutory rights in a manner that may not be permitted by applicable law"
       },
-      "risk_if_missing": "Tenant faces unlimited environmental liability without a defined scope of prohibited substances, carve-out for ordinary business materials, or protection against pre-existing contamination ג€” particularly material for food service, medical, and chemical-dependent tenants",
+      "risk_if_missing": "Tenant faces unlimited environmental liability without a defined scope of prohibited substances, carve-out for ordinary business materials, or protection against pre-existing contamination — particularly material for food service, medical, and chemical-dependent tenants",
       "exposure_statement": {
         "tenant": "Hazardous materials obligations are undefined; tenant may face liability for pre-existing contamination, have no carve-out for ordinary business materials, and face uncapped remediation costs for conditions not caused by tenant",
         "landlord": "Hazardous materials obligations are undefined; landlord has no clear framework for monitoring tenant environmental compliance, allocating pre-existing contamination costs, or enforcing notification obligations",
@@ -6242,7 +6242,7 @@
     }
   ],
   "conflict_rules": {
-    "description": "Cross-provision logical conflicts. Each rule declares a pattern across two or more LPs that constitutes a conflict ג€” internal contradictions, missing prerequisites, or structural incoherence. Detected by lease_conflicts.py after coverage assessment completes.",
+    "description": "Cross-provision logical conflicts. Each rule declares a pattern across two or more LPs that constitutes a conflict — internal contradictions, missing prerequisites, or structural incoherence. Detected by lease_conflicts.py after coverage assessment completes.",
     "rules": [
       {
         "id": "CR-01",
@@ -6293,7 +6293,7 @@
             ]
           }
         },
-        "description": "SNDA grants the lender a cure right for landlord defaults, but the lease's landlord default framework lacks meaningful tenant remedies ג€” tenant has no rent offset or termination right if the lender does not cure. The lender's cure right exists in form, but the tenant has limited recourse if remediation fails.",
+        "description": "SNDA grants the lender a cure right for landlord defaults, but the lease's landlord default framework lacks meaningful tenant remedies — tenant has no rent offset or termination right if the lender does not cure. The lender's cure right exists in form, but the tenant has limited recourse if remediation fails.",
         "severity": "medium",
         "implicated_perspective": "neutral"
       },
@@ -6318,7 +6318,7 @@
             ]
           }
         },
-        "description": "Assignment requires landlord consent (often with recapture right) and no early termination right exists. Tenant has no exit strategy if business fails ג€” must remain liable for full term with no transfer or termination mechanism.",
+        "description": "Assignment requires landlord consent (often with recapture right) and no early termination right exists. Tenant has no exit strategy if business fails — must remain liable for full term with no transfer or termination mechanism.",
         "severity": "high",
         "implicated_perspective": "tenant"
       }
