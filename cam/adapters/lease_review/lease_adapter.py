@@ -191,7 +191,39 @@ GATE_ABORT_RETURNS_DEGRADED = True
 # extraction returned text or nothing, and aborting destroys the whole report to
 # prevent an output that cannot differ. Remove "unclear" from this set to make
 # the stricter choice -- that one edit is the whole rollback of the judgment call.
-DEGRADABLE_APPLICABILITY = {"not_applicable", "unclear"}
+#
+# ── Step 561: "applicable" ADDED. The trade, recorded here and not only in a
+# ── status file, because this is where someone will read it.
+#
+# THIS IS DEFENSIBLE ON THE EVIDENCE AND INDEFENSIBLE IN PRINCIPLE. It trades a
+# MEASURED false-abort rate of 3 of 4 real documents against an UNMEASURED
+# true-abort rate of zero-so-far.
+#
+# What Step 560 measured:
+#   - `applicable => must_abort` has NEVER fired on a `required` LP. Every
+#     recorded abort -- albireo, everbridge, ncino, divall -- was caused by an LP
+#     in the conditional 12, i.e. one whose applicability a substring matcher
+#     decided.
+#   - Every one of those classifications was FALSE. albireo LP-20 fired on
+#     "the general non-exclusive use and convenience of Tenant"; albireo LP-21 on
+#     the term sheet line "Guarantor: None"; everbridge LP-20 on "Landlord shall
+#     have the exclusive right to conduct such contests"; ncino LP-20 on a
+#     doubly-negated Common Areas definition.
+#   - Step 560 §3: a substring matcher cannot answer "whose obligation is this",
+#     because ex6-4's "Dollar Tree shall have the exclusive right" is
+#     grammatically correct, factually true, and about a different tenant. There
+#     is no lexical rule that reaches it.
+#
+# WHAT THIS GIVES UP. If a conditional LP is ever genuinely present and
+# extraction misses it, this turns a loud abort into a degraded report. That is
+# precisely the harm the 422C gate was built for, and it has simply never been
+# observed. The degraded path -- Steps 476-478 (degraded markers reach the user)
+# and 497 (evaluator substitution disclosed on six surfaces) -- is what carries
+# that fact to the reader instead.
+#
+# REVISIT IF THAT CASE IS EVER OBSERVED. Removing "applicable" from this set is
+# the whole rollback; `required` LPs are untouched by this change and still abort.
+DEGRADABLE_APPLICABILITY = {"not_applicable", "unclear", "applicable"}
 
 
 def _check_cancel(config: dict) -> None:
