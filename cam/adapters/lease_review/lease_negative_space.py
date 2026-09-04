@@ -31,9 +31,36 @@ logger = logging.getLogger(__name__)
 # ── Compiled patterns ──────────────────────────────────────────────────────────
 
 # Matches "Reserved", "Intentionally Omitted", "Intentionally Left Blank", etc.
+# Step 555: the bare `reserved` alternative fired on ordinary lease English.
+#
+# Measured across the whole tenant corpus (45 .txt files, 14 real leases):
+#     old pattern   92 matches   TP=38  FP=55  FN=0
+#     this pattern  38 matches   TP=38  FP= 0  FN=0
+#
+# Of 49 bare-`reserved` matches, 48 were substantive text -- "Rent reserved
+# hereunder", "reserved parking", "rights reserved to Landlord", "AS RESERVED BY
+# GRACE HOBSON SMITH ... IN DEED RECORDED", and the section heading "23. Certain
+# Rights Reserved By Landlord" that sent solidpower LP-29 to broken_xref and
+# produced a headline the lease contradicts three times over (Step 554).
+#
+# The one genuine bare-`reserved` placeholder in the corpus is bracketed:
+# springfield "Section 24.15 [Reserved]". Requiring brackets keeps it and drops
+# all 48 others -- no true positive is lost, which is Step 495's first rule.
+#
+# `intentionally left blank` is REMOVED, not narrowed. All 6 corpus occurrences
+# are "[Remainder of Page Intentionally Left Blank]" -- a page-layout marker, not
+# a clause placeholder -- so it has 6 false positives and zero true positives. A
+# bracketed form of it fires on nothing, and Step 495's second rule rejects an
+# alternative that fires on nothing.
+#
+# `omitted intentionally` and `this section intentionally` also fire zero times
+# in this corpus. They are KEPT: they are specific enough to produce no false
+# positive, and they predate this change, so removing them would be an untested
+# behaviour change rather than the measured one this step is making.
 _RESERVED_PATTERN = re.compile(
-    r"\b(intentionally\s+omitted|intentionally\s+left\s+blank|reserved|"
-    r"this\s+section\s+intentionally|omitted\s+intentionally)\b",
+    r"\b(intentionally\s+omitted|this\s+section\s+intentionally|"
+    r"omitted\s+intentionally)\b"
+    r"|[\[\(]\s*reserved\s*[\]\)]",
     re.IGNORECASE,
 )
 
@@ -153,6 +180,82 @@ def _extract_exhibit_labels(full_text: str) -> set:
     for m in exhibit_header_pattern.finditer(full_text):
         labels.add(m.group(1).upper())
     return labels
+
+
+# ── Step 557: does the placeholder cover the WHOLE provision? ─────────────────
+#
+# This module's contract, stated at the top of the file since Step 241:
+#
+#     "Negative space signals are EVIDENCE, not verdicts. They feed into the
+#      coverage state assessor (Step 242) which makes the actual determination."
+#
+# `lease_coverage.py` did not honour it: any `reserved_or_omitted` signal sent the
+# LP straight to `broken_xref` with every expected element asserted missing and
+# the panel skipped. The signal's own description says "section OR SUBSECTION",
+# and the consumer treated every match as the whole section.
+#
+# Measured at Step 556 on the seven signalled blocks: FIVE were >=92% substantive
+# text beside the placeholder. divall LP-01 marked "3.1 One Time Fixed Rental
+# Charge . Intentionally Omitted ." while "3.2 Base Rent . During the Term,
+# Tenant covenants and agrees to pay to Landlord..." sat in the same block, and
+# the report said there was no enforceable rent obligation.
+#
+# WHAT COUNTS AS PROSE. Positively identified, because labels are open-ended and
+# prose is not: a segment of at least six words containing a finite verb from
+# _PROSE_VERBS. Everything else -- section numbers, enumerators, structural words,
+# and the Title Case clause names that follow them -- is scaffolding by
+# elimination. Two rules that looked better were measured and rejected first:
+#
+#   residue ratio        -- separates 92-96.5% from 32.7-49.4% cleanly, but ex6-4
+#                           LP-23 is a TRUE absence at 94.0% because misrouted
+#                           text inflates its block. Any threshold loses it.
+#   elements-not-found   -- FN=2. `_assess_elements` matched three LP-21 elements
+#                           off the single word "GUARANTY" in the title of the
+#                           clause that was omitted. A keyword matcher cannot
+#                           decide whether a clause exists: its name survives it.
+#
+# The six-word floor and the verb list are MEASURED on that corpus, not chosen a
+# priori. They are a heuristic in a module whose header calls its own output
+# evidence; when this is wrong the cost is now an extra panel call, not a false
+# sentence in a report.
+_PROSE_VERBS = re.compile(
+    r"\b(shall|will|may|must|agrees?|covenants?|is|are|was|were|has|have|had|"
+    r"pay|pays|paid|means?|includes?|provides?|entitled|obligated|required)\b",
+    re.IGNORECASE,
+)
+
+# Boundaries a clause label sits on: newlines, section numbers ("3.1", "24.15"),
+# enumerators ("(a)", "(9)"), and the structural words that introduce them.
+_LABEL_BOUNDARY = re.compile(
+    r"\n"
+    r"|\b\d+\.\d+(?:\.\d+)*"
+    r"|\(\s*[A-Za-z0-9]{1,3}\s*\)"
+    r"|\b(?:section|article|addendum|exhibit|schedule|paragraph)\s*[A-Z0-9IVXL.\-]*",
+    re.IGNORECASE,
+)
+
+_MIN_PROSE_WORDS = 6
+
+
+def prose_outside_placeholders(tenant_text: str) -> list:
+    """Segments of real prose in a block, ignoring placeholders and clause labels.
+
+    Empty return means the block is nothing but placeholders and scaffolding --
+    the provision really is absent. A non-empty return means substantive text
+    sits beside the placeholder, so the placeholder is a SUBSECTION and the
+    coverage assessor must decide, not this module.
+    """
+    if not tenant_text:
+        return []
+    stripped = _RESERVED_PATTERN.sub(" ", tenant_text)
+    segments = [s.strip() for s in _LABEL_BOUNDARY.split(stripped) if s and s.strip()]
+    return [s for s in segments
+            if len(s.split()) >= _MIN_PROSE_WORDS and _PROSE_VERBS.search(s)]
+
+
+def placeholder_covers_provision(tenant_text: str) -> bool:
+    """True when a reserved/omitted placeholder accounts for the entire block."""
+    return not prose_outside_placeholders(tenant_text)
 
 
 def _make_signal(signal_type: str, description: str, evidence: str,

@@ -26,6 +26,7 @@ import logging
 from typing import Optional
 
 from cam.adapters.lease_review.lease_verdict_distance import NOT_ASSESSED_SENTINEL
+from cam.adapters.lease_review.lease_negative_space import placeholder_covers_provision
 
 logger = logging.getLogger(__name__)
 
@@ -461,7 +462,26 @@ def assess_coverage(
                     tenant_text = ""
 
         # ── Step 3: High-priority negative space: reserved/omitted ───────────
+        # Step 557: the short-circuit now requires that the placeholder account
+        # for the WHOLE block. `lease_negative_space`'s header has said since
+        # Step 241 that its signals are "EVIDENCE, not verdicts... the coverage
+        # state assessor makes the actual determination", and this branch was the
+        # code that ignored it -- any match, anywhere, skipped the panel and
+        # asserted every expected element missing.
+        #
+        # When substantive prose sits beside the placeholder the signal is NOT
+        # discarded: it stays on `ns`, which `_build_assessment` persists as
+        # `negative_space_signals`, and the LP continues to the panel below.
+        # A subsection marked omitted is a fact about the document; it is not a
+        # verdict about the provision.
         reserved_signals = [s for s in ns if s["signal_type"] == "reserved_or_omitted"]
+        if reserved_signals and not placeholder_covers_provision(tenant_text):
+            logger.info(
+                f"[lease_coverage] {pid}: reserved/omitted signal present but "
+                f"substantive text sits beside it; passing the signal through as "
+                f"evidence rather than short-circuiting"
+            )
+            reserved_signals = []
         if reserved_signals:
             _a = _build_assessment(
                 pid=pid, area=area, coverage_state="broken_xref",
