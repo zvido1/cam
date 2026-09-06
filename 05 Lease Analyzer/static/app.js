@@ -18767,6 +18767,14 @@ function renderNavSidebar() {
     updateNavActive(currentTenantIndex);
 }
 window.CAM._navSectionToggle = _navSectionToggle;
+// Step 571-impl: `esc` is defined INSIDE this IIFE, and the two banners after it
+// closes call it. They survived only because a banner with nothing to say
+// early-returns before reaching `esc`; the moment one had content it threw
+// `ReferenceError: esc is not defined`, which loadResults() swallows, taking the
+// rest of renderResults with it. So the "NOT VALID FOR LEGAL ANALYSIS" banner
+// broke precisely when there was something to disclose. Exported so the crossing
+// is explicit and greppable rather than accidental.
+window.CAM.esc = esc;
 window.CAM.classifyFindingType = classifyFindingType;
 window.CAM.isPriorityReview = isPriorityReview; // Step 373: shared triage tier
 
@@ -18817,11 +18825,11 @@ function renderIncompleteBanner(results) {
     el.innerHTML =
         '<div class="incomplete-report-banner__title">&#9888; INCOMPLETE REPORT &mdash; NOT VALID FOR LEGAL ANALYSIS</div>' +
         stmts.map(function (m) {
-            return '<div class="incomplete-report-banner__body">' + esc(m) + '</div>';
+            return '<div class="incomplete-report-banner__body">' + window.CAM.esc(m) + '</div>';
         }).join('') +
         (ids.length
             ? '<div class="incomplete-report-banner__lps">Issue areas with no evidence: <strong>'
-              + esc(ids.join(', ')) + '</strong></div>'
+              + window.CAM.esc(ids.join(', ')) + '</strong></div>'
             : '');
     el.classList.remove('hidden');
 }
@@ -18832,7 +18840,7 @@ function renderIncompleteBanner(results) {
 // run_degraded=True and degraded_reason='evaluator_fallback' set
 // invalid_for_legal_analysis=False, so the banner above stays hidden for them --
 // Step 487's two deployed runs disclosed nothing anywhere.
-// The escaper in this file is esc(), NOT escapeHtml -- see Step 477.
+// The escaper in this file is window.CAM.esc(), NOT escapeHtml -- see Step 477.
 // Step 571-impl: parameterised for the same reason as renderIncompleteBanner above.
 function renderPanelBanner(results) {
     var el = document.getElementById('panel-substitution-banner');
@@ -18854,7 +18862,7 @@ function renderPanelBanner(results) {
     el.innerHTML =
         '<div class="panel-substitution-banner__title">&#9888; PANEL SUBSTITUTED &mdash; NOT THE EVALUATOR PANEL THIS REPORT NAMES</div>' +
         lines.map(function (m) {
-            return '<div class="panel-substitution-banner__body">' + esc(m) + '</div>';
+            return '<div class="panel-substitution-banner__body">' + window.CAM.esc(m) + '</div>';
         }).join('');
     el.classList.remove('hidden');
 }

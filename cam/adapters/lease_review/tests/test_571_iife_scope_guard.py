@@ -40,6 +40,18 @@ IIFE_SCOPED = [
     "currentJobId",
     "currentJobData",
     "currentTenantIndex",
+    # Step 571-impl item 3b: a FUNCTION, added after the same defect recurred in a
+    # nastier form. `esc` is the HTML escaper, defined inside the IIFE, and three
+    # post-IIFE functions called it: the Step-477 incomplete-report banner, the
+    # Step-497 panel-substitution banner, and the rerun banner. The first two threw
+    # `ReferenceError: esc is not defined` -- but ONLY when they had content, because
+    # a banner with nothing to warn about early-returns before ever reaching the
+    # escaper. So the "NOT VALID FOR LEGAL ANALYSIS" disclosure broke precisely when
+    # there was something to disclose, and `loadResults()` swallowed it.
+    #
+    # The original guard listed only state, so it passed while this was live. State
+    # was never the category -- anything lexically scoped to the IIFE is.
+    "esc",
 ]
 
 
@@ -88,7 +100,9 @@ class TestNoIifeScopedReadsAfterClose(unittest.TestCase):
             if not code.strip():
                 continue
             for name in IIFE_SCOPED:
-                if re.search(r"\b" + re.escape(name) + r"\b", code):
+                # `window.CAM.esc(...)` is the legitimate, explicit crossing;
+                # a BARE `esc(...)` or `currentResults` is the defect.
+                if re.search(r"(?<![.\w])" + re.escape(name) + r"\b", code):
                     offenders.append("%d: %s" % (lineno, code.strip()[:90]))
         self.assertEqual(
             offenders, [],
