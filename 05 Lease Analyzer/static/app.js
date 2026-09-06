@@ -3223,8 +3223,8 @@ function renderResults() {
     const mobileFab = $("#chat-fab-mobile");
     if (mobileFab) mobileFab.classList.remove("hidden");
 
-    renderIncompleteBanner();   // Step 477: must run before any summary surface
-    renderPanelBanner();        // Step 497: panel provenance, distinct from the above
+    renderIncompleteBanner(currentResults);   // Step 477: must run before any summary surface
+    renderPanelBanner(currentResults);        // Step 497: panel provenance, distinct from the above
     renderNavSidebar();
     syncResultsTopBarLayout();
     renderDealBrief();
@@ -18783,14 +18783,26 @@ document.addEventListener("DOMContentLoaded", init);
 // silent success in place of a loud failure. This renders the statement ABOVE the
 // deal brief and every summary counter, because Step 461 recorded a counter
 // improving while the answer got worse.
-function renderIncompleteBanner() {
+// Step 571-impl: `results` is a PARAMETER, not the module-scope `currentResults`.
+// This function lives AFTER the IIFE closes (app.js:6-18776), so it is in global
+// scope where `currentResults` is not declared -- reading it threw
+// `ReferenceError: currentResults is not defined` on every results load from
+// 2026-08-24 (4fc4fce) until this fix. `renderResults()` calls this at :3226, the
+// first render call after the pre-amble, and `loadResults()` swallowed the throw,
+// so 20+ render calls and the whole tab wiring never ran and the results page was
+// a static shell in production for thirteen days.
+//
+// Parameterised rather than moved inside the IIFE deliberately: the boundary that
+// failed is now explicit in the signature instead of depending on where in the file
+// the function happens to sit.
+function renderIncompleteBanner(results) {
     var el = document.getElementById('incomplete-report-banner');
     if (!el) return;
-    if (!currentResults || !currentResults.tenants) { el.classList.add('hidden'); return; }
+    if (!results || !results.tenants) { el.classList.add('hidden'); return; }
 
     var stmts = [];
     var lps = {};
-    currentResults.tenants.forEach(function (t) {
+    results.tenants.forEach(function (t) {
         var r = t && t.results;
         if (!r) return;
         if (r.invalid_for_legal_analysis || r.extraction_completeness_failed) {
@@ -18821,13 +18833,14 @@ function renderIncompleteBanner() {
 // invalid_for_legal_analysis=False, so the banner above stays hidden for them --
 // Step 487's two deployed runs disclosed nothing anywhere.
 // The escaper in this file is esc(), NOT escapeHtml -- see Step 477.
-function renderPanelBanner() {
+// Step 571-impl: parameterised for the same reason as renderIncompleteBanner above.
+function renderPanelBanner(results) {
     var el = document.getElementById('panel-substitution-banner');
     if (!el) return;
-    if (!currentResults || !currentResults.tenants) { el.classList.add('hidden'); return; }
+    if (!results || !results.tenants) { el.classList.add('hidden'); return; }
 
     var lines = [];
-    currentResults.tenants.forEach(function (t) {
+    results.tenants.forEach(function (t) {
         var r = t && t.results;
         if (!r) return;
         var ps = r.panel_substitution || {};
