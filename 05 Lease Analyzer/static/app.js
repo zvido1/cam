@@ -16347,6 +16347,16 @@ function renderCoveragePanel() {
     // exposure_perspective records whose perspective the exposure text was written from,
     // which equals the run perspective — not a reliable adversity signal across perspectives.
     const _viewerPerspective = getJobPerspective();
+
+    // Step 580-2: run-level, not item-level -- which party is NOT the reader. An element whose
+    // absence_adverse_to is that party is a provision protecting the other side, and Step 579
+    // measured that 31.7% of what the coverage count called "covered" on a tenant-lens run was
+    // exactly that. Used to annotate the count and to name the rows; never to filter either.
+    const _oppositeParty = _viewerPerspective === 'tenant' ? 'landlord'
+                         : _viewerPerspective === 'landlord' ? 'tenant' : null;
+    const _protectsOtherParty = function (ev) {
+        return !!_oppositeParty && !!ev && ev.absence_adverse_to === _oppositeParty;
+    };
     function _isFavorable(a) {
         return a.coverage_state === "covered_unfavorable" &&
             _viewerPerspective && _viewerPerspective !== "neutral" &&
@@ -16418,6 +16428,29 @@ function renderCoveragePanel() {
               '</div>'
             : "";
 
+        // Step 580-2(c): itemise what the coverage count contains. Until now `Missing:` was
+        // listed in three places and the present elements were rendered nowhere -- gaps were
+        // named and coverage was a bare number nobody could open, which is why Step 579's finding
+        // survived as long as it did. Listing what is counted is the cheapest defence against this
+        // class of error, and it makes the count's attribution note checkable instead of trusted.
+        // Built from element_verdicts (not `elements_present`) because only the verdicts carry the
+        // polarity field added in 580-2(a).
+        const _POSITIVE_VERDICTS_CARD = new Set(
+            ['explicitly_present', 'implicitly_present', 'covered_by_default_law', 'covered_in_other_LP']);
+        const _coveredEvs = (a.element_verdicts || []).filter(e => _POSITIVE_VERDICTS_CARD.has(e.verdict));
+        const coveredHtml = _coveredEvs.length > 0
+            ? '<div class="cv-covered-elements"><span class="cv-covered-label">Covered:</span>' +
+              _coveredEvs.map(e => {
+                  const _lbl = esc(e.element_label || e.element_id || '');
+                  return _protectsOtherParty(e)
+                      ? '<span class="cv-covered-item cv-covered-item-other" title="Protects the '
+                        + esc(_oppositeParty) + '">' + _lbl + ' <span class="cv-covered-attrib">&rarr; '
+                        + esc(_oppositeParty) + '</span></span>'
+                      : '<span class="cv-covered-item">' + _lbl + '</span>';
+              }).join("") +
+              '</div>'
+            : "";
+
         const nsHtml = nsSignals.length > 0
             ? '<div class="cv-ns-signals">' +
               nsSignals.slice(0, 2).map(s => `<span class="cv-ns-signal">${esc(s.description || s.signal_type)}</span>`).join("") +
@@ -16467,9 +16500,22 @@ function renderCoveragePanel() {
             const _POSITIVE_VERDICTS = new Set(['explicitly_present', 'implicitly_present', 'covered_by_default_law', 'covered_in_other_LP']);
             const coveredCount = elementVerdicts.filter(e => _POSITIVE_VERDICTS.has(e.verdict)).length;
             const totalCount = elementVerdicts.length;
-            const summaryText = coveredCount === totalCount
+            // Step 580-2(b): ANNOTATE the count, do not filter it. Step 579 measured that 38 of
+            // the 120 elements this counted on the Butler tenant-lens run (31.7%) are provisions
+            // that protect the OTHER party -- LP-11 read "16 of 17 elements covered" where 11 of
+            // the 16 were the landlord's remedies against the reader. Filtering was considered and
+            // rejected: 3 of those 38 are genuinely dual (payment due date, late fee, CGL
+            // minimum), so subtracting would make the number wrong in a new way. The count stays
+            // exactly what it was; the sentence now says what is in it.
+            const _otherPartyCovered = elementVerdicts.filter(
+                e => _POSITIVE_VERDICTS.has(e.verdict) && _protectsOtherParty(e)).length;
+            const _baseSummary = coveredCount === totalCount
                 ? `All ${totalCount} elements covered`
                 : `${coveredCount} of ${totalCount} elements covered`;
+            const summaryText = _otherPartyCovered > 0
+                ? _baseSummary + ' <span class="cv-elem-attrib-note">&mdash; ' + _otherPartyCovered
+                  + ' protect' + (_otherPartyCovered === 1 ? 's' : '') + ' the ' + esc(_oppositeParty) + '</span>'
+                : _baseSummary;
             const elemTableId = "cv-elem-body-" + pid;
             const VERDICT_CFG = {
                 'explicitly_present':     { cls: 'cv-ev-present',  label: 'Present' },
@@ -16588,8 +16634,21 @@ function renderCoveragePanel() {
                     ? '<td class="cv-ev-td-dots"><span class="element-vote-count">' + _dispVoteLabel + '</span></td>'
                     : '<td class="cv-ev-td-dots">' + confDots + '</td>';
                 const evalTd = '<td class="cv-ev-td-eval">' + evalToggle + '</td>';
+                // Step 580-2(b): mark the rows the count note is about, so "11 protect the
+                // landlord" is checkable against the table rather than taken on trust.
+                // ONLY on present-tier rows. On a `missing` row the same element's polarity means
+                // the opposite thing -- its ABSENCE is adverse to the other party -- and labelling
+                // an absent element "protects landlord" would be false on its face. Caught on the
+                // first on-device pass, where the tag appeared on "Abandonment or vacating as event
+                // of default" with a Missing badge beside it. 374Z already handles that case by
+                // keeping such absences out of elements_missing; this tag is about the count.
+                const _attribTag = (_POSITIVE_VERDICTS.has(ev.verdict) && _protectsOtherParty(ev))
+                    ? ' <span class="cv-ev-attrib" title="This provision protects the '
+                      + esc(_oppositeParty) + '. Its absence would be adverse to them, not to you.">protects '
+                      + esc(_oppositeParty) + '</span>'
+                    : '';
                 const mainRow = '<tr class="cv-ev-row' + rowProblemClass + '">'
-                    + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + '</td>'
+                    + '<td class="cv-ev-label">' + esc(ev.element_label || ev.element_id || '') + _attribTag + '</td>'
                     + pillTd + dotsTd + evalTd
                     + '<td class="cv-ev-citation">' + citHtml + '</td>'
                     + '</tr>';
@@ -16772,6 +16831,7 @@ function renderCoveragePanel() {
                   : '<div class="cv-missing-provision-note">⚠ This provision is absent from the lease. Use <strong>Draft Missing Clause</strong> to request language from the landlord.</div>')
               : ''}
             ${missingHtml}
+            ${coveredHtml}
             ${nsHtml}
             ${toolbarHtml}
         </div>`;

@@ -1272,6 +1272,16 @@ def assess_coverage_305(
             "element_id": element_id,
             "criticality": criticality,  # Phase 2 pass-through
             "element_label": element_label,
+            # Step 580-2(a): whose position the element's ABSENCE would hurt. Carried so a
+            # surface can say who a PRESENT element protects -- until now the field existed on
+            # the schema element and stopped here, and 374Z read it only on the `missing`
+            # branch. Step 579 measured what that costs: of 50 landlord-protective elements on
+            # the Butler tenant-lens run, 6 are missing and get reclassified, and 38 come back
+            # present and are counted as the tenant's coverage with nothing able to say
+            # otherwise. Annotation only -- nothing routes on it, no verdict changes, and it is
+            # deliberately NOT used to filter the count (3 of those 38 are genuinely dual:
+            # payment due date, late fee, CGL minimum).
+            "absence_adverse_to": element.get("absence_adverse_to"),
             "verdict": merged["verdict"],
             "confidence": merged.get("confidence", "low"),
             "citation": merged.get("citation"),
